@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "pynumaflow"
+version = "0.1.0"
+description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
+authors = ["NumaFlow Developers"]
+
+[tool.poetry.dependencies]
+python = "~3.9"
+aiohttp = "^3.8.1"
+msgpack = "^1.0.3"
+dataclasses-json = "^0.5.7"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1"
+pytest-aiohttp = "^1.0"
+pytest-cov = "^3.0"
+black = "^22.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | \.idea
+  | _build
+  | buck-out
+  | build
+  | dist
+  | tests/.*/setup.py
+)/
+'''

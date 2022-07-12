@@ -2,7 +2,7 @@
 
 This SDK provides the interface of writing a UDF in Python.
 
-## Implement UDF
+## Implement a User Defined Function (UDF)
 
 ```python
 from pynumaflow.function import Message, Messages, HTTPHandler
@@ -23,10 +23,32 @@ if __name__ == "__main__":
     handler.start()
 ```
 
-## Build Image
+### Sample Image
 
-A sample [Dockerfile](examples/function/udfproj/Dockerfile) is provided under [example](examples), run following command to build an image.
+A sample UDF [Dockerfile](examples/function/udfproj/Dockerfile) is provided 
+under [examples](examples/function/udfproj).
 
-```shell
-make image
+
+## Implement a User Defined Sink (UDSink)
+
+```python
+from typing import List
+from pynumaflow.sink import Message, Responses, Response, HTTPSinkHandler
+
+
+def udsink_handler(messages: List[Message], __) -> Responses:
+    responses = Responses()
+    for msg in messages:
+        responses.append(Response.as_success(msg.id))
+    return responses
+
+
+if __name__ == "__main__":
+    handler = HTTPSinkHandler(udsink_handler)
+    handler.start()
 ```
+
+### Sample Image
+
+A sample UDSink [Dockerfile](examples/sink/simplesink/Dockerfile) is provided 
+under [examples](examples/sink/simplesink).

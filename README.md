@@ -1,6 +1,7 @@
 # Python SDK
 
-This SDK provides the interface of writing a UDF in Python.
+This SDK provides the interface for writing [UDFs](https://numaproj.github.io/numaflow/user-defined-functions/) 
+and [UDSinks](https://numaproj.github.io/numaflow/sinks/user-defined-sinks/) in Python.
 
 ## Implement a User Defined Function (UDF)
 

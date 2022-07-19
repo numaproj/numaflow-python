@@ -1,14 +1,27 @@
 [tool.poetry]
 name = "pynumaflow"
-version = "0.1.0"
+version = "0.1.1"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = ["NumaFlow Developers"]
+readme = "README.md"
+license = "Apache-2.0"
+maintainers = [
+    "Avik Basu <avikbasu93@gmail.com>",
+    "Vigith Maurice <vigith@gmail.com>",
+]
+classifiers = [
+    "Topic :: Software Development :: Libraries",
+    "License :: OSI Approved :: Apache Software License",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10"
+]
 
 [tool.poetry.dependencies]
-python = "~3.9"
+python = ">=3.8, <3.11"
 aiohttp = "^3.8.1"
 msgpack = "^1.0.3"
-dataclasses-json = "^0.5.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1"

@@ -16,8 +16,8 @@ Ms = TypeVar("Ms", bound="Messages")
 
 
 class Message:
-    def __init__(self, key: bytes, value: bytes):
-        self._key = key or b""
+    def __init__(self, key: str, value: bytes):
+        self._key = key or ""
         self._value = value or b""
 
     def __str__(self):
@@ -27,7 +27,7 @@ class Message:
         return str(self)
 
     @property
-    def key(self) -> bytes:
+    def key(self) -> str:
         return self._key
 
     @property
@@ -35,7 +35,7 @@ class Message:
         return self._value
 
     @classmethod
-    def to_vtx(cls: Type[M], key: bytes, value: bytes) -> M:
+    def to_vtx(cls: Type[M], key: str, value: bytes) -> M:
         return cls(key, value)
 
     @classmethod
@@ -62,22 +62,3 @@ class Messages:
 
     def items(self) -> List[Message]:
         return self._messages
-
-    @classmethod
-    def as_forward_all(cls: Type[Ms], json_data: str) -> Ms:
-        msgs = cls()
-        if json_data:
-            msgs.append(Message.to_all(value=json_data.encode()))
-        else:
-            msgs.append(Message.to_drop())
-        return msgs
-
-    def dumps(self, udf_content_type: str) -> str:
-        if udf_content_type == APPLICATION_JSON:
-            return json.dumps(self._messages, cls=NumaflowJSONEncoder, separators=(",", ":"))
-        elif udf_content_type == APPLICATION_MSG_PACK:
-            return msgpack.dumps(self._messages, default=msgpack_encoding)
-        raise MarshalError(udf_content_type)
-
-    def loads(self) -> Ms:
-        pass

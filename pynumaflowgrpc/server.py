@@ -24,6 +24,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = sock_path
+        self._cleanup_coroutines = []
 
     def MapFn(self, request: udfunction_pb2.Datum, context):
         """Applies a function to each datum element.
@@ -64,8 +65,21 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             server.add_insecure_port(uds_address)
             _LOGGER.info('Server listening on: %s', uds_address)
         await server.start()
+
+        async def server_graceful_shutdown():
+            logging.info("Starting graceful shutdown...")
+            # Shuts down the server with 5 seconds of grace period. During the
+            # grace period, the server won't accept new connections and allow
+            # existing RPCs to continue within the grace period.
+            await server.stop(5)
+        self._cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
     def start(self) -> None:
-        asyncio.run(self.serve())
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(self.serve())
+        finally:
+            loop.run_until_complete(*self._cleanup_coroutines)
+            loop.close()
 

@@ -22,7 +22,9 @@ classifiers = [
 python = ">=3.8, <3.11"
 aiohttp = "^3.8.1"
 msgpack = "^1.0.3"
-protobuf = "^4.21.5"
+grpcio = "^1.48.1"
+grpcio-tools = "^1.48.1"
+protobuf = "^3.20.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1"

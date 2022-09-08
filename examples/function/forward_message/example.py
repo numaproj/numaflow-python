@@ -1,4 +1,3 @@
-from pynumaflow.function import udfunction_pb2
 from pynumaflow.function import Messages, Message
 from pynumaflow.function.server import UserDefinedFunctionServicer
 

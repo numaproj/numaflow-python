@@ -1,8 +1,8 @@
 import asyncio
 import logging
 
-import udfunction_pb2
-import udfunction_pb2_grpc
+from pynumaflow.function import udfunction_pb2
+from pynumaflow.function import udfunction_pb2_grpc
 
 import grpc
 from typing import Callable, Any

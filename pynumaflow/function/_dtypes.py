@@ -1,4 +1,3 @@
-import json
 from typing import TypeVar, Type, List
 
 DROP = b"U+005C__DROP__"

@@ -1,12 +1,11 @@
 import asyncio
 import logging
-from os import environ
 
 import udfunction_pb2
 import udfunction_pb2_grpc
 
 import grpc
-from typing import Callable, Any, List, Optional
+from typing import Callable, Any
 
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,

@@ -1,8 +1,8 @@
 import os
 
-from pynumaflowgrpc.function import HTTPHandler
-from pynumaflowgrpc.function import Messages, Message
-from pynumaflowgrpc.server import UserDefinedFunctionServicer
+from pynumaflow.function import HTTPHandler
+from pynumaflow.function import Messages, Message
+from pynumaflow.server import UserDefinedFunctionServicer
 
 
 def map_handler(key: str, value: bytes) -> Messages:

@@ -8,11 +8,11 @@ import udfunction_pb2_grpc
 import grpc
 from typing import Callable, Any, List, Optional
 
-from pynumaflowgrpc._constants import (
+from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
 )
-from pynumaflowgrpc.function import Messages
+from pynumaflow.function import Messages
 
 _LOGGER = logging.getLogger(__name__)
 

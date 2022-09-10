@@ -14,7 +14,7 @@ from pynumaflow._constants import (
     APPLICATION_MSG_PACK,
 )
 from pynumaflow._tools import Singleton
-from pynumaflow.decoder import NumaflowJSONDecoder, msgpack_decoder
+from pynumaflow.sink.decoder import NumaflowJSONDecoder, msgpack_decoder
 from pynumaflow.exceptions import InvalidContentTypeError
 from pynumaflow.sink._dtypes import Responses, Message
 

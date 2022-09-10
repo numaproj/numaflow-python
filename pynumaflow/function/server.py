@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from os import environ
 
-from pynumaflow.function import udfunction_pb2
+from pynumaflow.function import udfunction_pb2, Datum
 from pynumaflow.function import udfunction_pb2_grpc
 
 import grpc
@@ -13,9 +14,12 @@ from pynumaflow._constants import (
 )
 from pynumaflow.function import Messages
 
+if environ.get("PYTHONDEBUG"):
+    logging.basicConfig(level=logging.DEBUG)
+
 _LOGGER = logging.getLogger(__name__)
 
-UDFMapCallable = Callable[[str, bytes, Any], Messages]
+UDFMapCallable = Callable[[str, Datum, Any], Messages]
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -29,16 +33,14 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         """Applies a function to each datum element.
         """
         key = ""
-        value = request.value
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
                 key = metadata_value
 
-        msgs = self.__map_handler(key+"_test", value)
+        msgs = self.__map_handler(key, Datum(value=request.value, event_time=request.event_time, water_mark=request.watermark))
 
         datum_list = []
         for msg in msgs.items():
-            print(msg)
             datum_list.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
 
         return udfunction_pb2.DatumList(elements=datum_list)
@@ -56,8 +58,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.ReadyResponse(ready=True)
 
     async def serve(self) -> None:
-        _ = self.sock_path
-        uds_addresses = ['unix:///tmp/numaflow-test.sock']
+        uds_addresses = [self.sock_path]
         server = grpc.aio.server()
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(UserDefinedFunctionServicer(self.__map_handler), server)
         for uds_address in uds_addresses:

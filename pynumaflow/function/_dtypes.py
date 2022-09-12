@@ -74,13 +74,17 @@ class Messages:
 
 
 class Datum:
-    def __init__(self, value: bytes, event_time: datetime, water_mark: datetime):
+    def __init__(self, value: bytes, event_time: datetime, watermark: datetime):
         self._value = value or b""
+        if type(event_time) != datetime:
+            raise TypeError("wrong data type for Datum.event_time")
         self._event_time = event_time
-        self._water_mark = water_mark
+        if type(watermark) != datetime:
+            raise TypeError("wrong data type for Datum.watermark")
+        self._watermark = watermark
 
     def __str__(self):
-        return str({self._value, self._event_time, self._water_mark})
+        return str({self._value, self._event_time, self._watermark})
 
     def __repr__(self):
         return str(self)
@@ -91,8 +95,8 @@ class Datum:
     def event_time(self):
         return self._event_time
 
-    def water_mark(self):
-        return self._water_mark
+    def watermark(self):
+        return self._watermark
 
 
 class IntervalWindow:

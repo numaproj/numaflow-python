@@ -20,10 +20,14 @@ from pynumaflow.function._dtypes import (
 )
 
 
-def test_map_handler(key: str, datum: Datum) -> Messages:
+def map_handler(key: str, datum: Datum) -> Messages:
     val = datum.value()
-    val = val.decode("utf-8") + "_map_function"
-    val = bytes(val, encoding="utf-8")
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time(),
+        datum.watermark(),
+    )
+    val = bytes(msg, encoding="utf-8")
     messages = Messages()
     messages.append(Message.to_vtx(key, val))
     return messages
@@ -48,7 +52,7 @@ class TestServer(unittest.TestCase):
     def __init__(self, method_name) -> None:
         super().__init__(method_name)
 
-        my_servicer = UserDefinedFunctionServicer(test_map_handler)
+        my_servicer = UserDefinedFunctionServicer(map_handler)
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -70,12 +74,15 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_forward_message(self):
-        timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         request = udfunction_pb2.Datum(
             value=mock_message(),
-            event_time=timestamp.FromDatetime(dt=mock_event_time()),
-            watermark=timestamp.FromDatetime(dt=mock_watermark()),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
         )
 
         method = self.test_server.invoke_unary_unary(
@@ -90,11 +97,15 @@ class TestServer(unittest.TestCase):
         )
 
         response, metadata, code, details = method.termination()
+        self.assertEqual(1, len(response.elements))
         self.assertEqual("test", response.elements[0].key)
         self.assertEqual(
-            bytes("test_mock_message_map_function", encoding="utf-8"), response.elements[0].value
+            bytes(
+                "payload:test_mock_message event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+                encoding="utf-8",
+            ),
+            response.elements[0].value,
         )
-        # self.assertTupleEqual("test_forward_message", response.__dict__.[])
         self.assertEqual(code, StatusCode.OK)
 
 

@@ -37,12 +37,17 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             if metadata_key == DATUM_KEY:
                 key = metadata_value
 
+        try:
+            request.event_time.event_time.ToDatetime()
+        except Exception as ex:
+            print(repr(ex))
+
         msgs = self.__map_handler(
             key,
             Datum(
                 value=request.value,
-                event_time=request.event_time,
-                water_mark=request.watermark,
+                event_time=request.event_time.event_time.ToDatetime(),
+                watermark=request.watermark.watermark.ToDatetime(),
             ),
         )
 

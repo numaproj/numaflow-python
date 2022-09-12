@@ -36,16 +36,16 @@ def mock_end_time():
 
 class TestDatum(unittest.TestCase):
     def test_value(self):
-        d = Datum(value=mock_message(), event_time=mock_event_time(), water_mark=mock_watermark())
+        d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
         self.assertEqual(mock_message(), d.value())
 
     def test_event_time(self):
-        d = Datum(value=mock_message(), event_time=mock_event_time(), water_mark=mock_watermark())
+        d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
         self.assertEqual(mock_event_time(), d.event_time())
 
     def test_watermark(self):
-        d = Datum(value=mock_message(), event_time=mock_event_time(), water_mark=mock_watermark())
-        self.assertEqual(mock_watermark(), d.event_time())
+        d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        self.assertEqual(mock_watermark(), d.watermark())
 
 
 class TestIntervalWindow(unittest.TestCase):

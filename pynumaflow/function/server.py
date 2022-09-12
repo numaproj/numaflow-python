@@ -5,6 +5,8 @@ from os import environ
 from pynumaflow.function import udfunction_pb2, Datum
 from pynumaflow.function import udfunction_pb2_grpc
 
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
+
 import grpc
 from typing import Callable, Any
 
@@ -39,8 +41,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             key,
             Datum(
                 value=request.value,
-                event_time=request.event_time.ToDatetime(),
-                water_mark=request.watermark.ToDatetime(),
+                event_time=request.event_time,
+                water_mark=request.watermark,
             ),
         )
 

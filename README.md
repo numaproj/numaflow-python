@@ -26,8 +26,8 @@ if __name__ == "__main__":
 
 ### Sample Image (WIP)
 
-A sample UDF [Dockerfile](pynumaflow/function/examples/function/udfproj/Dockerfile) is provided 
-under [examples](pynumaflow/function/examples/function/udfproj).
+A sample UDF [Dockerfile](examples/function/udfproj/Dockerfile) is provided 
+under [examples](examples/function/udfproj).
 
 
 ## Implement a User Defined Sink (UDSink)
@@ -51,5 +51,5 @@ if __name__ == "__main__":
 
 ### Sample Image
 
-A sample UDSink [Dockerfile](pynumaflow/function/examples/sink/simplesink/Dockerfile) is provided 
-under [examples](pynumaflow/function/examples/sink/simplesink).
+A sample UDSink [Dockerfile](examples/sink/simplesink/Dockerfile) is provided 
+under [examples](examples/sink/simplesink).

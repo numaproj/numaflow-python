@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime, timezone
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 
 from pynumaflow.function._dtypes import (
@@ -35,9 +36,28 @@ def mock_end_time():
 
 
 class TestDatum(unittest.TestCase):
+    def test_err_event_time(self):
+        ts = _timestamp_pb2.Timestamp()
+        ts.GetCurrentTime()
+        with self.assertRaises(Exception) as context:
+            Datum(value=mock_message(), event_time=ts, watermark=ts)
+        self.assertEqual("wrong data type for Datum.event_time", str(context.exception))
+
+    def test_err_watermark(self):
+        ts = _timestamp_pb2.Timestamp()
+        ts.GetCurrentTime()
+        with self.assertRaises(Exception) as context:
+            Datum(value=mock_message(), event_time=mock_event_time(), watermark=ts)
+        self.assertEqual("wrong data type for Datum.watermark", str(context.exception))
+
     def test_value(self):
         d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
         self.assertEqual(mock_message(), d.value())
+        self.assertEqual(
+            "value:test_mock_message "
+            "event_time:2022-09-12 16:00:00+00:00 watermark:2022-09-12 16:01:00+00:00",
+            str(d),
+        )
 
     def test_event_time(self):
         d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
@@ -52,6 +72,7 @@ class TestIntervalWindow(unittest.TestCase):
     def test_start(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
         self.assertEqual(mock_start_time(), i.start())
+        self.assertEqual("start:2022-09-12 16:00:00+00:00 end:2022-09-12 16:02:00+00:00", str(i))
 
     def test_end(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
@@ -64,6 +85,9 @@ class TestMetadata(unittest.TestCase):
         m = Metadata(interval_window=i)
         self.assertEqual(type(i), type(m.interval_window()))
         self.assertEqual(i, m.interval_window())
+        self.assertEqual(
+            "interval_window:start:2022-09-12 16:00:00+00:00 end:2022-09-12 16:02:00+00:00", str(m)
+        )
 
 
 if __name__ == "__main__":

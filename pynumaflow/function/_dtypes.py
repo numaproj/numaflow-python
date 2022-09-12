@@ -84,7 +84,11 @@ class Datum:
         self._watermark = watermark
 
     def __str__(self):
-        return str({self._value, self._event_time, self._watermark})
+        return "value:%s event_time:%s watermark:%s" % (
+            self._value.decode("utf-8"),
+            str(self._event_time),
+            str(self._watermark),
+        )
 
     def __repr__(self):
         return str(self)
@@ -105,7 +109,7 @@ class IntervalWindow:
         self._end = end
 
     def __str__(self):
-        return str([self._start, str(self._end)])
+        return "start:%s end:%s" % (str(self._start), str(self._end))
 
     def __repr__(self):
         return str(self)
@@ -122,7 +126,7 @@ class Metadata:
         self._interval_window = interval_window
 
     def __str__(self):
-        return str({self._interval_window})
+        return "interval_window:%s" % self._interval_window
 
     def __repr__(self):
         return str(self)

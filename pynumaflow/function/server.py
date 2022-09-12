@@ -23,21 +23,26 @@ UDFMapCallable = Callable[[str, Datum, Any], Messages]
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
-
     def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = sock_path
         self._cleanup_coroutines = []
 
     def MapFn(self, request: udfunction_pb2.Datum, context):
-        """Applies a function to each datum element.
-        """
+        """Applies a function to each datum element."""
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
                 key = metadata_value
 
-        msgs = self.__map_handler(key, Datum(value=request.value, event_time=request.event_time, water_mark=request.watermark))
+        msgs = self.__map_handler(
+            key,
+            Datum(
+                value=request.value,
+                event_time=request.event_time.ToDatetime(),
+                water_mark=request.watermark.ToDatetime(),
+            ),
+        )
 
         datum_list = []
         for msg in msgs.items():
@@ -46,24 +51,24 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.DatumList(elements=datum_list)
 
     def ReduceFn(self, request_iterator, context):
-        """Applies a reduce function to a datum stream.
-        """
+        """Applies a reduce function to a datum stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def IsReady(self, request, context):
-        """IsReady is the heartbeat endpoint for gRPC.
-        """
+        """IsReady is the heartbeat endpoint for gRPC."""
         return udfunction_pb2.ReadyResponse(ready=True)
 
     async def serve(self) -> None:
         uds_addresses = [self.sock_path]
         server = grpc.aio.server()
-        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(UserDefinedFunctionServicer(self.__map_handler), server)
+        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
+            UserDefinedFunctionServicer(self.__map_handler), server
+        )
         for uds_address in uds_addresses:
             server.add_insecure_port(uds_address)
-            _LOGGER.info('Server listening on: %s', uds_address)
+            _LOGGER.info("Server listening on: %s", uds_address)
         await server.start()
 
         async def server_graceful_shutdown():
@@ -72,6 +77,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             # grace period, the server won't accept new connections and allow
             # existing RPCs to continue within the grace period.
             await server.stop(5)
+
         self._cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
@@ -82,4 +88,3 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         finally:
             loop.run_until_complete(*self._cleanup_coroutines)
             loop.close()
-

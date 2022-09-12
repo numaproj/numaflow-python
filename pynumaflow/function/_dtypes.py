@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime
 from typing import TypeVar, Type, List
 
 DROP = b"U+005C__DROP__"
@@ -74,8 +74,7 @@ class Messages:
 
 
 class Datum:
-
-    def __init__(self, value: bytes, event_time: time, water_mark: time):
+    def __init__(self, value: bytes, event_time: datetime, water_mark: datetime):
         self._value = value or b""
         self._event_time = event_time
         self._water_mark = water_mark
@@ -97,8 +96,7 @@ class Datum:
 
 
 class IntervalWindow:
-
-    def __init__(self, start: time, end: time):
+    def __init__(self, start: datetime, end: datetime):
         self._start = start
         self._end = end
 

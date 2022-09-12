@@ -9,7 +9,7 @@ from pynumaflow.function._dtypes import (
 
 
 def mock_message():
-    msg = bytes('test_mock_message', encoding='utf-8')
+    msg = bytes("test_mock_message", encoding="utf-8")
     return msg
 
 

@@ -2,7 +2,13 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional, Union as _Union, List
+from typing import (
+    ClassVar as _ClassVar,
+    Mapping as _Mapping,
+    Optional as _Optional,
+    Union as _Union,
+    List,
+)
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -34,7 +40,13 @@ class Datum(_message.Message):
     value: bytes
     event_time: _timestamp_pb2.Timestamp
     watermark: _timestamp_pb2.Timestamp
-    def __init__(self, key: _Optional[str], value: _Optional[bytes], event_time: _Optional[_timestamp_pb2.Timestamp] = ..., watermark: _Optional[_timestamp_pb2.Timestamp] = ...) -> None: ...
+    def __init__(
+        self,
+        key: _Optional[str],
+        value: _Optional[bytes],
+        event_time: _Optional[_timestamp_pb2.Timestamp] = ...,
+        watermark: _Optional[_timestamp_pb2.Timestamp] = ...,
+    ) -> None: ...
 
 class DatumList(_message.Message):
     __slots__ = ["elements"]

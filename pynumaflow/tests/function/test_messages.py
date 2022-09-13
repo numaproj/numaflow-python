@@ -93,6 +93,15 @@ class TestMessages(unittest.TestCase):
             self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
             self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
 
+    def test_dump(self):
+        msgs = Messages()
+        msgs.append(self.mock_message_object())
+        msgs.append(self.mock_message_object())
+        self.assertEqual(
+            "[{b'U+005C__ALL__': b'test_mock_message'}, {b'U+005C__ALL__': b'test_mock_message'}]",
+            msgs.dumps(),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

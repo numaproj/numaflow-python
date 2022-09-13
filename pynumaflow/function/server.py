@@ -44,6 +44,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     >>> grpc_server = UserDefinedFunctionServicer(map_handler)
     >>> grpc_server.start()
     """
+
     def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = sock_path

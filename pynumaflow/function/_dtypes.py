@@ -74,7 +74,8 @@ class Messages:
 
 
 class Datum:
-    """ Defines the important information for the event. """
+    """Defines the important information for the event."""
+
     def __init__(self, value: bytes, event_time: datetime, watermark: datetime):
         self._value = value or b""
         if not isinstance(event_time, datetime):
@@ -95,20 +96,21 @@ class Datum:
         return str(self)
 
     def value(self):
-        """ Returns the value of the event. """
+        """Returns the value of the event."""
         return self._value
 
     def event_time(self):
-        """ Returns the event time of the event. """
+        """Returns the event time of the event."""
         return self._event_time
 
     def watermark(self):
-        """ Returns the watermark of the event. """
+        """Returns the watermark of the event."""
         return self._watermark
 
 
 class IntervalWindow:
-    """ Defines the start and end of the interval window for the event. """
+    """Defines the start and end of the interval window for the event."""
+
     def __init__(self, start: datetime, end: datetime):
         self._start = start
         self._end = end
@@ -120,16 +122,17 @@ class IntervalWindow:
         return str(self)
 
     def start(self):
-        """ Returns the start point of the interval window. """
+        """Returns the start point of the interval window."""
         return self._start
 
     def end(self):
-        """ Returns the end point of the interval window. """
+        """Returns the end point of the interval window."""
         return self._end
 
 
 class Metadata:
-    """ Defines the metadata for the event. """
+    """Defines the metadata for the event."""
+
     def __init__(self, interval_window: IntervalWindow):
         self._interval_window = interval_window
 
@@ -140,5 +143,5 @@ class Metadata:
         return str(self)
 
     def interval_window(self):
-        """ Returns the interval window for the event. """
+        """Returns the interval window for the event."""
         return self._interval_window

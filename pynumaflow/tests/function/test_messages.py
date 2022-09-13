@@ -76,9 +76,12 @@ class TestMessages(unittest.TestCase):
         mock_obj = Messages()
         msg = self.mock_message_object()
         mock_obj.append(msg)
+        # will be dropped
+        mock_obj.append(Message(ALL, bytes()))
         true_obj = Messages.as_forward_all(mock_message())
         self.assertEqual(type(mock_obj), type(true_obj))
-        for i in range(len(mock_obj.items())):
+        self.assertEqual(len(mock_obj.items())-1, len(true_obj.items()))
+        for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
             self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
             self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)

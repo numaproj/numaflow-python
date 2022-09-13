@@ -54,14 +54,6 @@ class TestServer(unittest.TestCase):
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
-    async def test_start(self):
-        # TODO: not sure if this is the correct way to test..
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            server = UserDefinedFunctionServicer(
-                map_handler, sock_path="unix://%s/numaflow-test.sock" % tmp_dir
-            )
-            server.start()
-
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(
             method_descriptor=(

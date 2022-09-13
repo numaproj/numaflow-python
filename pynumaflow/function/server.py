@@ -23,6 +23,27 @@ UDFMapCallable = Callable[[str, Datum, Any], Messages]
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
+    """
+    Provides an interface to write a User Defined Function (UDFunction)
+    which will be exposed over gRPC.
+
+    Args:
+        map_handler: Function callable following the type signature of UDFMapCallable
+        sock_path: Path to the UNIX Domain Socket
+
+    Example invocation:
+    >>> from pynumaflow.function import Messages, Message, Datum
+    >>> from pynumaflow.function.server import UserDefinedFunctionServicer
+    >>> def map_handler(key: str, datum: Datum) -> Messages:
+    ...   val = datum.value()
+    ...   _ = datum.event_time()
+    ...   _ = datum.watermark()
+    ...   messages = Messages()
+    ...   messages.append(Message.to_vtx(key, val))
+    ...   return messages
+    >>> grpc_server = UserDefinedFunctionServicer(map_handler)
+    >>> grpc_server.start()
+    """
     def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = sock_path
@@ -60,7 +81,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         """IsReady is the heartbeat endpoint for gRPC."""
         return udfunction_pb2.ReadyResponse(ready=True)
 
-    async def serve(self) -> None:
+    async def __serve(self) -> None:
         uds_addresses = [self.sock_path]
         server = grpc.aio.server()
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
@@ -82,9 +103,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         await server.wait_for_termination()
 
     def start(self) -> None:
+        """Starts the server on the given UNIX socket."""
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(self.serve())
+            loop.run_until_complete(self.__serve())
         finally:
             loop.run_until_complete(*self._cleanup_coroutines)
             loop.close()

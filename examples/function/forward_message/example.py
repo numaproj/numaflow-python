@@ -12,5 +12,5 @@ def map_handler(key: str, datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpcServer = UserDefinedFunctionServicer(map_handler)
-    grpcServer.start()
+    grpc_server = UserDefinedFunctionServicer(map_handler)
+    grpc_server.start()

@@ -101,7 +101,10 @@ class TestServer(unittest.TestCase):
                     "MapFn"
                 ]
             ),
-            invocation_metadata={(DATUM_KEY, "test")},
+            invocation_metadata={
+                (DATUM_KEY, "test"),
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
             request=request,
             timeout=1,
         )

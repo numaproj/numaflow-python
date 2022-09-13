@@ -79,10 +79,10 @@ class Datum:
     def __init__(self, value: bytes, event_time: datetime, watermark: datetime):
         self._value = value or b""
         if not isinstance(event_time, datetime):
-            raise TypeError("wrong data type for Datum.event_time")
+            raise TypeError(f"Wrong data type: {type(event_time)} for Datum.event_time")
         self._event_time = event_time
         if not isinstance(watermark, datetime):
-            raise TypeError("wrong data type for Datum.watermark")
+            raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
 
     def __str__(self):

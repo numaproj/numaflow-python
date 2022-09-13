@@ -67,7 +67,7 @@ class Messages:
         return msgs
 
     def dumps(self) -> str:
-        return self.__str__()
+        return str(self)
 
     def loads(self) -> Ms:
         pass

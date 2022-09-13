@@ -82,14 +82,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:
-        uds_addresses = [self.sock_path]
         server = grpc.aio.server()
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
             UserDefinedFunctionServicer(self.__map_handler), server
         )
-        for uds_address in uds_addresses:
-            server.add_insecure_port(uds_address)
-            _LOGGER.info("Server listening on: %s", uds_address)
+        server.add_insecure_port(self.sock_path)
+        _LOGGER.info("Server listening on: %s", self.sock_path)
         await server.start()
 
         async def server_graceful_shutdown():

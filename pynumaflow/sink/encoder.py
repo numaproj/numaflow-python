@@ -6,13 +6,13 @@ from typing import Dict, Any
 def msgpack_encoding(obj) -> Dict[str, Any]:
     """
     Custom callable for msgpack to deal with types
-    involving User Defined Funtions and Sinks.
+    involving User Defined Sinks.
 
     Args:
         obj: Object to encode
 
     Returns:
-        Dictionary respresentation of the object
+        Dictionary representation of the object
     """
     from pynumaflow.sink import Response, Message as UDSinkMessage
 
@@ -25,7 +25,7 @@ def msgpack_encoding(obj) -> Dict[str, Any]:
 
 class NumaflowJSONEncoder(json.JSONEncoder):
     """
-    Custom JSON encoder to deal with types involving User Defined Funtions and Sinks.
+    Custom JSON encoder to deal with types involving User Defined Sinks.
     """
 
     def default(self, obj):

@@ -118,6 +118,37 @@ class TestServer(unittest.TestCase):
         )
         self.assertEqual(code, StatusCode.OK)
 
+    def test_reduce_fn(self):
+        # TODO: update test after reduce fn is implemented
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.Datum(
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        rpc = self.test_server.invoke_stream_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "ReduceFn"
+                ]
+            ),
+            invocation_metadata={(DATUM_KEY, "test")},
+            timeout=1,
+        )
+
+        rpc.send_request(request)
+        rpc.requests_closed()
+
+        response, metadata, code, details = rpc.termination()
+        self.assertIsNone(response)
+        self.assertEqual(code, StatusCode.UNKNOWN)
+        self.assertEqual("Exception calling application: Method not implemented!", details)
+
 
 if __name__ == "__main__":
     unittest.main()

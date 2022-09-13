@@ -61,7 +61,9 @@ class TestServer(unittest.TestCase):
     async def test_start(self):
         # TODO: not sure if this is the correct way to test..
         with tempfile.TemporaryDirectory() as tmp_dir:
-            server = UserDefinedFunctionServicer(map_handler, sock_path="unix://%s/numaflow-test.sock" % tmp_dir)
+            server = UserDefinedFunctionServicer(
+                map_handler, sock_path="unix://%s/numaflow-test.sock" % tmp_dir
+            )
             server.start()
 
     def test_is_ready(self):

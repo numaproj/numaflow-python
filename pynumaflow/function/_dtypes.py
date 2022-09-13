@@ -86,23 +86,23 @@ class Datum:
         self._watermark = watermark
 
     def __str__(self):
-        return "value:%s event_time:%s watermark:%s" % (
-            self._value.decode("utf-8"),
-            str(self._event_time),
-            str(self._watermark),
-        )
+        value_string = self._value.decode("utf-8")
+        return f"value: {value_string}, event_time: {str(self._event_time)}, watermark: {str(self._watermark)}"
 
     def __repr__(self):
         return str(self)
 
+    @property
     def value(self):
         """Returns the value of the event."""
         return self._value
 
+    @property
     def event_time(self):
         """Returns the event time of the event."""
         return self._event_time
 
+    @property
     def watermark(self):
         """Returns the watermark of the event."""
         return self._watermark
@@ -116,15 +116,17 @@ class IntervalWindow:
         self._end = end
 
     def __str__(self):
-        return "start:%s end:%s" % (str(self._start), str(self._end))
+        return f"start: {str(self._start)}, end: {str(self._end)}"
 
     def __repr__(self):
         return str(self)
 
+    @property
     def start(self):
         """Returns the start point of the interval window."""
         return self._start
 
+    @property
     def end(self):
         """Returns the end point of the interval window."""
         return self._end
@@ -137,11 +139,12 @@ class Metadata:
         self._interval_window = interval_window
 
     def __str__(self):
-        return "interval_window:%s" % self._interval_window
+        return f"interval_window: {self._interval_window}"
 
     def __repr__(self):
         return str(self)
 
+    @property
     def interval_window(self):
         """Returns the interval window for the event."""
         return self._interval_window

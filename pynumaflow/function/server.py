@@ -2,10 +2,8 @@ import asyncio
 import logging
 from os import environ
 
-from pynumaflow.function import udfunction_pb2, Datum
-from pynumaflow.function import udfunction_pb2_grpc
-
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from pynumaflow.function.generated import udfunction_pb2
+from pynumaflow.function.generated import udfunction_pb2_grpc
 
 import grpc
 from typing import Callable, Any
@@ -14,7 +12,7 @@ from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
 )
-from pynumaflow.function import Messages
+from pynumaflow.function import Messages, Datum
 
 if environ.get("PYTHONDEBUG"):
     logging.basicConfig(level=logging.DEBUG)

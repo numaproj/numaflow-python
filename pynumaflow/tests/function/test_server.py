@@ -1,8 +1,4 @@
-import json
-import multiprocessing
-import os
 import tempfile
-import time
 import unittest
 from datetime import datetime, timezone
 
@@ -13,7 +9,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 
 
 from pynumaflow._constants import DATUM_KEY
-from pynumaflow.function import udfunction_pb2_grpc, udfunction_pb2
+from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.server import UserDefinedFunctionServicer
 from pynumaflow.function._dtypes import (
     Message,

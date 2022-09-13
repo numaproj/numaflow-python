@@ -16,8 +16,6 @@ def msgpack_encoding(obj) -> Dict[str, Any]:
     """
     from pynumaflow.sink import Response, Message as UDSinkMessage
 
-    if isinstance(obj, (list, tuple)):
-        return [msgpack_encoding(item) for item in obj]
     if isinstance(obj, UDSinkMessage):
         obj = {"ID": obj.id, "Payload": obj.payload}
     if isinstance(obj, Response):

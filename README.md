@@ -24,11 +24,7 @@ if __name__ == "__main__":
     grpcServer.start()
 ```
 
-### Sample Image (WIP)
-
-A sample UDF [Dockerfile](examples/function/udfproj/Dockerfile) is provided 
-under [examples](examples/function/udfproj).
-
+### Sample Image (TODO)
 
 ## Implement a User Defined Sink (UDSink)
 

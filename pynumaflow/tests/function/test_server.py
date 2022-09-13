@@ -19,11 +19,11 @@ from pynumaflow.function._dtypes import (
 
 
 def map_handler(key: str, datum: Datum) -> Messages:
-    val = datum.value()
+    val = datum.value
     msg = "payload:%s event_time:%s watermark:%s" % (
         val.decode("utf-8"),
-        datum.event_time(),
-        datum.watermark(),
+        datum.event_time,
+        datum.watermark,
     )
     val = bytes(msg, encoding="utf-8")
     messages = Messages()

@@ -58,7 +58,7 @@ class TestDatum(unittest.TestCase):
 
     def test_value(self):
         d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
-        self.assertEqual(mock_message(), d.value())
+        self.assertEqual(mock_message(), d.value)
         self.assertEqual(
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
@@ -67,30 +67,30 @@ class TestDatum(unittest.TestCase):
 
     def test_event_time(self):
         d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
-        self.assertEqual(mock_event_time(), d.event_time())
+        self.assertEqual(mock_event_time(), d.event_time)
 
     def test_watermark(self):
         d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
-        self.assertEqual(mock_watermark(), d.watermark())
+        self.assertEqual(mock_watermark(), d.watermark)
 
 
 class TestIntervalWindow(unittest.TestCase):
     def test_start(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
-        self.assertEqual(mock_start_time(), i.start())
+        self.assertEqual(mock_start_time(), i.start)
         self.assertEqual("start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00", str(i))
 
     def test_end(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
-        self.assertEqual(mock_end_time(), i.end())
+        self.assertEqual(mock_end_time(), i.end)
 
 
 class TestMetadata(unittest.TestCase):
     def test_interval_window(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
         m = Metadata(interval_window=i)
-        self.assertEqual(type(i), type(m.interval_window()))
-        self.assertEqual(i, m.interval_window())
+        self.assertEqual(type(i), type(m.interval_window))
+        self.assertEqual(i, m.interval_window)
         self.assertEqual(
             "interval_window: start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00",
             str(m),

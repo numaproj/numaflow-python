@@ -3,9 +3,9 @@ from pynumaflow.function.server import UserDefinedFunctionServicer
 
 
 def map_handler(key: str, datum: Datum) -> Messages:
-    val = datum.value()
-    _ = datum.event_time()
-    _ = datum.watermark()
+    val = datum.value
+    _ = datum.event_time
+    _ = datum.watermark
     messages = Messages()
     messages.append(Message.to_vtx(key, val))
     return messages

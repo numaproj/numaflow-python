@@ -4,10 +4,10 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 
 from pynumaflow.function._dtypes import (
-    Datum,
     IntervalWindow,
     Metadata,
 )
+from pynumaflow.datum import Datum
 
 
 def mock_message():

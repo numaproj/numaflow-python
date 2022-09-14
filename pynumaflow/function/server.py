@@ -5,8 +5,10 @@ from os import environ
 from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
 
+from google.protobuf import empty_pb2 as _empty_pb2
+
 import grpc
-from typing import Callable, Any
+from typing import Callable, Any, Iterator
 
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
@@ -50,7 +52,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.sock_path = sock_path
         self._cleanup_coroutines = []
 
-    def MapFn(self, request: udfunction_pb2.Datum, context):
+    def MapFn(self, request: udfunction_pb2.Datum, context) -> udfunction_pb2.DatumList:
         """Applies a function to each datum element."""
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
@@ -72,13 +74,14 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return udfunction_pb2.DatumList(elements=datum_list)
 
-    def ReduceFn(self, request_iterator, context):
+    def ReduceFn(self, request_iterator: Iterator[Datum], context) -> udfunction_pb2.DatumList:
         """Applies a reduce function to a datum stream."""
+        # TODO: implement Reduce function
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
-    def IsReady(self, request, context):
+    def IsReady(self, request: _empty_pb2.Empty, context) -> udfunction_pb2.ReadyResponse:
         """IsReady is the heartbeat endpoint for gRPC."""
         return udfunction_pb2.ReadyResponse(ready=True)
 

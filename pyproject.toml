@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pynumaflow"
-version = "0.1.1"
+version = "0.2.0"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = ["NumaFlow Developers"]
 readme = "README.md"

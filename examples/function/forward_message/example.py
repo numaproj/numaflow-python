@@ -1,5 +1,5 @@
-from pynumaflow.function import Messages, Message
 from pynumaflow.datum import Datum
+from pynumaflow.function import Messages, Message
 from pynumaflow.function.server import UserDefinedFunctionServicer
 
 

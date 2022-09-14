@@ -24,7 +24,6 @@ aiohttp = "^3.8.1"
 msgpack = "^1.0.3"
 grpcio = "^1.48.1"
 grpcio-tools = "^1.48.1"
-protobuf = "^3.20.1"
 grpcio-testing = "^1.48.1"
 
 [tool.poetry.dev-dependencies]

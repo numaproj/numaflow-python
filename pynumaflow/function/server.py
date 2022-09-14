@@ -52,7 +52,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.sock_path = sock_path
         self._cleanup_coroutines = []
 
-    def MapFn(self, request: udfunction_pb2.Datum, context) -> udfunction_pb2.DatumList:
+    def MapFn(self, request: udfunction_pb2.Datum, context: grpc.ServicerContext) -> udfunction_pb2.DatumList:
         """Applies a function to each datum element."""
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():

@@ -64,6 +64,10 @@ class TestDatum(unittest.TestCase):
             "event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
             str(d),
         )
+        self.assertEqual(
+            "value: test_mock_message, event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
+            repr(d),
+        )
 
     def test_event_time(self):
         d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
@@ -79,6 +83,9 @@ class TestIntervalWindow(unittest.TestCase):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
         self.assertEqual(mock_start_time(), i.start)
         self.assertEqual("start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00", str(i))
+        self.assertEqual(
+            "start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00", repr(i)
+        )
 
     def test_end(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
@@ -94,6 +101,10 @@ class TestMetadata(unittest.TestCase):
         self.assertEqual(
             "interval_window: start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00",
             str(m),
+        )
+        self.assertEqual(
+            "interval_window: start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00",
+            repr(m),
         )
 
 

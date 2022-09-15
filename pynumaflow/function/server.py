@@ -58,7 +58,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def MapFn(
         self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
-        """Applies a function to each datum element."""
+        """
+        Applies a function to each datum element.
+        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        """
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
@@ -82,7 +85,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def ReduceFn(
         self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
-        """Applies a reduce function to a datum stream."""
+        """
+        Applies a reduce function to a datum stream.
+        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        """
         # TODO: implement Reduce function
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -91,7 +97,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
-        """IsReady is the heartbeat endpoint for gRPC."""
+        """
+        IsReady is the heartbeat endpoint for gRPC.
+        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        """
         return udfunction_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:

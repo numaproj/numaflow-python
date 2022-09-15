@@ -15,7 +15,7 @@ from pynumaflow._constants import (
     DATUM_KEY,
 )
 from pynumaflow.function import Messages
-from pynumaflow.datum import Datum
+from pynumaflow.function._dtypes import Datum
 from pynumaflow.types import NumaflowServicerContext
 
 if environ.get("PYTHONDEBUG"):
@@ -36,8 +36,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         sock_path: Path to the UNIX Domain Socket
 
     Example invocation:
-    >>> from pynumaflow.datum import Datum
-    >>> from pynumaflow.function import Messages, Message
+    >>> from pynumaflow.function import Messages, Message, Datum
     >>> from pynumaflow.function.server import UserDefinedFunctionServicer
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value

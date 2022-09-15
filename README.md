@@ -6,8 +6,8 @@ and [UDSinks](https://numaproj.github.io/numaflow/sinks/user-defined-sinks/) in 
 ## Implement a User Defined Function (UDF)
 
 ```python
-from pynumaflow.datum import Datum
-from pynumaflow.function import Messages, Message
+
+from pynumaflow.function import Messages, Message, Datum
 from pynumaflow.function.server import UserDefinedFunctionServicer
 
 

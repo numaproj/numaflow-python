@@ -11,3 +11,6 @@ coverage:
 
 ignore:
 - "examples/"
+- "pynumaflow/function/generated/udfunction_pb2.py"
+- "pynumaflow/function/_udfunction_pb2.pyi"
+- "pynumaflow/function/generated/udfunction_pb2_grpc.py"

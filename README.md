@@ -6,29 +6,26 @@ and [UDSinks](https://numaproj.github.io/numaflow/sinks/user-defined-sinks/) in 
 ## Implement a User Defined Function (UDF)
 
 ```python
-from pynumaflow.function import Message, Messages, HTTPHandler
-import random
+
+from pynumaflow.function import Messages, Message, Datum
+from pynumaflow.function.server import UserDefinedFunctionServicer
 
 
-def my_handler(key: bytes, value: bytes, _) -> Messages:
+def map_handler(key: str, datum: Datum) -> Messages:
+    val = datum.value
+    _ = datum.event_time
+    _ = datum.watermark
     messages = Messages()
-    if random.randint(0, 10) % 2 == 0:
-        messages.append(Message.to_all(value))
-    else:
-        messages.append(Message.to_drop())
+    messages.append(Message.to_vtx(key, val))
     return messages
 
 
 if __name__ == "__main__":
-    handler = HTTPHandler(my_handler)
-    handler.start()
+    grpc_server = UserDefinedFunctionServicer(map_handler)
+    grpc_server.start()
 ```
 
-### Sample Image
-
-A sample UDF [Dockerfile](examples/function/udfproj/Dockerfile) is provided 
-under [examples](examples/function/udfproj).
-
+### Sample Image (TODO)
 
 ## Implement a User Defined Sink (UDSink)
 

@@ -5,7 +5,7 @@ from typing import List, TypeVar, Type, Optional
 import msgpack
 
 from pynumaflow._constants import APPLICATION_JSON, APPLICATION_MSG_PACK
-from pynumaflow.encoder import NumaflowJSONEncoder, msgpack_encoding
+from pynumaflow.sink.encoder import NumaflowJSONEncoder, msgpack_encoding
 from pynumaflow.exceptions import MarshalError
 
 R = TypeVar("R", bound="Response")

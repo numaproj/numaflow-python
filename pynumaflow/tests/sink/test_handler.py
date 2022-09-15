@@ -7,8 +7,8 @@ import msgpack
 from aiohttp.test_utils import AioHTTPTestCase
 
 from pynumaflow._constants import APPLICATION_JSON, APPLICATION_MSG_PACK
-from pynumaflow.decoder import msgpack_decoder
-from pynumaflow.encoder import msgpack_encoding, NumaflowJSONEncoder
+from pynumaflow.sink.decoder import msgpack_decoder
+from pynumaflow.sink.encoder import msgpack_encoding, NumaflowJSONEncoder
 from pynumaflow.sink import HTTPSinkHandler, Responses, Response, Message
 
 

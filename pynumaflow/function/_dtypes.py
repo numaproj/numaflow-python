@@ -81,7 +81,7 @@ class IntervalWindow:
         self._end = end
 
     def __str__(self):
-        return f"start: {str(self._start)}, end: {str(self._end)}"
+        return f"start: {self._start}, end: {self._end}"
 
     def __repr__(self):
         return str(self)

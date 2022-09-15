@@ -74,7 +74,20 @@ class Messages:
 
 
 class Datum:
-    """Defines the important information for the event."""
+    """
+    Class to define the important information for the event.
+    Args:
+        value: the payload of the event.
+        event_time: the event time of the event.
+        watermark: the watermark of the event.
+    >>> # Example usage
+    >>> from pynumaflow.function import Datum
+    >>> from datetime import datetime, timezone
+    >>> payload = bytes("test_mock_message", encoding="utf-8")
+    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
+    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
+    >>> d = Datum(value=payload, event_time=t1, watermark=t2)
+    """
 
     def __init__(self, value: bytes, event_time: datetime, watermark: datetime):
         self._value = value or b""

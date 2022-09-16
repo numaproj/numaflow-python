@@ -2,8 +2,6 @@ import asyncio
 import logging
 from os import environ
 
-from pynumaflow.function.generated import udfunction_pb2
-from pynumaflow.function.generated import udfunction_pb2_grpc
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -61,19 +59,20 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         The camel case function name comes from the generated udsink_pb2_grpc.py file.
         """
 
+        self.__sink_handler(request.value)
+
         msgs = self.__sink_handler(
             Datum(
+                sink_msg_id=request.id,
                 value=request.value,
-                event_time=request.event_time.event_time.ToDatetime(),
-                watermark=request.watermark.watermark.ToDatetime(),
             ),
         )
 
         datum_list = []
         for msg in msgs.items():
-            datum_list.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+            datum_list.append(udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err))
 
-        return udfunction_pb2.DatumList(elements=datum_list)
+        return udsink_pb2.ResponseList(responses=datum_list)
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

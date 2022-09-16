@@ -13,12 +13,6 @@ Rs = TypeVar("Rs", bound="Responses")
 
 
 @dataclass
-class Message:
-    id: str
-    payload: bytes
-
-
-@dataclass
 class Response:
     id: str
     success: bool

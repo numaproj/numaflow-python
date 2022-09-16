@@ -31,8 +31,7 @@ class Watermark(_message.Message):
     def __init__(self, watermark: _Optional[_timestamp_pb2.Timestamp] = ...) -> None: ...
 
 class Datum(_message.Message):
-    __slots__ = ["key", "value", "event_time", "watermark", "id"]
-    KEY_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["value", "event_time", "watermark", "id"]
     VALUE_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_TIME_FIELD_NUMBER: _ClassVar[int]

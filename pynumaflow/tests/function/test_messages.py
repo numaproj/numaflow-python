@@ -63,6 +63,11 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(len(mock_obj), len(msgs.items()))
         self.assertEqual(mock_obj[0]["Key"], msgs.items()[0]["Key"])
         self.assertEqual(mock_obj[0]["Value"], msgs.items()[0]["Value"])
+        self.assertEqual(
+            "[{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message'}, "
+            "{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message'}]",
+            repr(msgs),
+        )
 
     def test_append(self):
         msgs = Messages()

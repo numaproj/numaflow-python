@@ -36,18 +36,15 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         sock_path: Path to the UNIX Domain Socket
 
     Example invocation:
-    >>> from pynumaflow.function import Messages, Message, Datum
-    >>> from pynumaflow.function.server import UserDefinedFunctionServicer
-    >>> def sink_handler(datum_list: List[Datum]) -> Messages:
-    ...   for d in datum_list:
-    ...     id = datum.id
-    ...     val = datum.value
-    ...   _ = datum.event_time
-    ...   _ = datum.watermark
-    ...   messages = Messages()
-    ...   messages.append(Message.to_vtx(key, val))
-    ...   return messages
-    >>> grpc_server = UserDefinedFunctionServicer(map_handler)
+    >>> from typing import List
+    >>> from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
+    >>> def udsink_handler(datum_list: List[Datum]) -> Responses:
+    ...   responses = Responses()
+    ...   for msg in datum_list:
+    ...     print("User Defined Sink", msg)
+    ...     responses.append(Response.as_success(msg.id))
+    ...   return responses
+    >>> grpc_server = UserDefinedSinkServicer(udsink_handler)
     >>> grpc_server.start()
     """
 

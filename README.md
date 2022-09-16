@@ -7,8 +7,7 @@ and [UDSinks](https://numaproj.github.io/numaflow/sinks/user-defined-sinks/) in 
 
 ```python
 
-from pynumaflow.function import Messages, Message, Datum
-from pynumaflow.function.server import UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
 def map_handler(key: str, datum: Datum) -> Messages:

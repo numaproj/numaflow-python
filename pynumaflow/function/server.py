@@ -35,8 +35,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         sock_path: Path to the UNIX Domain Socket
 
     Example invocation:
-    >>> from pynumaflow.function import Messages, Message, Datum
-    >>> from pynumaflow.function.server import UserDefinedFunctionServicer
+    >>> from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time

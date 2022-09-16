@@ -59,20 +59,15 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         The camel case function name comes from the generated udsink_pb2_grpc.py file.
         """
 
-        self.__sink_handler(request.value)
+        msgs = self.__sink_handler(request.elements)
 
-        msgs = self.__sink_handler(
-            Datum(
-                sink_msg_id=request.id,
-                value=request.value,
-            ),
-        )
-
-        datum_list = []
+        response_list = []
         for msg in msgs.items():
-            datum_list.append(udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err))
+            response_list.append(
+                udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err)
+            )
 
-        return udsink_pb2.ResponseList(responses=datum_list)
+        return udsink_pb2.ResponseList(responses=response_list)
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

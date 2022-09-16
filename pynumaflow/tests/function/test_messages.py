@@ -107,6 +107,11 @@ class TestMessages(unittest.TestCase):
             msgs.dumps(),
         )
 
+    def test_load(self):
+        # to improve codecov
+        msgs = Messages()
+        msgs.loads()
+
 
 if __name__ == "__main__":
     unittest.main()

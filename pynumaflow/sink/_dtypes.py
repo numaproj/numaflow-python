@@ -60,7 +60,8 @@ class Datum:
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> d = Datum(value=payload, event_time=t1, watermark=t2)
+    >>> msg_id = "test_id"
+    >>> d = Datum(sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
     """
 
     def __init__(self, sink_msg_id: str, value: bytes, event_time: datetime, watermark: datetime):

@@ -67,6 +67,15 @@ class TestDatum(unittest.TestCase):
             repr(d),
         )
 
+    def test_id(self):
+        d = Datum(
+            sink_msg_id="test_id_0",
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
+        self.assertEqual("test_id_0", d.id)
+
     def test_event_time(self):
         d = Datum(
             sink_msg_id="test_id_0",

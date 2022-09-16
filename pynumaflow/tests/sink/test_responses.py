@@ -1,7 +1,4 @@
 import unittest
-
-from pynumaflow._constants import APPLICATION_JSON, APPLICATION_MSG_PACK
-from pynumaflow.exceptions import MarshalError
 from pynumaflow.sink import Response, Responses
 
 

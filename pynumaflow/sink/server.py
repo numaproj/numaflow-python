@@ -9,7 +9,7 @@ import grpc
 from typing import Callable, Any, Iterator, List
 
 from pynumaflow._constants import (
-    FUNCTION_SOCK_PATH,
+    SINK_SOCK_PATH,
     DATUM_KEY,
 )
 from pynumaflow.sink import Response, Responses, Datum
@@ -46,7 +46,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     >>> grpc_server.start()
     """
 
-    def __init__(self, sink_handler: UDSinkCallable, sock_path=FUNCTION_SOCK_PATH):
+    def __init__(self, sink_handler: UDSinkCallable, sock_path=SINK_SOCK_PATH):
         self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = sock_path
         self._cleanup_coroutines = []
@@ -79,7 +79,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The camel case function name comes from the generated udsink_pb2_grpc.py file.
         """
         return udsink_pb2.ReadyResponse(ready=True)
 

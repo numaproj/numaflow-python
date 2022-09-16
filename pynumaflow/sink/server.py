@@ -8,13 +8,14 @@ from pynumaflow.function.generated import udfunction_pb2_grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 import grpc
-from typing import Callable, Any, Iterator
+from typing import Callable, Any, Iterator, List
 
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
 )
-from pynumaflow.function import Messages, Datum
+from pynumaflow.sink import Response, Responses, Datum
+from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
 if environ.get("PYTHONDEBUG"):
@@ -22,23 +23,25 @@ if environ.get("PYTHONDEBUG"):
 
 _LOGGER = logging.getLogger(__name__)
 
-UDFMapCallable = Callable[[str, Datum, Any], Messages]
+UDSinkCallable = Callable[[List[Datum], Any], Responses]
 
 
-class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
+class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     """
-    Provides an interface to write a User Defined Function (UDFunction)
+    Provides an interface to write a User Defined Sink (UDSink)
     which will be exposed over gRPC.
 
     Args:
-        map_handler: Function callable following the type signature of UDFMapCallable
+        sink_handler: Function callable following the type signature of UDSinkCallable
         sock_path: Path to the UNIX Domain Socket
 
     Example invocation:
     >>> from pynumaflow.function import Messages, Message, Datum
     >>> from pynumaflow.function.server import UserDefinedFunctionServicer
-    >>> def map_handler(key: str, datum: Datum) -> Messages:
-    ...   val = datum.value
+    >>> def sink_handler(datum_list: List[Datum]) -> Messages:
+    ...   for d in datum_list:
+    ...     id = datum.id
+    ...     val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
     ...   messages = Messages()
@@ -48,25 +51,20 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     >>> grpc_server.start()
     """
 
-    def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH):
-        self.__map_handler: UDFMapCallable = map_handler
+    def __init__(self, sink_handler: UDSinkCallable, sock_path=FUNCTION_SOCK_PATH):
+        self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = sock_path
         self._cleanup_coroutines = []
 
-    def MapFn(
-        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
+    def SinkFn(
+        self, request: udsink_pb2.DatumList, context: NumaflowServicerContext
+    ) -> udsink_pb2.ResponseList:
         """
-        Applies a function to each datum element.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        Applies a sink function to a list of datum elements.
+        The camel case function name comes from the generated udsink_pb2_grpc.py file.
         """
-        key = ""
-        for metadata_key, metadata_value in context.invocation_metadata():
-            if metadata_key == DATUM_KEY:
-                key = metadata_value
 
-        msgs = self.__map_handler(
-            key,
+        msgs = self.__sink_handler(
             Datum(
                 value=request.value,
                 event_time=request.event_time.event_time.ToDatetime(),
@@ -80,31 +78,19 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return udfunction_pb2.DatumList(elements=datum_list)
 
-    def ReduceFn(
-        self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
-        """
-        Applies a reduce function to a datum stream.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
-        """
-        # TODO: implement Reduce function
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
-
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> udfunction_pb2.ReadyResponse:
+    ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
         The camel case function name comes from the generated udfunction_pb2_grpc.py file.
         """
-        return udfunction_pb2.ReadyResponse(ready=True)
+        return udsink_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:
         server = grpc.aio.server()
-        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
-            UserDefinedFunctionServicer(self.__map_handler), server
+        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
+            UserDefinedSinkServicer(self.__sink_handler), server
         )
         server.add_insecure_port(self.sock_path)
         _LOGGER.info("Server listening on: %s", self.sock_path)

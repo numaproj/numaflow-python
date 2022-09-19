@@ -10,7 +10,7 @@ spec:
         brokers:
         - kafka-broker:9092
         topic: input-topic
-        consumergroup: test
+        consumerGroup: test
   - name: forward-message
     udf:
       container:

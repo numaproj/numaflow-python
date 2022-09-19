@@ -86,7 +86,7 @@ class Datum:
         return self._value
 
     @property
-    def event_time(self):
+    def event_time(self) -> datetime:
         """Returns the event time of the event."""
         return self._event_time
 

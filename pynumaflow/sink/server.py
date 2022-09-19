@@ -56,7 +56,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
-        The camel case function name comes from the generated udsink_pb2_grpc.py file.
+        The pascal case function name comes from the generated udsink_pb2_grpc.py file.
         """
 
         msgs = self.__sink_handler(request.elements)

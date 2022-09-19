@@ -14,9 +14,9 @@ from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
 from pynumaflow.sink.generated import udsink_pb2
 
 
-def udsink_handler(datum_list: List[Datum]) -> Responses:
+def udsink_handler(datums: List[Datum]) -> Responses:
     responses = Responses()
-    for msg in datum_list:
+    for msg in datums:
         if "err" in msg.value.decode("utf-8"):
             responses.append(Response.as_failure(msg.id, "mock sink message error"))
         else:
@@ -73,7 +73,7 @@ class TestServer(unittest.TestCase):
         watermark_timestamp = _timestamp_pb2.Timestamp()
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-        test_datum_list = [
+        test_datums = [
             udsink_pb2.Datum(
                 id="test_id_0",
                 value=mock_message(),
@@ -88,7 +88,7 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = udsink_pb2.DatumList(elements=test_datum_list)
+        request = udsink_pb2.DatumList(elements=test_datums)
 
         method = self.test_server.invoke_unary_unary(
             method_descriptor=(

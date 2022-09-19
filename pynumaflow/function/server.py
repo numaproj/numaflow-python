@@ -73,11 +73,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             ),
         )
 
-        datum_list = []
+        datums = []
         for msg in msgs.items():
-            datum_list.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
 
-        return udfunction_pb2.DatumList(elements=datum_list)
+        return udfunction_pb2.DatumList(elements=datums)
 
     def ReduceFn(
         self, request_iterator: Iterator[Datum], context: NumaflowServicerContext

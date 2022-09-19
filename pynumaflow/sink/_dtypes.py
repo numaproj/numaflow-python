@@ -81,7 +81,7 @@ class Datum:
         return self._id
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         """Returns the value of the event."""
         return self._value
 

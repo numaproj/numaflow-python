@@ -74,7 +74,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The camel case function name comes from the generated udsink_pb2_grpc.py file.
+        The pascal case function name comes from the generated udsink_pb2_grpc.py file.
         """
         return udsink_pb2.ReadyResponse(ready=True)
 

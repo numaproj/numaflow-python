@@ -57,7 +57,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
@@ -84,7 +84,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ) -> udfunction_pb2.DatumList:
         """
         Applies a reduce function to a datum stream.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         # TODO: implement Reduce function
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -96,7 +96,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         return udfunction_pb2.ReadyResponse(ready=True)
 

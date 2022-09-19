@@ -49,7 +49,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH):
         self.__map_handler: UDFMapCallable = map_handler
-        self.sock_path = sock_path
+        self.sock_path = f"unix://{sock_path}"
         self._cleanup_coroutines = []
 
     def MapFn(

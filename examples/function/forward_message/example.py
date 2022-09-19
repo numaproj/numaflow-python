@@ -11,5 +11,5 @@ def map_handler(key: str, datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler, "unix:///tmp/numaflow-test.sock")
+    grpc_server = UserDefinedFunctionServicer(map_handler)
     grpc_server.start()

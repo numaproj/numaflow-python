@@ -2,7 +2,7 @@ from typing import List
 from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
 
 
-def udsink_handler(datum_list: List[Datum], __) -> Responses:
+def udsink_handler(datums: List[Datum], __) -> Responses:
     responses = Responses()
     for msg in datum_list:
         print("User Defined Sink", msg)

@@ -1,8 +1,9 @@
 import asyncio
 import logging
+import socket
 from os import environ
 
-
+from aiohttp import web
 from google.protobuf import empty_pb2 as _empty_pb2
 
 import grpc
@@ -48,7 +49,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
 
     def __init__(self, sink_handler: UDSinkCallable, sock_path=SINK_SOCK_PATH):
         self.__sink_handler: UDSinkCallable = sink_handler
-        self.sock_path = sock_path
+        self.sock_path = f"unix://{sock_path}"
         self._cleanup_coroutines = []
 
     def SinkFn(

@@ -2,11 +2,14 @@ from typing import List
 from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
 
 
-def udsink_handler(datums: List[Datum], __) -> Responses:
+def udsink_handler(datums: List[Datum]) -> Responses:
     responses = Responses()
     for msg in datums:
-        print("User Defined Sink", msg)
-        responses.append(Response.as_success(msg.id))
+        if "err" in msg.value.decode("utf-8"):
+            responses.append(Response.as_failure(msg.id, "mock sink message error"))
+        else:
+            print("User Defined Sink", msg)
+            responses.append(Response.as_success(msg.id))
     return responses
 
 

@@ -1,0 +1,33 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: local-kafka
+spec:
+  vertices:
+  - name: input
+    source:
+      kafka:
+        brokers:
+        - kafka-broker:9092
+        topic: input-topic
+        consumergroup: test
+  - name: json-multiplier
+    udf:
+      container:
+        args:
+        - python
+        - example.py
+        image: docker.io/library/test-python-udf:v1
+  - name: log-output
+    sink:
+      log: {}
+  - name: log-kafka-output
+    sink:
+      log: {}
+  edges:
+  - from: input
+    to: json-multiplier
+  - from: input
+    to: log-kafka-output
+  - from: json-multiplier
+    to: log-output

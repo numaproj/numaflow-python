@@ -1,5 +1,4 @@
-from pynumaflow.function import Messages, Message, Datum
-from pynumaflow.function.server import UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
 def map_handler(key: str, datum: Datum) -> Messages:

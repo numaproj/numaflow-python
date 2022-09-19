@@ -14,3 +14,6 @@ ignore:
 - "pynumaflow/function/generated/udfunction_pb2.py"
 - "pynumaflow/function/_udfunction_pb2.pyi"
 - "pynumaflow/function/generated/udfunction_pb2_grpc.py"
+- "pynumaflow/sink/generated/udsink_pb2.py"
+- "pynumaflow/sink/_udsink_pb2.pyi"
+- "pynumaflow/sink/generated/udsink_pb2_grpc.py"

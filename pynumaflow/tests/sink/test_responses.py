@@ -1,7 +1,4 @@
 import unittest
-
-from pynumaflow._constants import APPLICATION_JSON, APPLICATION_MSG_PACK
-from pynumaflow.exceptions import MarshalError
 from pynumaflow.sink import Response, Responses
 
 
@@ -24,18 +21,20 @@ class TestResponses(unittest.TestCase):
     def test_responses(self):
         self.resps.append(Response.as_success("4"))
         self.assertEqual(3, len(self.resps.items()))
+        self.assertEqual(
+            "[Response(id='2', success=True, err=None), "
+            "Response(id='3', success=False, err='RuntimeError encountered!'), "
+            "Response(id='4', success=True, err=None)]",
+            repr(self.resps),
+        )
 
-    def test_dumps_json(self):
-        resps_json = self.resps.dumps(APPLICATION_JSON)
-        self.assertTrue(resps_json)
-
-    def test_dumps_msgpack(self):
-        resps_msgpack = self.resps.dumps(APPLICATION_MSG_PACK)
-        self.assertTrue(resps_msgpack)
-
-    def test_dumps_err(self):
-        with self.assertRaises(MarshalError):
-            self.resps.dumps("random_content_type")
+    def test_dumps(self):
+        dump_str = self.resps.dumps()
+        self.assertEqual(
+            "[Response(id='2', success=True, err=None), "
+            "Response(id='3', success=False, err='RuntimeError encountered!')]",
+            dump_str,
+        )
 
 
 if __name__ == "__main__":

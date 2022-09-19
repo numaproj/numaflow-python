@@ -14,8 +14,7 @@ from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
 )
-from pynumaflow.function import Messages
-from pynumaflow.function._dtypes import Datum
+from pynumaflow.function import Messages, Datum
 from pynumaflow.types import NumaflowServicerContext
 
 if environ.get("PYTHONDEBUG"):
@@ -36,8 +35,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         sock_path: Path to the UNIX Domain Socket
 
     Example invocation:
-    >>> from pynumaflow.function import Messages, Message, Datum
-    >>> from pynumaflow.function.server import UserDefinedFunctionServicer
+    >>> from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
@@ -59,7 +57,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
@@ -75,18 +73,18 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             ),
         )
 
-        datum_list = []
+        datums = []
         for msg in msgs.items():
-            datum_list.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
 
-        return udfunction_pb2.DatumList(elements=datum_list)
+        return udfunction_pb2.DatumList(elements=datums)
 
     def ReduceFn(
         self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a reduce function to a datum stream.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         # TODO: implement Reduce function
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -98,7 +96,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The camel case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         return udfunction_pb2.ReadyResponse(ready=True)
 

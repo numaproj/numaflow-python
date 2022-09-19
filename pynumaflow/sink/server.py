@@ -63,9 +63,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
 
         responses = []
         for msg in msgs.items():
-            responses.append(
-                udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err)
-            )
+            responses.append(udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err))
 
         return udsink_pb2.ResponseList(responses=responses)
 

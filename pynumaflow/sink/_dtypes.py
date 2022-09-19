@@ -76,7 +76,7 @@ class Datum:
         return str(self)
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Returns the id of the event."""
         return self._id
 

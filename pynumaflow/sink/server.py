@@ -5,7 +5,7 @@ from os import environ
 from google.protobuf import empty_pb2 as _empty_pb2
 
 import grpc
-from typing import Callable, Any,  List
+from typing import Callable, Any, List
 
 from pynumaflow._constants import (
     SINK_SOCK_PATH,

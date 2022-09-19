@@ -61,13 +61,13 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
 
         msgs = self.__sink_handler(request.elements)
 
-        response_list = []
+        responses = []
         for msg in msgs.items():
-            response_list.append(
+            responses.append(
                 udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err)
             )
 
-        return udsink_pb2.ResponseList(responses=response_list)
+        return udsink_pb2.ResponseList(responses=responses)
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

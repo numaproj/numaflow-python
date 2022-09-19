@@ -91,6 +91,6 @@ class Datum:
         return self._event_time
 
     @property
-    def watermark(self):
+    def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark

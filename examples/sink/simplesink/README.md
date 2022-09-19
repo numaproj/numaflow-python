@@ -7,5 +7,5 @@
 
 2. Apply the pipeline
    ```shell
-    kubectl apply -f pipeline-numaflow.yaml
+   kubectl apply -f pipeline-numaflow.yaml
    ```

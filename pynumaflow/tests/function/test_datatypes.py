@@ -42,7 +42,8 @@ class TestDatum(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             Datum(value=mock_message(), event_time=ts, watermark=ts)
         self.assertEqual(
-            "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> for Datum.event_time",
+            "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
+            "for Datum.event_time",
             str(context.exception),
         )
 
@@ -52,7 +53,8 @@ class TestDatum(unittest.TestCase):
         with self.assertRaises(Exception) as context:
             Datum(value=mock_message(), event_time=mock_event_time(), watermark=ts)
         self.assertEqual(
-            "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> for Datum.watermark",
+            "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
+            "for Datum.watermark",
             str(context.exception),
         )
 
@@ -61,11 +63,14 @@ class TestDatum(unittest.TestCase):
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
             "value: test_mock_message, "
-            "event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
+            "event_time: 2022-09-12 16:00:00+00:00, "
+            "watermark: 2022-09-12 16:01:00+00:00",
             str(d),
         )
         self.assertEqual(
-            "value: test_mock_message, event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
+            "value: test_mock_message, "
+            "event_time: 2022-09-12 16:00:00+00:00, "
+            "watermark: 2022-09-12 16:01:00+00:00",
             repr(d),
         )
 

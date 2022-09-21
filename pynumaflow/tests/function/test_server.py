@@ -1,21 +1,19 @@
-import tempfile
 import unittest
 from datetime import datetime, timezone
 
+from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from google.protobuf import empty_pb2 as _empty_pb2
-
 
 from pynumaflow._constants import DATUM_KEY
-from pynumaflow.function.generated import udfunction_pb2
-from pynumaflow.function.server import UserDefinedFunctionServicer
 from pynumaflow.function._dtypes import (
     Message,
     Messages,
     Datum,
 )
+from pynumaflow.function.generated import udfunction_pb2
+from pynumaflow.function.server import UserDefinedFunctionServicer
 
 
 def map_handler(key: str, datum: Datum) -> Messages:
@@ -102,7 +100,8 @@ class TestServer(unittest.TestCase):
         self.assertEqual("test", response.elements[0].key)
         self.assertEqual(
             bytes(
-                "payload:test_mock_message event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+                "payload:test_mock_message "
+                "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
                 encoding="utf-8",
             ),
             response.elements[0].value,

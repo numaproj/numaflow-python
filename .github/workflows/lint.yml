@@ -55,4 +55,4 @@ jobs:
       uses: py-actions/flake8@v2
       with:
         config: "./.flake8"
-        path: "numalogic"
+        path: "pynumaflow"

@@ -100,7 +100,11 @@ class Datum:
 
     def __str__(self):
         value_string = self._value.decode("utf-8")
-        return f"value: {value_string}, event_time: {str(self._event_time)}, watermark: {str(self._watermark)}"
+        return (
+            f"value: {value_string}, "
+            f"event_time: {str(self._event_time)}, "
+            f"watermark: {str(self._watermark)}"
+        )
 
     def __repr__(self):
         return str(self)

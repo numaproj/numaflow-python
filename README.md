@@ -30,19 +30,20 @@ if __name__ == "__main__":
 
 ```python
 from typing import List
-from pynumaflow.sink import Message, Responses, Response, HTTPSinkHandler
+from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
 
 
-def udsink_handler(messages: List[Message], __) -> Responses:
+def udsink_handler(datums: List[Datum]) -> Responses:
     responses = Responses()
-    for msg in messages:
+    for msg in datums:
+        print("User Defined Sink", msg)
         responses.append(Response.as_success(msg.id))
     return responses
 
 
 if __name__ == "__main__":
-    handler = HTTPSinkHandler(udsink_handler)
-    handler.start()
+    grpc_server = UserDefinedSinkServicer(udsink_handler)
+    grpc_server.start()
 ```
 
 ### Sample Image

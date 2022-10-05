@@ -21,7 +21,7 @@ spec:
             args:
             - python
             - example.py
-            image: quay.io/numaio/python-simplesink-example
+            image: quay.io/numaio/simplesink-example:python
     - name: log-output
       sink:
         log: {}

@@ -28,7 +28,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 WORKDIR $PYSETUP_PATH
 ADD . $PYSETUP_PATH
 WORKDIR $PYSETUP_PATH
-RUN poetry install --no-dev --no-root
+RUN poetry install --without dev
 
 ADD . /app
 

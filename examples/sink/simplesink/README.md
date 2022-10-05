@@ -1,8 +1,10 @@
 # Example User Defined Sink
 
-1. Build the docker image and import into k3d
+1. Build the docker image, and push
    ```shell
-   docker build -t udsinkimg:v1 . && k3d image import docker.io/library/udsinkimg:v1
+   make image
+   # Privilege requried
+   docker push quay.io/numaio/simplesink-example:python
    ```
 
 2. Apply the pipeline

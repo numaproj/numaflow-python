@@ -7,7 +7,7 @@ from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow._constants import DATUM_KEY
-from pynumaflow.function._dtypes import (
+from pynumaflow.function import (
     Message,
     Messages,
     Datum,

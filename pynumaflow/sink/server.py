@@ -1,16 +1,15 @@
 import asyncio
 import logging
 from os import environ
-
-from google.protobuf import empty_pb2 as _empty_pb2
+from typing import Callable, List
 
 import grpc
-from typing import Callable, Any, List
+from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow._constants import (
     SINK_SOCK_PATH,
 )
-from pynumaflow.sink import Responses, Datum
+from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
@@ -19,7 +18,7 @@ if environ.get("PYTHONDEBUG"):
 
 _LOGGER = logging.getLogger(__name__)
 
-UDSinkCallable = Callable[[List[Datum], Any], Responses]
+UDSinkCallable = Callable[[List[Datum]], Responses]
 
 
 class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
@@ -57,11 +56,20 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         The pascal case function name comes from the generated udsink_pb2_grpc.py file.
         """
 
-        msgs = self.__sink_handler(request.elements)
+        try:
+            rspns = self.__sink_handler(request.elements)
+        except Exception as err:
+            err_msg = "UDSinkError: %r" % err
+            _LOGGER.exception(err_msg)
+            rspns = Responses()
+            for _datum in request.elements:
+                rspns.append(Response.as_failure(_datum.id, err_msg))
 
         responses = []
-        for msg in msgs.items():
-            responses.append(udsink_pb2.Response(id=msg.id, success=msg.success, err_msg=msg.err))
+        for rspn in rspns.items():
+            responses.append(
+                udsink_pb2.Response(id=rspn.id, success=rspn.success, err_msg=rspn.err)
+            )
 
         return udsink_pb2.ResponseList(responses=responses)
 

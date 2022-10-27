@@ -1,20 +1,18 @@
 import asyncio
 import logging
 from os import environ
-
-from pynumaflow.function.generated import udfunction_pb2
-from pynumaflow.function.generated import udfunction_pb2_grpc
-
-from google.protobuf import empty_pb2 as _empty_pb2
+from typing import Callable, Iterator
 
 import grpc
-from typing import Callable, Any, Iterator
+from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
 )
 from pynumaflow.function import Messages, Datum
+from pynumaflow.function.generated import udfunction_pb2
+from pynumaflow.function.generated import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 if environ.get("PYTHONDEBUG"):
@@ -22,7 +20,7 @@ if environ.get("PYTHONDEBUG"):
 
 _LOGGER = logging.getLogger(__name__)
 
-UDFMapCallable = Callable[[str, Datum, Any], Messages]
+UDFMapCallable = Callable[[str, Datum], Messages]
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -64,14 +62,18 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             if metadata_key == DATUM_KEY:
                 key = metadata_value
 
-        msgs = self.__map_handler(
-            key,
-            Datum(
-                value=request.value,
-                event_time=request.event_time.event_time.ToDatetime(),
-                watermark=request.watermark.watermark.ToDatetime(),
-            ),
-        )
+        try:
+            msgs = self.__map_handler(
+                key,
+                Datum(
+                    value=request.value,
+                    event_time=request.event_time.event_time.ToDatetime(),
+                    watermark=request.watermark.watermark.ToDatetime(),
+                ),
+            )
+        except Exception as err:
+            _LOGGER.exception("UDFError: %r", err)
+            msgs = Messages.as_forward_all(None)
 
         datums = []
         for msg in msgs.items():

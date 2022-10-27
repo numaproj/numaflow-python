@@ -12,6 +12,7 @@ from pynumaflow.function import (
     Messages,
     Datum,
 )
+from pynumaflow.function._dtypes import DROP
 from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.server import UserDefinedFunctionServicer
 
@@ -27,6 +28,10 @@ def map_handler(key: str, datum: Datum) -> Messages:
     messages = Messages()
     messages.append(Message.to_vtx(key, val))
     return messages
+
+
+def err_map_handler(_: str, __: Datum) -> Messages:
+    raise RuntimeError("Something is fishy!")
 
 
 def mock_message():
@@ -45,12 +50,48 @@ def mock_watermark():
 
 
 class TestServer(unittest.TestCase):
-    def __init__(self, method_name) -> None:
-        super().__init__(method_name)
-
+    def setUp(self) -> None:
         my_servicer = UserDefinedFunctionServicer(map_handler)
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
+
+    def test_udferr(self):
+        my_servicer = UserDefinedFunctionServicer(err_map_handler)
+        services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.Datum(
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "MapFn"
+                ]
+            ),
+            invocation_metadata={
+                (DATUM_KEY, "test"),
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+
+        response, metadata, code, details = method.termination()
+        self.assertEqual(1, len(response.elements))
+        self.assertEqual(DROP.decode(), response.elements[0].key)
+        self.assertEqual(
+            b"",
+            response.elements[0].value,
+        )
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(

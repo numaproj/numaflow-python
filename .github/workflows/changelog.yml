@@ -4,8 +4,6 @@ on:
   push:
     tags:
       - v*
-  pull_request:
-    branches: [ "main" ]
 jobs:
   generate_changelog:
     if: github.repository == 'numaproj/numaflow-python'

@@ -55,12 +55,12 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         Applies a sink function to a list of datum elements.
         The pascal case function name comes from the generated udsink_pb2_grpc.py file.
         """
-
+        # if there is an exception, we will mark all the responses as a failure
         try:
             rspns = self.__sink_handler(request.elements)
         except Exception as err:
             err_msg = "UDSinkError: %r" % err
-            _LOGGER.exception(err_msg)
+            _LOGGER.critical(err_msg, exc_info=True)
             rspns = Responses()
             for _datum in request.elements:
                 rspns.append(Response.as_failure(_datum.id, err_msg))

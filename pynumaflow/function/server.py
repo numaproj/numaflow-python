@@ -72,7 +72,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 ),
             )
         except Exception as err:
-            _LOGGER.exception("UDFError: %r", err)
+            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
+
+            # a neat hack to drop
             msgs = Messages.as_forward_all(None)
 
         datums = []

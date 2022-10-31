@@ -46,7 +46,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     >>> grpc_server.start()
     """
 
-    def __init__(self, map_handler: UDFMapCallable, sock_path=FUNCTION_SOCK_PATH, max_message_size=MAX_MESSAGE_SIZE):
+    def __init__(
+        self,
+        map_handler: UDFMapCallable,
+        sock_path=FUNCTION_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+    ):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
@@ -107,10 +112,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:
-        server = grpc.aio.server(options=[
-          ('grpc.max_send_message_length', self.max_message_size),
-          ('grpc.max_receive_message_length', self.max_message_size)
-        ])
+        server = grpc.aio.server(
+            options=[
+                ("grpc.max_send_message_length", self.max_message_size),
+                ("grpc.max_receive_message_length", self.max_message_size),
+            ]
+        )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
             UserDefinedFunctionServicer(self.__map_handler), server
         )

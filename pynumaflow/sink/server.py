@@ -44,7 +44,12 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     >>> grpc_server.start()
     """
 
-    def __init__(self, sink_handler: UDSinkCallable, sock_path=SINK_SOCK_PATH, max_message_size=MAX_MESSAGE_SIZE):
+    def __init__(
+        self,
+        sink_handler: UDSinkCallable,
+        sock_path=SINK_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+    ):
         self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
@@ -85,10 +90,12 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         return udsink_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:
-        server = grpc.aio.server(options=[
-            ('grpc.max_send_message_length', self.max_message_size),
-            ('grpc.max_receive_message_length', self.max_message_size)
-        ])
+        server = grpc.aio.server(
+            options=[
+                ("grpc.max_send_message_length", self.max_message_size),
+                ("grpc.max_receive_message_length", self.max_message_size),
+            ]
+        )
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
             UserDefinedSinkServicer(self.__sink_handler), server
         )

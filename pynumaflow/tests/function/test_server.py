@@ -56,9 +56,9 @@ class TestServer(unittest.TestCase):
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
-        my_servicer = UserDefinedFunctionServicer(map_handler, sock_path="/tmp/test.sock", max_message_size=1024*1024*4)
+        my_servicer = UserDefinedFunctionServicer(map_handler, sock_path="/tmp/test.sock", max_message_size=1024*1024*5)
         self.assertEqual(my_servicer.sock_path, "unix:///tmp/test.sock")
-        self.assertEqual(my_servicer._max_message_size, 1024*1024*4)
+        self.assertEqual(my_servicer._max_message_size, 1024*1024*5)
 
     def test_udferr(self):
         my_servicer = UserDefinedFunctionServicer(err_map_handler)

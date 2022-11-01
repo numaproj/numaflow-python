@@ -30,6 +30,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     Args:
         sink_handler: Function callable following the type signature of UDSinkCallable
         sock_path: Path to the UNIX Domain Socket
+        max_message_size: The max message size in bytes the server can receive and send
 
     Example invocation:
     >>> from typing import List
@@ -52,7 +53,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ):
         self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
-        self.max_message_size = max_message_size
+        self._max_message_size = max_message_size
         self._cleanup_coroutines = []
 
     def SinkFn(
@@ -92,8 +93,8 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     async def __serve(self) -> None:
         server = grpc.aio.server(
             options=[
-                ("grpc.max_send_message_length", self.max_message_size),
-                ("grpc.max_receive_message_length", self.max_message_size),
+                ("grpc.max_send_message_length", self._max_message_size),
+                ("grpc.max_receive_message_length", self._max_message_size),
             ]
         )
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(

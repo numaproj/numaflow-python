@@ -32,6 +32,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     Args:
         map_handler: Function callable following the type signature of UDFMapCallable
         sock_path: Path to the UNIX Domain Socket
+        max_message_size: The max message size in bytes the server can receive and send
 
     Example invocation:
     >>> from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
@@ -54,7 +55,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = f"unix://{sock_path}"
-        self.max_message_size = max_message_size
+        self._max_message_size = max_message_size
         self._cleanup_coroutines = []
 
     def MapFn(
@@ -114,8 +115,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     async def __serve(self) -> None:
         server = grpc.aio.server(
             options=[
-                ("grpc.max_send_message_length", self.max_message_size),
-                ("grpc.max_receive_message_length", self.max_message_size),
+                ("grpc.max_send_message_length", self._max_message_size),
+                ("grpc.max_receive_message_length", self._max_message_size),
             ]
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(

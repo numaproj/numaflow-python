@@ -8,6 +8,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow._constants import (
     SINK_SOCK_PATH,
+    MAX_MESSAGE_SIZE,
 )
 from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
@@ -29,6 +30,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     Args:
         sink_handler: Function callable following the type signature of UDSinkCallable
         sock_path: Path to the UNIX Domain Socket
+        max_message_size: The max message size in bytes the server can receive and send
 
     Example invocation:
     >>> from typing import List
@@ -43,9 +45,15 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     >>> grpc_server.start()
     """
 
-    def __init__(self, sink_handler: UDSinkCallable, sock_path=SINK_SOCK_PATH):
+    def __init__(
+        self,
+        sink_handler: UDSinkCallable,
+        sock_path=SINK_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+    ):
         self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
+        self._max_message_size = max_message_size
         self._cleanup_coroutines = []
 
     def SinkFn(
@@ -83,7 +91,12 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         return udsink_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:
-        server = grpc.aio.server()
+        server = grpc.aio.server(
+            options=[
+                ("grpc.max_send_message_length", self._max_message_size),
+                ("grpc.max_receive_message_length", self._max_message_size),
+            ]
+        )
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
             UserDefinedSinkServicer(self.__sink_handler), server
         )

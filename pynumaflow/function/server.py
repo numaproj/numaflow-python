@@ -65,10 +65,14 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Applies a function to each datum element.
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
+        _LOGGER.debug("Starting MapFn for request: %s", request.value)
+
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
                 key = metadata_value
+        _LOGGER.debug("MapFn Key: %s", key)
+
 
         try:
             msgs = self.__map_handler(
@@ -88,7 +92,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         datums = []
         for msg in msgs.items():
             datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
-
+        
+        _LOGGER.debug("MapFn Msgs: %s", msgs)
         return udfunction_pb2.DatumList(elements=datums)
 
     def ReduceFn(
@@ -110,6 +115,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         IsReady is the heartbeat endpoint for gRPC.
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
+        _LOGGER.debug("I am ready")
         return udfunction_pb2.ReadyResponse(ready=True)
 
     async def __serve(self) -> None:

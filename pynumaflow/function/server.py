@@ -1,6 +1,8 @@
 import asyncio
 import logging
-from os import environ
+import multiprocessing
+import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Iterator
 
 import grpc
@@ -16,12 +18,14 @@ from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
-if environ.get("PYTHONDEBUG"):
+if os.getenv("PYTHONDEBUG"):
     logging.basicConfig(level=logging.DEBUG)
 
 _LOGGER = logging.getLogger(__name__)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
+_PROCESS_COUNT = multiprocessing.cpu_count()
+MAX_THREADS = os.getenv("MAX_THREADS") or _PROCESS_COUNT
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -52,10 +56,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         map_handler: UDFMapCallable,
         sock_path=FUNCTION_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
         self.__map_handler: UDFMapCallable = map_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
+        self._max_threads = max_threads
         self._cleanup_coroutines = []
 
     def MapFn(
@@ -112,35 +118,56 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         """
         return udfunction_pb2.ReadyResponse(ready=True)
 
-    async def __serve(self) -> None:
+    async def __serve_async(self, server) -> None:
+        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
+            UserDefinedFunctionServicer(self.__map_handler), server
+        )
+        server.add_insecure_port(self.sock_path)
+        _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
+        await server.start()
+
+        async def server_graceful_shutdown():
+            """
+            Shuts down the server with 5 seconds of grace period. During the
+            grace period, the server won't accept new connections and allow
+            existing RPCs to continue within the grace period.
+            """
+            logging.info("Starting graceful shutdown...")
+            await server.stop(5)
+
+        self._cleanup_coroutines.append(server_graceful_shutdown())
+        await server.wait_for_termination()
+
+    def start_async(self) -> None:
+        """Starts the server on the given UNIX socket."""
         server = grpc.aio.server(
             options=[
                 ("grpc.max_send_message_length", self._max_message_size),
                 ("grpc.max_receive_message_length", self._max_message_size),
             ]
         )
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(self.__serve_async(server))
+        finally:
+            loop.run_until_complete(*self._cleanup_coroutines)
+            loop.close()
+
+    def start(self) -> None:
+        """Starts the server on the given UNIX socket."""
+        server = grpc.server(
+            ThreadPoolExecutor(max_workers=self._max_threads),
+            options=[
+                ("grpc.max_send_message_length", self._max_message_size),
+                ("grpc.max_receive_message_length", self._max_message_size),
+            ],
+        )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
             UserDefinedFunctionServicer(self.__map_handler), server
         )
         server.add_insecure_port(self.sock_path)
-        _LOGGER.info("Server listening on: %s", self.sock_path)
-        await server.start()
-
-        async def server_graceful_shutdown():
-            logging.info("Starting graceful shutdown...")
-            # Shuts down the server with 5 seconds of grace period. During the
-            # grace period, the server won't accept new connections and allow
-            # existing RPCs to continue within the grace period.
-            await server.stop(5)
-
-        self._cleanup_coroutines.append(server_graceful_shutdown())
-        await server.wait_for_termination()
-
-    def start(self) -> None:
-        """Starts the server on the given UNIX socket."""
-        loop = asyncio.get_event_loop()
-        try:
-            loop.run_until_complete(self.__serve())
-        finally:
-            loop.run_until_complete(*self._cleanup_coroutines)
-            loop.close()
+        server.start()
+        _LOGGER.info(
+            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
+        )
+        server.wait_for_termination()

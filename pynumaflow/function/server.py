@@ -25,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = os.getenv("MAX_THREADS") or _PROCESS_COUNT
+MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or _PROCESS_COUNT
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -63,6 +63,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self._max_message_size = max_message_size
         self._max_threads = max_threads
         self._cleanup_coroutines = []
+
+        self._server_options = [
+            ("grpc.max_send_message_length", self._max_message_size),
+            ("grpc.max_receive_message_length", self._max_message_size),
+        ]
 
     def MapFn(
         self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
@@ -139,13 +144,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         await server.wait_for_termination()
 
     def start_async(self) -> None:
-        """Starts the async server on the given UNIX socket."""
+        """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(
-            ThreadPoolExecutor(max_workers=self._max_threads),
-            options=[
-                ("grpc.max_send_message_length", self._max_message_size),
-                ("grpc.max_receive_message_length", self._max_message_size),
-            ]
+            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
         loop = asyncio.get_event_loop()
         try:
@@ -155,13 +156,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             loop.close()
 
     def start(self) -> None:
-        """Starts the server on the given UNIX socket."""
+        """
+        Starts the gRPC server on the given UNIX socket with given max threads.
+        """
         server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads),
-            options=[
-                ("grpc.max_send_message_length", self._max_message_size),
-                ("grpc.max_receive_message_length", self._max_message_size),
-            ],
+            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
             UserDefinedFunctionServicer(self.__map_handler), server

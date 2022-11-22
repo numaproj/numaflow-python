@@ -5,3 +5,9 @@ source = pynumaflow
 omit =
     pynumaflow/tests/*
     examples/*
+
+[report]
+exclude_lines =
+    def start
+    def start_async
+    def __serve_async

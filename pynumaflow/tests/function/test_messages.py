@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import FrozenInstanceError
 
 from pynumaflow.function._dtypes import (
     Message,
@@ -16,9 +17,14 @@ def mock_message():
 class TestMessage(unittest.TestCase):
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msgs = Message(key=mock_obj["Key"], value=mock_obj["Value"])
-        print(msgs)
-        self.assertEqual(mock_obj["Key"], msgs.key)
+        msg = Message(key=mock_obj["Key"], value=mock_obj["Value"])
+        print(msg)
+        self.assertEqual(mock_obj["Key"], msg.key)
+
+    def test_immutable(self):
+        msg = Message(ALL, mock_message())
+        with self.assertRaises(FrozenInstanceError):
+            msg.key = DROP
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
@@ -27,10 +33,10 @@ class TestMessage(unittest.TestCase):
 
     def test_message_to_all(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msgs = Message.to_all(value=mock_obj["Value"])
-        self.assertEqual(Message, type(msgs))
-        self.assertEqual(mock_obj["Key"], msgs.key)
-        self.assertEqual(mock_obj["Value"], msgs.value)
+        msg = Message.to_all(mock_obj["Value"])
+        self.assertEqual(Message, type(msg))
+        self.assertEqual(mock_obj["Key"], msg.key)
+        self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to_drop(self):
         mock_obj = {"Key": DROP, "Value": b""}
@@ -58,8 +64,7 @@ class TestMessages(unittest.TestCase):
             {"Key": b"U+005C__ALL__", "Value": mock_message()},
             {"Key": b"U+005C__ALL__", "Value": mock_message()},
         ]
-        msgs = Messages()
-        msgs._messages = mock_obj
+        msgs = Messages(*mock_obj)
         self.assertEqual(len(mock_obj), len(msgs.items()))
         self.assertEqual(mock_obj[0]["Key"], msgs.items()[0]["Key"])
         self.assertEqual(mock_obj[0]["Value"], msgs.items()[0]["Value"])
@@ -78,9 +83,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(2, len(msgs.items()))
 
     def test_message_forward(self):
-        mock_obj = Messages()
-        msg = self.mock_message_object()
-        mock_obj.append(msg)
+        mock_obj = Messages(self.mock_message_object())
         true_obj = Messages.as_forward_all(mock_message())
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
@@ -103,7 +106,8 @@ class TestMessages(unittest.TestCase):
         msgs.append(self.mock_message_object())
         msgs.append(self.mock_message_object())
         self.assertEqual(
-            "[{b'U+005C__ALL__': b'test_mock_message'}, {b'U+005C__ALL__': b'test_mock_message'}]",
+            "[Message(key=b'U+005C__ALL__', value=b'test_mock_message'), "
+            "Message(key=b'U+005C__ALL__', value=b'test_mock_message')]",
             msgs.dumps(),
         )
 

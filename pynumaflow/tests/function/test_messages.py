@@ -105,8 +105,10 @@ class TestMessages(unittest.TestCase):
         msgs = Messages()
         msgs.append(self.mock_message_object())
         msgs.append(self.mock_message_object())
+        print(msgs.dumps())
         self.assertEqual(
-            "[{b'U+005C__ALL__': b'test_mock_message'}, {b'U+005C__ALL__': b'test_mock_message'}]",
+            "[Message(key=b'U+005C__ALL__', value=b'test_mock_message'), "
+            "Message(key=b'U+005C__ALL__', value=b'test_mock_message')]",
             msgs.dumps(),
         )
 

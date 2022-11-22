@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from functools import partialmethod
 from typing import TypeVar, Type, List
 
 DROP = b"U+005C__DROP__"
@@ -12,20 +13,27 @@ Ms = TypeVar("Ms", bound="Messages")
 
 @dataclass(frozen=True)
 class Message:
+    """
+    Basic datatype for data passing to the next vertex/vertices.
+
+    Args:
+        key: string key for vertex;
+             special values are ALL (send to all), DROP (drop message)
+        value: data in bytes
+    """
+
     key: str = ""
     value: bytes = b""
 
     @classmethod
     def to_vtx(cls: Type[M], key: str, value: bytes) -> M:
+        """
+        Returns a Message object to send value to a vertex.
+        """
         return cls(key, value)
 
-    @classmethod
-    def to_all(cls: Type[M], value: bytes) -> M:
-        return cls(ALL, value)
-
-    @classmethod
-    def to_drop(cls: Type[M]) -> M:
-        return cls(DROP, b"")
+    to_all = partialmethod(to_vtx, key=ALL)
+    to_drop = partialmethod(to_vtx, key=DROP, value=b"")
 
 
 class Messages:

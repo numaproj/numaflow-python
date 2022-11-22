@@ -33,10 +33,10 @@ class TestMessage(unittest.TestCase):
 
     def test_message_to_all(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msgs = Message.to_all(value=mock_obj["Value"])
-        self.assertEqual(Message, type(msgs))
-        self.assertEqual(mock_obj["Key"], msgs.key)
-        self.assertEqual(mock_obj["Value"], msgs.value)
+        msg = Message.to_all(mock_obj["Value"])
+        self.assertEqual(Message, type(msg))
+        self.assertEqual(mock_obj["Key"], msg.key)
+        self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to_drop(self):
         mock_obj = {"Key": DROP, "Value": b""}

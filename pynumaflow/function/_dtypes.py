@@ -32,8 +32,8 @@ class Message:
         """
         return cls(key, value)
 
-    to_all = partialmethod(to_vtx, key=ALL)
-    to_drop = partialmethod(to_vtx, key=DROP, value=b"")
+    to_all = partialmethod(to_vtx, ALL)
+    to_drop = partialmethod(to_vtx, DROP, b"")
 
 
 class Messages:

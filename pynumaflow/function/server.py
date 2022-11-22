@@ -25,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or _PROCESS_COUNT
+MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -37,7 +37,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         map_handler: Function callable following the type signature of UDFMapCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned; defaults to number of processors
+        max_threads: The max number of threads to be spawned;
+                     defaults to number of processors x4
 
     Example invocation:
     >>> from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
@@ -45,8 +46,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
-    ...   messages = Messages()
-    ...   messages.append(Message.to_vtx(key, val))
+    ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
     >>> grpc_server = UserDefinedFunctionServicer(map_handler)
     >>> grpc_server.start()

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Type, List
 
@@ -9,24 +10,10 @@ M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
 
 
+@dataclass(frozen=True)
 class Message:
-    def __init__(self, key: str, value: bytes):
-        self._key = key or ""
-        self._value = value or b""
-
-    def __str__(self):
-        return str({self._key: self._value})
-
-    def __repr__(self):
-        return str(self)
-
-    @property
-    def key(self) -> str:
-        return self._key
-
-    @property
-    def value(self) -> bytes:
-        return self._value
+    key: str = ""
+    value: bytes = b""
 
     @classmethod
     def to_vtx(cls: Type[M], key: str, value: bytes) -> M:

@@ -6,7 +6,7 @@ R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
 
 
-@dataclass
+@dataclass(frozen=True)
 class Response:
     id: str
     success: bool

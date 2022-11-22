@@ -23,7 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 
 UDSinkCallable = Callable[[List[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or _PROCESS_COUNT
+MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
@@ -35,7 +35,8 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         sink_handler: Function callable following the type signature of UDSinkCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned; defaults to number of processors
+        max_threads: The max number of threads to be spawned;
+                     defaults to number of processors x 4
 
     Example invocation:
     >>> from typing import List

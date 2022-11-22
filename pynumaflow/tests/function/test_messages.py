@@ -1,4 +1,5 @@
 import unittest
+from dataclasses import FrozenInstanceError
 
 from pynumaflow.function._dtypes import (
     Message,
@@ -16,9 +17,14 @@ def mock_message():
 class TestMessage(unittest.TestCase):
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msgs = Message(key=mock_obj["Key"], value=mock_obj["Value"])
-        print(msgs)
-        self.assertEqual(mock_obj["Key"], msgs.key)
+        msg = Message(key=mock_obj["Key"], value=mock_obj["Value"])
+        print(msg)
+        self.assertEqual(mock_obj["Key"], msg.key)
+
+    def test_immutable(self):
+        msg = Message(ALL, mock_message())
+        with self.assertRaises(FrozenInstanceError):
+            msg.key = DROP
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}

@@ -58,8 +58,7 @@ class TestMessages(unittest.TestCase):
             {"Key": b"U+005C__ALL__", "Value": mock_message()},
             {"Key": b"U+005C__ALL__", "Value": mock_message()},
         ]
-        msgs = Messages()
-        msgs._messages = mock_obj
+        msgs = Messages(*mock_obj)
         self.assertEqual(len(mock_obj), len(msgs.items()))
         self.assertEqual(mock_obj[0]["Key"], msgs.items()[0]["Key"])
         self.assertEqual(mock_obj[0]["Value"], msgs.items()[0]["Value"])
@@ -78,9 +77,7 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(2, len(msgs.items()))
 
     def test_message_forward(self):
-        mock_obj = Messages()
-        msg = self.mock_message_object()
-        mock_obj.append(msg)
+        mock_obj = Messages(self.mock_message_object())
         true_obj = Messages.as_forward_all(mock_message())
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):

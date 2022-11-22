@@ -42,8 +42,8 @@ class Message:
 
 
 class Messages:
-    def __init__(self):
-        self._messages = []
+    def __init__(self, *messages: M):
+        self._messages = list(messages) or []
 
     def __str__(self):
         return str(self._messages)

@@ -139,8 +139,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         await server.wait_for_termination()
 
     def start_async(self) -> None:
-        """Starts the server on the given UNIX socket."""
+        """Starts the async server on the given UNIX socket."""
         server = grpc.aio.server(
+            ThreadPoolExecutor(max_workers=self._max_threads),
             options=[
                 ("grpc.max_send_message_length", self._max_message_size),
                 ("grpc.max_receive_message_length", self._max_message_size),

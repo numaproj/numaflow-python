@@ -37,6 +37,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         map_handler: Function callable following the type signature of UDFMapCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned; defaults to number of processors
 
     Example invocation:
     >>> from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
@@ -137,7 +138,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             grace period, the server won't accept new connections and allow
             existing RPCs to continue within the grace period.
             """
-            logging.info("Starting graceful shutdown...")
+            _LOGGER.info("Starting graceful shutdown...")
             await server.stop(5)
 
         self._cleanup_coroutines.append(server_graceful_shutdown())

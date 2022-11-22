@@ -10,9 +10,9 @@ and [UDSinks](https://numaproj.github.io/numaflow/sinks/user-defined-sinks/) in 
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
-def cat_handler(key: str, datum: Datum) -> Messages:
+def function_handler(key: str, datum: Datum) -> Messages:
     """
-    Simple cat UDF that relays an incoming message.
+    Simple UDF that relays an incoming message.
     """
     val = datum.value
     _ = datum.event_time
@@ -22,7 +22,7 @@ def cat_handler(key: str, datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(cat_handler)
+    grpc_server = UserDefinedFunctionServicer(function_handler)
     grpc_server.start()
 ```
 

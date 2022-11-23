@@ -10,17 +10,19 @@ and [UDSinks](https://numaproj.github.io/numaflow/sinks/user-defined-sinks/) in 
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
-def map_handler(key: str, datum: Datum) -> Messages:
+def function_handler(key: str, datum: Datum) -> Messages:
+    """
+    Simple UDF that relays an incoming message.
+    """
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
-    messages = Messages()
-    messages.append(Message.to_vtx(key, val))
+    messages = Messages(Message(key=key, value=val))
     return messages
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler)
+    grpc_server = UserDefinedFunctionServicer(function_handler)
     grpc_server.start()
 ```
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.6 (2022-11-22)
+
+ * [0fbecc1](https://github.com/numaproj/numaflow-python/commit/0fbecc13a2ae48636d5454664b072534b02160a0) feat: introduces sync gRPC server  (#27)
+ * [b6a4bc0](https://github.com/numaproj/numaflow-python/commit/b6a4bc009035d52dd177079808c708b925fcfc3f) feat: add support to configure max message size (#23)
+
+### Contributors
+
+ * Avik Basu
+ * Juanlu Yu
+
 ## v0.2.5 (2022-10-31)
 
  * [97b410e](https://github.com/numaproj/numaflow-python/commit/97b410ecc09a52ca668e1c265f4b73822151ba49) fix: catch exception in udf and udsink (#18)

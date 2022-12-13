@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from pynumaflow.sink.generated import udsink_pb2 as udsink__pb2
+import udsink_pb2 as udsink__pb2
 
 
 class UserDefinedSinkStub(object):
@@ -15,111 +15,88 @@ class UserDefinedSinkStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SinkFn = channel.unary_unary(
-            "/sink.v1.UserDefinedSink/SinkFn",
-            request_serializer=udsink__pb2.DatumList.SerializeToString,
-            response_deserializer=udsink__pb2.ResponseList.FromString,
-        )
+        self.SinkFn = channel.stream_unary(
+                '/sink.v1.UserDefinedSink/SinkFn',
+                request_serializer=udsink__pb2.Datum.SerializeToString,
+                response_deserializer=udsink__pb2.ResponseList.FromString,
+                )
         self.IsReady = channel.unary_unary(
-            "/sink.v1.UserDefinedSink/IsReady",
-            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            response_deserializer=udsink__pb2.ReadyResponse.FromString,
-        )
+                '/sink.v1.UserDefinedSink/IsReady',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=udsink__pb2.ReadyResponse.FromString,
+                )
 
 
 class UserDefinedSinkServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def SinkFn(self, request, context):
-        """SinkFn writes the Datum to a user defined sink."""
+    def SinkFn(self, request_iterator, context):
+        """SinkFn writes the Datum to a user defined sink.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def IsReady(self, request, context):
-        """IsReady is the heartbeat endpoint for gRPC."""
+        """IsReady is the heartbeat endpoint for gRPC.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_UserDefinedSinkServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "SinkFn": grpc.unary_unary_rpc_method_handler(
-            servicer.SinkFn,
-            request_deserializer=udsink__pb2.DatumList.FromString,
-            response_serializer=udsink__pb2.ResponseList.SerializeToString,
-        ),
-        "IsReady": grpc.unary_unary_rpc_method_handler(
-            servicer.IsReady,
-            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            response_serializer=udsink__pb2.ReadyResponse.SerializeToString,
-        ),
+            'SinkFn': grpc.stream_unary_rpc_method_handler(
+                    servicer.SinkFn,
+                    request_deserializer=udsink__pb2.Datum.FromString,
+                    response_serializer=udsink__pb2.ResponseList.SerializeToString,
+            ),
+            'IsReady': grpc.unary_unary_rpc_method_handler(
+                    servicer.IsReady,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=udsink__pb2.ReadyResponse.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "sink.v1.UserDefinedSink", rpc_method_handlers
-    )
+            'sink.v1.UserDefinedSink', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class UserDefinedSink(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def SinkFn(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def SinkFn(request_iterator,
             target,
-            "/sink.v1.UserDefinedSink/SinkFn",
-            udsink__pb2.DatumList.SerializeToString,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(request_iterator, target, '/sink.v1.UserDefinedSink/SinkFn',
+            udsink__pb2.Datum.SerializeToString,
             udsink__pb2.ResponseList.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def IsReady(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
-        return grpc.experimental.unary_unary(
-            request,
+    def IsReady(request,
             target,
-            "/sink.v1.UserDefinedSink/IsReady",
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/sink.v1.UserDefinedSink/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             udsink__pb2.ReadyResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-        )
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

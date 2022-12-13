@@ -91,7 +91,7 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = udsink_pb2.DatumList(elements=test_datums)
+        request = iter(test_datums)
 
         method = self.test_server.invoke_unary_unary(
             method_descriptor=(
@@ -133,7 +133,7 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = udsink_pb2.DatumList(elements=test_datums)
+        request = iter(test_datums)
 
         method = self.test_server.invoke_unary_unary(
             method_descriptor=(

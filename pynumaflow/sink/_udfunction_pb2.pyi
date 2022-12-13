@@ -51,12 +51,6 @@ class Datum(_message.Message):
         watermark: _Optional[_timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
 
-class DatumList(_message.Message):
-    __slots__ = ["elements"]
-    ELEMENTS_FIELD_NUMBER: _ClassVar[int]
-    elements: List[Datum]
-    def __init__(self, elements: _Optional[List[Datum]]) -> None: ...
-
 class Response(_message.Message):
     __slots__ = ["id", "success", "err_msg"]
     ID_FIELD_NUMBER: _ClassVar[int]

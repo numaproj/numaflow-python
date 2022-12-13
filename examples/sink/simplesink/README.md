@@ -3,7 +3,7 @@
 1. Build the docker image, and push
    ```shell
    make image
-   # Privilege requried
+   # Privilege required
    docker push quay.io/numaio/simplesink-example:python
    ```
 

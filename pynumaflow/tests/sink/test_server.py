@@ -91,16 +91,17 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = iter(test_datums)
-
-        method = self.test_server.invoke_unary_unary(
+        method = self.test_server.invoke_stream_unary(
             method_descriptor=(
                 udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"].methods_by_name["SinkFn"]
             ),
             invocation_metadata={},
-            request=request,
             timeout=1,
         )
+
+        method.send_request(test_datums[0])
+        method.send_request(test_datums[1])
+        method.requests_closed()
 
         response, metadata, code, details = method.termination()
         self.assertEqual(2, len(response.responses))
@@ -133,16 +134,17 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = iter(test_datums)
-
-        method = self.test_server.invoke_unary_unary(
+        method = self.test_server.invoke_stream_unary(
             method_descriptor=(
                 udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"].methods_by_name["SinkFn"]
             ),
             invocation_metadata={},
-            request=request,
             timeout=1,
         )
+
+        method.send_request(test_datums[0])
+        method.send_request(test_datums[1])
+        method.requests_closed()
 
         response, metadata, code, details = method.termination()
         self.assertEqual(2, len(response.responses))

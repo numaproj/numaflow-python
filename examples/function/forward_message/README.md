@@ -7,7 +7,7 @@
 
 2. Build the docker image and import into k3d
    ```shell
-   docker build -t test-python-udf:v1 . && k3d image import docker.io/library/test-python-udf:v1
+   docker build -t test-python-udf:v1 . && k3d image import quay.io/numaio/simplesink-example:python
    ```
 
 3. Apply the pipeline

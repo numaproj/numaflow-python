@@ -162,3 +162,6 @@ cython_debug/
 
 # Proto files are coming from numaflow-go https://github.com/numaproj/numaflow-go
 protos/
+
+# Mac related
+.DS_Store

@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timezone
-from typing import List
+from typing import Iterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
@@ -11,7 +11,7 @@ from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
 from pynumaflow.sink.generated import udsink_pb2
 
 
-def udsink_handler(datums: List[Datum]) -> Responses:
+def udsink_handler(datums: Iterator[Datum]) -> Responses:
     responses = Responses()
     for msg in datums:
         if "err" in msg.value.decode("utf-8"):
@@ -21,7 +21,7 @@ def udsink_handler(datums: List[Datum]) -> Responses:
     return responses
 
 
-def err_udsink_handler(_: List[Datum]) -> Responses:
+def err_udsink_handler(_: Iterator[Datum]) -> Responses:
     raise RuntimeError("Something is fishy!")
 
 

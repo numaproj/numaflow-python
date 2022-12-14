@@ -41,7 +41,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     Example invocation:
     >>> from typing import List
     >>> from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
-    >>> def udsink_handler(datums: List[Datum]) -> Responses:
+    >>> def udsink_handler(datums: Iterator[Datum]) -> Responses:
     ...   responses = Responses()
     ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))

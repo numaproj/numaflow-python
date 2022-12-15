@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry env use ${{ matrix.python-version }}
-        poetry install --no-root
+        poetry install --with dev --no-root
 
     - name: Run tests
       run: make test
@@ -58,7 +58,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry env use ${{ matrix.python-version }}
-        poetry install --no-root
+        poetry install --with dev --no-root
 
     - name: Black format check
       run: poetry run black --check .

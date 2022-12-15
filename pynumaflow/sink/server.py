@@ -3,7 +3,7 @@ import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, List
+from typing import Callable, Iterator
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -21,7 +21,7 @@ if os.getenv("PYTHONDEBUG"):
 
 _LOGGER = logging.getLogger(__name__)
 
-UDSinkCallable = Callable[[List[Datum]], Responses]
+UDSinkCallable = Callable[[Iterator[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -41,7 +41,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     Example invocation:
     >>> from typing import List
     >>> from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
-    >>> def udsink_handler(datums: List[Datum]) -> Responses:
+    >>> def udsink_handler(datums: Iterator[Datum]) -> Responses:
     ...   responses = Responses()
     ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
@@ -69,7 +69,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     def SinkFn(
-        self, request: udsink_pb2.DatumList, context: NumaflowServicerContext
+        self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
@@ -77,12 +77,12 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         """
         # if there is an exception, we will mark all the responses as a failure
         try:
-            rspns = self.__sink_handler(request.elements)
+            rspns = self.__sink_handler(request_iterator)
         except Exception as err:
             err_msg = "UDSinkError: %r" % err
             _LOGGER.critical(err_msg, exc_info=True)
             rspns = Responses()
-            for _datum in request.elements:
+            for _datum in request_iterator:
                 rspns.append(Response.as_failure(_datum.id, err_msg))
 
         responses = []

@@ -1,6 +1,6 @@
 import unittest
 from datetime import datetime, timezone
-from typing import List
+from typing import Iterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
@@ -11,7 +11,7 @@ from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
 from pynumaflow.sink.generated import udsink_pb2
 
 
-def udsink_handler(datums: List[Datum]) -> Responses:
+def udsink_handler(datums: Iterator[Datum]) -> Responses:
     responses = Responses()
     for msg in datums:
         if "err" in msg.value.decode("utf-8"):
@@ -21,7 +21,7 @@ def udsink_handler(datums: List[Datum]) -> Responses:
     return responses
 
 
-def err_udsink_handler(_: List[Datum]) -> Responses:
+def err_udsink_handler(_: Iterator[Datum]) -> Responses:
     raise RuntimeError("Something is fishy!")
 
 
@@ -91,16 +91,17 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = udsink_pb2.DatumList(elements=test_datums)
-
-        method = self.test_server.invoke_unary_unary(
+        method = self.test_server.invoke_stream_unary(
             method_descriptor=(
                 udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"].methods_by_name["SinkFn"]
             ),
             invocation_metadata={},
-            request=request,
             timeout=1,
         )
+
+        method.send_request(test_datums[0])
+        method.send_request(test_datums[1])
+        method.requests_closed()
 
         response, metadata, code, details = method.termination()
         self.assertEqual(2, len(response.responses))
@@ -133,16 +134,17 @@ class TestServer(unittest.TestCase):
             ),
         ]
 
-        request = udsink_pb2.DatumList(elements=test_datums)
-
-        method = self.test_server.invoke_unary_unary(
+        method = self.test_server.invoke_stream_unary(
             method_descriptor=(
                 udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"].methods_by_name["SinkFn"]
             ),
             invocation_metadata={},
-            request=request,
             timeout=1,
         )
+
+        method.send_request(test_datums[0])
+        method.send_request(test_datums[1])
+        method.requests_closed()
 
         response, metadata, code, details = method.termination()
         self.assertEqual(2, len(response.responses))

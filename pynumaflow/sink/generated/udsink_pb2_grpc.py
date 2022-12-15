@@ -15,9 +15,9 @@ class UserDefinedSinkStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SinkFn = channel.unary_unary(
+        self.SinkFn = channel.stream_unary(
             "/sink.v1.UserDefinedSink/SinkFn",
-            request_serializer=udsink__pb2.DatumList.SerializeToString,
+            request_serializer=udsink__pb2.Datum.SerializeToString,
             response_deserializer=udsink__pb2.ResponseList.FromString,
         )
         self.IsReady = channel.unary_unary(
@@ -30,7 +30,7 @@ class UserDefinedSinkStub(object):
 class UserDefinedSinkServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def SinkFn(self, request, context):
+    def SinkFn(self, request_iterator, context):
         """SinkFn writes the Datum to a user defined sink."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -45,9 +45,9 @@ class UserDefinedSinkServicer(object):
 
 def add_UserDefinedSinkServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "SinkFn": grpc.unary_unary_rpc_method_handler(
+        "SinkFn": grpc.stream_unary_rpc_method_handler(
             servicer.SinkFn,
-            request_deserializer=udsink__pb2.DatumList.FromString,
+            request_deserializer=udsink__pb2.Datum.FromString,
             response_serializer=udsink__pb2.ResponseList.SerializeToString,
         ),
         "IsReady": grpc.unary_unary_rpc_method_handler(
@@ -68,7 +68,7 @@ class UserDefinedSink(object):
 
     @staticmethod
     def SinkFn(
-        request,
+        request_iterator,
         target,
         options=(),
         channel_credentials=None,
@@ -79,11 +79,11 @@ class UserDefinedSink(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_unary(
+            request_iterator,
             target,
             "/sink.v1.UserDefinedSink/SinkFn",
-            udsink__pb2.DatumList.SerializeToString,
+            udsink__pb2.Datum.SerializeToString,
             udsink__pb2.ResponseList.FromString,
             options,
             channel_credentials,

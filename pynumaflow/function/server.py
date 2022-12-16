@@ -34,11 +34,15 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 def default_map_handler(key: str, datum: Datum) -> Messages:
-    raise NotImplementedError("Method not implemented! A valid map handler is required to apply map.")
+    raise NotImplementedError(
+        "Method not implemented! A valid map handler is required to apply map."
+    )
 
 
 def default_reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
-    raise NotImplementedError("Method not implemented! A valid reduce handler is required to apply reduce.")
+    raise NotImplementedError(
+        "Method not implemented! A valid reduce handler is required to apply reduce."
+    )
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):

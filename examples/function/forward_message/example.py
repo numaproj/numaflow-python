@@ -1,7 +1,7 @@
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
-def map_handler(key: str, datum: Datum) -> Messages:
+def my_handler(key: str, datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
@@ -11,5 +11,5 @@ def map_handler(key: str, datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler)
+    grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
     grpc_server.start()

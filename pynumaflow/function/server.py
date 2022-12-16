@@ -3,6 +3,7 @@ import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Callable, Iterator
 
 import grpc
@@ -11,12 +12,15 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
+    WIN_START_TIME,
+    WIN_END_TIME,
     MAX_MESSAGE_SIZE,
 )
-from pynumaflow.function import Messages, Datum
+from pynumaflow.function import Messages, Datum, IntervalWindow, Metadata
 from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
+
 
 if os.getenv("PYTHONDEBUG"):
     logging.basicConfig(level=logging.DEBUG)
@@ -24,6 +28,7 @@ if os.getenv("PYTHONDEBUG"):
 _LOGGER = logging.getLogger(__name__)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
+UDFReduceCallable = Callable[[str, Iterator[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -55,11 +60,13 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def __init__(
         self,
         map_handler: UDFMapCallable,
+        reduce_handler: UDFReduceCallable,
         sock_path=FUNCTION_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
         self.__map_handler: UDFMapCallable = map_handler
+        self.__reduce_handler: UDFReduceCallable = reduce_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -110,10 +117,45 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
-        # TODO: implement Reduce function
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        key = ""
+        start = ""
+        end = ""
+        for metadata_key, metadata_value in context.invocation_metadata():
+            if metadata_key == DATUM_KEY:
+                key = metadata_value
+            elif metadata_key == WIN_START_TIME:
+                start = metadata_value
+            elif metadata_key == WIN_END_TIME:
+                end = metadata_value
+
+        if key == "" or start == "" or end == "":
+            raise ValueError(
+                "Expected to have key/window_start_time/window_end_time but got empty value"
+            )
+
+        start_dt = datetime.fromtimestamp(int(start), timezone.utc)
+        end_dt = datetime.fromtimestamp(int(end), timezone.utc)
+        interval_window = IntervalWindow(start=start_dt, end=end_dt)
+
+        try:
+            msgs = self.__reduce_handler(
+                key,
+                request_iterator,
+                Metadata(
+                    interval_window=interval_window
+                )
+            )
+        except Exception as err:
+            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
+
+            # a neat hack to drop
+            msgs = Messages.as_forward_all(None)
+
+        datums = []
+        for msg in msgs.items():
+            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+
+        return udfunction_pb2.DatumList(elements=datums)
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

@@ -21,7 +21,7 @@ spec:
             args:
             - python
             - example.py
-            image: quay.io/numaio/log-example:python
+            image: quay.io/numaio/numaflow-python/sink-log:latest
     - name: log-output
       sink:
         log: {}

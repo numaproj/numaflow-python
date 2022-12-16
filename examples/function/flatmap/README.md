@@ -5,6 +5,6 @@
 ```shell
 make image
 # Privilege needed.
-docker push quay.io/numaio/flatmap-example:python
+docker push quay.io/numaio/map-python-flatmap:latest
 ```
 

@@ -33,6 +33,14 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
+def default_map_handler(key: str, datum: Datum) -> Messages:
+    raise NotImplementedError("Method not implemented!")
+
+
+def default_reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    raise NotImplementedError("Method not implemented!")
+
+
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
@@ -48,7 +56,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+    >>> from pynumaflow.function import Messages, Message, \
+    >>>     Datum, Metadata, UserDefinedFunctionServicer
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
@@ -68,14 +77,17 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...   messages = Messages()
     ...   messages.append(Message.to_vtx(key, str.encode(msg)))
     ...   return messages
-    >>> grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=reduce_handler)
+    >>> grpc_server = UserDefinedFunctionServicer(
+    >>>   map_handler=map_handler,
+    >>>   reduce_handler=reduce_handler,
+    >>> )
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        map_handler: UDFMapCallable,
-        reduce_handler: UDFReduceCallable,
+        map_handler=default_map_handler,
+        reduce_handler=default_reduce_handler,
         sock_path=FUNCTION_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,

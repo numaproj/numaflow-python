@@ -31,11 +31,11 @@ if __name__ == "__main__":
 ## Implement a User Defined Sink (UDSink)
 
 ```python
-from typing import List
+from typing import Iterator
 from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
 
 
-def udsink_handler(datums: List[Datum]) -> Responses:
+def udsink_handler(datums: Iterator[Datum]) -> Responses:
     responses = Responses()
     for msg in datums:
         print("User Defined Sink", msg)
@@ -50,5 +50,5 @@ if __name__ == "__main__":
 
 ### Sample Image
 
-A sample UDSink [Dockerfile](examples/sink/simplesink/Dockerfile) is provided 
-under [examples](examples/sink/simplesink).
+A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided 
+under [examples](examples/sink/log).

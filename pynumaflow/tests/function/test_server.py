@@ -34,10 +34,8 @@ def map_handler(key: str, datum: Datum) -> Messages:
 
 def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
-    print("Interval window:", interval_window)
     counter = 0
     for datum in datums:
-        print("datum:", datum)
         counter = counter + 1
     msg = "counter:%s interval_window_start:%s interval_window_end:%s" % (
         counter,
@@ -78,7 +76,9 @@ def mock_interval_window_end():
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = UserDefinedFunctionServicer(map_handler)
+        my_servicer = UserDefinedFunctionServicer(
+            map_handler=map_handler, reduce_handler=reduce_handler
+        )
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -184,7 +184,6 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_reduce_fn(self):
-        # TODO: update test after reduce fn is implemented
         event_time_timestamp = _timestamp_pb2.Timestamp()
         event_time_timestamp.FromDatetime(dt=mock_event_time())
         watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -205,7 +204,7 @@ class TestServer(unittest.TestCase):
             invocation_metadata={
                 (DATUM_KEY, "test"),
                 (WIN_START_TIME, mock_interval_window_start()),
-                (WIN_END_TIME, mock_interval_window_end())
+                (WIN_END_TIME, mock_interval_window_end()),
             },
             timeout=1,
         )
@@ -215,9 +214,16 @@ class TestServer(unittest.TestCase):
         rpc.requests_closed()
 
         response, metadata, code, details = rpc.termination()
-        self.assertIsNone(response)
-        self.assertEqual(code, StatusCode.UNKNOWN)
-        self.assertEqual("Exception calling application: Method not implemented!", details)
+        self.assertEqual(1, len(response.elements))
+        self.assertEqual(code, StatusCode.OK)
+        self.assertEqual(
+            bytes(
+                "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
+                "interval_window_end:2022-09-12 16:01:00+00:00",
+                encoding="utf-8",
+            ),
+            response.elements[0].value,
+        )
 
 
 if __name__ == "__main__":

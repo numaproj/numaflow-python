@@ -36,7 +36,8 @@ if __name__ == "__main__":
     grpc_server.start()
 ```
 
-### Sample Image (TODO)
+### Sample Image
+[Dockerfile](https://github.com/numaproj/numaflow-python/blob/main/examples/function/forward_message/Dockerfile)
 
 ## Implement a User Defined Sink (UDSink)
 

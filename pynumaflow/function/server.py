@@ -92,6 +92,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
+        if map_handler == default_map_handler and reduce_handler == default_reduce_handler:
+            raise ValueError("Require a valid map handler and/or a valid reduce handler.")
         self.__map_handler: UDFMapCallable = map_handler
         self.__reduce_handler: UDFReduceCallable = reduce_handler
         self.sock_path = f"unix://{sock_path}"

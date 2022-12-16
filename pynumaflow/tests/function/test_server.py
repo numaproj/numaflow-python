@@ -1,16 +1,18 @@
 import unittest
 from datetime import datetime, timezone
+from typing import Iterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow._constants import DATUM_KEY
+from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import (
     Message,
     Messages,
     Datum,
+    Metadata,
 )
 from pynumaflow.function._dtypes import DROP
 from pynumaflow.function.generated import udfunction_pb2
@@ -27,6 +29,23 @@ def map_handler(key: str, datum: Datum) -> Messages:
     val = bytes(msg, encoding="utf-8")
     messages = Messages()
     messages.append(Message.to_vtx(key, val))
+    return messages
+
+
+def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    interval_window = md.interval_window
+    print("Interval window:", interval_window)
+    counter = 0
+    for datum in datums:
+        print("datum:", datum)
+        counter = counter + 1
+    msg = "counter:%s interval_window_start:%s interval_window_end:%s" % (
+        counter,
+        interval_window.start,
+        interval_window.end,
+    )
+    messages = Messages()
+    messages.append(Message.to_vtx(key, str.encode(msg)))
     return messages
 
 
@@ -47,6 +66,14 @@ def mock_event_time():
 def mock_watermark():
     t = datetime.fromtimestamp(1662998460, timezone.utc)
     return t
+
+
+def mock_interval_window_start():
+    return 1662998400
+
+
+def mock_interval_window_end():
+    return 1662998460
 
 
 class TestServer(unittest.TestCase):
@@ -175,11 +202,16 @@ class TestServer(unittest.TestCase):
                     "ReduceFn"
                 ]
             ),
-            invocation_metadata={(DATUM_KEY, "test")},
+            invocation_metadata={
+                (DATUM_KEY, "test"),
+                (WIN_START_TIME, mock_interval_window_start()),
+                (WIN_END_TIME, mock_interval_window_end())
+            },
             timeout=1,
         )
 
-        rpc.send_request(request)
+        for _ in range(10):
+            rpc.send_request(request)
         rpc.requests_closed()
 
         response, metadata, code, details = rpc.termination()

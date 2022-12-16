@@ -1,3 +1,3 @@
 .PHONY: image
 image:
-	docker build -t "quay.io/numaio/map-python-forward-message:latest" .
+	docker build -t "quay.io/numaio/numaflow-python/map-forward-message:latest" .

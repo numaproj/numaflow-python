@@ -10,22 +10,25 @@ from typing import Iterator
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 def map_handler(key: str, datum: Datum) -> Messages:
-      val = datum.value
-      _ = datum.event_time
-      _ = datum.watermark
-      messages = Messages(Message.to_vtx(key, val))
-      return messages
+    val = datum.value
+    _ = datum.event_time
+    _ = datum.watermark
+    messages = Messages(Message.to_vtx(key, val))
+    return messages
 
 def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
-      interval_window = md.interval_window
-      print("Interval window:", interval_window)
-      counter = 0
-      for datum in datums:
-        print("datum:", datum)
+    interval_window = md.interval_window
+    counter = 0
+    for _ in datums:
         counter = counter + 1
-      messages = Messages()
-      messages.append(Message.to_vtx(key, str.encode(str(counter))))
-      return messages
+    msg = "counter:%s interval_window_start:%s interval_window_end:%s" % (
+        counter,
+        interval_window.start,
+        interval_window.end,
+    )
+    messages = Messages()
+    messages.append(Message.to_vtx(key, str.encode(msg)))
+    return messages
 
 
 if __name__ == "__main__":
@@ -42,7 +45,7 @@ from typing import List
 from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
 
 
-def udsink_handler(datums: List[Datum]) -> Responses:
+def my_handler(datums: List[Datum]) -> Responses:
     responses = Responses()
     for msg in datums:
         print("User Defined Sink", msg)
@@ -51,7 +54,7 @@ def udsink_handler(datums: List[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedSinkServicer(udsink_handler)
+    grpc_server = UserDefinedSinkServicer(my_handler)
     grpc_server.start()
 ```
 

@@ -35,7 +35,7 @@ def map_handler(key: str, datum: Datum) -> Messages:
 def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    for datum in datums:
+    for _ in datums:
         counter = counter + 1
     msg = "counter:%s interval_window_start:%s interval_window_end:%s" % (
         counter,

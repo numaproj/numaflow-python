@@ -40,20 +40,32 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     Args:
         map_handler: Function callable following the type signature of UDFMapCallable
+        reduce_handler: Function callable following the type signature of UDFReduceCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
                      defaults to number of processors x4
 
     Example invocation:
-    >>> from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
+    >>> from typing import Iterator
+    >>> from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
     ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
-    >>> grpc_server = UserDefinedFunctionServicer(map_handler)
+    ... def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    ...   interval_window = md.interval_window
+    ...   print("Interval window:", interval_window)
+    ...   counter = 0
+    ...   for datum in datums:
+    ...     print("datum:", datum)
+    ...     counter = counter + 1
+    ...   messages = Messages()
+    ...   messages.append(Message.to_vtx(key, str.encode(str(counter))))
+    ...   return messages
+    >>> grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=reduce_handler)
     >>> grpc_server.start()
     """
 
@@ -139,11 +151,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         try:
             msgs = self.__reduce_handler(
-                key,
-                request_iterator,
-                Metadata(
-                    interval_window=interval_window
-                )
+                key, request_iterator, Metadata(interval_window=interval_window)
             )
         except Exception as err:
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)

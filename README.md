@@ -50,5 +50,5 @@ if __name__ == "__main__":
 
 ### Sample Image
 
-A sample UDSink [Dockerfile](examples/sink/simplesink/Dockerfile) is provided 
-under [examples](examples/sink/simplesink).
+A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided 
+under [examples](examples/sink/log).

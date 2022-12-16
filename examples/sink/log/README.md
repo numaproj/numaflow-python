@@ -4,7 +4,7 @@
    ```shell
    make image
    # Privilege required
-   docker push quay.io/numaio/simplesink-example:python
+   docker push quay.io/numaio/numaflow-python/sink-log:latest
    ```
 
 2. Apply the pipeline

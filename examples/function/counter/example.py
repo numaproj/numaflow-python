@@ -1,6 +1,5 @@
 from typing import Iterator
-from pynumaflow.function import Messages, Message, \
-    Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 
 def map_handler(key: str, datum: Datum) -> Messages:

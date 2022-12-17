@@ -5,18 +5,34 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 
 ## Implement a User Defined Function (UDF)
 
-```python
-from typing import Iterator
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
-def map_handler(key: str, datum: Datum) -> Messages:
+### Map
+
+```python
+from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
+
+
+def my_handler(key: str, datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
     messages = Messages(Message.to_vtx(key, val))
     return messages
 
-def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+
+if __name__ == "__main__":
+    grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
+    grpc_server.start()
+```
+
+### Reduce
+
+```python
+from typing import Iterator
+from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+
+
+def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     for _ in datums:
@@ -32,12 +48,13 @@ def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=reduce_handler)
+    grpc_server = UserDefinedFunctionServicer(reduce_handler=my_handler)
     grpc_server.start()
 ```
 
 ### Sample Image
-[Dockerfile](https://github.com/numaproj/numaflow-python/blob/main/examples/function/forward_message/Dockerfile)
+A sample UDF [Dockerfile](examples/function/forward_message/Dockerfile) is provided 
+under [examples](examples/function/forward_message).
 
 ## Implement a User Defined Sink (UDSink)
 
@@ -61,5 +78,5 @@ if __name__ == "__main__":
 
 ### Sample Image
 
-A sample UDSink [Dockerfile](examples/sink/simplesink/Dockerfile) is provided 
-under [examples](examples/sink/simplesink).
+A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided 
+under [examples](examples/sink/log).

@@ -57,14 +57,14 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     Example invocation:
     >>> from typing import Iterator
     >>> from pynumaflow.function import Messages, Message, \
-    >>>     Datum, Metadata, UserDefinedFunctionServicer
+    ...     Datum, Metadata, UserDefinedFunctionServicer
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
     ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
-    ... def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    >>> def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window
     ...   counter = 0
     ...   for _ in datums:
@@ -78,9 +78,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...   messages.append(Message.to_vtx(key, str.encode(msg)))
     ...   return messages
     >>> grpc_server = UserDefinedFunctionServicer(
-    >>>   map_handler=map_handler,
-    >>>   reduce_handler=reduce_handler,
-    >>> )
+    ...   map_handler=map_handler,
+    ...   reduce_handler=reduce_handler,
+    ... )
     >>> grpc_server.start()
     """
 

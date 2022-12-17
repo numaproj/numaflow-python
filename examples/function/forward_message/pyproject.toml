@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "example-function"
+name = "map-forward-message"
 version = "0.2.4"
 description = ""
 authors = ["Numaflow developers"]

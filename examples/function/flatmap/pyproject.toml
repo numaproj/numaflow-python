@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "flatmap-example-function"
+name = "map-flatmap"
 version = "0.2.4"
 description = ""
 authors = ["Numaflow developers"]

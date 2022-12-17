@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "flatmap-example-function"
+name = "reduce-counter"
 version = "0.2.4"
 description = ""
 authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
 python = "~3.9"
-pynumaflow = "0.2.6"
+pynumaflow = "~0.3.0"
 
 [tool.poetry.dev-dependencies]
 

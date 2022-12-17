@@ -51,6 +51,10 @@ def err_map_handler(_: str, __: Datum) -> Messages:
     raise RuntimeError("Something is fishy!")
 
 
+def err_reduce_handler(_: str, __: Iterator[Datum], ___: Metadata) -> Messages:
+    raise RuntimeError("Something is fishy!")
+
+
 def mock_message():
     msg = bytes("test_mock_message", encoding="utf-8")
     return msg
@@ -92,7 +96,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(my_servicer.sock_path, "unix:///tmp/test.sock")
         self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
 
-    def test_udferr(self):
+    def test_udf_map_err(self):
         my_servicer = UserDefinedFunctionServicer(map_handler=err_map_handler)
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
@@ -147,7 +151,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(expected, response)
         self.assertEqual(code, StatusCode.OK)
 
-    def test_forward_message(self):
+    def test_map_forward_message(self):
         event_time_timestamp = _timestamp_pb2.Timestamp()
         event_time_timestamp.FromDatetime(dt=mock_event_time())
         watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -186,7 +190,7 @@ class TestServer(unittest.TestCase):
         )
         self.assertEqual(code, StatusCode.OK)
 
-    def test_reduce_fn(self):
+    def test_reduce_counter(self):
         event_time_timestamp = _timestamp_pb2.Timestamp()
         event_time_timestamp.FromDatetime(dt=mock_event_time())
         watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -225,6 +229,48 @@ class TestServer(unittest.TestCase):
                 "interval_window_end:2022-09-12 16:01:00+00:00",
                 encoding="utf-8",
             ),
+            response.elements[0].value,
+        )
+
+    def test_udf_reduce_err(self):
+        my_servicer = UserDefinedFunctionServicer(reduce_handler=err_reduce_handler)
+        services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.Datum(
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        rpc = self.test_server.invoke_stream_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "ReduceFn"
+                ]
+            ),
+            invocation_metadata={
+                (DATUM_KEY, "test"),
+                (WIN_START_TIME, mock_interval_window_start()),
+                (WIN_END_TIME, mock_interval_window_end()),
+            },
+            timeout=1,
+        )
+
+        for _ in range(10):
+            rpc.send_request(request)
+        rpc.requests_closed()
+
+        response, metadata, code, details = rpc.termination()
+        self.assertEqual(1, len(response.elements))
+        self.assertEqual(DROP.decode(), response.elements[0].key)
+        self.assertEqual(
+            b"",
             response.elements[0].value,
         )
 

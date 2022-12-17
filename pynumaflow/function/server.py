@@ -230,9 +230,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         server = grpc.server(
             ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
-        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
-            self, server
-        )
+        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
         server.add_insecure_port(self.sock_path)
         server.start()
         _LOGGER.info(

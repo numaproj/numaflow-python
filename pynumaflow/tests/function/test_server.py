@@ -258,6 +258,7 @@ class TestServer(unittest.TestCase):
                 (DATUM_KEY, "test"),
                 (WIN_START_TIME, mock_interval_window_start()),
                 (WIN_END_TIME, mock_interval_window_end()),
+                ("IMPROVE_CODECOV", "this metadata aims to improve the codecov"),
             },
             timeout=1,
         )
@@ -273,6 +274,31 @@ class TestServer(unittest.TestCase):
             b"",
             response.elements[0].value,
         )
+
+    def test_invalid_input(self):
+        try:
+            _ = UserDefinedFunctionServicer()
+        except Exception as err:
+            self.assertEqual(
+                "Require a valid map handler and/or a valid reduce handler.", err.__str__()
+            )
+
+    def test_invalid_reduce_metadata(self):
+        try:
+            _ = self.test_server.invoke_stream_unary(
+                method_descriptor=(
+                    udfunction_pb2.DESCRIPTOR.services_by_name[
+                        "UserDefinedFunction"
+                    ].methods_by_name["ReduceFn"]
+                ),
+                invocation_metadata={},
+                timeout=1,
+            )
+        except Exception as err:
+            self.assertEqual(
+                "Expected to have key/window_start_time/window_end_time but got empty value.",
+                err.__str__,
+            )
 
 
 if __name__ == "__main__":

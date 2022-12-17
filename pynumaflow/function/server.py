@@ -33,16 +33,12 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-def default_map_handler(key: str, datum: Datum) -> Messages:
-    raise NotImplementedError(
-        "Method not implemented! A valid map handler is required to apply map."
-    )
+def default_map_handler(_: str, __: Datum) -> Messages:
+    return
 
 
-def default_reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
-    raise NotImplementedError(
-        "Method not implemented! A valid reduce handler is required to apply reduce."
-    )
+def default_reduce_handler(_: str, __: Iterator[Datum], ___: Metadata) -> Messages:
+    return
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -163,7 +159,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         if key == "" or start == "" or end == "":
             raise ValueError(
-                "Expected to have key/window_start_time/window_end_time but got empty value"
+                "Expected to have key/window_start_time/window_end_time but got empty value."
             )
 
         start_dt = datetime.fromtimestamp(int(start), timezone.utc)

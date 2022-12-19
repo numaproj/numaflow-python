@@ -37,8 +37,10 @@ def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     counter = 0
     for _ in datums:
         counter += 1
-    msg = (f"counter:{counter} interval_window_start:{interval_window.start} "
-           f"interval_window_end:{interval_window.end}")
+    msg = (
+        f"counter:{counter} interval_window_start:{interval_window.start} "
+        f"interval_window_end:{interval_window.end}"
+    )
     return Messages(Message.to_vtx(key, str.encode(msg)))
 
 

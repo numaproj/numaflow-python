@@ -33,14 +33,6 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-def default_map_handler(_: str, __: Datum) -> Messages:
-    return
-
-
-def default_reduce_handler(_: str, __: Iterator[Datum], ___: Metadata) -> Messages:
-    return
-
-
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
@@ -58,25 +50,23 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     >>> from typing import Iterator
     >>> from pynumaflow.function import Messages, Message, \
     ...     Datum, Metadata, UserDefinedFunctionServicer
+    ...
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
     ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
+    ...
     >>> def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window
     ...   counter = 0
     ...   for _ in datums:
-    ...     counter = counter + 1
-    ...   msg = "counter:%s interval_window_start:%s interval_window_end:%s" % (
-    ...     counter,
-    ...     interval_window.start,
-    ...     interval_window.end,
-    ...   )
-    ...   messages = Messages()
-    ...   messages.append(Message.to_vtx(key, str.encode(msg)))
-    ...   return messages
+    ...     counter += 1
+    ...   msg = f"counter:{counter} interval_window_start:{interval_window.start} "
+    ...         f"interval_window_end:{interval_window.end}"
+    ...   return Messages(Message.to_vtx(key, str.encode(msg)))
+    ...
     >>> grpc_server = UserDefinedFunctionServicer(
     ...   map_handler=map_handler,
     ...   reduce_handler=reduce_handler,
@@ -86,13 +76,13 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     def __init__(
         self,
-        map_handler=default_map_handler,
-        reduce_handler=default_reduce_handler,
+        map_handler: UDFMapCallable = None,
+        reduce_handler: UDFReduceCallable = None,
         sock_path=FUNCTION_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if map_handler == default_map_handler and reduce_handler == default_reduce_handler:
+        if not (map_handler or reduce_handler):
             raise ValueError("Require a valid map handler and/or a valid reduce handler.")
         self.__map_handler: UDFMapCallable = map_handler
         self.__reduce_handler: UDFReduceCallable = reduce_handler
@@ -146,9 +136,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
-        key = ""
-        start = ""
-        end = ""
+        key, start, end = None, None, None
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
                 key = metadata_value
@@ -156,10 +144,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 start = metadata_value
             elif metadata_key == WIN_END_TIME:
                 end = metadata_value
-
-        if key == "" or start == "" or end == "":
+        if not (key or start or end):
             raise ValueError(
-                "Expected to have key/window_start_time/window_end_time but got empty value."
+                f"Expected to have all key/window_start_time/window_end_time;"
+                f"got key: {key}, start: {start}, end: {end}."
             )
 
         start_dt = datetime.fromtimestamp(int(start), timezone.utc)

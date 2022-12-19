@@ -46,7 +46,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
     ...   return responses
-    >>> grpc_server = UserDefinedSinkServicer(sink_handler=my_handler)
+    >>> grpc_server = UserDefinedSinkServicer(my_handler)
     >>> grpc_server.start()
     """
 

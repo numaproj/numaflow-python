@@ -36,15 +36,9 @@ def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     for _ in datums:
-        counter = counter + 1
-    msg = "counter:%s interval_window_start:%s interval_window_end:%s" % (
-        counter,
-        interval_window.start,
-        interval_window.end,
-    )
-    messages = Messages()
-    messages.append(Message.to_vtx(key, str.encode(msg)))
-    return messages
+        counter += 1
+    msg = f"counter:{counter} interval_window_start:{interval_window.start} interval_window_end:{interval_window.end}"
+    return Messages(Message.to_vtx(key, str.encode(msg)))
 
 
 def err_map_handler(_: str, __: Datum) -> Messages:
@@ -276,12 +270,8 @@ class TestServer(unittest.TestCase):
         )
 
     def test_invalid_input(self):
-        try:
-            _ = UserDefinedFunctionServicer()
-        except Exception as err:
-            self.assertEqual(
-                "Require a valid map handler and/or a valid reduce handler.", err.__str__()
-            )
+        with self.assertRaises(ValueError):
+            UserDefinedFunctionServicer()
 
     def test_invalid_reduce_metadata(self):
         try:

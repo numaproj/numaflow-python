@@ -148,7 +148,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 end = metadata_value
         if not (key or start or end):
             raise ValueError(
-                f"Expected to have all key/window_start_time/window_end_time;"
+                f"Expected to have all key/window_start_time/window_end_time; "
                 f"got key: {key}, start: {start}, end: {end}."
             )
 

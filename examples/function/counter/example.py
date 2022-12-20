@@ -3,9 +3,12 @@ from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedF
 
 
 def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    print("Called reduce handler")
     interval_window = md.interval_window
+    print("start", interval_window.start, "end", interval_window.end)
     counter = 0
-    for _ in datums:
+    for d in datums:
+        print("Got datum", d.value)
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -15,5 +18,6 @@ def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
+    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler, sock_path="/tmp/numaflow-test.sock")
+    # grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
     grpc_server.start()

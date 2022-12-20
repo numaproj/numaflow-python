@@ -9,5 +9,3 @@ This example is for numaflow-python contributors/developers. The example include
 5. Update your `example.py` and the `image name` in `Makefile` as needed.
 6. Run `make image` to build your image.
 7. Now you have the image with your customized example and your code change to test in the numaflow pipeline. Example pipeline `pipeline-numaflow.yaml` is also provided in this `developer_guide` folder. Please check [numaflow](https://numaflow.numaproj.io/) for more details.
-
-

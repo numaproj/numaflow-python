@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "reduce-counter"
+version = "0.2.4"
+description = ""
+authors = ["Numaflow developers"]
+
+[tool.poetry.dependencies]
+python = "~3.10"
+pynumaflow = {git = "https://github.com/chromevoid/numaflow-python", rev = "update-example-0.3.1"}
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

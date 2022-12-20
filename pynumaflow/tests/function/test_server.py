@@ -68,11 +68,11 @@ def mock_watermark():
 
 
 def mock_interval_window_start():
-    return 1662998400
+    return 1662998400000
 
 
 def mock_interval_window_end():
-    return 1662998460
+    return 1662998460000
 
 
 class TestServer(unittest.TestCase):

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.1 (2022-12-20)
+
+ * [d33ddd0](https://github.com/numaproj/numaflow-python/commit/d33ddd0ccb6725b711c16f8a744e027767c26c1d) feat: udf reduce (#40)
+
+### Contributors
+
+ * Juanlu Yu
+
 ## v0.3.0 (2022-12-15)
 
  * [e717b1b](https://github.com/numaproj/numaflow-python/commit/e717b1ba5ecda7fde218177d2f78fa550cd8305f) feat: udsink gRPC stream (#34)

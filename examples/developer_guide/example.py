@@ -26,5 +26,8 @@ def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=reduce_handler)
+    grpc_server = UserDefinedFunctionServicer(
+        map_handler=map_handler,
+        reduce_handler=reduce_handler
+    )
     grpc_server.start()

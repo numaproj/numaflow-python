@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "example-sink"
+name = "reduce-counter"
 version = "0.2.4"
 description = ""
 authors = ["Numaflow developers"]

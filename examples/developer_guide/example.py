@@ -1,5 +1,11 @@
 from typing import Iterator
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import (
+    Messages,
+    Message,
+    Datum,
+    Metadata,
+    UserDefinedFunctionServicer,
+)
 
 
 def map_handler(key: str, datum: Datum) -> Messages:
@@ -27,7 +33,6 @@ def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
 
 if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(
-        map_handler=map_handler,
-        reduce_handler=reduce_handler
+        map_handler=map_handler, reduce_handler=reduce_handler
     )
     grpc_server.start()

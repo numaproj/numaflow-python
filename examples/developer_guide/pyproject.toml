@@ -6,7 +6,7 @@ authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-pynumaflow = {git = "https://github.com/chromevoid/numaflow-python", rev = "bugfix-time-unit"}
+pynumaflow = {git = "https://github.com/<YOUR_ID>/numaflow-python", rev = "<YOUR_BRANCH>"}
 
 [tool.poetry.dev-dependencies]
 

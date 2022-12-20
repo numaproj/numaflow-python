@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.0 (2022-12-15)
+
+ * [e717b1b](https://github.com/numaproj/numaflow-python/commit/e717b1ba5ecda7fde218177d2f78fa550cd8305f) feat: udsink gRPC stream (#34)
+ * [ad55710](https://github.com/numaproj/numaflow-python/commit/ad5571052b3857377d7b920c6fe0bf89fdb76c58) fix: .flake8 file (#35)
+
+### Contributors
+
+ * Avik Basu
+ * Juanlu Yu
+
 ## v0.2.6 (2022-11-22)
 
  * [0fbecc1](https://github.com/numaproj/numaflow-python/commit/0fbecc13a2ae48636d5454664b072534b02160a0) feat: introduces sync gRPC server  (#27)

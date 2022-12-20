@@ -154,6 +154,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         start_dt = datetime.fromtimestamp(int(start), timezone.utc)
         end_dt = datetime.fromtimestamp(int(end), timezone.utc)
+        print(start_dt, end_dt)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
         try:

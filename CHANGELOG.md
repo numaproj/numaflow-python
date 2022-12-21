@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.2 (2022-12-21)
+
+ * [a650aac](https://github.com/numaproj/numaflow-python/commit/a650aacf86b5d18f8f84ba75be2b9adf3e6dacdc) fix: time unit bug/dockerfile/add a guide (#44)
+
+### Contributors
+
+ * Juanlu Yu
+
 ## v0.3.1 (2022-12-20)
 
  * [d33ddd0](https://github.com/numaproj/numaflow-python/commit/d33ddd0ccb6725b711c16f8a744e027767c26c1d) feat: udf reduce (#40)

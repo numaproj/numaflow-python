@@ -1,12 +1,7 @@
 import unittest
 from dataclasses import FrozenInstanceError
 
-from pynumaflow.function._dtypes import (
-    Message,
-    Messages,
-    ALL,
-    DROP,
-)
+from pynumaflow.function import Messages, Message, ALL, DROP
 
 
 def mock_message():

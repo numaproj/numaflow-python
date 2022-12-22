@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
-from typing import TypeVar, Type, List
+from typing import TypeVar, Type, List, Optional
 
 DROP = b"U+005C__DROP__"
 ALL = b"U+005C__ALL__"
@@ -37,6 +37,8 @@ class Message:
 
 
 class Messages:
+    __slots__ = ("_messages",)
+
     def __init__(self, *messages: M):
         self._messages = list(messages) or []
 
@@ -53,7 +55,7 @@ class Messages:
         return self._messages
 
     @classmethod
-    def as_forward_all(cls: Type[Ms], value: bytes) -> Ms:
+    def as_forward_all(cls: Type[Ms], value: Optional[bytes]) -> Ms:
         msgs = cls()
         if value:
             msgs.append(Message.to_all(value=value))
@@ -83,6 +85,8 @@ class Datum:
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
     >>> d = Datum(value=payload, event_time=t1, watermark=t2)
     """
+
+    __slots__ = ("_value", "_event_time", "_watermark")
 
     def __init__(self, value: bytes, event_time: datetime, watermark: datetime):
         self._value = value or b""
@@ -123,6 +127,8 @@ class Datum:
 class IntervalWindow:
     """Defines the start and end of the interval window for the event."""
 
+    __slots__ = ("_start", "_end")
+
     def __init__(self, start: datetime, end: datetime):
         self._start = start
         self._end = end
@@ -146,6 +152,8 @@ class IntervalWindow:
 
 class Metadata:
     """Defines the metadata for the event."""
+
+    __slots__ = ("_interval_window",)
 
     def __init__(self, interval_window: IntervalWindow):
         self._interval_window = interval_window

@@ -10,15 +10,20 @@ spec:
         generator:
           rpu: 10
           duration: 1s
+    - name: flatmap
+      udf:
+        container:
+          # split the incoming message by comma
+          image: quay.io/numaio/numaflow-python/map-flatmap:latest
     - name: cat
       udf:
         container:
-          # compute the sum
+          # simply forward the message
           image: quay.io/numaio/numaflow-python/map-forward-message:latest
     - name: counter
       udf:
         container:
-          # compute the sum
+          # count the number of incoming messages
           image: quay.io/numaio/numaflow-python/reduce-counter:latest
         groupBy:
           window:
@@ -34,6 +39,8 @@ spec:
             image: quay.io/numaio/numaflow-python/sink-log:latest
   edges:
     - from: in
+      to: flatmap
+    - from: flatmap
       to: cat
     - from: cat
       to: counter

@@ -1,4 +1,4 @@
-from typing import Iterator
+from collections.abc import AsyncIterable
 from pynumaflow.function import (
     Messages,
     Message,
@@ -18,11 +18,11 @@ def map_handler(key: str, datum: Datum) -> Messages:
     return messages
 
 
-def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     # count the number of events
     interval_window = md.interval_window
     counter = 0
-    for _ in datums:
+    async for _ in datums:
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -35,4 +35,4 @@ if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(
         map_handler=map_handler, reduce_handler=reduce_handler
     )
-    grpc_server.start()
+    grpc_server.start_async()

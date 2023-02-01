@@ -239,17 +239,16 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
-        server = grpc.aio.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
+        server = grpc.aio.server(options=self._server_options)
+        loop = asyncio.new_event_loop()
 
         try:
-            asyncio.run(self.__serve_async(server))
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(self.__serve_async(server))
         except Exception as e:
             _LOGGER.error(e)
         finally:
-            loop = asyncio.get_event_loop()
-            loop.run_until_complete(self._cleanup_coroutines)
+            loop.run_until_complete(*self._cleanup_coroutines)
 
     def start(self) -> None:
         """

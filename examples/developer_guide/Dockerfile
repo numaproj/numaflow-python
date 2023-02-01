@@ -48,7 +48,7 @@ WORKDIR /app
 
 RUN chmod +x entry.sh
 
-ENTRYPOINT ["/dumb-init", "--"]
+ENTRYPOINT ["/app/entry.sh", "--"]
 CMD ["/app/entry.sh"]
 
 EXPOSE 5000

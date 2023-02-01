@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "map-forward-message"
+name = "example-function"
 version = "0.2.4"
 description = ""
 authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
-python = "~3.10"
-pynumaflow = "~0.3.2"
+python = "~3.9"
+pynumaflow = "0.2.6"
 
 [tool.poetry.dev-dependencies]
 

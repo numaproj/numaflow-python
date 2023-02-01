@@ -2,9 +2,10 @@ import unittest
 from datetime import datetime, timezone
 from typing import Iterator
 
+import pytest as pytest
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from grpc import StatusCode
+from grpc import StatusCode, aio
 from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
@@ -188,6 +189,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_reduce_counter(self):
+        print("is this test being executed at all")
         event_time_timestamp = _timestamp_pb2.Timestamp()
         event_time_timestamp.FromDatetime(dt=mock_event_time())
         watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -215,7 +217,7 @@ class TestServer(unittest.TestCase):
 
         for _ in range(10):
             rpc.send_request(request)
-        rpc.requests_closed()
+            rpc.requests_closed()
 
         response, metadata, code, details = rpc.termination()
         self.assertEqual(1, len(response.elements))
@@ -229,7 +231,93 @@ class TestServer(unittest.TestCase):
             response.elements[0].value,
         )
 
-    def test_udf_reduce_err(self):
+    def test_reduce_single_key(self):
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.Datum(
+            key="test",
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        rpc = self.test_server.invoke_stream_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "ReduceFn"
+                ]
+            ),
+            invocation_metadata={
+                (DATUM_KEY, "test"),
+                (WIN_START_TIME, mock_interval_window_start()),
+                (WIN_END_TIME, mock_interval_window_end()),
+            },
+            timeout=1,
+        )
+
+        for _ in range(10):
+            rpc.send_request(request)
+            rpc.requests_closed()
+
+        response, metadata, code, details = rpc.termination()
+        self.assertEqual(1, len(response.elements))
+        self.assertEqual(code, StatusCode.OK)
+        self.assertEqual(
+            bytes(
+                "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
+                "interval_window_end:2022-09-12 16:01:00+00:00",
+                encoding="utf-8",
+            ),
+            response.elements[0].value,
+        )
+
+    def test_reduce_multiple_key(self):
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.Datum(
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        rpc = self.test_server.invoke_stream_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "ReduceFn"
+                ]
+            ),
+            invocation_metadata={
+                (DATUM_KEY, "test"),
+                (WIN_START_TIME, mock_interval_window_start()),
+                (WIN_END_TIME, mock_interval_window_end()),
+            },
+            timeout=1,
+        )
+
+        for i in range(10):
+            request.key = f'key-{i}'
+            rpc.send_request(request)
+            rpc.requests_closed()
+
+        response, metadata, code, details = rpc.termination()
+        self.assertEqual(10, len(response.elements))
+        self.assertEqual(code, StatusCode.OK)
+        self.assertEqual(
+            bytes(
+                "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
+                "interval_window_end:2022-09-12 16:01:00+00:00",
+                encoding="utf-8",
+            ),
+            response.elements[0].value,
+        )
+
+    async def test_udf_reduce_err(self):
         my_servicer = UserDefinedFunctionServicer(reduce_handler=err_reduce_handler)
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
@@ -276,7 +364,7 @@ class TestServer(unittest.TestCase):
         with self.assertRaises(ValueError):
             UserDefinedFunctionServicer()
 
-    def test_invalid_reduce_metadata(self):
+    def test_invalid_reduce_metadata(self) -> None:
         try:
             _ = self.test_server.invoke_stream_unary(
                 method_descriptor=(

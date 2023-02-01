@@ -1,11 +1,15 @@
+import asyncio
+from asyncio import Future, Task
+from collections.abc import Iterator, AsyncGenerator
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
 from typing import TypeVar, Type, List, Optional
 
+from pynumaflow.function.asynciter import NonBlockingIterator
+
 DROP = b"U+005C__DROP__"
 ALL = b"U+005C__ALL__"
-
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -74,21 +78,24 @@ class Datum:
     """
     Class to define the important information for the event.
     Args:
+        key: the key of the event.
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
     >>> # Example usage
     >>> from pynumaflow.function import Datum
     >>> from datetime import datetime, timezone
+    >>> key = "test_key"
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> d = Datum(value=payload, event_time=t1, watermark=t2)
+    >>> d = Datum(key=key, value=payload, event_time=t1, watermark=t2)
     """
 
-    __slots__ = ("_value", "_event_time", "_watermark")
+    __slots__ = ("_key", "_value", "_event_time", "_watermark")
 
-    def __init__(self, value: bytes, event_time: datetime, watermark: datetime):
+    def __init__(self, key: str, value: bytes, event_time: datetime, watermark: datetime):
+        self._key = key or ""
         self._value = value or b""
         if not isinstance(event_time, datetime):
             raise TypeError(f"Wrong data type: {type(event_time)} for Datum.event_time")
@@ -100,6 +107,7 @@ class Datum:
     def __str__(self):
         value_string = self._value.decode("utf-8")
         return (
+            f"key: {self._key}, "
             f"value: {value_string}, "
             f"event_time: {str(self._event_time)}, "
             f"watermark: {str(self._watermark)}"
@@ -107,6 +115,10 @@ class Datum:
 
     def __repr__(self):
         return str(self)
+
+    def key(self):
+        """Returns the key of the event"""
+        return self._key
 
     @property
     def value(self):
@@ -168,3 +180,34 @@ class Metadata:
     def interval_window(self):
         """Returns the interval window for the event."""
         return self._interval_window
+
+
+class AsycIterable:
+    pass
+
+
+class Result:
+    """Defines the object to hold the result of reduce computation."""
+
+    __slots__ = ("_future", "_iterator", "_key")
+
+    def __init__(self, future: Task, iterator: NonBlockingIterator, key: str):
+        self._future = future
+        self._iterator = iterator
+        self._key = key
+
+    @property
+    def future(self):
+        """Returns the future result of computation."""
+        return self._future
+
+    @property
+    def iterator(self):
+        """Returns the handle to the producer queue."""
+        return self._iterator
+
+    @property
+    def key(self):
+        """Returns the key of the partition."""
+        return self._key
+

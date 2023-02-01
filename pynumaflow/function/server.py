@@ -18,7 +18,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
 from pynumaflow.function import Messages, Datum, IntervalWindow, Metadata
-from pynumaflow.function._dtypes import Result
+from pynumaflow.function._dtypes import Result, Message
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
@@ -222,9 +222,20 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def invoke_reduce(self, key, request_iterator: AsyncIterable[Datum], md: Metadata):
         try:
-            msgs = await self.__reduce_handler(
-                key, request_iterator, md
+            # msgs = await self.__reduce_handler(
+            #     key, request_iterator, md
+            # )
+
+            interval_window = md.interval_window
+            counter = 0
+            async for _ in request_iterator:
+                counter += 1
+            msg = (
+                f"counter:{counter} interval_window_start:{interval_window.start} "
+                f"interval_window_end:{interval_window.end}"
             )
+            msgs = Messages(Message.to_vtx(key, str.encode(msg)))
+            _LOGGER.info(f'reduce output : {msgs}')
         except Exception as err:
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
 

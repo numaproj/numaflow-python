@@ -3,6 +3,7 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
+from concurrent.futures import ThreadPoolExecutor
 
 import grpc
 
@@ -40,6 +41,7 @@ class TestAsyncServer(unittest.TestCase):
     def setUp(self) -> None:
         self._s = None
         self.loop = asyncio.new_event_loop()
+        self.loop.set_debug(True)
         _thread = threading.Thread(target=self.between_callback)
         _thread.start()
         self.startThread = _thread
@@ -241,6 +243,7 @@ class TestAsyncServer(unittest.TestCase):
         return request, metadata
 
     async def start_server(self):
+        self._max_threads = 10
         server = grpc.aio.server()
         udfs = UserDefinedFunctionServicer(
             reduce_handler=async_reduce_handler,

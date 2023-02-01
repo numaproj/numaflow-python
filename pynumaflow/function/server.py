@@ -94,7 +94,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
-        self._cleanup_coroutines = []
+        self.cleanup_coroutines = []
 
         self._server_options = [
             ("grpc.max_send_message_length", self._max_message_size),
@@ -217,7 +217,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             _LOGGER.info("Starting graceful shutdown...")
             await server.stop(5)
 
-        self._cleanup_coroutines.append(server_graceful_shutdown())
+        self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
     async def invoke_reduce(self, key, request_iterator: AsyncIterable[Datum], md: Metadata):
@@ -237,18 +237,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return datums
 
-    def start_async(self) -> None:
+    async def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
-        loop = asyncio.new_event_loop()
-
-        try:
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(self.__serve_async(server))
-        except Exception as e:
-            _LOGGER.error(e)
-        finally:
-            loop.run_until_complete(*self._cleanup_coroutines)
+        await self.__serve_async(server)
 
     def start(self) -> None:
         """

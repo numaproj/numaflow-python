@@ -38,9 +38,6 @@ class UserDefinedFunction:
         )
         return Messages(Message.to_vtx(key, str.encode(msg)))
 
-    def reduce_cb(self, key: str, datums: Iterator[Datum], md: Metadata):
-        return asyncio.create_task(self.my_handler(key, datums, md))
-
 
 if __name__ == "__main__":
     udf = UserDefinedFunction()

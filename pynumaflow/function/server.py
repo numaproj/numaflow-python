@@ -200,9 +200,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
-            _LOGGER.info(self.__reduce_handler)
             msgs = self.__reduce_handler(key, request_iterator, md)
-            _LOGGER.info(f'reduce output : {msgs}')
 
         except Exception as err:
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)

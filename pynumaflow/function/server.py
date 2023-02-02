@@ -40,65 +40,7 @@ def thread_initializer():
     asyncio.set_event_loop(loop)
 
 
-async def invoke_reduce(key, request_iterator: AsyncIterable[Datum], md: Metadata):
-    try:
-        # msgs = await self.__reduce_handler(
-        #     key, request_iterator, md
-        # )
 
-        interval_window = md.interval_window
-        counter = 0
-        async for _ in request_iterator:
-            counter += 1
-        msg = (
-            f"counter:{counter} interval_window_start:{interval_window.start} "
-            f"interval_window_end:{interval_window.end}"
-        )
-        msgs = Messages(Message.to_vtx(key, str.encode(msg)))
-        _LOGGER.info(f'reduce output : {msgs}')
-    except Exception as err:
-        _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-
-        # a neat hack to drop
-        msgs = Messages.as_forward_all(None)
-
-    datums = []
-    for msg in msgs.items():
-        datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
-
-    return datums
-
-
-async def async_reduce_handler(callable_dict, interval_window, request_iterator: Iterator[Datum]):
-    # iterate through all the values
-    async for d in request_iterator:
-        key = d.key
-        rs = None
-        if key in callable_dict.keys():
-            rs = callable_dict[key]
-
-        if not rs:
-            niter = NonBlockingIterator()
-            riter = niter.read_iterator()
-            # schedule a async task for consumer
-            # returns a future that will give the results later.
-            task = asyncio.create_task(
-                invoke_reduce(
-                    key, riter, Metadata(interval_window=interval_window)
-                )
-            )
-            rs = Result(task, niter, key)
-
-            callable_dict[key] = rs
-
-        await rs.iterator.put(d)
-    datums = []
-    for key in callable_dict:
-        await callable_dict[key].iterator.put("EOF")
-        fut = callable_dict[key].future
-        await fut
-        datums = datums + fut.result()
-    return udfunction_pb2.DatumList(elements=datums)
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -225,11 +167,71 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
-        response_task = asyncio.create_task(async_reduce_handler(
+        response_task = asyncio.create_task(self.async_reduce_handler(
             callable_dict, interval_window, request_iterator))
 
         await response_task
         return response_task.result()
+
+    async def async_reduce_handler(self, callable_dict, interval_window, request_iterator: Iterator[Datum]):
+        # iterate through all the values
+        async for d in request_iterator:
+            key = d.key
+            rs = None
+            if key in callable_dict.keys():
+                rs = callable_dict[key]
+
+            if not rs:
+                niter = NonBlockingIterator()
+                riter = niter.read_iterator()
+                # schedule a async task for consumer
+                # returns a future that will give the results later.
+                task = asyncio.create_task(
+                    self.invoke_reduce(
+                        key, riter, Metadata(interval_window=interval_window)
+                    )
+                )
+                rs = Result(task, niter, key)
+
+                callable_dict[key] = rs
+
+            await rs.iterator.put(d)
+        datums = []
+        for key in callable_dict:
+            await callable_dict[key].iterator.put("EOF")
+            fut = callable_dict[key].future
+            await fut
+            datums = datums + fut.result()
+        return udfunction_pb2.DatumList(elements=datums)
+
+    async def invoke_reduce(self, key, request_iterator: AsyncIterable[Datum], md: Metadata):
+        try:
+            msgs = await self.__reduce_handler(
+                key, request_iterator, md
+            )
+
+            # interval_window = md.interval_window
+            # counter = 0
+            # async for _ in request_iterator:
+            #     counter += 1
+            # msg = (
+            #     f"counter:{counter} interval_window_start:{interval_window.start} "
+            #     f"interval_window_end:{interval_window.end}"
+            # )
+            # msgs = Messages(Message.to_vtx(key, str.encode(msg)))
+            _LOGGER.info(f'reduce output : {msgs}')
+        except Exception as err:
+            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
+
+            # a neat hack to drop
+            msgs = Messages.as_forward_all(None)
+
+        datums = []
+        for msg in msgs.items():
+            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+
+        return datums
+
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext

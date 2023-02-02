@@ -40,9 +40,6 @@ def thread_initializer():
     asyncio.set_event_loop(loop)
 
 
-
-
-
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
@@ -204,7 +201,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             datums = datums + fut.result()
         return udfunction_pb2.DatumList(elements=datums)
 
-    async def invoke_reduce(self, key, request_iterator: AsyncIterable[Datum], md: Metadata):
+    async def invoke_reduce(self, key, request_iterator: Iterator[Datum], md: Metadata):
         try:
             msgs = await self.__reduce_handler(
                 key, request_iterator, md
@@ -231,7 +228,6 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
 
         return datums
-
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext

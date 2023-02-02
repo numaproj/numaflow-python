@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Iterator
 
 from pynumaflow.function import (
     Messages,
@@ -11,6 +11,10 @@ from pynumaflow.function import (
 
 
 class UserDefinedFunction:
+
+    def __init__(self):
+        pass
+
     def map_handler(self, key: str, datum: Datum) -> Messages:
         # forward a message
         val = datum.value
@@ -20,7 +24,7 @@ class UserDefinedFunction:
         messages.append(Message.to_vtx(key, val))
         return messages
 
-    async def reduce_handler(self, key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+    async def reduce_handler(self, key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
         # count the number of events
         interval_window = md.interval_window
         counter = 0

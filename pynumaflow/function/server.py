@@ -34,11 +34,6 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-def thread_initializer():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
@@ -85,7 +80,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def __init__(
             self,
             map_handler: UDFMapCallable = None,
-            reduce_handler=None,
+            reduce_handler: UDFReduceCallable = None,
             sock_path=FUNCTION_SOCK_PATH,
             max_message_size=MAX_MESSAGE_SIZE,
             max_threads=MAX_THREADS,
@@ -94,7 +89,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             _LOGGER.error(f"empty reduce handler or map handler {map_handler} or {reduce_handler}")
             raise ValueError("Require a valid map handler and/or a valid reduce handler.")
         self.__map_handler: UDFMapCallable = map_handler
-        self.__reduce_handler = reduce_handler
+        self.__reduce_handler: UDFReduceCallable = reduce_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -203,6 +198,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
+            _LOGGER.info(self.__reduce_handler)
             task = asyncio.create_task(self.__reduce_handler(key, request_iterator, md))
             await task
             msgs = task.result()
@@ -259,7 +255,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Starts the gRPC server on the given UNIX socket with given max threads.
         """
         server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads, initializer=thread_initializer()),
+            ThreadPoolExecutor(max_workers=self._max_threads),
             options=self._server_options
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)

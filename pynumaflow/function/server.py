@@ -85,7 +85,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def __init__(
             self,
             map_handler: UDFMapCallable = None,
-            reduce_handler: UDFReduceCallable = None,
+            reduce_handler=None,
             sock_path=FUNCTION_SOCK_PATH,
             max_message_size=MAX_MESSAGE_SIZE,
             max_threads=MAX_THREADS,

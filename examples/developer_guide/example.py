@@ -36,6 +36,6 @@ if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(
         map_handler=map_handler, reduce_handler=reduce_handler
     )
-    asyncio.run(grpc_server.start_async())
-    asyncio.run(*grpc_server.cleanup_coroutines)
+
+    grpc_server.start()
 

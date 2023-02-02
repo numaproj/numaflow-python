@@ -24,7 +24,6 @@ from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
-
 if os.getenv("PYTHONDEBUG"):
     logging.basicConfig(level=logging.DEBUG)
 
@@ -34,6 +33,40 @@ UDFMapCallable = Callable[[str, Datum], Messages]
 UDFReduceCallable = Callable[[str, Iterator[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+
+
+def thread_initializer():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+
+async def invoke_reduce(key, request_iterator: AsyncIterable[Datum], md: Metadata):
+    try:
+        # msgs = await self.__reduce_handler(
+        #     key, request_iterator, md
+        # )
+
+        interval_window = md.interval_window
+        counter = 0
+        async for _ in request_iterator:
+            counter += 1
+        msg = (
+            f"counter:{counter} interval_window_start:{interval_window.start} "
+            f"interval_window_end:{interval_window.end}"
+        )
+        msgs = Messages(Message.to_vtx(key, str.encode(msg)))
+        _LOGGER.info(f'reduce output : {msgs}')
+    except Exception as err:
+        _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
+
+        # a neat hack to drop
+        msgs = Messages.as_forward_all(None)
+
+    datums = []
+    for msg in msgs.items():
+        datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+
+    return datums
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -80,12 +113,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     """
 
     def __init__(
-        self,
-        map_handler: UDFMapCallable = None,
-        reduce_handler: UDFReduceCallable = None,
-        sock_path=FUNCTION_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            map_handler: UDFMapCallable = None,
+            reduce_handler: UDFReduceCallable = None,
+            sock_path=FUNCTION_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
         if not (map_handler or reduce_handler):
             raise ValueError("Require a valid map handler and/or a valid reduce handler.")
@@ -102,7 +135,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         ]
 
     def MapFn(
-        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
@@ -135,8 +168,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return udfunction_pb2.DatumList(elements=datums)
 
-    async def ReduceFn(
-        self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
+    def ReduceFn(
+            self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a reduce function to a datum stream.
@@ -160,8 +193,15 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
+        response = asyncio.get_event_loop().run_until_complete(self.async_reduce_handler(
+            callable_dict, interval_window, request_iterator))
+
+        logging.info(response)
+        return response
+
+    async def async_reduce_handler(self, callable_dict, interval_window, request_iterator: Iterator[Datum]):
         # iterate through all the values
-        async for d in request_iterator:
+        for d in request_iterator:
             key = d.key
             rs = None
             if key in callable_dict.keys():
@@ -173,7 +213,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 # schedule a async task for consumer
                 # returns a future that will give the results later.
                 task = asyncio.create_task(
-                    self.invoke_reduce(
+                    invoke_reduce(
                         key, riter, Metadata(interval_window=interval_window)
                     )
                 )
@@ -182,7 +222,6 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 callable_dict[key] = rs
 
             await rs.iterator.put(d)
-
         datums = []
         for key in callable_dict:
             await callable_dict[key].iterator.put("EOF")
@@ -192,7 +231,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.DatumList(elements=datums)
 
     def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
@@ -220,34 +259,6 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    async def invoke_reduce(self, key, request_iterator: AsyncIterable[Datum], md: Metadata):
-        try:
-            # msgs = await self.__reduce_handler(
-            #     key, request_iterator, md
-            # )
-
-            interval_window = md.interval_window
-            counter = 0
-            async for _ in request_iterator:
-                counter += 1
-            msg = (
-                f"counter:{counter} interval_window_start:{interval_window.start} "
-                f"interval_window_end:{interval_window.end}"
-            )
-            msgs = Messages(Message.to_vtx(key, str.encode(msg)))
-            _LOGGER.info(f'reduce output : {msgs}')
-        except Exception as err:
-            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-
-            # a neat hack to drop
-            msgs = Messages.as_forward_all(None)
-
-        datums = []
-        for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
-
-        return datums
-
     async def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
@@ -258,7 +269,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Starts the gRPC server on the given UNIX socket with given max threads.
         """
         server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
+            ThreadPoolExecutor(max_workers=self._max_threads, initializer=thread_initializer()),
+            options=self._server_options
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
         server.add_insecure_port(self.sock_path)

@@ -85,6 +85,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             max_message_size=MAX_MESSAGE_SIZE,
             max_threads=MAX_THREADS,
     ):
+        _LOGGER.info(f"value for reduce_handler {reduce_handler}")
+        _LOGGER.info(f"value for map_handler {map_handler}")
         if not (map_handler or reduce_handler):
             _LOGGER.error(f"empty reduce handler or map handler {map_handler} or {reduce_handler}")
             raise ValueError("Require a valid map handler and/or a valid reduce handler.")

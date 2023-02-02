@@ -202,19 +202,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
-            response = asyncio.create_task(self.__reduce_handler(key, request_iterator, md))
-
-            # interval_window = md.interval_window
-            # counter = 0
-            # async for _ in request_iterator:
-            #     counter += 1
-            # msg = (
-            #     f"counter:{counter} interval_window_start:{interval_window.start} "
-            #     f"interval_window_end:{interval_window.end}"
-            # )
-            # msgs = Messages(Message.to_vtx(key, str.encode(msg)))
-            await response
-            msgs = response.result()
+            msgs = self.__reduce_handler(key, request_iterator, md)
             _LOGGER.info(f'reduce output : {msgs}')
 
         except Exception as err:

@@ -138,6 +138,7 @@ class TestAsyncServer(unittest.TestCase):
         except grpc.RpcError as e:
             logging.error(e)
 
+        logging.info(response)
         self.assertEqual(1, len(response.elements))
         self.assertEqual("test", response.elements[0].key)
         self.assertEqual(

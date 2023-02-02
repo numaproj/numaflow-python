@@ -29,7 +29,7 @@ if os.getenv("PYTHONDEBUG"):
 _LOGGER = logging.getLogger(__name__)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
-UDFReduceCallable = Callable[[str, Iterator[Datum], Metadata], Awaitable[Messages]]
+UDFReduceCallable = Callable[[str, Iterator[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -227,7 +227,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def __serve_async(self, server) -> None:
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
-            UserDefinedFunctionServicer(self.__map_handler), server
+            UserDefinedFunctionServicer(self.__map_handler, self.__reduce_handler), server
         )
         server.add_insecure_port(self.sock_path)
         _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)

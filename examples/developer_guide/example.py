@@ -37,5 +37,6 @@ if __name__ == "__main__":
         map_handler=map_handler, reduce_handler=reduce_handler
     )
 
-    grpc_server.start()
+    asyncio.run(grpc_server.start_async())
+    asyncio.run(grpc_server.cleanup_coroutines)
 

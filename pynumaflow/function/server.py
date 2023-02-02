@@ -69,6 +69,38 @@ async def invoke_reduce(key, request_iterator: AsyncIterable[Datum], md: Metadat
     return datums
 
 
+async def async_reduce_handler(callable_dict, interval_window, request_iterator: Iterator[Datum]):
+    # iterate through all the values
+    for d in request_iterator:
+        key = d.key
+        rs = None
+        if key in callable_dict.keys():
+            rs = callable_dict[key]
+
+        if not rs:
+            niter = NonBlockingIterator()
+            riter = niter.read_iterator()
+            # schedule a async task for consumer
+            # returns a future that will give the results later.
+            task = asyncio.create_task(
+                invoke_reduce(
+                    key, riter, Metadata(interval_window=interval_window)
+                )
+            )
+            rs = Result(task, niter, key)
+
+            callable_dict[key] = rs
+
+        await rs.iterator.put(d)
+    datums = []
+    for key in callable_dict:
+        await callable_dict[key].iterator.put("EOF")
+        fut = callable_dict[key].future
+        await fut
+        datums = datums + fut.result()
+    return udfunction_pb2.DatumList(elements=datums)
+
+
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
@@ -193,42 +225,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
-        response = asyncio.get_event_loop().run_until_complete(self.async_reduce_handler(
+        response = asyncio.get_event_loop().run_until_complete(async_reduce_handler(
             callable_dict, interval_window, request_iterator))
 
         logging.info(response)
         return response
-
-    async def async_reduce_handler(self, callable_dict, interval_window, request_iterator: Iterator[Datum]):
-        # iterate through all the values
-        for d in request_iterator:
-            key = d.key
-            rs = None
-            if key in callable_dict.keys():
-                rs = callable_dict[key]
-
-            if not rs:
-                niter = NonBlockingIterator()
-                riter = niter.read_iterator()
-                # schedule a async task for consumer
-                # returns a future that will give the results later.
-                task = asyncio.create_task(
-                    invoke_reduce(
-                        key, riter, Metadata(interval_window=interval_window)
-                    )
-                )
-                rs = Result(task, niter, key)
-
-                callable_dict[key] = rs
-
-            await rs.iterator.put(d)
-        datums = []
-        for key in callable_dict:
-            await callable_dict[key].iterator.put("EOF")
-            fut = callable_dict[key].future
-            await fut
-            datums = datums + fut.result()
-        return udfunction_pb2.DatumList(elements=datums)
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext
@@ -261,7 +262,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
-        server = grpc.aio.server(options=self._server_options)
+        server = grpc.aio.server(ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options)
         await self.__serve_async(server)
 
     def start(self) -> None:

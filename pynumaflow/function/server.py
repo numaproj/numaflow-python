@@ -91,6 +91,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             max_threads=MAX_THREADS,
     ):
         if not (map_handler or reduce_handler):
+            _LOGGER.error(f"empty reduce handler or map handler {map_handler} or {reduce_handler}")
             raise ValueError("Require a valid map handler and/or a valid reduce handler.")
         self.__map_handler: UDFMapCallable = map_handler
         self.__reduce_handler = reduce_handler
@@ -202,7 +203,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
-            msgs = self.__reduce_handler(key, request_iterator, md)
+            task = asyncio.create_task(self.__reduce_handler(key, request_iterator, md))
+            await task
+            msgs = task.result()
             _LOGGER.info(f'reduce output : {msgs}')
 
         except Exception as err:

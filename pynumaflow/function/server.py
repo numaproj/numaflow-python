@@ -94,7 +94,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         if not (map_handler or reduce_handler):
             raise ValueError("Require a valid map handler and/or a valid reduce handler.")
         self.__map_handler: UDFMapCallable = map_handler
-        self.__reduce_handler: UDFReduceCallable = reduce_handler
+        self.__reduce_handler = reduce_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -201,11 +201,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             datums = datums + fut.result()
         return udfunction_pb2.DatumList(elements=datums)
 
-    async def invoke_reduce(self, key, request_iterator: Iterator[Datum], md: Metadata):
+    async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
-            msgs = await self.__reduce_handler(
-                key, request_iterator, md
-            )
+            resptask = asyncio.create_task(self.__reduce_handler(key, request_iterator, md))
 
             # interval_window = md.interval_window
             # counter = 0
@@ -216,7 +214,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             #     f"interval_window_end:{interval_window.end}"
             # )
             # msgs = Messages(Message.to_vtx(key, str.encode(msg)))
+            await resptask
+            msgs = resptask.result()
             _LOGGER.info(f'reduce output : {msgs}')
+
         except Exception as err:
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
 

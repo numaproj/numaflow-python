@@ -71,7 +71,7 @@ async def invoke_reduce(key, request_iterator: AsyncIterable[Datum], md: Metadat
 
 async def async_reduce_handler(callable_dict, interval_window, request_iterator: Iterator[Datum]):
     # iterate through all the values
-    for d in request_iterator:
+    async for d in request_iterator:
         key = d.key
         rs = None
         if key in callable_dict.keys():

@@ -2,9 +2,11 @@ import asyncio
 import logging
 import multiprocessing
 import os
+from asyncio import Task
+from collections.abc import Coroutine, Awaitable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Callable, Iterator
+from typing import Callable, Iterator, Any
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -29,7 +31,7 @@ if os.getenv("PYTHONDEBUG"):
 _LOGGER = logging.getLogger(__name__)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
-UDFReduceCallable = Callable[[str, Iterator[Datum], Metadata], Messages]
+UDFReduceCallable = Callable[[str, Iterator[Datum], Metadata], Awaitable[Messages]]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -201,9 +203,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
             _LOGGER.info(self.__reduce_handler)
-            task = self.__reduce_handler(key, request_iterator, md)
-            await task
-            msgs = task.result()
+            msgs = self.__reduce_handler(key, request_iterator, md)
             _LOGGER.info(f'reduce output : {msgs}')
 
         except Exception as err:

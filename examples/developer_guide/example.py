@@ -1,5 +1,6 @@
 import asyncio
-from collections.abc import AsyncIterable, Iterator
+from collections.abc import AsyncIterable, Iterator, Coroutine
+from typing import Any
 
 from pynumaflow.function import (
     Messages,
@@ -44,7 +45,7 @@ class UserDefinedFunction:
 if __name__ == "__main__":
     udf = UserDefinedFunction()
     grpc_server = UserDefinedFunctionServicer(
-        map_handler=udf.map_handler, reduce_handler=udf.reduce_cb
+        map_handler=udf.map_handler, reduce_handler=udf.my_handler
     )
 
     asyncio.run(grpc_server.start_async())

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, Iterator
 from concurrent.futures import ThreadPoolExecutor
 
 import grpc
@@ -28,6 +28,9 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
 
     return Messages(Message.to_vtx(key, str.encode(msg)))
 
+
+def reduce_cb(key: str, datums: Iterator[Datum], md: Metadata):
+    return asyncio.create_task(async_reduce_handler(key, datums, md))
 
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
@@ -247,7 +250,7 @@ class TestAsyncServer(unittest.TestCase):
         self._max_threads = 10
         server = grpc.aio.server()
         udfs = UserDefinedFunctionServicer(
-            reduce_handler=async_reduce_handler,
+            reduce_handler=reduce_cb,
             map_handler=map_handler,
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)

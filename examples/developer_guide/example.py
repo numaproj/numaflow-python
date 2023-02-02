@@ -24,7 +24,7 @@ class UserDefinedFunction:
         messages.append(Message.to_vtx(key, val))
         return messages
 
-    async def reduce_handler(self, key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    async def reduce_handler(self, key: str, datums: Iterator[Datum], md: Metadata):
         # count the number of events
         interval_window = md.interval_window
         counter = 0

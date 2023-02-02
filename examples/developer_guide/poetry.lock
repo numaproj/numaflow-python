@@ -402,7 +402,7 @@ protobuf = "~4.21"
 type = "git"
 url = "https://github.com/ashwinidulams/numaflow-python"
 reference = "asyncio"
-resolved_reference = "a9fe25f8cfe6117edd5c29a6c5324db9a3af379d"
+resolved_reference = "321ff190062520d0536d9c4a28c7dcd743f31dd3"
 
 [[package]]
 name = "requests"

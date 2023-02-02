@@ -2,7 +2,6 @@ import asyncio
 import logging
 import multiprocessing
 import os
-from collections.abc import AsyncIterable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Callable, Iterator
@@ -18,7 +17,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
 from pynumaflow.function import Messages, Datum, IntervalWindow, Metadata
-from pynumaflow.function._dtypes import Result, Message
+from pynumaflow.function._dtypes import Result
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
@@ -203,7 +202,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
-            resptask = asyncio.create_task(self.__reduce_handler(key, request_iterator, md))
+            msgs = await self.__reduce_handler(key, request_iterator, md)
 
             # interval_window = md.interval_window
             # counter = 0
@@ -214,8 +213,6 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             #     f"interval_window_end:{interval_window.end}"
             # )
             # msgs = Messages(Message.to_vtx(key, str.encode(msg)))
-            await resptask
-            msgs = resptask.result()
             _LOGGER.info(f'reduce output : {msgs}')
 
         except Exception as err:

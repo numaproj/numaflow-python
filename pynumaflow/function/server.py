@@ -201,7 +201,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     async def invoke_reduce(self, key: str, request_iterator: Iterator[Datum], md: Metadata):
         try:
             _LOGGER.info(self.__reduce_handler)
-            task = asyncio.create_task(self.__reduce_handler(key, request_iterator, md))
+            task = self.__reduce_handler(key, request_iterator, md)
             await task
             msgs = task.result()
             _LOGGER.info(f'reduce output : {msgs}')

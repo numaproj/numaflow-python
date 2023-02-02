@@ -2,11 +2,9 @@ import asyncio
 import logging
 import multiprocessing
 import os
-from asyncio import Task
-from collections.abc import Coroutine, Awaitable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Callable, Iterator, Any
+from typing import Callable, Iterator, Any, Awaitable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2

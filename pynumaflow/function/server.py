@@ -200,7 +200,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return udfunction_pb2.DatumList(elements=datums)
 
-    def ReduceFn(
+    async def ReduceFn(
             self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
@@ -225,11 +225,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
-        response = asyncio.get_event_loop().run_until_complete(async_reduce_handler(
+        response_task = asyncio.create_task(async_reduce_handler(
             callable_dict, interval_window, request_iterator))
 
-        logging.info(response)
-        return response
+        await response_task
+        return response_task.result()
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext

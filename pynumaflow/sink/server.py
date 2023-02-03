@@ -123,7 +123,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    def start_async(self) -> None:
+    async def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
         await self.__serve_async(server)

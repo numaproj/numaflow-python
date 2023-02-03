@@ -2,8 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from collections.abc import AsyncIterable, Iterator
-from concurrent.futures import ThreadPoolExecutor
+from collections.abc import AsyncIterable
 
 import grpc
 
@@ -13,7 +12,7 @@ from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 from pynumaflow.function.generated import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import map_handler, mock_event_time, mock_watermark, mock_message, \
-    mock_interval_window_start, mock_interval_window_end, reduce_handler
+    mock_interval_window_start, mock_interval_window_end
 
 
 async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
@@ -29,9 +28,6 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
     return Messages(Message.to_vtx(key, str.encode(msg)))
 
 
-def reduce_cb(key: str, datums: Iterator[Datum], md: Metadata):
-    return asyncio.create_task(async_reduce_handler(key, datums, md))
-
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
@@ -39,13 +35,31 @@ def request_generator(count, request, resetkey: bool = False):
         yield request
 
 
+def start_reduce_streaming_request() -> (Datum, tuple):
+    event_time_timestamp = _timestamp_pb2.Timestamp()
+    event_time_timestamp.FromDatetime(dt=mock_event_time())
+    watermark_timestamp = _timestamp_pb2.Timestamp()
+    watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+    request = udfunction_pb2.Datum(
+        value=mock_message(),
+        event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+        watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+    )
+
+    metadata = (
+        (DATUM_KEY, "test"),
+        (WIN_START_TIME, f'{mock_interval_window_start()}'),
+        (WIN_END_TIME, f'{mock_interval_window_end()}'),
+    )
+    return request, metadata
+
+
 class TestAsyncServer(unittest.TestCase):
 
     def setUp(self) -> None:
         self._s = None
-        self.loop = asyncio.new_event_loop()
-        self.loop.set_debug(True)
-        _thread = threading.Thread(target=self.between_callback)
+        _thread = threading.Thread(target=self.startup_callable)
         _thread.start()
         self.startThread = _thread
         try:
@@ -68,26 +82,23 @@ class TestAsyncServer(unittest.TestCase):
     def shutdown_callable(self):
         logging.info("starting shutdown")
         loop = asyncio.new_event_loop()
-        loop.run_until_complete(self.stop_server())
+        asyncio.set_event_loop(loop)
+        asyncio.get_event_loop().run_until_complete(self.stop_server())
         self._s.wait_for_termination()
         pending = asyncio.all_tasks(loop=loop)
-        logging.info(len(pending), pending)
         asyncio.gather(*pending, loop=loop)
         loop.stop()
         loop.close()
         logging.info("loop should have closed")
 
-    def between_callback(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self.start_server())
+    def startup_callable(self):
+        loop=asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        asyncio.get_event_loop().run_until_complete(self.start_server())
         logging.info("start callable completed.")
 
     async def stop_server(self):
         await self._s.stop(grace=1)
-        # pending = asyncio.all_tasks(loop=self.loop)
-        # if pending:
-        #     future = asyncio.gather(*pending)
-        #     await future
 
     def test_run_server(self) -> None:
         with grpc.insecure_channel('localhost:50051') as channel:
@@ -154,25 +165,8 @@ class TestAsyncServer(unittest.TestCase):
         )
 
     def test_reduce(self) -> None:
-        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(self._channel)
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        request = udfunction_pb2.Datum(
-            key="test",
-            value=mock_message(),
-            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
-            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
-        )
-
-        metadata = (
-            (DATUM_KEY, "test"),
-            (WIN_START_TIME, f'{mock_interval_window_start()}'),
-            (WIN_END_TIME, f'{mock_interval_window_end()}'),
-        )
-
+        stub = self.__stub()
+        request, metadata = start_reduce_streaming_request()
         response = None
         try:
             response = stub.ReduceFn(request_iterator=request_generator(count=10, request=request),
@@ -191,24 +185,8 @@ class TestAsyncServer(unittest.TestCase):
         )
 
     def test_reduce_with_multiple_keys(self) -> None:
-        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(self._channel)
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        request = udfunction_pb2.Datum(
-            value=mock_message(),
-            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
-            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
-        )
-
-        metadata = (
-            (DATUM_KEY, "test"),
-            (WIN_START_TIME, f'{mock_interval_window_start()}'),
-            (WIN_END_TIME, f'{mock_interval_window_end()}'),
-        )
-
+        stub = self.__stub()
+        request, metadata = start_reduce_streaming_request()
         response = None
         try:
             response = stub.ReduceFn(request_iterator=request_generator(count=10, request=request, resetkey=True),
@@ -226,31 +204,14 @@ class TestAsyncServer(unittest.TestCase):
             response.elements[0].value,
         )
 
-    def start_reduce_streaming_request(self) -> (Datum, dict):
-        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(self._channel)
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        request = udfunction_pb2.Datum(
-            value=mock_message(),
-            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
-            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
-        )
-
-        metadata = (
-            (DATUM_KEY, "test"),
-            (WIN_START_TIME, f'{mock_interval_window_start()}'),
-            (WIN_END_TIME, f'{mock_interval_window_end()}'),
-        )
-        return request, metadata
+    def __stub(self):
+        return udfunction_pb2_grpc.UserDefinedFunctionStub(self._channel)
 
     async def start_server(self):
         self._max_threads = 10
         server = grpc.aio.server()
         udfs = UserDefinedFunctionServicer(
-            reduce_handler=reduce_cb,
+            reduce_handler=async_reduce_handler,
             map_handler=map_handler,
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
@@ -260,7 +221,6 @@ class TestAsyncServer(unittest.TestCase):
         self._s = server
         await server.start()
         await server.wait_for_termination()
-        logging.info("after waiting for termination")
 
 
 if __name__ == '__main__':

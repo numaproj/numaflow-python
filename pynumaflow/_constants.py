@@ -6,3 +6,4 @@ DATUM_KEY = "x-numaflow-datum-key"
 WIN_START_TIME = "x-numaflow-win-start-time"
 WIN_END_TIME = "x-numaflow-win-end-time"
 MAX_MESSAGE_SIZE = 1024 * 1024 * 4
+STREAM_EOF = "EOF"

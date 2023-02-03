@@ -1,5 +1,7 @@
 import asyncio
 
+from pynumaflow._constants import STREAM_EOF
+
 
 class NonBlockingIterator:
     """An Async Interator backed by a queue"""
@@ -12,7 +14,7 @@ class NonBlockingIterator:
     async def read_iterator(self):
         item = await self._queue.get()
         while True:
-            if item == "EOF":
+            if item == STREAM_EOF:
                 break
             yield item
             item = await self._queue.get()

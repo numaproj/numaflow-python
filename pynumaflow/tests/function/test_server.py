@@ -32,10 +32,10 @@ def map_handler(key: str, datum: Datum) -> Messages:
     return messages
 
 
-def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    for _ in datums:
+    async for _ in datums:
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "

@@ -91,7 +91,7 @@ class TestAsyncServer(unittest.TestCase):
         asyncio.get_event_loop().run_until_complete(self.stop_server())
         self._s.wait_for_termination()
         pending = asyncio.all_tasks(loop=loop)
-        asyncio.gather(*pending, loop=loop)
+        loop.run_until_complete(asyncio.gather(*pending))
         loop.stop()
         loop.close()
         logging.info("loop should have closed")
@@ -100,6 +100,10 @@ class TestAsyncServer(unittest.TestCase):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         asyncio.get_event_loop().run_until_complete(self.start_server())
+        pending = asyncio.all_tasks(loop=loop)
+        loop.run_until_complete(asyncio.gather(*pending))
+        loop.stop()
+        loop.close()
         logging.info("start callable completed.")
 
     async def stop_server(self):

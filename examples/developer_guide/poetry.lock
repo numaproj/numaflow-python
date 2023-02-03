@@ -383,7 +383,7 @@ pyasn1 = ">=0.4.6,<0.5.0"
 
 [[package]]
 name = "pynumaflow"
-version = "0.3.2"
+version = "0.4.0"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 category = "main"
 optional = false
@@ -402,7 +402,7 @@ protobuf = "~4.21"
 type = "git"
 url = "https://github.com/ashwinidulams/numaflow-python"
 reference = "asyncio"
-resolved_reference = "a69ab9524cf0ec0df6f2454615b4e5d197fd0cac"
+resolved_reference = "b016d24f87f4f032636255ea9f2933d4159b6599"
 
 [[package]]
 name = "requests"

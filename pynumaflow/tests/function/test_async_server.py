@@ -11,8 +11,14 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 from pynumaflow.function.generated import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.test_server import map_handler, mock_event_time, mock_watermark, mock_message, \
-    mock_interval_window_start, mock_interval_window_end
+from pynumaflow.tests.function.test_server import (
+    map_handler,
+    mock_event_time,
+    mock_watermark,
+    mock_message,
+    mock_interval_window_start,
+    mock_interval_window_end,
+)
 
 
 async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
@@ -31,7 +37,7 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
-            request.key = f'key-{i}'
+            request.key = f"key-{i}"
         yield request
 
 
@@ -49,27 +55,26 @@ def start_reduce_streaming_request() -> (Datum, tuple):
 
     metadata = (
         (DATUM_KEY, "test"),
-        (WIN_START_TIME, f'{mock_interval_window_start()}'),
-        (WIN_END_TIME, f'{mock_interval_window_end()}'),
+        (WIN_START_TIME, f"{mock_interval_window_start()}"),
+        (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )
     return request, metadata
 
 
 class TestAsyncServer(unittest.TestCase):
-
     def setUp(self) -> None:
         self._s = None
         _thread = threading.Thread(target=self.startup_callable)
         _thread.start()
         self.startThread = _thread
         try:
-            with grpc.insecure_channel('localhost:50051') as channel:
+            with grpc.insecure_channel("localhost:50051") as channel:
                 f = grpc.channel_ready_future(channel)
                 f.result(timeout=10)
         except grpc.FutureTimeoutError:
             raise
 
-        self._channel = grpc.insecure_channel('localhost:50051')
+        self._channel = grpc.insecure_channel("localhost:50051")
 
     def tearDown(self) -> None:
         logging.info("stopping the server")
@@ -92,7 +97,7 @@ class TestAsyncServer(unittest.TestCase):
         logging.info("loop should have closed")
 
     def startup_callable(self):
-        loop=asyncio.new_event_loop()
+        loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         asyncio.get_event_loop().run_until_complete(self.start_server())
         logging.info("start callable completed.")
@@ -101,7 +106,7 @@ class TestAsyncServer(unittest.TestCase):
         await self._s.stop(grace=1)
 
     def test_run_server(self) -> None:
-        with grpc.insecure_channel('localhost:50051') as channel:
+        with grpc.insecure_channel("localhost:50051") as channel:
             stub = udfunction_pb2_grpc.UserDefinedFunctionStub(channel)
             event_time_timestamp = _timestamp_pb2.Timestamp()
             event_time_timestamp.FromDatetime(dt=mock_event_time())
@@ -114,7 +119,10 @@ class TestAsyncServer(unittest.TestCase):
                 watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
             )
 
-            metadata = ((DATUM_KEY, "test"), ("this_metadata_will_be_skipped", "test_ignore"),)
+            metadata = (
+                (DATUM_KEY, "test"),
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            )
             response = None
             try:
                 response = stub.MapFn(request=request, metadata=metadata)
@@ -145,7 +153,10 @@ class TestAsyncServer(unittest.TestCase):
             watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
         )
 
-        metadata = ((DATUM_KEY, "test"), ("this_metadata_will_be_skipped", "test_ignore"),)
+        metadata = (
+            (DATUM_KEY, "test"),
+            ("this_metadata_will_be_skipped", "test_ignore"),
+        )
 
         try:
             response = stub.MapFn(request=request, metadata=metadata)
@@ -169,8 +180,9 @@ class TestAsyncServer(unittest.TestCase):
         request, metadata = start_reduce_streaming_request()
         response = None
         try:
-            response = stub.ReduceFn(request_iterator=request_generator(count=10, request=request),
-                                     metadata=metadata)
+            response = stub.ReduceFn(
+                request_iterator=request_generator(count=10, request=request), metadata=metadata
+            )
         except grpc.RpcError as e:
             logging.error(e)
 
@@ -189,8 +201,10 @@ class TestAsyncServer(unittest.TestCase):
         request, metadata = start_reduce_streaming_request()
         response = None
         try:
-            response = stub.ReduceFn(request_iterator=request_generator(count=10, request=request, resetkey=True),
-                                     metadata=metadata)
+            response = stub.ReduceFn(
+                request_iterator=request_generator(count=10, request=request, resetkey=True),
+                metadata=metadata,
+            )
         except grpc.RpcError as e:
             print(e)
 
@@ -215,7 +229,7 @@ class TestAsyncServer(unittest.TestCase):
             map_handler=map_handler,
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
-        listen_addr = '[::]:50051'
+        listen_addr = "[::]:50051"
         server.add_insecure_port(listen_addr)
         logging.info("Starting server on %s", listen_addr)
         self._s = server
@@ -223,6 +237,6 @@ class TestAsyncServer(unittest.TestCase):
         await server.wait_for_termination()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()

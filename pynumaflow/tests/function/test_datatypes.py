@@ -11,6 +11,7 @@ from pynumaflow.function._dtypes import (
 
 TEST_KEY = "test"
 
+
 def mock_message():
     msg = bytes("test_mock_message", encoding="utf-8")
     return msg
@@ -60,7 +61,12 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_value(self):
-        d = Datum(key=TEST_KEY, value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
             "key: test, "
@@ -78,8 +84,13 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_key(self):
-        d = Datum(key=TEST_KEY, value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
-        self.assertEqual(TEST_KEY, d.key)
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
+        self.assertEqual(TEST_KEY, d.key())
         self.assertEqual(
             "key: test, "
             "value: test_mock_message, "
@@ -96,11 +107,21 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_event_time(self):
-        d = Datum(key=TEST_KEY, value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
         self.assertEqual(mock_event_time(), d.event_time)
 
     def test_watermark(self):
-        d = Datum(key=TEST_KEY, value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
         self.assertEqual(mock_watermark(), d.watermark)
 
 

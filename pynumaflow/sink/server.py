@@ -69,7 +69,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
             ("grpc.max_receive_message_length", self._max_message_size),
         ]
 
-    async def SinkFn(
+    def SinkFn(
         self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udsink_pb2.ResponseList:
         """

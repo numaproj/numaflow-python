@@ -82,12 +82,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     """
 
     def __init__(
-            self,
-            map_handler: UDFMapCallable = None,
-            reduce_handler: UDFReduceCallable = None,
-            sock_path=FUNCTION_SOCK_PATH,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        map_handler: UDFMapCallable = None,
+        reduce_handler: UDFReduceCallable = None,
+        sock_path=FUNCTION_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
 
         if not (map_handler or reduce_handler):
@@ -106,7 +106,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         ]
 
     def MapFn(
-            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
@@ -140,7 +140,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(
-            self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
+        self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a reduce function to a datum stream.
@@ -164,13 +164,16 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
-        response_task = asyncio.create_task(self.__async_reduce_handler(
-            callable_dict, interval_window, request_iterator))
+        response_task = asyncio.create_task(
+            self.__async_reduce_handler(callable_dict, interval_window, request_iterator)
+        )
 
         await response_task
         return response_task.result()
 
-    async def __async_reduce_handler(self, callable_dict, interval_window, request_iterator: AsyncIterable[Datum]):
+    async def __async_reduce_handler(
+        self, callable_dict, interval_window, request_iterator: AsyncIterable[Datum]
+    ):
         # iterate through all the values
         async for d in request_iterator:
             key = d.key
@@ -184,9 +187,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 # schedule a async task for consumer
                 # returns a future that will give the results later.
                 task = asyncio.create_task(
-                    self.__invoke_reduce(
-                        key, riter, Metadata(interval_window=interval_window)
-                    )
+                    self.__invoke_reduce(key, riter, Metadata(interval_window=interval_window))
                 )
                 rs = Result(task, niter, key)
 
@@ -217,7 +218,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return datums
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
@@ -255,8 +256,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Starts the gRPC server on the given UNIX socket with given max threads.
         """
         server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads),
-            options=self._server_options
+            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
         server.add_insecure_port(self.sock_path)

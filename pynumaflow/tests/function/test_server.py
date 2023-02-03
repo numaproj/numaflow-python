@@ -4,10 +4,10 @@ from typing import Iterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from grpc import StatusCode, aio
+from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
+from pynumaflow._constants import DATUM_KEY
 from pynumaflow.function import (
     Message,
     Messages,

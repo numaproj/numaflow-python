@@ -1,6 +1,4 @@
-import asyncio
-from asyncio import Future, Task
-from collections.abc import Iterator, AsyncGenerator
+from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
@@ -210,4 +208,3 @@ class Result:
     def key(self):
         """Returns the key of the partition."""
         return self._key
-

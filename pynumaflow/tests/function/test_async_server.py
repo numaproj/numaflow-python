@@ -2,8 +2,8 @@ import asyncio
 import logging
 import threading
 import unittest
-from collections.abc import AsyncIterable
 from time import sleep
+from typing import AsyncIterable
 
 import grpc
 
@@ -68,7 +68,8 @@ _channel = grpc.insecure_channel("localhost:50051")
 
 
 class TestAsyncServer(unittest.TestCase):
-    def setUpClass() -> None:
+    @classmethod
+    def setUpClass(cls) -> None:
         _thread = threading.Thread(target=startup_callable)
         _thread.start()
         try:
@@ -78,7 +79,8 @@ class TestAsyncServer(unittest.TestCase):
         except grpc.FutureTimeoutError:
             raise
 
-    def tearDownClass() -> None:
+    @classmethod
+    def tearDownClass(cls) -> None:
         global _s
         try:
             asyncio.run(_s.stop(grace=1))

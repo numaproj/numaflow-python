@@ -180,10 +180,6 @@ class Metadata:
         return self._interval_window
 
 
-class AsycIterable:
-    pass
-
-
 class Result:
     """Defines the object to hold the result of reduce computation."""
 

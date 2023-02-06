@@ -3,10 +3,12 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
+from time import sleep
 
 import grpc
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from grpc.aio._server import Server
 
 from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
@@ -61,12 +63,14 @@ def start_reduce_streaming_request() -> (Datum, tuple):
     return request, metadata
 
 
+_s: Server = None
+_channel = grpc.insecure_channel("localhost:50051")
+
+
 class TestAsyncServer(unittest.TestCase):
-    def setUp(self) -> None:
-        self._s = None
-        _thread = threading.Thread(target=self.startup_callable)
+    def setUpClass() -> None:
+        _thread = threading.Thread(target=startup_callable)
         _thread.start()
-        self.startThread = _thread
         try:
             with grpc.insecure_channel("localhost:50051") as channel:
                 f = grpc.channel_ready_future(channel)
@@ -74,37 +78,25 @@ class TestAsyncServer(unittest.TestCase):
         except grpc.FutureTimeoutError:
             raise
 
-        self._channel = grpc.insecure_channel("localhost:50051")
-
-    def tearDown(self) -> None:
-        logging.info("stopping the server")
-        shutdownThread = threading.Thread(target=self.shutdown_callable)
-        shutdownThread.start()
-        self.startThread.join()
-        shutdownThread.join()
-        logging.info("shutdown Thread stopped")
+    def tearDownClass() -> None:
+        global _s
+        try:
+            asyncio.run(_s.stop(grace=1))
+        except Exception as e:
+            logging.error(e)
 
     def shutdown_callable(self):
         logging.info("starting shutdown")
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        asyncio.get_event_loop().run_until_complete(self.stop_server())
-        self._s.wait_for_termination()
-        pending = asyncio.all_tasks(loop=loop)
-        loop.run_until_complete(asyncio.gather(*pending))
-        loop.stop()
-        loop.close()
+        try:
+            task = asyncio.run_coroutine_threadsafe(self.stop_server(), loop=self.loop)
+            while True:
+                if not task.done():
+                    sleep(1)
+                else:
+                    break
+        except Exception as e:
+            logging.error(e)
         logging.info("loop should have closed")
-
-    def startup_callable(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        asyncio.get_event_loop().run_until_complete(self.start_server())
-        pending = asyncio.all_tasks(loop=loop)
-        loop.run_until_complete(asyncio.gather(*pending))
-        loop.stop()
-        loop.close()
-        logging.info("start callable completed.")
 
     async def stop_server(self):
         await self._s.stop(grace=1)
@@ -145,7 +137,7 @@ class TestAsyncServer(unittest.TestCase):
             )
 
     def test_map(self) -> None:
-        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(self._channel)
+        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
         event_time_timestamp = _timestamp_pb2.Timestamp()
         event_time_timestamp.FromDatetime(dt=mock_event_time())
         watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -162,6 +154,7 @@ class TestAsyncServer(unittest.TestCase):
             ("this_metadata_will_be_skipped", "test_ignore"),
         )
 
+        response = None
         try:
             response = stub.MapFn(request=request, metadata=metadata)
         except grpc.RpcError as e:
@@ -223,22 +216,27 @@ class TestAsyncServer(unittest.TestCase):
         )
 
     def __stub(self):
-        return udfunction_pb2_grpc.UserDefinedFunctionStub(self._channel)
+        return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
 
-    async def start_server(self):
-        self._max_threads = 10
-        server = grpc.aio.server()
-        udfs = UserDefinedFunctionServicer(
-            reduce_handler=async_reduce_handler,
-            map_handler=map_handler,
-        )
-        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
-        listen_addr = "[::]:50051"
-        server.add_insecure_port(listen_addr)
-        logging.info("Starting server on %s", listen_addr)
-        self._s = server
-        await server.start()
-        await server.wait_for_termination()
+
+def startup_callable():
+    asyncio.run(start_server())
+
+
+async def start_server():
+    server = grpc.aio.server()
+    udfs = UserDefinedFunctionServicer(
+        reduce_handler=async_reduce_handler,
+        map_handler=map_handler,
+    )
+    udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
+    listen_addr = "[::]:50051"
+    server.add_insecure_port(listen_addr)
+    logging.info("Starting server on %s", listen_addr)
+    global _s
+    _s = server
+    await server.start()
+    await server.wait_for_termination()
 
 
 if __name__ == "__main__":

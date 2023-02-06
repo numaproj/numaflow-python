@@ -17,8 +17,6 @@ from pynumaflow.types import NumaflowServicerContext
 
 if os.getenv("PYTHONDEBUG"):
     logging.basicConfig(level=logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.INFO)
 
 _LOGGER = logging.getLogger(__name__)
 

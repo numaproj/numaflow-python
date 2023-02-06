@@ -10,7 +10,7 @@ from pynumaflow.function import (
 )
 
 
-def map_handler(self, key: str, datum: Datum) -> Messages:
+def map_handler(key: str, datum: Datum) -> Messages:
     # forward a message
     val = datum.value
     _ = datum.event_time
@@ -20,7 +20,7 @@ def map_handler(self, key: str, datum: Datum) -> Messages:
     return messages
 
 
-async def my_handler(self, key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+async def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     # count the number of events
     interval_window = md.interval_window
     counter = 0
@@ -35,7 +35,6 @@ async def my_handler(self, key: str, datums: Iterator[Datum], md: Metadata) -> M
 
 
 if __name__ == "__main__":
-    udf = UserDefinedFunction()
     grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=my_handler)
 
     asyncio.run(grpc_server.start_async())

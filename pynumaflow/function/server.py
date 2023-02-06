@@ -24,10 +24,10 @@ from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
+
 if os.getenv("PYTHONDEBUG"):
     logging.basicConfig(level=logging.DEBUG)
-else:
-    logging.basicConfig(level=logging.INFO)
+
 
 _LOGGER = logging.getLogger(__name__)
 

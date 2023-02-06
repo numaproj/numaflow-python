@@ -2,7 +2,7 @@ import logging
 import os
 
 if os.getenv("PYTHONDEBUG"):
-    os.environ['PYTHONASYNCIODEBUG'] = "1"
+    os.environ["PYTHONASYNCIODEBUG"] = "1"
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)

@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Iterator
+from typing import Iterator
 
 from pynumaflow.function import (
     Messages,

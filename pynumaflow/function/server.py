@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from typing import Callable, AsyncIterable
 
 import grpc
+from aiorun import run
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
@@ -245,10 +246,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    async def start_async(self) -> None:
+    def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
-        await self.__serve_async(server)
+        run(self.__serve_async(server))
 
     def start(self) -> None:
         """

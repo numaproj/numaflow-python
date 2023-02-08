@@ -6,12 +6,12 @@ if os.getenv("PYTHONDEBUG"):
 
 
 def setup_logging(name):
-    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)-8s %(message)s',
-                                  datefmt='%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter(
+        fmt="%(asctime)s %(levelname)-8s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+    )
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     logger.addHandler(stream_handler)
     return logger
-

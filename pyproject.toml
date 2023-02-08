@@ -25,6 +25,7 @@ grpcio-tools = "^1.48.1"
 google-cloud = "^0.34.0"
 google-api-core = "^2.11.0"
 protobuf = "~3.20.0"
+aiorun = "^2022.11.1"
 
 [tool.poetry.group.dev]
 optional = true
@@ -35,6 +36,7 @@ pytest-cov = "^3.0"
 black = "^22.1"
 grpcio-testing = "^1.48.1"
 flake8 = "^4.0.1"
+aiorun = "^2022.11.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

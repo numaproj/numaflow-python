@@ -22,7 +22,6 @@ from pynumaflow.tests.function.test_server import (
     mock_interval_window_end,
 )
 
-
 LOGGER = setup_logging(__name__)
 
 
@@ -68,10 +67,12 @@ def start_reduce_streaming_request() -> (Datum, tuple):
 
 _s: Server = None
 _channel = grpc.insecure_channel("localhost:50051")
+_loop = None
 
 
-def startup_callable():
-    asyncio.run(start_server())
+def startup_callable(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
 
 
 async def start_server():
@@ -93,23 +94,28 @@ async def start_server():
 class TestAsyncServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        _thread = threading.Thread(target=startup_callable)
+        global _loop
+        loop = asyncio.new_event_loop()
+        _loop = loop
+        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
         _thread.start()
-        try:
-            with grpc.insecure_channel("localhost:50051") as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server", e)
-            raise
+        asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
+        while True:
+            try:
+                with grpc.insecure_channel("localhost:50051") as channel:
+                    f = grpc.channel_ready_future(channel)
+                    f.result(timeout=10)
+                    if f.done():
+                        break
+            except grpc.FutureTimeoutError as e:
+                LOGGER.error("error trying to connect to grpc server")
+                LOGGER.error(e)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        global _s
         try:
-            asyncio.run(_s.stop(grace=1))
-            asyncio.get_event_loop().stop()
-            _s.wait_for_termination()
+            _loop.stop()
+            LOGGER.info("stopped the event loop")
         except Exception as e:
             LOGGER.error(e)
 
@@ -171,9 +177,8 @@ class TestAsyncServer(unittest.TestCase):
         try:
             response = stub.MapFn(request=request, metadata=metadata)
         except grpc.RpcError as e:
-            logging.error(e)
+            LOGGER.error(e)
 
-        logging.info(response)
         self.assertEqual(1, len(response.elements))
         self.assertEqual("test", response.elements[0].key)
         self.assertEqual(

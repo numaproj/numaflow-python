@@ -2,7 +2,6 @@ import asyncio
 import logging
 import threading
 import unittest
-from time import sleep
 from typing import AsyncIterable
 
 import grpc
@@ -67,6 +66,26 @@ _s: Server = None
 _channel = grpc.insecure_channel("localhost:50051")
 
 
+def startup_callable():
+    asyncio.run(start_server())
+
+
+async def start_server():
+    server = grpc.aio.server()
+    udfs = UserDefinedFunctionServicer(
+        reduce_handler=async_reduce_handler,
+        map_handler=map_handler,
+    )
+    udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
+    listen_addr = "[::]:50051"
+    server.add_insecure_port(listen_addr)
+    logging.info("Starting server on %s", listen_addr)
+    global _s
+    _s = server
+    await server.start()
+    await server.wait_for_termination()
+
+
 class TestAsyncServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -86,22 +105,6 @@ class TestAsyncServer(unittest.TestCase):
             asyncio.run(_s.stop(grace=1))
         except Exception as e:
             logging.error(e)
-
-    def shutdown_callable(self):
-        logging.info("starting shutdown")
-        try:
-            task = asyncio.run_coroutine_threadsafe(self.stop_server(), loop=self.loop)
-            while True:
-                if not task.done():
-                    sleep(1)
-                else:
-                    break
-        except Exception as e:
-            logging.error(e)
-        logging.info("loop should have closed")
-
-    async def stop_server(self):
-        await self._s.stop(grace=1)
 
     def test_run_server(self) -> None:
         with grpc.insecure_channel("localhost:50051") as channel:
@@ -219,26 +222,6 @@ class TestAsyncServer(unittest.TestCase):
 
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
-
-
-def startup_callable():
-    asyncio.run(start_server())
-
-
-async def start_server():
-    server = grpc.aio.server()
-    udfs = UserDefinedFunctionServicer(
-        reduce_handler=async_reduce_handler,
-        map_handler=map_handler,
-    )
-    udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
-    listen_addr = "[::]:50051"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
-    await server.start()
-    await server.wait_for_termination()
 
 
 if __name__ == "__main__":

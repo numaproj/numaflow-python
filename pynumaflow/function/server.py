@@ -147,7 +147,6 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
 
-        callable_dict = {}
         start, end = None, None
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == WIN_START_TIME:
@@ -165,15 +164,14 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
         response_task = asyncio.create_task(
-            self.__async_reduce_handler(callable_dict, interval_window, request_iterator)
+            self.__async_reduce_handler(interval_window, request_iterator)
         )
 
         await response_task
         return response_task.result()
 
-    async def __async_reduce_handler(
-        self, callable_dict, interval_window, request_iterator: AsyncIterable[Datum]
-    ):
+    async def __async_reduce_handler(self, interval_window, request_iterator: AsyncIterable[Datum]):
+        callable_dict = {}
         # iterate through all the values
         async for d in request_iterator:
             key = d.key
@@ -197,6 +195,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         datums = []
         for key in callable_dict:
             await callable_dict[key].iterator.put(STREAM_EOF)
+
+        for key in callable_dict:
             fut = callable_dict[key].future
             await fut
             datums = datums + fut.result()

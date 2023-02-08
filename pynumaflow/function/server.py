@@ -9,6 +9,7 @@ from typing import Callable, AsyncIterable
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow import setup_logging
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
     DATUM_KEY,
@@ -25,11 +26,9 @@ from pynumaflow.function.generated import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 
+_LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
-    logging.basicConfig(level=logging.DEBUG)
-
-
-_LOGGER = logging.getLogger(__name__)
+    _LOGGER.setLevel(logging.DEBUG)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
 UDFReduceCallable = Callable[[str, AsyncIterable[Datum], Metadata], Messages]

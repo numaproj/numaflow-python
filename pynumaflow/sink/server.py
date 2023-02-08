@@ -7,6 +7,7 @@ from typing import Callable, Iterator
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow import setup_logging
 from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
@@ -15,10 +16,11 @@ from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
-if os.getenv("PYTHONDEBUG"):
-    logging.basicConfig(level=logging.DEBUG)
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = setup_logging(__name__)
+if os.getenv("PYTHONDEBUG"):
+    _LOGGER.setLevel(logging.DEBUG)
+
 
 UDSinkCallable = Callable[[Iterator[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()

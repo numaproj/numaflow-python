@@ -9,6 +9,7 @@ import grpc
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
+from pynumaflow import setup_logging
 from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 from pynumaflow.function.generated import udfunction_pb2, udfunction_pb2_grpc
@@ -20,6 +21,9 @@ from pynumaflow.tests.function.test_server import (
     mock_interval_window_start,
     mock_interval_window_end,
 )
+
+
+LOGGER = setup_logging(__name__)
 
 
 async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
@@ -95,7 +99,8 @@ class TestAsyncServer(unittest.TestCase):
             with grpc.insecure_channel("localhost:50051") as channel:
                 f = grpc.channel_ready_future(channel)
                 f.result(timeout=10)
-        except grpc.FutureTimeoutError:
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server", e)
             raise
 
     @classmethod
@@ -103,8 +108,10 @@ class TestAsyncServer(unittest.TestCase):
         global _s
         try:
             asyncio.run(_s.stop(grace=1))
+            asyncio.get_event_loop().stop()
+            _s.wait_for_termination()
         except Exception as e:
-            logging.error(e)
+            LOGGER.error(e)
 
     def test_run_server(self) -> None:
         with grpc.insecure_channel("localhost:50051") as channel:
@@ -140,6 +147,7 @@ class TestAsyncServer(unittest.TestCase):
                 ),
                 response.elements[0].value,
             )
+            LOGGER.info("Successfully validated the server")
 
     def test_map(self) -> None:
         stub = udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)

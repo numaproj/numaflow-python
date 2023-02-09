@@ -246,10 +246,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    def start_async(self) -> None:
+    async def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
-        aiorun.run(self.__serve_async(server))
+        await self.__serve_async(server)
 
     def start(self) -> None:
         """

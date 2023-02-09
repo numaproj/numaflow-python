@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Callable, AsyncIterable
 
+import aiorun
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -245,10 +246,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    async def start_async(self) -> None:
+    def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
-        await self.__serve_async(server)
+        aiorun.run(self.__serve_async(server))
 
     def start(self) -> None:
         """

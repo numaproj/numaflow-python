@@ -19,7 +19,7 @@ from pynumaflow._constants import (
     STREAM_EOF,
 )
 from pynumaflow.function import Messages, Datum, IntervalWindow, Metadata
-from pynumaflow.function._dtypes import Result
+from pynumaflow.function._dtypes import ReduceResult
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.generated import udfunction_pb2
 from pynumaflow.function.generated import udfunction_pb2_grpc
@@ -174,11 +174,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         # iterate through all the values
         async for d in request_iterator:
             key = d.key
-            rs = None
+            result = None
             if key in callable_dict.keys():
-                rs = callable_dict[key]
+                result = callable_dict[key]
 
-            if not rs:
+            if not result:
                 niter = NonBlockingIterator()
                 riter = niter.read_iterator()
                 # schedule a async task for consumer
@@ -186,11 +186,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 task = asyncio.create_task(
                     self.__invoke_reduce(key, riter, Metadata(interval_window=interval_window))
                 )
-                rs = Result(task, niter, key)
+                result = ReduceResult(task, niter, key)
 
-                callable_dict[key] = rs
+                callable_dict[key] = result
 
-            await rs.iterator.put(d)
+            await result.iterator.put(d)
         datums = []
         for key in callable_dict:
             await callable_dict[key].iterator.put(STREAM_EOF)

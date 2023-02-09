@@ -180,7 +180,7 @@ class Metadata:
         return self._interval_window
 
 
-class Result:
+class ReduceResult:
     """Defines the object to hold the result of reduce computation."""
 
     __slots__ = ("_future", "_iterator", "_key")

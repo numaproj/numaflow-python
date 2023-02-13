@@ -53,6 +53,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     >>> from typing import Iterator
     >>> from pynumaflow.function import Messages, Message, \
     ...     Datum, Metadata, UserDefinedFunctionServicer
+    ... import aiorun
     ...
     >>> def map_handler(key: str, datum: Datum) -> Messages:
     ...   val = datum.value
@@ -76,8 +77,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...   reduce_handler=reduce_handler,
     ...   map_handler=map_handler,
     ... )
-    >>> asyncio.run(grpc_server.start_async())
-    >>> asyncio.run(*grpc_server.cleanup_coroutines)
+    >>> aiorun.run(grpc_server.start_async())
     """
 
     def __init__(

@@ -1,6 +1,5 @@
-import asyncio
 from typing import Iterator
-
+import aiorun
 from pynumaflow.function import (
     Messages,
     Message,
@@ -37,5 +36,4 @@ async def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Message
 if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=my_handler)
 
-    asyncio.run(grpc_server.start_async())
-    asyncio.run(grpc_server.cleanup_coroutines)
+    aiorun.run(grpc_server.start_async())

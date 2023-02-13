@@ -1,11 +1,14 @@
-from typing import Iterator
+from typing import AsyncIterable
+
+import aiorun
+
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 
-def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    for _ in datums:
+    async for _ in datums:
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -16,4 +19,5 @@ def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
 
 if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
-    grpc_server.start()
+
+    aiorun.run(grpc_server.start_async())

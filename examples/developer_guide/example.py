@@ -1,7 +1,6 @@
+import asyncio
 from typing import Iterator
-
 import aiorun
-
 from pynumaflow.function import (
     Messages,
     Message,

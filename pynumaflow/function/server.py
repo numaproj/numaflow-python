@@ -174,9 +174,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         # iterate through all the values
         async for d in request_iterator:
             key = d.key
-            result = None
-            if key in callable_dict.keys():
-                result = callable_dict[key]
+            result = callable_dict.get(key, None)
 
             if not result:
                 niter = NonBlockingIterator()

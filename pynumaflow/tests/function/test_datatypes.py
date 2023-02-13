@@ -9,6 +9,8 @@ from pynumaflow.function._dtypes import (
     Datum,
 )
 
+TEST_KEY = "test"
+
 
 def mock_message():
     msg = bytes("test_mock_message", encoding="utf-8")
@@ -40,7 +42,7 @@ class TestDatum(unittest.TestCase):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
         with self.assertRaises(Exception) as context:
-            Datum(value=mock_message(), event_time=ts, watermark=ts)
+            Datum(key=TEST_KEY, value=mock_message(), event_time=ts, watermark=ts)
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.event_time",
@@ -51,7 +53,7 @@ class TestDatum(unittest.TestCase):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
         with self.assertRaises(Exception) as context:
-            Datum(value=mock_message(), event_time=mock_event_time(), watermark=ts)
+            Datum(key=TEST_KEY, value=mock_message(), event_time=mock_event_time(), watermark=ts)
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.watermark",
@@ -59,15 +61,45 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_value(self):
-        d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
+            "key: test, "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",
             str(d),
         )
         self.assertEqual(
+            "key: test, "
+            "value: test_mock_message, "
+            "event_time: 2022-09-12 16:00:00+00:00, "
+            "watermark: 2022-09-12 16:01:00+00:00",
+            repr(d),
+        )
+
+    def test_key(self):
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
+        self.assertEqual(TEST_KEY, d.key())
+        self.assertEqual(
+            "key: test, "
+            "value: test_mock_message, "
+            "event_time: 2022-09-12 16:00:00+00:00, "
+            "watermark: 2022-09-12 16:01:00+00:00",
+            str(d),
+        )
+        self.assertEqual(
+            "key: test, "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",
@@ -75,11 +107,21 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_event_time(self):
-        d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
         self.assertEqual(mock_event_time(), d.event_time)
 
     def test_watermark(self):
-        d = Datum(value=mock_message(), event_time=mock_event_time(), watermark=mock_watermark())
+        d = Datum(
+            key=TEST_KEY,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+        )
         self.assertEqual(mock_watermark(), d.watermark)
 
 

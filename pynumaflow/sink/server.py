@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import multiprocessing
 import os
@@ -8,6 +7,7 @@ from typing import Callable, Iterator
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow import setup_logging
 from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
@@ -16,10 +16,11 @@ from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
-if os.getenv("PYTHONDEBUG"):
-    logging.basicConfig(level=logging.DEBUG)
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = setup_logging(__name__)
+if os.getenv("PYTHONDEBUG"):
+    _LOGGER.setLevel(logging.DEBUG)
+
 
 UDSinkCallable = Callable[[Iterator[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()
@@ -61,7 +62,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
-        self._cleanup_coroutines = []
+        self.cleanup_coroutines = []
 
         self._server_options = [
             ("grpc.max_send_message_length", self._max_message_size),
@@ -102,10 +103,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         """
         return udsink_pb2.ReadyResponse(ready=True)
 
-    async def __serve_async(self) -> None:
-        server = grpc.aio.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
+    async def __serve_async(self, server) -> None:
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
             UserDefinedSinkServicer(self.__sink_handler), server
         )
@@ -122,17 +120,13 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
             await server.stop(5)
             """
 
-        self._cleanup_coroutines.append(server_graceful_shutdown())
+        self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
     def start_async(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
-        loop = asyncio.get_event_loop()
-        try:
-            loop.run_until_complete(self.__serve_async())
-        finally:
-            loop.run_until_complete(*self._cleanup_coroutines)
-            loop.close()
+        server = grpc.aio.server(options=self._server_options)
+        self.__serve_async(server)
 
     def start(self) -> None:
         """

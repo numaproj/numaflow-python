@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pynumaflow"
-version = "0.3.2"
+version = "0.3.3"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = ["NumaFlow Developers"]
 readme = "README.md"
@@ -22,12 +22,15 @@ classifiers = [
 python = ">=3.8, <3.11"
 grpcio = "^1.48.1"
 grpcio-tools = "^1.48.1"
+google-cloud = "^0.34.0"
+google-api-core = "^2.11.0"
+protobuf = "~3.20.0"
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.1"
+pytest = "^7.2.1"
 pytest-cov = "^3.0"
 black = "^22.1"
 grpcio-testing = "^1.48.1"

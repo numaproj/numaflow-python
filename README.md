@@ -28,14 +28,15 @@ if __name__ == "__main__":
 ### Reduce
 
 ```python
+import asyncio
 from typing import Iterator
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 
-def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+async def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    for _ in datums:
+    async for _ in datums:
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -46,7 +47,8 @@ def my_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
 
 if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(reduce_handler=my_handler)
-    grpc_server.start()
+    asyncio.run(grpc_server.start())
+    asyncio.run(*grpc_server.cleanup_coroutines)
 ```
 
 ### Sample Image

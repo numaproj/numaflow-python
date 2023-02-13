@@ -1,3 +1,3 @@
 .PHONY: image
 image:
-	docker build -t "test:latest" .
+	docker build --build-arg "ARCH=amd64" .

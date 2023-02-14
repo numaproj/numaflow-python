@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.3 (2023-02-14)
+
+ * [f13bc5f](https://github.com/numaproj/numaflow-python/commit/f13bc5fd124c7c8141e37d93399e013771af09ea) feat: reduce stream per window using asyncio (#49)
+ * [df9c8c8](https://github.com/numaproj/numaflow-python/commit/df9c8c89d9bfa5f7f934c1f8132cb202bc27e6e2) perf: improve performance by adding slots (#47)
+
+### Contributors
+
+ * Avik Basu
+ * ashwinidulams
+
 ## v0.3.2 (2022-12-21)
 
  * [a650aac](https://github.com/numaproj/numaflow-python/commit/a650aacf86b5d18f8f84ba75be2b9adf3e6dacdc) fix: time unit bug/dockerfile/add a guide (#44)

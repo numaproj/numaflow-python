@@ -12,18 +12,22 @@ def blocking(url):
     res = requests.get(url)
     try:
         poke = res.json()
-        return poke['name']
+        return poke["message"]
+        # return poke['name']
     except:
         return "Error"
 
 
+executor = concurrent.futures.ThreadPoolExecutor()
+
+
 async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
-    executor = concurrent.futures.ThreadPoolExecutor()
     event_loop = asyncio.get_event_loop()
     tasks = []
-    for number in range(1, 10):
-        pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{number}'
+    async for _ in datums:
+        # pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{number}'
+        pokemon_url = f'http://host.docker.internal:9888/ping'
         fut = event_loop.run_in_executor(executor, blocking, pokemon_url)
         tasks.append(fut)
     completed, pending = await asyncio.wait(tasks)

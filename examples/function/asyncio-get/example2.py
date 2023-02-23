@@ -33,7 +33,7 @@ def blocking(url):
 async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     tasks = []
-    for number in range(1, 20):
+    async for _ in datums:
         # pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{number}'
         pokemon_url = f'http://host.docker.internal:9888/ping'
         tasks.append(blocking(pokemon_url))
@@ -45,6 +45,5 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler, sock_path="/tmp/numaflow-test.sock")
-
+    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
     aiorun.run(grpc_server.start_async())

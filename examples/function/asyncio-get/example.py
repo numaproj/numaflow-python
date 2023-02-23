@@ -33,11 +33,12 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
     interval_window = md.interval_window
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for number in range(1, 20):
+        async for _ in datums:
             # pokemon_url = f'https://pokeapi.co/api/v2/pokemon/{number}'
             pokemon_url = f'http://host.docker.internal:9888/ping'
             tasks.append(asyncio.ensure_future(get_poke(session, pokemon_url)))
         original_pokemon = await asyncio.gather(*tasks)
+
     msg = (
         f"counter:{original_pokemon} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"

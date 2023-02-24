@@ -214,7 +214,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return datums
 
-    async def IsReady(
+    def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """

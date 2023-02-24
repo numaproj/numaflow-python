@@ -1,10 +1,8 @@
-# Flatmap Example
+# AsyncIO executors examples
 
-## Build image and push
+## Build image
 
 ```shell
 make image
-# Privilege needed.
-docker push quay.io/numaio/numaflow-python/map-flatmap:latest
 ```
 

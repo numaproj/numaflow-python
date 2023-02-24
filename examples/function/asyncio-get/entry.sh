@@ -1,4 +1,4 @@
 #!/bin/sh
 set -eux
 
-python example2.py
+python async_exec.py

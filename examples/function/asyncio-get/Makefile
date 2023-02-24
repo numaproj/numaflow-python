@@ -1,3 +1,3 @@
 .PHONY: image
 image:
-	docker build -t asynctest:v3 .
+	docker build -t asynctest:v1 .

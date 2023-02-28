@@ -12,7 +12,7 @@ from grpc.aio._server import Server
 from pynumaflow import setup_logging
 from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
-from pynumaflow.function.generated import udfunction_pb2, udfunction_pb2_grpc
+from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
     map_handler,
     mock_event_time,
@@ -201,15 +201,17 @@ class TestAsyncServer(unittest.TestCase):
         except grpc.RpcError as e:
             logging.error(e)
 
-        self.assertEqual(1, len(response.elements))
-        self.assertEqual(
-            bytes(
-                "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
-                "interval_window_end:2022-09-12 16:01:00+00:00",
-                encoding="utf-8",
-            ),
-            response.elements[0].value,
-        )
+        self.assertEqual(1, len(list(response)))
+
+        for r in response:
+            self.assertEqual(
+                bytes(
+                    "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
+                    "interval_window_end:2022-09-12 16:01:00+00:00",
+                    encoding="utf-8",
+                ),
+                r.elements[0].value,
+            )
 
     def test_reduce_with_multiple_keys(self) -> None:
         stub = self.__stub()
@@ -223,15 +225,16 @@ class TestAsyncServer(unittest.TestCase):
         except grpc.RpcError as e:
             print(e)
 
-        self.assertEqual(10, len(response.elements))
-        self.assertEqual(
-            bytes(
-                "counter:1 interval_window_start:2022-09-12 16:00:00+00:00 "
-                "interval_window_end:2022-09-12 16:01:00+00:00",
-                encoding="utf-8",
-            ),
-            response.elements[0].value,
-        )
+        self.assertEqual(10, len(list(response)))
+        for r in response:
+            self.assertEqual(
+                bytes(
+                    "counter:1 interval_window_start:2022-09-12 16:00:00+00:00 "
+                    "interval_window_end:2022-09-12 16:01:00+00:00",
+                    encoding="utf-8",
+                ),
+                r.elements[0].value,
+            )
 
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)

@@ -13,14 +13,12 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
 from pynumaflow.sink import Responses, Datum, Response
-from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
+from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
-
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
-
 
 UDSinkCallable = Callable[[Iterator[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()
@@ -52,11 +50,11 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     """
 
     def __init__(
-        self,
-        sink_handler: UDSinkCallable,
-        sock_path=SINK_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            sink_handler: UDSinkCallable,
+            sock_path=SINK_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
         self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
@@ -70,11 +68,11 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     def SinkFn(
-        self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
+            self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
-        The pascal case function name comes from the generated udsink_pb2_grpc.py file.
+        The pascal case function name comes from the proto udsink_pb2_grpc.py file.
         """
         # if there is an exception, we will mark all the responses as a failure
         try:
@@ -95,11 +93,11 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         return udsink_pb2.ResponseList(responses=responses)
 
     def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the generated udsink_pb2_grpc.py file.
+        The pascal case function name comes from the proto udsink_pb2_grpc.py file.
         """
         return udsink_pb2.ReadyResponse(ready=True)
 

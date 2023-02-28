@@ -21,10 +21,9 @@ from pynumaflow._constants import (
 from pynumaflow.function import Messages, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult
 from pynumaflow.function.asynciter import NonBlockingIterator
-from pynumaflow.function.generated import udfunction_pb2
-from pynumaflow.function.generated import udfunction_pb2_grpc
+from pynumaflow.function.proto import udfunction_pb2
+from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
@@ -81,12 +80,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     """
 
     def __init__(
-        self,
-        map_handler: UDFMapCallable = None,
-        reduce_handler: UDFReduceCallable = None,
-        sock_path=FUNCTION_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            map_handler: UDFMapCallable = None,
+            reduce_handler: UDFReduceCallable = None,
+            sock_path=FUNCTION_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
 
         if not (map_handler or reduce_handler):
@@ -105,11 +104,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         ]
 
     def MapFn(
-        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
-        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
         key = ""
         for metadata_key, metadata_value in context.invocation_metadata():
@@ -139,11 +138,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(
-        self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
+            self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
+    ):
         """
         Applies a reduce function to a datum stream.
-        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
 
         start, end = None, None
@@ -167,7 +166,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         )
 
         await response_task
-        return response_task.result()
+        results_futures = response_task.result()
+
+        for fut in results_futures:
+            await fut
+            yield udfunction_pb2.DatumList(elements=fut.result())
 
     async def __async_reduce_handler(self, interval_window, request_iterator: AsyncIterable[Datum]):
         callable_dict = {}
@@ -189,15 +192,16 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 callable_dict[key] = result
 
             await result.iterator.put(d)
-        datums = []
+
         for key in callable_dict:
             await callable_dict[key].iterator.put(STREAM_EOF)
 
+        tasks = []
         for key in callable_dict:
             fut = callable_dict[key].future
-            await fut
-            datums = datums + fut.result()
-        return udfunction_pb2.DatumList(elements=datums)
+            tasks.append(fut)
+
+        return tasks
 
     async def __invoke_reduce(self, key: str, request_iterator: AsyncIterable[Datum], md: Metadata):
         try:
@@ -215,11 +219,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return datums
 
     def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
+        The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
         return udfunction_pb2.ReadyResponse(ready=True)
 

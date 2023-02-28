@@ -2,7 +2,6 @@ import unittest
 from datetime import datetime, timezone
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
-
 from pynumaflow.sink._dtypes import (
     Datum,
 )

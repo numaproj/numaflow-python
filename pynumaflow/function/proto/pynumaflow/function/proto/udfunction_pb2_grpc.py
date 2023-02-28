@@ -3,7 +3,9 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from pynumaflow.function.proto import udfunction_pb2 as pynumaflow_dot_function_dot_proto_dot_udfunction__pb2
+from pynumaflow.function.proto import (
+    udfunction_pb2 as pynumaflow_dot_function_dot_proto_dot_udfunction__pb2,
+)
 
 
 class UserDefinedFunctionStub(object):
@@ -16,36 +18,35 @@ class UserDefinedFunctionStub(object):
             channel: A grpc.Channel.
         """
         self.MapFn = channel.unary_unary(
-                '/pynumaflow.function.proto.UserDefinedFunction/MapFn',
-                request_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
-                response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
-                )
+            "/pynumaflow.function.proto.UserDefinedFunction/MapFn",
+            request_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
+            response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
+        )
         self.MapTFn = channel.unary_unary(
-                '/pynumaflow.function.proto.UserDefinedFunction/MapTFn',
-                request_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
-                response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
-                )
+            "/pynumaflow.function.proto.UserDefinedFunction/MapTFn",
+            request_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
+            response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
+        )
         self.ReduceFn = channel.stream_stream(
-                '/pynumaflow.function.proto.UserDefinedFunction/ReduceFn',
-                request_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
-                response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
-                )
+            "/pynumaflow.function.proto.UserDefinedFunction/ReduceFn",
+            request_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
+            response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
+        )
         self.IsReady = channel.unary_unary(
-                '/pynumaflow.function.proto.UserDefinedFunction/IsReady',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.ReadyResponse.FromString,
-                )
+            "/pynumaflow.function.proto.UserDefinedFunction/IsReady",
+            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            response_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.ReadyResponse.FromString,
+        )
 
 
 class UserDefinedFunctionServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def MapFn(self, request, context):
-        """MapFn applies a function to each datum element.
-        """
+        """MapFn applies a function to each datum element."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def MapTFn(self, request, context):
         """MapTFn applies a function to each datum element.
@@ -53,120 +54,167 @@ class UserDefinedFunctionServicer(object):
         MapTFn can be used only at source vertex by source data transformer.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ReduceFn(self, request_iterator, context):
-        """ReduceFn applies a reduce function to a datum stream.
-        """
+        """ReduceFn applies a reduce function to a datum stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def IsReady(self, request, context):
-        """IsReady is the heartbeat endpoint for gRPC.
-        """
+        """IsReady is the heartbeat endpoint for gRPC."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_UserDefinedFunctionServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'MapFn': grpc.unary_unary_rpc_method_handler(
-                    servicer.MapFn,
-                    request_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.FromString,
-                    response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.SerializeToString,
-            ),
-            'MapTFn': grpc.unary_unary_rpc_method_handler(
-                    servicer.MapTFn,
-                    request_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.FromString,
-                    response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.SerializeToString,
-            ),
-            'ReduceFn': grpc.stream_stream_rpc_method_handler(
-                    servicer.ReduceFn,
-                    request_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.FromString,
-                    response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.SerializeToString,
-            ),
-            'IsReady': grpc.unary_unary_rpc_method_handler(
-                    servicer.IsReady,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.ReadyResponse.SerializeToString,
-            ),
+        "MapFn": grpc.unary_unary_rpc_method_handler(
+            servicer.MapFn,
+            request_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.FromString,
+            response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.SerializeToString,
+        ),
+        "MapTFn": grpc.unary_unary_rpc_method_handler(
+            servicer.MapTFn,
+            request_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.FromString,
+            response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.SerializeToString,
+        ),
+        "ReduceFn": grpc.stream_stream_rpc_method_handler(
+            servicer.ReduceFn,
+            request_deserializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.FromString,
+            response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.SerializeToString,
+        ),
+        "IsReady": grpc.unary_unary_rpc_method_handler(
+            servicer.IsReady,
+            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            response_serializer=pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.ReadyResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'pynumaflow.function.proto.UserDefinedFunction', rpc_method_handlers)
+        "pynumaflow.function.proto.UserDefinedFunction", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class UserDefinedFunction(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def MapFn(request,
+    def MapFn(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/pynumaflow.function.proto.UserDefinedFunction/MapFn',
+            "/pynumaflow.function.proto.UserDefinedFunction/MapFn",
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def MapTFn(request,
+    def MapTFn(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/pynumaflow.function.proto.UserDefinedFunction/MapTFn',
+            "/pynumaflow.function.proto.UserDefinedFunction/MapTFn",
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ReduceFn(request_iterator,
+    def ReduceFn(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.stream_stream(request_iterator, target, '/pynumaflow.function.proto.UserDefinedFunction/ReduceFn',
+            "/pynumaflow.function.proto.UserDefinedFunction/ReduceFn",
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.Datum.SerializeToString,
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.DatumList.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def IsReady(request,
+    def IsReady(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/pynumaflow.function.proto.UserDefinedFunction/IsReady',
+            "/pynumaflow.function.proto.UserDefinedFunction/IsReady",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             pynumaflow_dot_function_dot_proto_dot_udfunction__pb2.ReadyResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

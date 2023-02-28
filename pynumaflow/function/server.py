@@ -80,12 +80,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     """
 
     def __init__(
-            self,
-            map_handler: UDFMapCallable = None,
-            reduce_handler: UDFReduceCallable = None,
-            sock_path=FUNCTION_SOCK_PATH,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        map_handler: UDFMapCallable = None,
+        reduce_handler: UDFReduceCallable = None,
+        sock_path=FUNCTION_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
 
         if not (map_handler or reduce_handler):
@@ -104,7 +104,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         ]
 
     def MapFn(
-            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
@@ -138,7 +138,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(
-            self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
+        self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
     ):
         """
         Applies a reduce function to a datum stream.
@@ -219,7 +219,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return datums
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

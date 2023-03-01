@@ -174,7 +174,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
 
             # a neat hack to drop
-            msgs = Messages.as_forward_all(None)
+            msgts = MessageTs.as_forward_all(None)
 
         datums = []
         for msgt in msgts.items():

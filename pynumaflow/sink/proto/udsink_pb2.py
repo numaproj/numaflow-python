@@ -13,7 +13,16 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x0cudsink.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"n\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12\x1e\n\nevent_time\x18\x03 \x01(\x0b\x32\n.EventTime\x12\x1d\n\twatermark\x18\x04 \x01(\x0b\x32\n.Watermark\x12\n\n\x02id\x18\x05 \x01(\t"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08"8\n\x08Response\x12\n\n\x02id\x18\x01 \x01(\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x65rr_msg\x18\x03 \x01(\t",\n\x0cResponseList\x12\x1c\n\tresponses\x18\x01 \x03(\x0b\x32\t.Response2g\n\x0fUserDefinedSink\x12!\n\x06SinkFn\x12\x06.Datum\x1a\r.ResponseList(\x01\x12\x31\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x0e.ReadyResponseb\x06proto3'
+    b'\n\x0cudsink.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12'
+    b'.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 '
+    b'\x01(\x0b\x32\x1a.google.protobuf.Timestamp"n\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01('
+    b"\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12\x1e\n\nevent_time\x18\x03 \x01("
+    b"\x0b\x32\n.EventTime\x12\x1d\n\twatermark\x18\x04 \x01(\x0b\x32\n.Watermark\x12\n\n\x02id\x18\x05 \x01("
+    b'\t"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08"8\n\x08Response\x12\n\n\x02id\x18\x01 \x01('
+    b'\t\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x0f\n\x07\x65rr_msg\x18\x03 \x01(\t",'
+    b"\n\x0cResponseList\x12\x1c\n\tresponses\x18\x01 \x03("
+    b"\x0b\x32\t.Response2g\n\x0fUserDefinedSink\x12!\n\x06SinkFn\x12\x06.Datum\x1a\r.ResponseList("
+    b"\x01\x12\x31\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x0e.ReadyResponseb\x06proto3"
 )
 
 

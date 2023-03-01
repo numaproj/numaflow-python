@@ -120,10 +120,10 @@ class MessageTs:
         return self._message_ts
 
     @classmethod
-    def as_forward_all(cls: Type[MTs], value: Optional[bytes]) -> MTs:
+    def as_forward_all(cls: Type[MTs], value: Optional[bytes], event_time: datetime) -> MTs:
         msg_ts = cls()
         if value:
-            msg_ts.append(MessageT.to_all(value=value))
+            msg_ts.append(MessageT.to_all(value=value, event_time=event_time))
         else:
             msg_ts.append(MessageT.to_drop())
         return msg_ts

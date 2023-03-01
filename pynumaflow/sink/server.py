@@ -13,7 +13,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
 from pynumaflow.sink import Responses, Datum, Response
-from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
+from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
 

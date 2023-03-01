@@ -8,7 +8,7 @@ from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
-from pynumaflow.sink.generated import udsink_pb2
+from pynumaflow.sink.proto import udsink_pb2
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:

@@ -1,3 +1,3 @@
 .PHONY: image
 image:
-	docker build --build-arg "ARCH=amd64" .
+	docker build -t "quay.io/keranyang/numaflow-python/keran-test-forwarder:latest" --build-arg "ARCH=amd64" .

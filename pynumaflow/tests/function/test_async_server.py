@@ -12,7 +12,7 @@ from grpc.aio._server import Server
 from pynumaflow import setup_logging
 from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
-from pynumaflow.function.generated import udfunction_pb2, udfunction_pb2_grpc
+from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
     map_handler,
     mock_event_time,

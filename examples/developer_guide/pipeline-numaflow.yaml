@@ -19,7 +19,7 @@ spec:
       udf:
         container:
           # simply forward the message
-          image: quay.io/numaio/numaflow-python/map-forward-message:latest
+          image: quay.io/keranyang/numaflow-python/keran-test-forwarder:latest
     - name: counter
       udf:
         container:

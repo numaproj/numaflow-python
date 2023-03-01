@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+package function.v1;
+
+
+service UserDefinedFunction {
+  // MapFn applies a function to each datum element.
+  rpc MapFn(Datum) returns (DatumList);
+
+  // MapTFn applies a function to each datum element.
+  // In addition to map function, MapTFn also supports assigning a new event time to datum.
+  // MapTFn can be used only at source vertex by source data transformer.
+  rpc MapTFn(Datum) returns (DatumList);
+
+  // ReduceFn applies a reduce function to a datum stream.
+  rpc ReduceFn(stream Datum) returns (stream DatumList);
+
+  // IsReady is the heartbeat endpoint for gRPC.
+  rpc IsReady(google.protobuf.Empty) returns (ReadyResponse);
+}
+
+message EventTime {
+  // event_time is the time associated with each datum.
+  google.protobuf.Timestamp event_time = 1;
+  // future we can add an enum to represent whether the event time is
+  // based on INGEST_TIME or EVENT_TIME or PROCESSING_TIME
+}
+
+message Watermark {
+  // watermark is the monotonically increasing time which denotes completeness for the given time for the given vertex.
+  google.protobuf.Timestamp watermark = 1;
+  // future we can add LATE, ON_TIME etc.
+}
+
+/**
+ * Datum represents a datum element.
+ */
+message Datum {
+  string key = 1;
+  bytes value = 2;
+  EventTime event_time = 3;
+  Watermark watermark = 4;
+}
+
+/**
+ * DatumList represents a list of datum elements.
+ */
+message DatumList {
+  repeated Datum elements = 1;
+}
+
+/**
+ * ReadyResponse is the health check result.
+ */
+message ReadyResponse {
+  bool ready = 1;
+}

@@ -3,6 +3,8 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
+package sink.v1;
+
 service UserDefinedSink {
   // SinkFn writes the Datum to a user defined sink.
   rpc SinkFn(stream Datum) returns (ResponseList);

@@ -16,12 +16,12 @@ class UserDefinedSinkStub(object):
             channel: A grpc.Channel.
         """
         self.SinkFn = channel.stream_unary(
-            "/UserDefinedSink/SinkFn",
+            "/sink.v1.UserDefinedSink/SinkFn",
             request_serializer=udsink__pb2.Datum.SerializeToString,
             response_deserializer=udsink__pb2.ResponseList.FromString,
         )
         self.IsReady = channel.unary_unary(
-            "/UserDefinedSink/IsReady",
+            "/sink.v1.UserDefinedSink/IsReady",
             request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             response_deserializer=udsink__pb2.ReadyResponse.FromString,
         )
@@ -56,7 +56,9 @@ def add_UserDefinedSinkServicer_to_server(servicer, server):
             response_serializer=udsink__pb2.ReadyResponse.SerializeToString,
         ),
     }
-    generic_handler = grpc.method_handlers_generic_handler("UserDefinedSink", rpc_method_handlers)
+    generic_handler = grpc.method_handlers_generic_handler(
+        "sink.v1.UserDefinedSink", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -80,7 +82,7 @@ class UserDefinedSink(object):
         return grpc.experimental.stream_unary(
             request_iterator,
             target,
-            "/UserDefinedSink/SinkFn",
+            "/sink.v1.UserDefinedSink/SinkFn",
             udsink__pb2.Datum.SerializeToString,
             udsink__pb2.ResponseList.FromString,
             options,
@@ -109,7 +111,7 @@ class UserDefinedSink(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/UserDefinedSink/IsReady",
+            "/sink.v1.UserDefinedSink/IsReady",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             udsink__pb2.ReadyResponse.FromString,
             options,

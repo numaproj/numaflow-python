@@ -16,22 +16,22 @@ class UserDefinedFunctionStub(object):
             channel: A grpc.Channel.
         """
         self.MapFn = channel.unary_unary(
-            "/sample.UserDefinedFunction/MapFn",
+            "/function.v1.UserDefinedFunction/MapFn",
             request_serializer=udfunction__pb2.Datum.SerializeToString,
             response_deserializer=udfunction__pb2.DatumList.FromString,
         )
         self.MapTFn = channel.unary_unary(
-            "/sample.UserDefinedFunction/MapTFn",
+            "/function.v1.UserDefinedFunction/MapTFn",
             request_serializer=udfunction__pb2.Datum.SerializeToString,
             response_deserializer=udfunction__pb2.DatumList.FromString,
         )
         self.ReduceFn = channel.stream_stream(
-            "/sample.UserDefinedFunction/ReduceFn",
+            "/function.v1.UserDefinedFunction/ReduceFn",
             request_serializer=udfunction__pb2.Datum.SerializeToString,
             response_deserializer=udfunction__pb2.DatumList.FromString,
         )
         self.IsReady = channel.unary_unary(
-            "/sample.UserDefinedFunction/IsReady",
+            "/function.v1.UserDefinedFunction/IsReady",
             request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             response_deserializer=udfunction__pb2.ReadyResponse.FromString,
         )
@@ -92,7 +92,7 @@ def add_UserDefinedFunctionServicer_to_server(servicer, server):
         ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-        "sample.UserDefinedFunction", rpc_method_handlers
+        "function.v1.UserDefinedFunction", rpc_method_handlers
     )
     server.add_generic_rpc_handlers((generic_handler,))
 
@@ -117,7 +117,7 @@ class UserDefinedFunction(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/sample.UserDefinedFunction/MapFn",
+            "/function.v1.UserDefinedFunction/MapFn",
             udfunction__pb2.Datum.SerializeToString,
             udfunction__pb2.DatumList.FromString,
             options,
@@ -146,7 +146,7 @@ class UserDefinedFunction(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/sample.UserDefinedFunction/MapTFn",
+            "/function.v1.UserDefinedFunction/MapTFn",
             udfunction__pb2.Datum.SerializeToString,
             udfunction__pb2.DatumList.FromString,
             options,
@@ -175,7 +175,7 @@ class UserDefinedFunction(object):
         return grpc.experimental.stream_stream(
             request_iterator,
             target,
-            "/sample.UserDefinedFunction/ReduceFn",
+            "/function.v1.UserDefinedFunction/ReduceFn",
             udfunction__pb2.Datum.SerializeToString,
             udfunction__pb2.DatumList.FromString,
             options,
@@ -204,7 +204,7 @@ class UserDefinedFunction(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/sample.UserDefinedFunction/IsReady",
+            "/function.v1.UserDefinedFunction/IsReady",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             udfunction__pb2.ReadyResponse.FromString,
             options,

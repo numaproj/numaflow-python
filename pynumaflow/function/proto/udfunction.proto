@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-package sample;
+package function.v1;
 
 
 service UserDefinedFunction {

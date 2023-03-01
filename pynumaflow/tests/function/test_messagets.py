@@ -2,7 +2,7 @@ import unittest
 from dataclasses import FrozenInstanceError
 from datetime import datetime, timezone
 
-from pynumaflow.function import MessageTs, MessageT, Message, ALL, DROP
+from pynumaflow.function import MessageTs, MessageT, ALL, DROP
 
 
 def mock_message_t():
@@ -18,7 +18,9 @@ def mock_event_time():
 class TestMessageT(unittest.TestCase):
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgt = MessageT(key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"])
+        msgt = MessageT(
+            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
+        )
         self.assertEqual(mock_obj["Key"], msgt.key)
 
     def test_immutable(self):
@@ -33,7 +35,9 @@ class TestMessageT(unittest.TestCase):
 
     def test_event_time(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgts = MessageT(key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"])
+        msgts = MessageT(
+            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
+        )
         self.assertEqual(mock_obj["EventTime"], msgts.event_time)
 
     def test_message_to_all(self):
@@ -53,7 +57,9 @@ class TestMessageT(unittest.TestCase):
 
     def test_message_to(self):
         mock_obj = {"Key": "__KEY__", "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgt = MessageT.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"])
+        msgt = MessageT.to_vtx(
+            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
+        )
         self.assertEqual(MessageT, type(msgt))
         self.assertEqual(mock_obj["Key"], msgt.key)
         self.assertEqual(mock_obj["Value"], msgt.value)

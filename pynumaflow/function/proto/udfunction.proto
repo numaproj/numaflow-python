@@ -3,7 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
-package pynumaflow.function.proto;
+package sample;
 
 
 service UserDefinedFunction {

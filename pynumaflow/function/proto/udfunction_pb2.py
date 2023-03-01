@@ -7,6 +7,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -16,64 +17,85 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10udfunction.proto\x12\x06sample\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"p\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12%\n\nevent_time\x18\x03 \x01(\x0b\x32\x11.sample.EventTime\x12$\n\twatermark\x18\x04 \x01(\x0b\x32\x11.sample.Watermark\",\n\tDatumList\x12\x1f\n\x08\x65lements\x18\x01 \x03(\x0b\x32\r.sample.Datum\"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\xd8\x01\n\x13UserDefinedFunction\x12)\n\x05MapFn\x12\r.sample.Datum\x1a\x11.sample.DatumList\x12*\n\x06MapTFn\x12\r.sample.Datum\x1a\x11.sample.DatumList\x12\x30\n\x08ReduceFn\x12\r.sample.Datum\x1a\x11.sample.DatumList(\x01\x30\x01\x12\x38\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x15.sample.ReadyResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x10udfunction.proto\x12\x06sample\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"p\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12%\n\nevent_time\x18\x03 \x01(\x0b\x32\x11.sample.EventTime\x12$\n\twatermark\x18\x04 \x01(\x0b\x32\x11.sample.Watermark",\n\tDatumList\x12\x1f\n\x08\x65lements\x18\x01 \x03(\x0b\x32\r.sample.Datum"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\xd8\x01\n\x13UserDefinedFunction\x12)\n\x05MapFn\x12\r.sample.Datum\x1a\x11.sample.DatumList\x12*\n\x06MapTFn\x12\r.sample.Datum\x1a\x11.sample.DatumList\x12\x30\n\x08ReduceFn\x12\r.sample.Datum\x1a\x11.sample.DatumList(\x01\x30\x01\x12\x38\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x15.sample.ReadyResponseb\x06proto3'
+)
 
 
-
-_EVENTTIME = DESCRIPTOR.message_types_by_name['EventTime']
-_WATERMARK = DESCRIPTOR.message_types_by_name['Watermark']
-_DATUM = DESCRIPTOR.message_types_by_name['Datum']
-_DATUMLIST = DESCRIPTOR.message_types_by_name['DatumList']
-_READYRESPONSE = DESCRIPTOR.message_types_by_name['ReadyResponse']
-EventTime = _reflection.GeneratedProtocolMessageType('EventTime', (_message.Message,), {
-  'DESCRIPTOR' : _EVENTTIME,
-  '__module__' : 'udfunction_pb2'
-  # @@protoc_insertion_point(class_scope:sample.EventTime)
-  })
+_EVENTTIME = DESCRIPTOR.message_types_by_name["EventTime"]
+_WATERMARK = DESCRIPTOR.message_types_by_name["Watermark"]
+_DATUM = DESCRIPTOR.message_types_by_name["Datum"]
+_DATUMLIST = DESCRIPTOR.message_types_by_name["DatumList"]
+_READYRESPONSE = DESCRIPTOR.message_types_by_name["ReadyResponse"]
+EventTime = _reflection.GeneratedProtocolMessageType(
+    "EventTime",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _EVENTTIME,
+        "__module__": "udfunction_pb2"
+        # @@protoc_insertion_point(class_scope:sample.EventTime)
+    },
+)
 _sym_db.RegisterMessage(EventTime)
 
-Watermark = _reflection.GeneratedProtocolMessageType('Watermark', (_message.Message,), {
-  'DESCRIPTOR' : _WATERMARK,
-  '__module__' : 'udfunction_pb2'
-  # @@protoc_insertion_point(class_scope:sample.Watermark)
-  })
+Watermark = _reflection.GeneratedProtocolMessageType(
+    "Watermark",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _WATERMARK,
+        "__module__": "udfunction_pb2"
+        # @@protoc_insertion_point(class_scope:sample.Watermark)
+    },
+)
 _sym_db.RegisterMessage(Watermark)
 
-Datum = _reflection.GeneratedProtocolMessageType('Datum', (_message.Message,), {
-  'DESCRIPTOR' : _DATUM,
-  '__module__' : 'udfunction_pb2'
-  # @@protoc_insertion_point(class_scope:sample.Datum)
-  })
+Datum = _reflection.GeneratedProtocolMessageType(
+    "Datum",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DATUM,
+        "__module__": "udfunction_pb2"
+        # @@protoc_insertion_point(class_scope:sample.Datum)
+    },
+)
 _sym_db.RegisterMessage(Datum)
 
-DatumList = _reflection.GeneratedProtocolMessageType('DatumList', (_message.Message,), {
-  'DESCRIPTOR' : _DATUMLIST,
-  '__module__' : 'udfunction_pb2'
-  # @@protoc_insertion_point(class_scope:sample.DatumList)
-  })
+DatumList = _reflection.GeneratedProtocolMessageType(
+    "DatumList",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _DATUMLIST,
+        "__module__": "udfunction_pb2"
+        # @@protoc_insertion_point(class_scope:sample.DatumList)
+    },
+)
 _sym_db.RegisterMessage(DatumList)
 
-ReadyResponse = _reflection.GeneratedProtocolMessageType('ReadyResponse', (_message.Message,), {
-  'DESCRIPTOR' : _READYRESPONSE,
-  '__module__' : 'udfunction_pb2'
-  # @@protoc_insertion_point(class_scope:sample.ReadyResponse)
-  })
+ReadyResponse = _reflection.GeneratedProtocolMessageType(
+    "ReadyResponse",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _READYRESPONSE,
+        "__module__": "udfunction_pb2"
+        # @@protoc_insertion_point(class_scope:sample.ReadyResponse)
+    },
+)
 _sym_db.RegisterMessage(ReadyResponse)
 
-_USERDEFINEDFUNCTION = DESCRIPTOR.services_by_name['UserDefinedFunction']
+_USERDEFINEDFUNCTION = DESCRIPTOR.services_by_name["UserDefinedFunction"]
 if _descriptor._USE_C_DESCRIPTORS == False:
 
-  DESCRIPTOR._options = None
-  _EVENTTIME._serialized_start=90
-  _EVENTTIME._serialized_end=149
-  _WATERMARK._serialized_start=151
-  _WATERMARK._serialized_end=209
-  _DATUM._serialized_start=211
-  _DATUM._serialized_end=323
-  _DATUMLIST._serialized_start=325
-  _DATUMLIST._serialized_end=369
-  _READYRESPONSE._serialized_start=371
-  _READYRESPONSE._serialized_end=401
-  _USERDEFINEDFUNCTION._serialized_start=404
-  _USERDEFINEDFUNCTION._serialized_end=620
+    DESCRIPTOR._options = None
+    _EVENTTIME._serialized_start = 90
+    _EVENTTIME._serialized_end = 149
+    _WATERMARK._serialized_start = 151
+    _WATERMARK._serialized_end = 209
+    _DATUM._serialized_start = 211
+    _DATUM._serialized_end = 323
+    _DATUMLIST._serialized_start = 325
+    _DATUMLIST._serialized_end = 369
+    _READYRESPONSE._serialized_start = 371
+    _READYRESPONSE._serialized_end = 401
+    _USERDEFINEDFUNCTION._serialized_start = 404
+    _USERDEFINEDFUNCTION._serialized_end = 620
 # @@protoc_insertion_point(module_scope)

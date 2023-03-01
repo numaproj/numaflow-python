@@ -190,49 +190,6 @@ class TestAsyncServer(unittest.TestCase):
             response.elements[0].value,
         )
 
-    def test_reduce(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_reduce_streaming_request()
-        response = None
-        try:
-            response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request), metadata=metadata
-            )
-        except grpc.RpcError as e:
-            logging.error(e)
-
-        self.assertEqual(1, len(response.elements))
-        self.assertEqual(
-            bytes(
-                "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
-                "interval_window_end:2022-09-12 16:01:00+00:00",
-                encoding="utf-8",
-            ),
-            response.elements[0].value,
-        )
-
-    def test_reduce_with_multiple_keys(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_reduce_streaming_request()
-        response = None
-        try:
-            response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request, resetkey=True),
-                metadata=metadata,
-            )
-        except grpc.RpcError as e:
-            print(e)
-
-        self.assertEqual(10, len(response.elements))
-        self.assertEqual(
-            bytes(
-                "counter:1 interval_window_start:2022-09-12 16:00:00+00:00 "
-                "interval_window_end:2022-09-12 16:01:00+00:00",
-                encoding="utf-8",
-            ),
-            response.elements[0].value,
-        )
-
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
 

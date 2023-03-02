@@ -88,7 +88,8 @@ class MessageT:
 
     key: str = ""
     value: bytes = b""
-    event_time: datetime = None
+    # There is no year 0, so setting following as default event time.
+    event_time: datetime = datetime(1, 1, 1, 0, 0)
 
     @classmethod
     def to_vtx(cls: Type[MT], key: str, value: bytes, event_time: datetime) -> MT:
@@ -98,7 +99,7 @@ class MessageT:
         return cls(key, value, event_time)
 
     to_all = partialmethod(to_vtx, ALL)
-    to_drop = partialmethod(to_vtx, DROP, b"", None)
+    to_drop = partialmethod(to_vtx, DROP, b"", event_time)
 
 
 class MessageTs:

@@ -8,6 +8,7 @@ from typing import Callable, AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -84,6 +85,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...
     >>> grpc_server = UserDefinedFunctionServicer(
     ...   reduce_handler=reduce_handler,
+    ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
     >>> aiorun.run(grpc_server.start_async())
@@ -156,8 +158,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         key = ""
+        print("kerantesthaha1")
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
+                print("kerantesthaha2")
                 key = metadata_value
 
         try:
@@ -172,16 +176,27 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             )
         except Exception as err:
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-
+            print("kerantesthaha3")
             # a neat hack to drop
-            msgts = MessageTs.as_forward_all(None)
+            msgts = MessageTs.as_forward_all(None, None)
 
+        print("kerantesthaha4")
         datums = []
         for msgt in msgts.items():
+            event_time_timestamp = _timestamp_pb2.Timestamp()
+            event_time_timestamp.FromDatetime(dt=msgt.event_time)
+            watermark_timestamp = _timestamp_pb2.Timestamp()
+            watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
             datums.append(
-                udfunction_pb2.Datum(key=msgt.key, value=msgt.value, event_time=msgt.event_time)
+                udfunction_pb2.Datum(
+                    key=msgt.key,
+                    value=msgt.value,
+                    event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+                )
             )
-
+        print("kerantesthaha5")
+        print(datums)
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(

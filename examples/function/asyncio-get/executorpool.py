@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
+import datetime
 import os
+import time
 from typing import AsyncIterable
 
 import aiorun
@@ -48,7 +50,7 @@ class ExecutorPool:
         elif exec_type == "process":
             self.executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
 
-    async def submit(self, func, *args):
+    def submit(self, func, *args):
         return self.loop.run_in_executor(self.executor, func, args)
 
     async def gather(self, tasks, return_exceptions=False, return_when="ALL_COMPLETED"):
@@ -81,22 +83,6 @@ def blocking_call(url):
         _LOGGER.error("HTTP request error: %s", e)
         return "Error"
 
-
-"""
-Invoke a CPU blocking call by computing factorial of a given number
-"""
-
-
-def blocks(n):
-    # log = logging.getLogger('blocks({})'.format(n))
-    # log.info('running')
-    n = n[0]
-    fact = 1
-    for i in range(1, n + 1):
-        fact = fact * i
-    return fact
-
-
 """
 handler function for executing operations on the messages received by the reduce vertex
 Here the function is used to execute certain blocking operations to demonstrate the use of 
@@ -105,19 +91,27 @@ asyncio with ThreadPool and ProcessPool Executor
 
 
 async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+    e_type = os.getenv("EXEC_TYPE")
+    if e_type:
+        e_type = e_type.lower()
+    max_workers = os.getenv("MAX_WORKERS")
+    if max_workers:
+        max_workers = int(max_workers)
+    threadPool = ExecutorPool(exec_type=e_type, max_workers=max_workers)
+
     interval_window = md.interval_window
     tasks = []
     threadPool.set_loop(asyncio.get_event_loop())
-    count = 0
+    start_time = time.time()
     async for _ in datums:
         url = f'http://host.docker.internal:9888/ping'
-        fut = await threadPool.submit(blocking_call, url)
+        fut = threadPool.submit(blocking_call, url)
         tasks.append(fut)
-        count = count + 1
-
+    co_time = time.time()
     results = await threadPool.gather(tasks)
+    end_time = time.time()
     msg = (
-        f"counter:{results} interval_window_start:{interval_window.start} "
+        f"loop_time:{co_time-start_time} batch_time:{end_time-start_time} co_time:{end_time-co_time} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
     return Messages(Message.to_vtx(key, str.encode(msg)))
@@ -126,7 +120,6 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
 EXEC_TYPE is environment var to decide the type of executor to be used by the UDF
 """
 if __name__ == "__main__":
-    e_type = os.getenv("EXEC_TYPE").lower()
-    threadPool = ExecutorPool(exec_type=e_type)
+
     grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
     aiorun.run(grpc_server.start_async())

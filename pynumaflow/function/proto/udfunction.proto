@@ -16,7 +16,7 @@ service UserDefinedFunction {
   rpc MapTFn(Datum) returns (DatumList);
 
   // ReduceFn applies a reduce function to a datum stream.
-  rpc ReduceFn(stream Datum) returns (stream DatumList);
+  rpc ReduceFn(Datum) returns (DatumList);
 
   // IsReady is the heartbeat endpoint for gRPC.
   rpc IsReady(google.protobuf.Empty) returns (ReadyResponse);

@@ -84,8 +84,9 @@ class TestMessageTs(unittest.TestCase):
         self.assertEqual(mock_obj[0]["Value"], msgts.items()[0]["Value"])
         self.assertEqual(mock_obj[0]["EventTime"], msgts.items()[0]["EventTime"])
         self.assertEqual(
-            "[{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message_t', 'EventTime': datetime.datetime(2022, 9, 12, "
-            "16, 0, tzinfo=datetime.timezone.utc)}, {'Key': b'U+005C__ALL__', 'Value': b'test_mock_message_t', "
+            "[{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message_t', "
+            "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}, "
+            "{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message_t', "
             "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}]",
             repr(msgts),
         )
@@ -124,8 +125,9 @@ class TestMessageTs(unittest.TestCase):
         msgts.append(self.mock_messaget_object())
         msgts.append(self.mock_messaget_object())
         self.assertEqual(
-            "[MessageT(key=b'U+005C__ALL__', value=b'test_mock_message_t', event_time=datetime.datetime(2022, 9, 12, "
-            "16, 0, tzinfo=datetime.timezone.utc)), MessageT(key=b'U+005C__ALL__', value=b'test_mock_message_t', "
+            "[MessageT(key=b'U+005C__ALL__', value=b'test_mock_message_t', "
+            "event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)), "
+            "MessageT(key=b'U+005C__ALL__', value=b'test_mock_message_t', "
             "event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc))]",
             msgts.dumps(),
         )

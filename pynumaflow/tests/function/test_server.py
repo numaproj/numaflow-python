@@ -290,8 +290,10 @@ class TestServer(unittest.TestCase):
         # Verify new event time gets assigned.
         updated_event_time_timestamp = _timestamp_pb2.Timestamp()
         updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
-        self.assertEqual(udfunction_pb2.EventTime(event_time=updated_event_time_timestamp),
-                         response.elements[0].event_time)
+        self.assertEqual(
+            udfunction_pb2.EventTime(event_time=updated_event_time_timestamp),
+            response.elements[0].event_time,
+        )
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_input(self):

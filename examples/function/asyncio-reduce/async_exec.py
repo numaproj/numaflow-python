@@ -7,7 +7,13 @@ import aiohttp
 from pynumaflow import setup_logging
 import time
 
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import (
+    Messages,
+    Message,
+    Datum,
+    Metadata,
+    UserDefinedFunctionServicer,
+)
 
 _LOGGER = setup_logging(__name__)
 
@@ -17,19 +23,21 @@ async def http_request(session, url):
         result = await resp.read()
         try:
             res_json = json.loads(result)
-            return res_json['message']
+            return res_json["message"]
         except Exception as e:
             _LOGGER.error("HTTP request error: %s", e)
             return "Error"
 
 
-async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def reduce_handler(
+    key: str, datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     async with aiohttp.ClientSession() as session:
         tasks = []
         start_time = time.time()
         async for _ in datums:
-            url = f'http://host.docker.internal:9888/ping'
+            url = f"http://host.docker.internal:9888/ping"
             tasks.append(http_request(session, url))
         results = await asyncio.gather(*tasks)
         end_time = time.time()

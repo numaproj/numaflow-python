@@ -8,7 +8,13 @@ import aiorun
 import requests
 
 from pynumaflow import setup_logging
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import (
+    Messages,
+    Message,
+    Datum,
+    Metadata,
+    UserDefinedFunctionServicer,
+)
 
 _LOGGER = setup_logging(__name__)
 
@@ -17,7 +23,9 @@ class ReduceHandler:
     def __init__(self, exec_pool=None):
         self.exec_pool = exec_pool
 
-    async def reduce_handler(self, key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+    async def reduce_handler(
+        self, key: str, datums: AsyncIterable[Datum], md: Metadata
+    ) -> Messages:
         """
         handler function for executing operations on the messages received by the reduce vertex
         Here the function is used to execute certain blocking operations to demonstrate the use of
@@ -28,7 +36,7 @@ class ReduceHandler:
         self.exec_pool.set_loop(asyncio.get_event_loop())
         start_time = time.time()
         async for _ in datums:
-            url = f'http://host.docker.internal:9888/ping'
+            url = f"http://host.docker.internal:9888/ping"
             fut = threadPool.submit(blocking_call, url)
             tasks.append(fut)
         results = await threadPool.gather(tasks)
@@ -42,39 +50,43 @@ class ReduceHandler:
 
 class ExecutorPool:
     """
-       A class used to create an Executor Pool using the "concurrent.futures" library
-       Currently ThreadPool and ProcessPool are supported
+    A class used to create an Executor Pool using the "concurrent.futures" library
+    Currently ThreadPool and ProcessPool are supported
 
-       ...
+    ...
 
-       Attributes
-       ----------
-       executor : ThreadPoolExecutor or ProcessPoolExecutor
-           a formatted string to print out what the animal says
-       loop : asyncio event loop
-           the event loop on which the tasks should be submitted
+    Attributes
+    ----------
+    executor : ThreadPoolExecutor or ProcessPoolExecutor
+        a formatted string to print out what the animal says
+    loop : asyncio event loop
+        the event loop on which the tasks should be submitted
 
-       Methods
-       -------
-       async submit(func, *args)
-           Submit the given function to the executor, returns a futures object
+    Methods
+    -------
+    async submit(func, *args)
+        Submit the given function to the executor, returns a futures object
 
-       async gather(tasks, return_exceptions, return_when)
-           Wait for the coroutines to execute and gather the results
+    async gather(tasks, return_exceptions, return_when)
+        Wait for the coroutines to execute and gather the results
 
-       set_loop(event_loop)
-           Update the event loop associated with the executor
+    set_loop(event_loop)
+        Update the event loop associated with the executor
 
-       close(wait)
-            Shutdown the executor
-       """
+    close(wait)
+         Shutdown the executor
+    """
 
     def __init__(self, exec_type="thread", max_workers=None, loop=None):
         self.loop = loop or asyncio.get_event_loop()
         if exec_type == "thread":
-            self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
+            self.executor = concurrent.futures.ThreadPoolExecutor(
+                max_workers=max_workers
+            )
         elif exec_type == "process":
-            self.executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
+            self.executor = concurrent.futures.ProcessPoolExecutor(
+                max_workers=max_workers
+            )
 
     def submit(self, func, *args):
         return self.loop.run_in_executor(self.executor, func, args)

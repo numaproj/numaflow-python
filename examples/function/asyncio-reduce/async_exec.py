@@ -31,14 +31,12 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
         async for _ in datums:
             url = f'http://host.docker.internal:9888/ping'
             tasks.append(http_request(session, url))
-        co_time = time.time()
         results = await asyncio.gather(*tasks)
         end_time = time.time()
 
     msg = (
-        # f"loop_time:{co_time-start_time} batch_time:{end_time-start_time} co_time:{end_time-co_time} interval_window_start:{interval_window.start} "
-        # f"interval_window_end:{interval_window.end}"
-        f"batch_time:{end_time - start_time}, interval_window_start:{interval_window.start}"
+        f"batch_time:{end_time-start_time} interval_window_start:{interval_window.start} "
+        f"interval_window_end:{interval_window.end}"
     )
     return Messages(Message.to_vtx(key, str.encode(msg)))
 

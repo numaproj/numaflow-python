@@ -158,10 +158,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
         key = ""
-        print("kerantesthaha1")
         for metadata_key, metadata_value in context.invocation_metadata():
             if metadata_key == DATUM_KEY:
-                print("kerantesthaha2")
                 key = metadata_value
 
         try:
@@ -176,11 +174,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             )
         except Exception as err:
             _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-            print("kerantesthaha3")
             # a neat hack to drop
             msgts = MessageTs.as_forward_all(None, None)
 
-        print("kerantesthaha4")
         datums = []
         for msgt in msgts.items():
             event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -195,8 +191,6 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                     watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
                 )
             )
-        print("kerantesthaha5")
-        print(datums)
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(

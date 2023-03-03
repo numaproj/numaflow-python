@@ -99,7 +99,7 @@ class MessageT:
         return cls(key, value, event_time)
 
     to_all = partialmethod(to_vtx, ALL)
-    to_drop = partialmethod(to_vtx, DROP, b"", event_time)
+    to_drop = partialmethod(to_vtx, DROP, b"", datetime(1, 1, 1, 0, 0))
 
 
 class MessageTs:
@@ -121,7 +121,9 @@ class MessageTs:
         return self._message_ts
 
     @classmethod
-    def as_forward_all(cls: Type[MTs], value: Optional[bytes], event_time: datetime) -> MTs:
+    def as_forward_all(
+        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
+    ) -> MTs:
         msg_ts = cls()
         if value:
             msg_ts.append(MessageT.to_all(value=value, event_time=event_time))

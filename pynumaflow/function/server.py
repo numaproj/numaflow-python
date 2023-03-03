@@ -101,7 +101,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
-            raise ValueError("Require a valid map handler and/or a valid reduce handler.")
+            raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
 
         self.__map_handler: UDFMapCallable = map_handler
         self.__mapt_handler: UDFMapTCallable = mapt_handler

@@ -416,7 +416,7 @@ protobuf = "~4.22.0"
 type = "git"
 url = "https://github.com/KeranYang/numaflow-python"
 reference = "mapt"
-resolved_reference = "9f7f4b17ad263d0c0099bff75ef3bc5d7d37ddb6"
+resolved_reference = "84926906962fa3ebffb1d2dc961d5b87cf29a716"
 
 [[package]]
 name = "requests"

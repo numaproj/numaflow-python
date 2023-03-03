@@ -1,6 +1,7 @@
 import datetime
 
 from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
+import logging
 
 """
 This is a simple User Defined Function example which receives a message, applies the following
@@ -21,16 +22,18 @@ def my_handler(key: str, datum: Datum) -> MessageTs:
     messages = MessageTs()
 
     if event_time < january_first_2022:
-        print(event_time)
-        print("...dropping")
-        messages.append(MessageT.to_drop)
+        logging.info("Got event time:%s, it is before 2022, so dropping", event_time)
+        messages.append(MessageT.to_drop())
     elif event_time < january_first_2023:
-        print(event_time)
-        print("...forwarding to within_year_2022")
+        logging.info(
+            "Got event time:%s, it is within year 2022, so forwarding to within_year_2022",
+            event_time,
+        )
         messages.append(MessageT.to_vtx("within_year_2022", val, january_first_2022))
     else:
-        print(event_time)
-        print("...forwarding to after_year_2022")
+        logging.info(
+            "Got event time:%s, it is after year 2022, so forwarding to after_year_2022", event_time
+        )
         messages.append(MessageT.to_vtx("after_year_2022", val, january_first_2023))
 
     return messages

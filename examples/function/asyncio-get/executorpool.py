@@ -1,6 +1,5 @@
 import asyncio
 import concurrent.futures
-import datetime
 import os
 import time
 from typing import AsyncIterable
@@ -12,6 +11,36 @@ from pynumaflow import setup_logging
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 _LOGGER = setup_logging(__name__)
+
+
+class ReduceHandler:
+    def __init__(self, exec_pool=None):
+        self.exec_pool = exec_pool
+
+    """
+    handler function for executing operations on the messages received by the reduce vertex
+    Here the function is used to execute certain blocking operations to demonstrate the use of
+    asyncio with ThreadPool and ProcessPool Executor
+    """
+
+    async def reduce_handler(self, key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+        interval_window = md.interval_window
+        tasks = []
+        self.exec_pool.set_loop(asyncio.get_event_loop())
+        start_time = time.time()
+        async for _ in datums:
+            url = f'http://host.docker.internal:9888/ping'
+            fut = threadPool.submit(blocking_call, url)
+            tasks.append(fut)
+        co_time = time.time()
+        results = await threadPool.gather(tasks)
+        end_time = time.time()
+        msg = (
+            # f"loop_time:{co_time - start_time} batch_time:{end_time - start_time} co_time:{end_time - co_time} interval_window_start:{interval_window.start} "
+            # f"interval_window_end:{interval_window.end}"
+            f"batch_time:{end_time - start_time}, interval_window_start:{interval_window.start}"
+        )
+        return Messages(Message.to_vtx(key, str.encode(msg)))
 
 
 class ExecutorPool:
@@ -83,43 +112,20 @@ def blocking_call(url):
         _LOGGER.error("HTTP request error: %s", e)
         return "Error"
 
-"""
-handler function for executing operations on the messages received by the reduce vertex
-Here the function is used to execute certain blocking operations to demonstrate the use of 
-asyncio with ThreadPool and ProcessPool Executor
-"""
-
-
-async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
-    e_type = os.getenv("EXEC_TYPE")
-    if e_type:
-        e_type = e_type.lower()
-    max_workers = os.getenv("MAX_WORKERS")
-    if max_workers:
-        max_workers = int(max_workers)
-    threadPool = ExecutorPool(exec_type=e_type, max_workers=max_workers)
-
-    interval_window = md.interval_window
-    tasks = []
-    threadPool.set_loop(asyncio.get_event_loop())
-    start_time = time.time()
-    async for _ in datums:
-        url = f'http://host.docker.internal:9888/ping'
-        fut = threadPool.submit(blocking_call, url)
-        tasks.append(fut)
-    co_time = time.time()
-    results = await threadPool.gather(tasks)
-    end_time = time.time()
-    msg = (
-        f"loop_time:{co_time-start_time} batch_time:{end_time-start_time} co_time:{end_time-co_time} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
-    return Messages(Message.to_vtx(key, str.encode(msg)))
 
 """
 EXEC_TYPE is environment var to decide the type of executor to be used by the UDF
 """
 if __name__ == "__main__":
+    e_type = os.getenv("EXEC_TYPE")
+    if e_type:
+        e_type = e_type.lower()
+    mx_workers = os.getenv("MAX_WORKERS")
+    if mx_workers:
+        mx_workers = int(mx_workers)
 
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
+    threadPool = ExecutorPool(exec_type=e_type, max_workers=mx_workers)
+    handler = ReduceHandler(exec_pool=threadPool)
+
+    grpc_server = UserDefinedFunctionServicer(reduce_handler=handler.reduce_handler)
     aiorun.run(grpc_server.start_async())

@@ -17,13 +17,12 @@ class ReduceHandler:
     def __init__(self, exec_pool=None):
         self.exec_pool = exec_pool
 
-    """
-    handler function for executing operations on the messages received by the reduce vertex
-    Here the function is used to execute certain blocking operations to demonstrate the use of
-    asyncio with ThreadPool and ProcessPool Executor
-    """
-
     async def reduce_handler(self, key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+        """
+        handler function for executing operations on the messages received by the reduce vertex
+        Here the function is used to execute certain blocking operations to demonstrate the use of
+        asyncio with ThreadPool and ProcessPool Executor
+        """
         interval_window = md.interval_window
         tasks = []
         self.exec_pool.set_loop(asyncio.get_event_loop())

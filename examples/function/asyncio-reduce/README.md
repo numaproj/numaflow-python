@@ -9,7 +9,7 @@ Asyncio is used as a foundation for multiple Python asynchronous frameworks that
 webservers, database connection libraries, distributed task queues, etc. It is often a perfect fit for IO-bound and 
 high-level structured network code.
 
-We focus on writing UDFs in Python by using numaflow-python sdk and `asyncio` library.
+We focus on writing UDFs in Python using `numaflow-python` sdk and `asyncio` library.
 
 ### Scenario 1 - Using Async functions
 In the file [async_exec.py](async_exec.py), we have covered an example of a UDF for making HTTP requests in an async 
@@ -28,9 +28,9 @@ results = await asyncio.gather(*tasks)
 **To compare the performance of the Async and the sequential implementation we run and compare the results
 on the following scenarios on an http server.**
 
-Input RPU -> Number of messages generated per sec
+**Input RPU**: Number of messages generated per sec
 
-Reduce Window Size - 10 sec
+**Reduce Window Size**: 10 sec
 
 |              Input RPU:10 &nbsp; I/O delay: 0              |             Input RPU:10 &nbsp; I/O delay: 200µs             | Input RPU:10 &nbsp; I/O delay: 1sec *                       |
 |:----------------------------------------------------------:|:------------------------------------------------------------:|-------------------------------------------------------------|
@@ -43,12 +43,12 @@ Reduce Window Size - 10 sec
 
 **Note:** Flat line at time=100 for sync indicates no results for that window in the pipeline
 
-Here we can see that a low throughput, sequential and async have comparable performance, but as the I/O bound nature 
-increases async starts to outperform the sequential implementation considerably. It can be observed that at higher 
-loads, the sequential executions seems to error out and not process any results.
+Here we can see that at a low input RPU and low I/O delay, sequential and async have comparable performance. But as the
+I/O bound nature increases async starts to outperform the sequential implementation considerably. It can be observed
+that at higher loads, the sequential executions seems to error out and not process any results.
 
 ### Scenario 2 - Using legacy functions with executors
-Another way of programming for the async paradigm can be the use of ThreadPool or ProcessPool executors 
+Another way of programming using the async paradigm using `asyncio` can be the use of ThreadPool or ProcessPool executors
 (Refer: [executorpool.py](executorpool.py)).  As their names suggest, the **ThreadPool** uses threads internally 
 and they are suitable for I/O bound tasks. Whereas the **ProcessPool** uses processes to execute calls asynchronously 
 and are favorable for tasks with heavy CPU requirement.
@@ -77,13 +77,12 @@ Testing has _max_workers = 100_
 | <img src="testing_data/threadpool/thread_10_0.png" width="500"/> | <img src="testing_data/threadpool/thread_10_200.png" width="500"/> | <img src="testing_data/threadpool/thread_10_1.png" width="500"/> |
 
 
-
 |                Input RPU:100 &nbsp; I/O delay: 0 *                |               Input RPU:100 &nbsp; I/O delay: 200µs *               | Input RPU:100 &nbsp; I/O delay: 1sec *                             |
 |:-----------------------------------------------------------------:|:-------------------------------------------------------------------:|--------------------------------------------------------------------|
 | <img src="testing_data/threadpool/thread_100_0.png" width="500"/> | <img src="testing_data/threadpool/thread_100_200.png" width="500"/> | <img src="testing_data/threadpool/thread_100_1s.png" width="500"/> |
 
 **Note** Flat line at time=100 for sync indicates no results for that window in the pipeline
 
-We can see that the ThreadPool implementation gives a considerably better performance at higher throughput and I/O 
+We can see that the ThreadPool implementation gives a considerably better performance at higher throughput and I/O
 delay. But it should be kept in mind that the performance will vary according to the max_workers configured for the 
-executor and that should be done carefully according to the use case.
+executor pool, and that should be done carefully according to the given use case.

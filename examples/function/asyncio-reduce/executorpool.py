@@ -80,13 +80,9 @@ class ExecutorPool:
     def __init__(self, exec_type="thread", max_workers=None, loop=None):
         self.loop = loop or asyncio.get_event_loop()
         if exec_type == "thread":
-            self.executor = concurrent.futures.ThreadPoolExecutor(
-                max_workers=max_workers
-            )
+            self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=max_workers)
         elif exec_type == "process":
-            self.executor = concurrent.futures.ProcessPoolExecutor(
-                max_workers=max_workers
-            )
+            self.executor = concurrent.futures.ProcessPoolExecutor(max_workers=max_workers)
 
     def submit(self, func, *args):
         return self.loop.run_in_executor(self.executor, func, args)

@@ -29,9 +29,7 @@ async def http_request(session, url):
             return "Error"
 
 
-async def reduce_handler(
-    key: str, datums: AsyncIterable[Datum], md: Metadata
-) -> Messages:
+async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     async with aiohttp.ClientSession() as session:
         tasks = []

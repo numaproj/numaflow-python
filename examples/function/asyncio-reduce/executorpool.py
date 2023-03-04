@@ -57,10 +57,15 @@ class ExecutorPool:
 
     Attributes
     ----------
-    executor : ThreadPoolExecutor or ProcessPoolExecutor
-        a formatted string to print out what the animal says
+    exec_type : "thread" or "process"
+        thread - Used to create a ThreadPool Executor
+        process - Used to create a ProcessPool Executor
+
     loop : asyncio event loop
         the event loop on which the tasks should be submitted
+
+    max_workers : Number of workers in the executor pool
+        the max number of threads/process to be created in the pool
 
     Methods
     -------

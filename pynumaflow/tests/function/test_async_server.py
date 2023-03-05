@@ -203,6 +203,7 @@ class TestAsyncServer(unittest.TestCase):
 
         self.assertEqual(1, len(list(response)))
 
+        # iterate over the response and compare the values
         for r in response:
             self.assertEqual(
                 bytes(

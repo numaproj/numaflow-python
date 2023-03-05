@@ -139,7 +139,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def ReduceFn(
         self, request_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
-    ):
+    ) -> AsyncIterable[udfunction_pb2.DatumList]:
         """
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.

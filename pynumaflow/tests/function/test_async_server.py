@@ -193,7 +193,7 @@ class TestAsyncServer(unittest.TestCase):
     def test_reduce(self) -> None:
         stub = self.__stub()
         request, metadata = start_reduce_streaming_request()
-        response = None
+        generator_response = None
         try:
             generator_response = stub.ReduceFn(
                 request_iterator=request_generator(count=10, request=request), metadata=metadata
@@ -219,7 +219,7 @@ class TestAsyncServer(unittest.TestCase):
     def test_reduce_with_multiple_keys(self) -> None:
         stub = self.__stub()
         request, metadata = start_reduce_streaming_request()
-        response = None
+        generator_response = None
         try:
             generator_response = stub.ReduceFn(
                 request_iterator=request_generator(count=100, request=request, resetkey=True),

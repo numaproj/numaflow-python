@@ -24,7 +24,9 @@ if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
     grpc_server.start()
 ```
-### MapT
+### MapT - Map with event time assignment capability
+In addition to the regular Map function, MapT supports assigning a new event time to the message.
+MapT is only supported at source vertex to enable (a) early data filtering and (b) watermark assignment by extracting new event time from the message payload.
 
 ```python
 import datetime

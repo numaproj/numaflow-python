@@ -11,6 +11,8 @@ ALL = b"U+005C__ALL__"
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
+MT = TypeVar("MT", bound="MessageT")
+MTs = TypeVar("MTs", bound="MessageTs")
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,70 @@ class Messages:
         else:
             msgs.append(Message.to_drop())
         return msgs
+
+    def dumps(self) -> str:
+        return str(self)
+
+    def loads(self) -> Ms:
+        pass
+
+
+@dataclass(frozen=True)
+class MessageT:
+    """
+    Basic datatype for data passing to the next vertex/vertices.
+
+    Args:
+        key: string key for vertex;
+             special values are ALL (send to all), DROP (drop message)
+        value: data in bytes
+        event_time: event time of the message
+    """
+
+    key: str = ""
+    value: bytes = b""
+    # There is no year 0, so setting following as default event time.
+    event_time: datetime = datetime(1, 1, 1, 0, 0)
+
+    @classmethod
+    def to_vtx(cls: Type[MT], key: str, value: bytes, event_time: datetime) -> MT:
+        """
+        Returns a MessageT object to send value to a vertex.
+        """
+        return cls(key, value, event_time)
+
+    to_all = partialmethod(to_vtx, ALL)
+    to_drop = partialmethod(to_vtx, DROP, b"", datetime(1, 1, 1, 0, 0))
+
+
+class MessageTs:
+    __slots__ = ("_message_ts",)
+
+    def __init__(self, *message_ts: MT):
+        self._message_ts = list(message_ts) or []
+
+    def __str__(self):
+        return str(self._message_ts)
+
+    def __repr__(self):
+        return str(self)
+
+    def append(self, message_t: MessageT) -> None:
+        self._message_ts.append(message_t)
+
+    def items(self) -> List[MessageT]:
+        return self._message_ts
+
+    @classmethod
+    def as_forward_all(
+        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
+    ) -> MTs:
+        msg_ts = cls()
+        if value:
+            msg_ts.append(MessageT.to_all(value=value, event_time=event_time))
+        else:
+            msg_ts.append(MessageT.to_drop())
+        return msg_ts
 
     def dumps(self) -> str:
         return str(self)

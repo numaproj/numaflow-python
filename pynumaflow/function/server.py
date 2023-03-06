@@ -8,6 +8,7 @@ from typing import Callable, AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -18,7 +19,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     STREAM_EOF,
 )
-from pynumaflow.function import Messages, Datum, IntervalWindow, Metadata
+from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.proto import udfunction_pb2
@@ -30,6 +31,7 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 UDFMapCallable = Callable[[str, Datum], Messages]
+UDFMapTCallable = Callable[[str, Datum], MessageTs]
 UDFReduceCallable = Callable[[str, AsyncIterable[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
@@ -42,6 +44,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     Args:
         map_handler: Function callable following the type signature of UDFMapCallable
+        mapt_handler: Function callable following the type signature of UDFMapTCallable
         reduce_handler: Function callable following the type signature of UDFReduceCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
@@ -50,7 +53,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.function import Messages, Message, \
+    >>> from pynumaflow.function import Messages, Message, MessageTs, MessageT, \
     ...     Datum, Metadata, UserDefinedFunctionServicer
     ... import aiorun
     ...
@@ -60,6 +63,13 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...   _ = datum.watermark
     ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
+    ...
+    >>> def mapt_handler(key: str, datum: Datum) -> MessageTs:
+    ...   val = datum.value
+    ...   new_event_time = datetime.time()
+    ...   _ = datum.watermark
+    ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
+    ...   return message_t_s
     ...
     >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window
@@ -74,6 +84,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...
     >>> grpc_server = UserDefinedFunctionServicer(
     ...   reduce_handler=reduce_handler,
+    ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
     >>> aiorun.run(grpc_server.start_async())
@@ -82,16 +93,17 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     def __init__(
         self,
         map_handler: UDFMapCallable = None,
+        mapt_handler: UDFMapTCallable = None,
         reduce_handler: UDFReduceCallable = None,
         sock_path=FUNCTION_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-
-        if not (map_handler or reduce_handler):
-            raise ValueError("Require a valid map handler and/or a valid reduce handler.")
+        if not (map_handler or mapt_handler or reduce_handler):
+            raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
 
         self.__map_handler: UDFMapCallable = map_handler
+        self.__mapt_handler: UDFMapTCallable = mapt_handler
         self.__reduce_handler: UDFReduceCallable = reduce_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
@@ -135,6 +147,49 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         for msg in msgs.items():
             datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
 
+        return udfunction_pb2.DatumList(elements=datums)
+
+    def MapTFn(
+        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+    ) -> udfunction_pb2.DatumList:
+        """
+        Applies a function to each datum element.
+        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
+        """
+        key = ""
+        for metadata_key, metadata_value in context.invocation_metadata():
+            if metadata_key == DATUM_KEY:
+                key = metadata_value
+
+        try:
+            msgts = self.__mapt_handler(
+                key,
+                Datum(
+                    key=key,
+                    value=request.value,
+                    event_time=request.event_time.event_time.ToDatetime(),
+                    watermark=request.watermark.watermark.ToDatetime(),
+                ),
+            )
+        except Exception as err:
+            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
+            # a neat hack to drop
+            msgts = MessageTs.as_forward_all(None, None)
+
+        datums = []
+        for msgt in msgts.items():
+            event_time_timestamp = _timestamp_pb2.Timestamp()
+            event_time_timestamp.FromDatetime(dt=msgt.event_time)
+            watermark_timestamp = _timestamp_pb2.Timestamp()
+            watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
+            datums.append(
+                udfunction_pb2.Datum(
+                    key=msgt.key,
+                    value=msgt.value,
+                    event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+                )
+            )
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(
@@ -182,7 +237,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             if not result:
                 niter = NonBlockingIterator()
                 riter = niter.read_iterator()
-                # schedule a async task for consumer
+                # schedule an async task for consumer
                 # returns a future that will give the results later.
                 task = asyncio.create_task(
                     self.__invoke_reduce(key, riter, Metadata(interval_window=interval_window))

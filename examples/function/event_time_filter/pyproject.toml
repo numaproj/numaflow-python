@@ -1,13 +1,12 @@
 [tool.poetry]
-name = "reduce-counter"
+name = "map-flatmap"
 version = "0.2.4"
 description = ""
 authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.11"
-aiorun = "^2022.11.1"
-pynumaflow = {git = "https://github.com/KeranYang/numaflow-python", rev = "mapt"}
+python = "~3.10"
+pynumaflow = "~0.3.2"
 
 [tool.poetry.dev-dependencies]
 

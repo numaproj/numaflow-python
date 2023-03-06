@@ -14,6 +14,7 @@ from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
+    mapt_handler,
     map_handler,
     mock_event_time,
     mock_watermark,
@@ -80,6 +81,7 @@ async def start_server():
     udfs = UserDefinedFunctionServicer(
         reduce_handler=async_reduce_handler,
         map_handler=map_handler,
+        mapt_handler=mapt_handler,
     )
     udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
     listen_addr = "[::]:50051"

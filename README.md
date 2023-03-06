@@ -1,6 +1,6 @@
 # Python SDK for Numaflow
 
-This SDK provides the interface for writing [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/) 
+This SDK provides the interface for writing [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/) 
 and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/) in Python.
 
 ## Implement a User Defined Function (UDF)
@@ -22,6 +22,23 @@ def my_handler(key: str, datum: Datum) -> Messages:
 
 if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
+    grpc_server.start()
+```
+### MapT
+
+```python
+import datetime
+from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
+
+def mapt_handler(key: str, datum: Datum) -> MessageTs:
+    val = datum.value
+    new_event_time = datetime.time()
+    _ = datum.watermark
+    message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
+    return message_t_s
+
+if __name__ == "__main__":
+    grpc_server = UserDefinedFunctionServicer(mapt_handler=mapt_handler)
     grpc_server.start()
 ```
 

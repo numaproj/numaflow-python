@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from pynumaflow.sink.generated import udsink_pb2 as udsink__pb2
+from . import udsink_pb2 as udsink__pb2
 
 
 class UserDefinedSinkStub(object):

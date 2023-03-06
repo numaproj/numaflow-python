@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from pynumaflow.function.generated import udfunction_pb2 as udfunction__pb2
+from . import udfunction_pb2 as udfunction__pb2
 
 
 class UserDefinedFunctionStub(object):
@@ -20,7 +20,12 @@ class UserDefinedFunctionStub(object):
             request_serializer=udfunction__pb2.Datum.SerializeToString,
             response_deserializer=udfunction__pb2.DatumList.FromString,
         )
-        self.ReduceFn = channel.stream_unary(
+        self.MapTFn = channel.unary_unary(
+            "/function.v1.UserDefinedFunction/MapTFn",
+            request_serializer=udfunction__pb2.Datum.SerializeToString,
+            response_deserializer=udfunction__pb2.DatumList.FromString,
+        )
+        self.ReduceFn = channel.stream_stream(
             "/function.v1.UserDefinedFunction/ReduceFn",
             request_serializer=udfunction__pb2.Datum.SerializeToString,
             response_deserializer=udfunction__pb2.DatumList.FromString,
@@ -36,13 +41,22 @@ class UserDefinedFunctionServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def MapFn(self, request, context):
-        """Applies a function to each datum element."""
+        """MapFn applies a function to each datum element."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def MapTFn(self, request, context):
+        """MapTFn applies a function to each datum element.
+        In addition to map function, MapTFn also supports assigning a new event time to datum.
+        MapTFn can be used only at source vertex by source data transformer.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
     def ReduceFn(self, request_iterator, context):
-        """Applies a reduce function to a datum stream."""
+        """ReduceFn applies a reduce function to a datum stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
@@ -61,7 +75,12 @@ def add_UserDefinedFunctionServicer_to_server(servicer, server):
             request_deserializer=udfunction__pb2.Datum.FromString,
             response_serializer=udfunction__pb2.DatumList.SerializeToString,
         ),
-        "ReduceFn": grpc.stream_unary_rpc_method_handler(
+        "MapTFn": grpc.unary_unary_rpc_method_handler(
+            servicer.MapTFn,
+            request_deserializer=udfunction__pb2.Datum.FromString,
+            response_serializer=udfunction__pb2.DatumList.SerializeToString,
+        ),
+        "ReduceFn": grpc.stream_stream_rpc_method_handler(
             servicer.ReduceFn,
             request_deserializer=udfunction__pb2.Datum.FromString,
             response_serializer=udfunction__pb2.DatumList.SerializeToString,
@@ -112,6 +131,35 @@ class UserDefinedFunction(object):
         )
 
     @staticmethod
+    def MapTFn(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/function.v1.UserDefinedFunction/MapTFn",
+            udfunction__pb2.Datum.SerializeToString,
+            udfunction__pb2.DatumList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
     def ReduceFn(
         request_iterator,
         target,
@@ -124,7 +172,7 @@ class UserDefinedFunction(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.stream_unary(
+        return grpc.experimental.stream_stream(
             request_iterator,
             target,
             "/function.v1.UserDefinedFunction/ReduceFn",

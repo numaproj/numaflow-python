@@ -16,18 +16,21 @@ class ReadyResponse(_message.Message):
     __slots__ = ["ready"]
     READY_FIELD_NUMBER: _ClassVar[int]
     ready: bool
+
     def __init__(self, ready: _Optional[bool] = ...) -> None: ...
 
 class EventTime(_message.Message):
     __slots__ = ["event_time"]
     EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
     event_time: _timestamp_pb2.Timestamp
+
     def __init__(self, event_time: _Optional[_timestamp_pb2.Timestamp] = ...) -> None: ...
 
 class Watermark(_message.Message):
     __slots__ = ["watermark"]
     WATERMARK_FIELD_NUMBER: _ClassVar[int]
     watermark: _timestamp_pb2.Timestamp
+
     def __init__(self, watermark: _Optional[_timestamp_pb2.Timestamp] = ...) -> None: ...
 
 class Datum(_message.Message):
@@ -42,6 +45,7 @@ class Datum(_message.Message):
     id: str
     event_time: _timestamp_pb2.Timestamp
     watermark: _timestamp_pb2.Timestamp
+
     def __init__(
         self,
         key: _Optional[str],
@@ -59,6 +63,7 @@ class Response(_message.Message):
     id: str
     success: bool
     err_msg: str
+
     def __init__(
         self,
         id: _Optional[str],
@@ -70,4 +75,5 @@ class ResponseList(_message.Message):
     __slots__ = ["responses"]
     RESPONSES_FIELD_NUMBER: _ClassVar[int]
     responses: List[Response]
+
     def __init__(self, responses: _Optional[List[Response]]) -> None: ...

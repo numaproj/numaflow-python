@@ -18,7 +18,7 @@ from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x10udfunction.proto\x12\x0b\x66unction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"z\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12*\n\nevent_time\x18\x03 \x01(\x0b\x32\x16.function.v1.EventTime\x12)\n\twatermark\x18\x04 \x01(\x0b\x32\x16.function.v1.Watermark"1\n\tDatumList\x12$\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x12.function.v1.Datum"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\xc3\x01\n\x13UserDefinedFunction\x12\x33\n\x05MapFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12\x38\n\x08ReduceFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList(\x01\x12=\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x1a.function.v1.ReadyResponseB<Z:github.com/numaproj/numaflow-go/pkg/apis/proto/function/v1b\x06proto3'
+    b'\n\x10udfunction.proto\x12\x0b\x66unction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"z\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12*\n\nevent_time\x18\x03 \x01(\x0b\x32\x16.function.v1.EventTime\x12)\n\twatermark\x18\x04 \x01(\x0b\x32\x16.function.v1.Watermark"1\n\tDatumList\x12$\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x12.function.v1.Datum"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\xfb\x01\n\x13UserDefinedFunction\x12\x33\n\x05MapFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12\x34\n\x06MapTFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12:\n\x08ReduceFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList(\x01\x30\x01\x12=\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x1a.function.v1.ReadyResponseb\x06proto3'
 )
 
 
@@ -86,7 +86,6 @@ _USERDEFINEDFUNCTION = DESCRIPTOR.services_by_name["UserDefinedFunction"]
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
-    DESCRIPTOR._serialized_options = b"Z:github.com/numaproj/numaflow-go/pkg/apis/proto/function/v1"
     _EVENTTIME._serialized_start = 95
     _EVENTTIME._serialized_end = 154
     _WATERMARK._serialized_start = 156
@@ -98,5 +97,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
     _READYRESPONSE._serialized_start = 391
     _READYRESPONSE._serialized_end = 421
     _USERDEFINEDFUNCTION._serialized_start = 424
-    _USERDEFINEDFUNCTION._serialized_end = 619
+    _USERDEFINEDFUNCTION._serialized_end = 675
 # @@protoc_insertion_point(module_scope)

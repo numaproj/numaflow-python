@@ -13,14 +13,12 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
 from pynumaflow.sink import Responses, Datum, Response
-from pynumaflow.sink.generated import udsink_pb2_grpc, udsink_pb2
+from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
-
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
-
 
 UDSinkCallable = Callable[[Iterator[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()
@@ -74,7 +72,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
-        The pascal case function name comes from the generated udsink_pb2_grpc.py file.
+        The pascal case function name comes from the proto udsink_pb2_grpc.py file.
         """
         # if there is an exception, we will mark all the responses as a failure
         try:
@@ -99,7 +97,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
     ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the generated udsink_pb2_grpc.py file.
+        The pascal case function name comes from the proto udsink_pb2_grpc.py file.
         """
         return udsink_pb2.ReadyResponse(ready=True)
 

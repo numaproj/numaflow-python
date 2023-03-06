@@ -15,7 +15,7 @@ from pynumaflow.function import (
     Metadata,
 )
 from pynumaflow.function._dtypes import DROP
-from pynumaflow.function.generated import udfunction_pb2
+from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.server import UserDefinedFunctionServicer
 
 

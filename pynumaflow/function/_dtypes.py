@@ -41,6 +41,13 @@ class Message:
 
 
 class Messages:
+    """
+    Class to define a list of Message objects.
+
+    Args:
+        messages: list of Message objects.
+    """
+
     __slots__ = ("_messages",)
 
     def __init__(self, *messages: M):
@@ -83,7 +90,7 @@ class MessageT:
         key: string key for vertex;
              special values are ALL (send to all), DROP (drop message)
         value: data in bytes
-        event_time: event time of the message
+        event_time: event time of the message, usually extracted from the payload.
     """
 
     key: str = ""
@@ -103,6 +110,13 @@ class MessageT:
 
 
 class MessageTs:
+    """
+    Class to define a list of MessageT objects.
+
+    Args:
+        message_ts: list of MessageT objects.
+    """
+
     __slots__ = ("_message_ts",)
 
     def __init__(self, *message_ts: MT):

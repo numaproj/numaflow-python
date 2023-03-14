@@ -289,7 +289,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def __serve_async(self, server) -> None:
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
-            UserDefinedFunctionServicer(self.__map_handler, self.__reduce_handler), server
+            UserDefinedFunctionServicer(
+                map_handler=self.__map_handler,
+                mapt_handler=self.__mapt_handler,
+                reduce_handler=self.__reduce_handler,
+            ),
+            server,
         )
         server.add_insecure_port(self.sock_path)
         _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)

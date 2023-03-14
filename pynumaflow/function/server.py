@@ -109,6 +109,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self._max_message_size = max_message_size
         self._max_threads = max_threads
         self.cleanup_coroutines = []
+        self.background_tasks = set()
 
         self._server_options = [
             ("grpc.max_send_message_length", self._max_message_size),
@@ -219,6 +220,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         response_task = asyncio.create_task(
             self.__async_reduce_handler(interval_window, request_iterator)
         )
+        self.background_tasks.add(response_task)
+        response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
 
         await response_task
         results_futures = response_task.result()
@@ -242,6 +245,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 task = asyncio.create_task(
                     self.__invoke_reduce(key, riter, Metadata(interval_window=interval_window))
                 )
+                self.background_tasks.add(task)
+                task.add_done_callback(lambda t: self.background_tasks.remove(t))
                 result = ReduceResult(task, niter, key)
 
                 callable_dict[key] = result

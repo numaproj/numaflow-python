@@ -18,24 +18,24 @@ def mock_event_time():
 class TestMessageT(unittest.TestCase):
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgt = MessageT(
+        msgt = MessageT.to_vtx(
             key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
         self.assertEqual(mock_obj["Key"], msgt.key)
 
     def test_immutable(self):
-        msgt = MessageT(ALL, mock_message_t())
+        msgt = MessageT.to_all(value=mock_message_t(), event_time=mock_event_time())
         with self.assertRaises(FrozenInstanceError):
             msgt.key = DROP
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgts = MessageT(key=mock_obj["Key"], value=mock_obj["Value"])
+        msgts = MessageT.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_event_time())
         self.assertEqual(mock_obj["Value"], msgts.value)
 
     def test_event_time(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgts = MessageT(
+        msgts = MessageT.to_vtx(
             key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
         self.assertEqual(mock_obj["EventTime"], msgts.event_time)
@@ -71,7 +71,7 @@ class TestMessageTs(unittest.TestCase):
     def mock_messaget_object():
         value = mock_message_t()
         event_time = mock_event_time()
-        return MessageT(ALL, value, event_time)
+        return MessageT.to_all(value=value, event_time=event_time)
 
     def test_items(self):
         mock_obj = [
@@ -111,7 +111,7 @@ class TestMessageTs(unittest.TestCase):
 
     def test_message_forward_to_drop(self):
         mock_obj = MessageTs()
-        mock_obj.append(MessageT(DROP, bytes()))
+        mock_obj.append(MessageT.to_drop())
         true_obj = MessageTs.as_forward_all(bytes(), mock_event_time())
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):

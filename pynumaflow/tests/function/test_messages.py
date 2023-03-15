@@ -12,18 +12,18 @@ def mock_message():
 class TestMessage(unittest.TestCase):
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msg = Message(key=mock_obj["Key"], value=mock_obj["Value"])
+        msg = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])
         print(msg)
         self.assertEqual(mock_obj["Key"], msg.key)
 
     def test_immutable(self):
-        msg = Message(ALL, mock_message())
+        msg = Message.to_vtx(key=ALL, value=mock_message())
         with self.assertRaises(FrozenInstanceError):
             msg.key = DROP
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msgs = Message(key=mock_obj["Key"], value=mock_obj["Value"])
+        msgs = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])
         self.assertEqual(mock_obj["Value"], msgs.value)
 
     def test_message_to_all(self):
@@ -52,7 +52,7 @@ class TestMessages(unittest.TestCase):
     @staticmethod
     def mock_message_object():
         value = mock_message()
-        return Message(ALL, value)
+        return Message.to_vtx(key=ALL, value=value)
 
     def test_items(self):
         mock_obj = [
@@ -88,7 +88,7 @@ class TestMessages(unittest.TestCase):
 
     def test_message_forward_to_drop(self):
         mock_obj = Messages()
-        mock_obj.append(Message(DROP, bytes()))
+        mock_obj.append(Message.to_drop())
         true_obj = Messages.as_forward_all(bytes())
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):

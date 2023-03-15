@@ -2,7 +2,7 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
-from typing import TypeVar, Type, List, Optional
+from typing import TypeVar, Type, List, Optional, Any
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 
@@ -14,9 +14,32 @@ Ms = TypeVar("Ms", bound="Messages")
 MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
 
+NPC = TypeVar("N", bound="NoPublicConstructor")
+
+
+class NoPublicConstructor(type):
+    """Metaclass that ensures a private constructor
+
+    If a class uses this metaclass like this:
+
+        class SomeClass(metaclass=NoPublicConstructor):
+            pass
+
+    If you try to instantiate your class (`SomeClass()`),
+    a `TypeError` will be thrown.
+    """
+
+    def __call__(cls, *args, **kwargs):
+        raise TypeError(
+            f"this class has no public constructor, please use class methods to create the object."
+        )
+
+    def _create(cls: Type[NPC], *args: Any, **kwargs: Any) -> NPC:
+        return super().__call__(*args, **kwargs)  # type: ignore
+
 
 @dataclass(frozen=True)
-class Message:
+class Message(metaclass=NoPublicConstructor):
     """
     Basic datatype for data passing to the next vertex/vertices.
 
@@ -34,7 +57,7 @@ class Message:
         """
         Returns a Message object to send value to a vertex.
         """
-        return cls(key, value)
+        return cls._create(key, value)
 
     to_all = partialmethod(to_vtx, ALL)
     to_drop = partialmethod(to_vtx, DROP, b"")
@@ -82,7 +105,7 @@ class Messages:
 
 
 @dataclass(frozen=True)
-class MessageT:
+class MessageT(metaclass=NoPublicConstructor):
     """
     Basic datatype for data passing to the next vertex/vertices.
 
@@ -103,7 +126,7 @@ class MessageT:
         """
         Returns a MessageT object to send value to a vertex.
         """
-        return cls(key, value, event_time)
+        return cls._create(key, value, event_time)
 
     to_all = partialmethod(to_vtx, ALL)
     to_drop = partialmethod(to_vtx, DROP, b"", datetime(1, 1, 1, 0, 0))
@@ -136,10 +159,10 @@ class MessageTs:
 
     @classmethod
     def as_forward_all(
-        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
+            cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
     ) -> MTs:
         msg_ts = cls()
-        if value:
+        if value and event_time:
             msg_ts.append(MessageT.to_all(value=value, event_time=event_time))
         else:
             msg_ts.append(MessageT.to_drop())

@@ -10,6 +10,10 @@ def mock_message():
 
 
 class TestMessage(unittest.TestCase):
+    def test_cannot_use_public_construct(self):
+        with self.assertRaises(TypeError):
+            Message(key=ALL, value=mock_message())
+
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
         msg = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])

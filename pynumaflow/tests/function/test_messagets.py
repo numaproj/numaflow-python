@@ -16,6 +16,9 @@ def mock_event_time():
 
 
 class TestMessageT(unittest.TestCase):
+    def test_cannot_use_public_construct(self):
+        with self.assertRaises(TypeError):
+            MessageT(key=ALL, value=mock_message_t(), event_time= mock_event_time())
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_vtx(

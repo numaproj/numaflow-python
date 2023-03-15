@@ -29,8 +29,8 @@ class NoPublicConstructor(type):
 
     def __call__(cls, *args, **kwargs):
         raise TypeError(
-            f"this class does not support public constructor, please " +
-            "use class methods to create the object."
+            f"this class does not support public constructor, please "
+            + "use class methods to create the object."
         )
 
     def _create(cls: Type[N], *args: Any, **kwargs: Any) -> N:

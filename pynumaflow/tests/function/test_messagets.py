@@ -30,7 +30,9 @@ class TestMessageT(unittest.TestCase):
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
-        msgts = MessageT.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_event_time())
+        msgts = MessageT.to_vtx(
+            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_event_time()
+        )
         self.assertEqual(mock_obj["Value"], msgts.value)
 
     def test_event_time(self):

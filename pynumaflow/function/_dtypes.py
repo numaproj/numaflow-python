@@ -13,8 +13,7 @@ M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
 MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
-
-NPC = TypeVar("N", bound="NoPublicConstructor")
+N = TypeVar("N", bound="NoPublicConstructor")
 
 
 class NoPublicConstructor(type):
@@ -25,17 +24,16 @@ class NoPublicConstructor(type):
         class SomeClass(metaclass=NoPublicConstructor):
             pass
 
-    If you try to instantiate your class (`SomeClass()`),
-    a `TypeError` will be thrown.
+    If you try to instantiate your class using (`SomeClass()`), a `TypeError` will be thrown.
     """
 
     def __call__(cls, *args, **kwargs):
         raise TypeError(
-            f"this class has no public constructor, please use class methods to create the object."
+            f"this class does not support public constructor, please use class methods to create the object."
         )
 
-    def _create(cls: Type[NPC], *args: Any, **kwargs: Any) -> NPC:
-        return super().__call__(*args, **kwargs)  # type: ignore
+    def _create(cls: Type[N], *args: Any, **kwargs: Any) -> N:
+        return super().__call__(*args, **kwargs)
 
 
 @dataclass(frozen=True)
@@ -159,7 +157,7 @@ class MessageTs:
 
     @classmethod
     def as_forward_all(
-            cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
+        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
     ) -> MTs:
         msg_ts = cls()
         if value and event_time:

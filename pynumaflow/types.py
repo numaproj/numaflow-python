@@ -1,7 +1,7 @@
 from typing import Union, NewType, TypeVar, Type, Any
 import grpc
 
-from pynumaflow.errors import NoPublicConstructorError
+from pynumaflow.exceptions import NoPublicConstructorError
 
 NPC = TypeVar("NPC", bound="NoPublicConstructor")
 

@@ -2,7 +2,7 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
-from typing import TypeVar, Type, List, Optional, Any
+from typing import TypeVar, Type, List, Optional
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.types import NoPublicConstructor
@@ -157,7 +157,7 @@ class MessageTs:
 
     @classmethod
     def as_forward_all(
-            cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
+        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
     ) -> MTs:
         msg_ts = cls()
         if value and event_time:

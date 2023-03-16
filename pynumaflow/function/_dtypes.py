@@ -42,13 +42,13 @@ class Message(metaclass=NoPublicConstructor):
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        key: string key for vertex;
+        _key: string key for vertex;
              special values are ALL (send to all), DROP (drop message)
-        value: data in bytes
+        _value: data in bytes
     """
 
-    key: str = ""
-    value: bytes = b""
+    _key: str = ""
+    _value: bytes = b""
 
     @classmethod
     def to_vtx(cls: Type[M], key: str, value: bytes) -> M:
@@ -59,6 +59,14 @@ class Message(metaclass=NoPublicConstructor):
 
     to_all = partialmethod(to_vtx, ALL)
     to_drop = partialmethod(to_vtx, DROP, b"")
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def key(self):
+        return self._key
 
 
 class Messages:
@@ -108,16 +116,16 @@ class MessageT(metaclass=NoPublicConstructor):
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        key: string key for vertex;
+        _key: string key for vertex;
              special values are ALL (send to all), DROP (drop message)
-        value: data in bytes
-        event_time: event time of the message, usually extracted from the payload.
+        _value: data in bytes
+        _event_time: event time of the message, usually extracted from the payload.
     """
 
-    key: str = ""
-    value: bytes = b""
+    _key: str = ""
+    _value: bytes = b""
     # There is no year 0, so setting following as default event time.
-    event_time: datetime = datetime(1, 1, 1, 0, 0)
+    _event_time: datetime = datetime(1, 1, 1, 0, 0)
 
     @classmethod
     def to_vtx(cls: Type[MT], key: str, value: bytes, event_time: datetime) -> MT:
@@ -128,6 +136,18 @@ class MessageT(metaclass=NoPublicConstructor):
 
     to_all = partialmethod(to_vtx, ALL)
     to_drop = partialmethod(to_vtx, DROP, b"", datetime(1, 1, 1, 0, 0))
+
+    @property
+    def event_time(self):
+        return self._event_time
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def value(self):
+        return self._value
 
 
 class MessageTs:

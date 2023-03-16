@@ -18,7 +18,7 @@ def mock_event_time():
 class TestMessageT(unittest.TestCase):
     def test_cannot_use_public_construct(self):
         with self.assertRaises(TypeError):
-            MessageT(key=ALL, value=mock_message_t(), event_time=mock_event_time())
+            MessageT(_key=ALL, _value=mock_message_t(), _event_time=mock_event_time())
 
     def test_key(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
@@ -30,21 +30,21 @@ class TestMessageT(unittest.TestCase):
     def test_immutable(self):
         msgt = MessageT.to_all(value=mock_message_t(), event_time=mock_event_time())
         with self.assertRaises(FrozenInstanceError):
-            msgt.key = DROP
+            msgt._key = DROP
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgts = MessageT.to_vtx(
             key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_event_time()
         )
-        self.assertEqual(mock_obj["Value"], msgts.value)
+        self.assertEqual(mock_obj["Value"], msgts._value)
 
     def test_event_time(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgts = MessageT.to_vtx(
             key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
-        self.assertEqual(mock_obj["EventTime"], msgts.event_time)
+        self.assertEqual(mock_obj["EventTime"], msgts._event_time)
 
     def test_message_to_all(self):
         mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
@@ -111,9 +111,9 @@ class TestMessageTs(unittest.TestCase):
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
-            self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
-            self.assertEqual(mock_obj.items()[i].event_time, true_obj.items()[i].event_time)
+            self.assertEqual(mock_obj.items()[i]._key, true_obj.items()[i]._key)
+            self.assertEqual(mock_obj.items()[i]._value, true_obj.items()[i]._value)
+            self.assertEqual(mock_obj.items()[i]._event_time, true_obj.items()[i]._event_time)
 
     def test_message_forward_to_drop(self):
         mock_obj = MessageTs()
@@ -122,19 +122,19 @@ class TestMessageTs(unittest.TestCase):
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
-            self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
-            self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
+            self.assertEqual(mock_obj.items()[i]._key, true_obj.items()[i]._key)
+            self.assertEqual(mock_obj.items()[i]._value, true_obj.items()[i]._value)
+            self.assertEqual(mock_obj.items()[i]._value, true_obj.items()[i]._value)
 
     def test_dump(self):
         msgts = MessageTs()
         msgts.append(self.mock_messaget_object())
         msgts.append(self.mock_messaget_object())
         self.assertEqual(
-            "[MessageT(key=b'U+005C__ALL__', value=b'test_mock_message_t', "
-            "event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)), "
-            "MessageT(key=b'U+005C__ALL__', value=b'test_mock_message_t', "
-            "event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc))]",
+            "[MessageT(_key=b'U+005C__ALL__', _value=b'test_mock_message_t', "
+            "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)), "
+            "MessageT(_key=b'U+005C__ALL__', _value=b'test_mock_message_t', "
+            "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc))]",
             msgts.dumps(),
         )
 

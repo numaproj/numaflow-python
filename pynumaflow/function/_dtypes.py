@@ -5,6 +5,7 @@ from functools import partialmethod
 from typing import TypeVar, Type, List, Optional, Any
 
 from pynumaflow.function.asynciter import NonBlockingIterator
+from pynumaflow.types import NoPublicConstructor
 
 DROP = b"U+005C__DROP__"
 ALL = b"U+005C__ALL__"
@@ -13,31 +14,6 @@ M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
 MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
-NPC = TypeVar("NPC", bound="NoPublicConstructor")
-
-
-class NoPublicConstructor(type):
-    """Metaclass that ensures a private constructor
-
-    If a class uses this metaclass like this:
-
-        class SomeClass(metaclass=NoPublicConstructor):
-            pass
-
-    If you try to instantiate your class using (`SomeClass()`), a `TypeError` will be thrown.
-    """
-
-    def __call__(cls, *args, **kwargs):
-        raise NoPublicConstructorError(
-            "public constructor is not supported, please use class methods to create the object."
-        )
-
-    def _create(cls: Type[NPC], *args: Any, **kwargs: Any) -> NPC:
-        return super().__call__(*args, **kwargs)
-
-
-class NoPublicConstructorError(TypeError):
-    """Raise when using ClassName() to create objects while public constructor is not supported"""
 
 
 @dataclass(frozen=True)
@@ -181,7 +157,7 @@ class MessageTs:
 
     @classmethod
     def as_forward_all(
-        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
+            cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
     ) -> MTs:
         msg_ts = cls()
         if value and event_time:

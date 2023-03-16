@@ -14,7 +14,8 @@ class NoPublicConstructor(type):
         class SomeClass(metaclass=NoPublicConstructor):
             pass
 
-    If you try to instantiate your class using (`SomeClass()`), a `TypeError` will be thrown.
+    If you try to instantiate your class using (`SomeClass()`),
+    a `NoPublicConstructorError` will be thrown.
     """
 
     def __call__(cls, *args, **kwargs):

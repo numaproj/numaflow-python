@@ -13,7 +13,7 @@ M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
 MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
-N = TypeVar("N", bound="NoPublicConstructor")
+NPC = TypeVar("NPC", bound="NoPublicConstructor")
 
 
 class NoPublicConstructor(type):
@@ -28,12 +28,16 @@ class NoPublicConstructor(type):
     """
 
     def __call__(cls, *args, **kwargs):
-        raise TypeError(
+        raise NoPublicConstructorError(
             "public constructor is not supported, please use class methods to create the object."
         )
 
-    def _create(cls: Type[N], *args: Any, **kwargs: Any) -> N:
+    def _create(cls: Type[NPC], *args: Any, **kwargs: Any) -> NPC:
         return super().__call__(*args, **kwargs)
+
+
+class NoPublicConstructorError(TypeError):
+    """Raise when using ClassName() to create objects while public constructor is not supported"""
 
 
 @dataclass(frozen=True)

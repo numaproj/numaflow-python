@@ -27,8 +27,8 @@ class TestMessage(unittest.TestCase):
 
     def test_value(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
-        msgs = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])
-        self.assertEqual(mock_obj["Value"], msgs._value)
+        msg = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])
+        self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to_all(self):
         mock_obj = {"Key": ALL, "Value": mock_message()}
@@ -39,17 +39,17 @@ class TestMessage(unittest.TestCase):
 
     def test_message_to_drop(self):
         mock_obj = {"Key": DROP, "Value": b""}
-        msgs = Message.to_drop()
-        self.assertEqual(Message, type(msgs))
-        self.assertEqual(mock_obj["Key"], msgs._key)
-        self.assertEqual(mock_obj["Value"], msgs._value)
+        msg = Message.to_drop()
+        self.assertEqual(Message, type(msg))
+        self.assertEqual(mock_obj["Key"], msg.key)
+        self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to(self):
         mock_obj = {"Key": "__KEY__", "Value": mock_message()}
-        msgs = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])
-        self.assertEqual(Message, type(msgs))
-        self.assertEqual(mock_obj["Key"], msgs._key)
-        self.assertEqual(mock_obj["Value"], msgs._value)
+        msg = Message.to_vtx(key=mock_obj["Key"], value=mock_obj["Value"])
+        self.assertEqual(Message, type(msg))
+        self.assertEqual(mock_obj["Key"], msg.key)
+        self.assertEqual(mock_obj["Value"], msg.value)
 
 
 class TestMessages(unittest.TestCase):
@@ -87,8 +87,8 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i]._key, true_obj.items()[i]._key)
-            self.assertEqual(mock_obj.items()[i]._value, true_obj.items()[i]._value)
+            self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
+            self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
 
     def test_message_forward_to_drop(self):
         mock_obj = Messages()
@@ -97,8 +97,8 @@ class TestMessages(unittest.TestCase):
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i]._key, true_obj.items()[i]._key)
-            self.assertEqual(mock_obj.items()[i]._value, true_obj.items()[i]._value)
+            self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
+            self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
 
     def test_dump(self):
         msgs = Messages()

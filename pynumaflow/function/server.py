@@ -220,6 +220,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         response_task = asyncio.create_task(
             self.__async_reduce_handler(interval_window, request_iterator)
         )
+
+        # Save a reference to the result of this function, to avoid a task disappearing mid-execution.
+        # The event loop only keeps weak references to tasks. A task that isn’t referenced elsewhere
+        # may get garbage collected at any time, even before it’s done. Adding a callback to remove the task
+        # when its completed.
         self.background_tasks.add(response_task)
         response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
 

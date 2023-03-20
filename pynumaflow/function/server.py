@@ -109,6 +109,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         self._max_message_size = max_message_size
         self._max_threads = max_threads
         self.cleanup_coroutines = []
+        # Collection for storing strong references to all running tasks.
+        # Event loop only keeps a weak reference, which can cause it to
+        # get lost during execution.
         self.background_tasks = set()
 
         self._server_options = [

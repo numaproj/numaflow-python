@@ -5,6 +5,7 @@ from functools import partialmethod
 from typing import TypeVar, Type, List, Optional
 
 from pynumaflow.function.asynciter import NonBlockingIterator
+from pynumaflow.types import NoPublicConstructor
 
 DROP = b"U+005C__DROP__"
 ALL = b"U+005C__ALL__"
@@ -16,28 +17,36 @@ MTs = TypeVar("MTs", bound="MessageTs")
 
 
 @dataclass(frozen=True)
-class Message:
+class Message(metaclass=NoPublicConstructor):
     """
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        key: string key for vertex;
+        _key: string key for vertex;
              special values are ALL (send to all), DROP (drop message)
-        value: data in bytes
+        _value: data in bytes
     """
 
-    key: str = ""
-    value: bytes = b""
+    _key: str = ""
+    _value: bytes = b""
 
     @classmethod
     def to_vtx(cls: Type[M], key: str, value: bytes) -> M:
         """
         Returns a Message object to send value to a vertex.
         """
-        return cls(key, value)
+        return cls._create(key, value)
 
     to_all = partialmethod(to_vtx, ALL)
     to_drop = partialmethod(to_vtx, DROP, b"")
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def key(self):
+        return self._key
 
 
 class Messages:
@@ -82,31 +91,43 @@ class Messages:
 
 
 @dataclass(frozen=True)
-class MessageT:
+class MessageT(metaclass=NoPublicConstructor):
     """
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        key: string key for vertex;
+        _key: string key for vertex;
              special values are ALL (send to all), DROP (drop message)
-        value: data in bytes
-        event_time: event time of the message, usually extracted from the payload.
+        _value: data in bytes
+        _event_time: event time of the message, usually extracted from the payload.
     """
 
-    key: str = ""
-    value: bytes = b""
+    _key: str = ""
+    _value: bytes = b""
     # There is no year 0, so setting following as default event time.
-    event_time: datetime = datetime(1, 1, 1, 0, 0)
+    _event_time: datetime = datetime(1, 1, 1, 0, 0)
 
     @classmethod
     def to_vtx(cls: Type[MT], key: str, value: bytes, event_time: datetime) -> MT:
         """
         Returns a MessageT object to send value to a vertex.
         """
-        return cls(key, value, event_time)
+        return cls._create(key, value, event_time)
 
     to_all = partialmethod(to_vtx, ALL)
     to_drop = partialmethod(to_vtx, DROP, b"", datetime(1, 1, 1, 0, 0))
+
+    @property
+    def event_time(self):
+        return self._event_time
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def value(self):
+        return self._value
 
 
 class MessageTs:
@@ -139,7 +160,7 @@ class MessageTs:
         cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
     ) -> MTs:
         msg_ts = cls()
-        if value:
+        if value and event_time:
             msg_ts.append(MessageT.to_all(value=value, event_time=event_time))
         else:
             msg_ts.append(MessageT.to_drop())

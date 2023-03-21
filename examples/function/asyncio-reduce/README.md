@@ -29,6 +29,26 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
     ...
 ```
 
+
+
+**Note**: If using the ```create_task``` ([Refer here](https://docs.python.org/3/library/asyncio-task.html#creating-tasks))  method for creating coroutines,
+It is important to save a reference to the result of this function, 
+to avoid a task disappearing mid-execution. The event loop only keeps weak references to tasks.
+A task that isn’t referenced elsewhere may get garbage collected at any time, even before it’s done.
+For reliable background tasks, gather them in a collection:
+
+
+```python
+running_tasks = set()
+# [...]
+task = asyncio.create_task(some_background_function())
+running_tasks.add(task)
+task.add_done_callback(lambda t: running_tasks.remove(t))
+```
+
+
+
+
 **To compare the performance of the Async and the sequential implementation, we run and compare the results
 on the following scenarios on an HTTP server.**
 

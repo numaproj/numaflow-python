@@ -13,7 +13,7 @@ class StdoutFilter(logging.Filter):
     """
 
     def filter(self, record: logging.LogRecord) -> bool:
-        return record.levelno in (logging.DEBUG, logging.INFO, logging.WARNING)
+        return record.levelno < logging.ERROR
 
 
 def setup_logging(name):

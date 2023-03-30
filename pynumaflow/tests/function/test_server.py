@@ -16,7 +16,6 @@ from pynumaflow.function import (
     Datum,
     Metadata,
 )
-from pynumaflow.function._dtypes import DROP
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.server import UserDefinedFunctionServicer
 
@@ -64,10 +63,6 @@ def err_map_handler(_: str, __: Datum) -> Messages:
 
 
 def err_mapt_handler(_: str, __: Datum) -> MessageTs:
-    raise RuntimeError("Something is fishy!")
-
-
-def err_reduce_handler(_: str, __: Iterator[Datum], ___: Metadata) -> Messages:
     raise RuntimeError("Something is fishy!")
 
 
@@ -147,14 +142,8 @@ class TestServer(unittest.TestCase):
             request=request,
             timeout=1,
         )
-
         response, metadata, code, details = method.termination()
-        self.assertEqual(1, len(response.elements))
-        self.assertEqual(DROP.decode(), response.elements[0].key)
-        self.assertEqual(
-            b"",
-            response.elements[0].value,
-        )
+        self.assertEqual(None, response)
 
     def test_udf_mapt_err(self):
         my_servicer = UserDefinedFunctionServicer(mapt_handler=err_mapt_handler)
@@ -185,14 +174,8 @@ class TestServer(unittest.TestCase):
             request=request,
             timeout=1,
         )
-
         response, metadata, code, details = method.termination()
-        self.assertEqual(1, len(response.elements))
-        self.assertEqual(DROP.decode(), response.elements[0].key)
-        self.assertEqual(
-            b"",
-            response.elements[0].value,
-        )
+        self.assertEqual(None, response)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(
@@ -299,24 +282,6 @@ class TestServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
             UserDefinedFunctionServicer()
-
-    def test_invalid_reduce_metadata(self) -> None:
-        try:
-            _ = self.test_server.invoke_stream_unary(
-                method_descriptor=(
-                    udfunction_pb2.DESCRIPTOR.services_by_name[
-                        "UserDefinedFunction"
-                    ].methods_by_name["ReduceFn"]
-                ),
-                invocation_metadata={},
-                timeout=1,
-            )
-        except Exception as err:
-            self.assertEqual(
-                "Expected to have key/window_start_time/window_end_time but got empty value.",
-                err.__str__,
-            )
-
 
 if __name__ == "__main__":
     unittest.main()

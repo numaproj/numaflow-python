@@ -192,6 +192,24 @@ class TestAsyncServer(unittest.TestCase):
             response.elements[0].value,
         )
 
+    def test_reduce_invalid_metadata(self) -> None:
+        stub = self.__stub()
+        request, metadata = start_reduce_streaming_request()
+        invalid_metadata = (
+            (DATUM_KEY, "test"),
+        )
+        try:
+            generator_response = stub.ReduceFn(
+                request_iterator=request_generator(count=10, request=request), metadata=invalid_metadata
+            )
+            count = 0
+            for _ in generator_response:
+                count += 1
+        except Exception as err:
+            self.assertTrue("Expected to have all key/window_start_time/window_end_time" in err.__str__())
+            return
+        self.fail("Expected an exception.")
+
     def test_reduce(self) -> None:
         stub = self.__stub()
         request, metadata = start_reduce_streaming_request()

@@ -26,7 +26,9 @@ from pynumaflow.tests.function.test_server import (
 LOGGER = setup_logging(__name__)
 
 
-async def err_async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def err_async_reduce_handler(
+    key: str, datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -134,9 +136,7 @@ class TestAsyncServer(unittest.TestCase):
             for _ in generator_response:
                 count += 1
         except Exception as err:
-            self.assertTrue(
-                "Got a runtime error from reduce handler." in err.__str__()
-            )
+            self.assertTrue("Got a runtime error from reduce handler." in err.__str__())
             return
         self.fail("Expected an exception.")
 

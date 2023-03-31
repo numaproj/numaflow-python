@@ -142,10 +142,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 ),
             )
         except Exception as err:
-            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-
-            # a neat hack to drop
-            msgs = Messages.as_forward_all(None)
+            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            raise err
 
         datums = []
         for msg in msgs.items():
@@ -176,9 +174,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 ),
             )
         except Exception as err:
-            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-            # a neat hack to drop
-            msgts = MessageTs.as_forward_all(None, None)
+            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            raise err
 
         datums = []
         for msgt in msgts.items():
@@ -275,10 +272,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         try:
             msgs = await self.__reduce_handler(key, request_iterator, md)
         except Exception as err:
-            _LOGGER.critical("UDFError, dropping message on the floor: %r", err, exc_info=True)
-
-            # a neat hack to drop
-            msgs = Messages.as_forward_all(None)
+            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            raise err
 
         datums = []
         for msg in msgs.items():

@@ -45,6 +45,7 @@ class Datum:
     """
     Class to define the important information for the event.
     Args:
+        keys: the keys of the event.
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.

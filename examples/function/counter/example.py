@@ -5,7 +5,7 @@ import aiorun
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 
-async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -14,7 +14,7 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
         f"counter:{counter} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message.to_vtx(key, str.encode(msg)))
+    return Messages(Message.to_vtx(keys, str.encode(msg)))
 
 
 if __name__ == "__main__":

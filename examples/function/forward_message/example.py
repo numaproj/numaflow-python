@@ -1,12 +1,12 @@
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
-def my_handler(key: str, datum: Datum) -> Messages:
+def my_handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
     messages = Messages()
-    messages.append(Message.to_vtx(key, val))
+    messages.append(Message.to_vtx(keys, val))
     return messages
 
 

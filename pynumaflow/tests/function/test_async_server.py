@@ -10,7 +10,7 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
+from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
@@ -42,7 +42,7 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
-            request.key = f"key-{i}"
+            request.keys.extend([f"key-{i}"])
         yield request
 
 
@@ -59,7 +59,6 @@ def start_reduce_streaming_request() -> (Datum, tuple):
     )
 
     metadata = (
-        (DATUM_KEY, "test"),
         (WIN_START_TIME, f"{mock_interval_window_start()}"),
         (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )
@@ -130,13 +129,13 @@ class TestAsyncServer(unittest.TestCase):
             watermark_timestamp.FromDatetime(dt=mock_watermark())
 
             request = udfunction_pb2.Datum(
+                keys=["test"],
                 value=mock_message(),
                 event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
                 watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
             )
 
             metadata = (
-                (DATUM_KEY, "test"),
                 ("this_metadata_will_be_skipped", "test_ignore"),
             )
             response = None
@@ -146,7 +145,7 @@ class TestAsyncServer(unittest.TestCase):
                 logging.error(e)
 
             self.assertEqual(1, len(response.elements))
-            self.assertEqual("test", response.elements[0].key)
+            self.assertEqual(["test"], response.elements[0].keys)
             self.assertEqual(
                 bytes(
                     "payload:test_mock_message "
@@ -165,13 +164,13 @@ class TestAsyncServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         request = udfunction_pb2.Datum(
+            keys=["test"],
             value=mock_message(),
             event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
             watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
         )
 
         metadata = (
-            (DATUM_KEY, "test"),
             ("this_metadata_will_be_skipped", "test_ignore"),
         )
 
@@ -182,7 +181,7 @@ class TestAsyncServer(unittest.TestCase):
             LOGGER.error(e)
 
         self.assertEqual(1, len(response.elements))
-        self.assertEqual("test", response.elements[0].key)
+        self.assertEqual(["test"], response.elements[0].keys)
         self.assertEqual(
             bytes(
                 "payload:test_mock_message "
@@ -195,7 +194,7 @@ class TestAsyncServer(unittest.TestCase):
     def test_reduce_invalid_metadata(self) -> None:
         stub = self.__stub()
         request, metadata = start_reduce_streaming_request()
-        invalid_metadata = ((DATUM_KEY, "test"),)
+        invalid_metadata = {}
         try:
             generator_response = stub.ReduceFn(
                 request_iterator=request_generator(count=10, request=request),

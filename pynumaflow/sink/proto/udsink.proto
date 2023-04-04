@@ -28,7 +28,7 @@ message Watermark {
  * Datum represents a datum element.
  */
 message Datum {
-  string key = 1;
+  repeated string keys = 1;
   bytes value = 2;
   EventTime event_time = 3;
   Watermark watermark = 4;

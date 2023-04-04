@@ -22,31 +22,31 @@ class Message(metaclass=NoPublicConstructor):
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        _key: string key for vertex;
+        _keys: []string keys for vertex;
              special values are ALL (send to all), DROP (drop message)
         _value: data in bytes
     """
 
-    _key: str = ""
+    _keys: list[str]
     _value: bytes = b""
 
     @classmethod
-    def to_vtx(cls: Type[M], key: str, value: bytes) -> M:
+    def to_vtx(cls: Type[M], keys: list[str], value: bytes) -> M:
         """
         Returns a Message object to send value to a vertex.
         """
-        return cls._create(key, value)
+        return cls._create(keys, value)
 
-    to_all = partialmethod(to_vtx, ALL)
-    to_drop = partialmethod(to_vtx, DROP, b"")
+    to_all = partialmethod(to_vtx, list[ALL])
+    to_drop = partialmethod(to_vtx, list[DROP], b"")
 
     @property
     def value(self):
         return self._value
 
     @property
-    def key(self):
-        return self._key
+    def keys(self):
+        return self._keys
 
 
 class Messages:
@@ -96,34 +96,34 @@ class MessageT(metaclass=NoPublicConstructor):
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        _key: string key for vertex;
+        _keys: []string keys for vertex;
              special values are ALL (send to all), DROP (drop message)
         _value: data in bytes
         _event_time: event time of the message, usually extracted from the payload.
     """
 
-    _key: str = ""
+    _keys: list[str]
     _value: bytes = b""
     # There is no year 0, so setting following as default event time.
     _event_time: datetime = datetime(1, 1, 1, 0, 0)
 
     @classmethod
-    def to_vtx(cls: Type[MT], key: str, value: bytes, event_time: datetime) -> MT:
+    def to_vtx(cls: Type[MT], keys: list[str], value: bytes, event_time: datetime) -> MT:
         """
         Returns a MessageT object to send value to a vertex.
         """
-        return cls._create(key, value, event_time)
+        return cls._create(keys, value, event_time)
 
-    to_all = partialmethod(to_vtx, ALL)
-    to_drop = partialmethod(to_vtx, DROP, b"", datetime(1, 1, 1, 0, 0))
+    to_all = partialmethod(to_vtx, list[ALL])
+    to_drop = partialmethod(to_vtx, list[DROP], b"", datetime(1, 1, 1, 0, 0))
 
     @property
     def event_time(self):
         return self._event_time
 
     @property
-    def key(self):
-        return self._key
+    def keys(self):
+        return self._keys
 
     @property
     def value(self):
@@ -177,24 +177,24 @@ class Datum:
     """
     Class to define the important information for the event.
     Args:
-        key: the key of the event.
+        keys: the keys of the event.
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
     >>> # Example usage
     >>> from pynumaflow.function import Datum
     >>> from datetime import datetime, timezone
-    >>> key = "test_key"
+    >>> keys = ["test_key"]
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> d = Datum(key=key, value=payload, event_time=t1, watermark=t2)
+    >>> d = Datum(keys=keys, value=payload, event_time=t1, watermark=t2)
     """
 
-    __slots__ = ("_key", "_value", "_event_time", "_watermark")
+    __slots__ = ("_keys", "_value", "_event_time", "_watermark")
 
-    def __init__(self, key: str, value: bytes, event_time: datetime, watermark: datetime):
-        self._key = key or ""
+    def __init__(self, keys: list[str], value: bytes, event_time: datetime, watermark: datetime):
+        self._keys = keys or list()
         self._value = value or b""
         if not isinstance(event_time, datetime):
             raise TypeError(f"Wrong data type: {type(event_time)} for Datum.event_time")
@@ -206,7 +206,7 @@ class Datum:
     def __str__(self):
         value_string = self._value.decode("utf-8")
         return (
-            f"key: {self._key}, "
+            f"keys: {self._keys}, "
             f"value: {value_string}, "
             f"event_time: {str(self._event_time)}, "
             f"watermark: {str(self._watermark)}"
@@ -215,9 +215,9 @@ class Datum:
     def __repr__(self):
         return str(self)
 
-    def key(self):
-        """Returns the key of the event"""
-        return self._key
+    def keys(self):
+        """Returns the keys of the event"""
+        return self._keys
 
     @property
     def value(self):
@@ -286,10 +286,10 @@ class ReduceResult:
 
     __slots__ = ("_future", "_iterator", "_key")
 
-    def __init__(self, future: Task, iterator: NonBlockingIterator, key: str):
+    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: list[str]):
         self._future = future
         self._iterator = iterator
-        self._key = key
+        self._key = keys
 
     @property
     def future(self):
@@ -302,6 +302,6 @@ class ReduceResult:
         return self._iterator
 
     @property
-    def key(self):
-        """Returns the key of the partition."""
+    def keys(self):
+        """Returns the keys of the partition."""
         return self._key

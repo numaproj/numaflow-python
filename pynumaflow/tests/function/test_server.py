@@ -7,7 +7,6 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow._constants import DATUM_KEY
 from pynumaflow.function import (
     Message,
     Messages,
@@ -136,7 +135,6 @@ class TestServer(unittest.TestCase):
                 ]
             ),
             invocation_metadata={
-                (DATUM_KEY, "test"),
                 ("this_metadata_will_be_skipped", "test_ignore"),
             },
             request=request,
@@ -168,7 +166,6 @@ class TestServer(unittest.TestCase):
                 ]
             ),
             invocation_metadata={
-                (DATUM_KEY, "test"),
                 ("this_metadata_will_be_skipped", "test_ignore"),
             },
             request=request,
@@ -184,7 +181,7 @@ class TestServer(unittest.TestCase):
                     "IsReady"
                 ]
             ),
-            invocation_metadata={DATUM_KEY, "test"},
+            invocation_metadata={},
             request=_empty_pb2.Empty(),
             timeout=1,
         )
@@ -201,6 +198,7 @@ class TestServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         request = udfunction_pb2.Datum(
+            keys=["test"],
             value=mock_message(),
             event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
             watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
@@ -213,7 +211,6 @@ class TestServer(unittest.TestCase):
                 ]
             ),
             invocation_metadata={
-                (DATUM_KEY, "test"),
                 ("this_metadata_will_be_skipped", "test_ignore"),
             },
             request=request,
@@ -222,7 +219,7 @@ class TestServer(unittest.TestCase):
 
         response, metadata, code, details = method.termination()
         self.assertEqual(1, len(response.elements))
-        self.assertEqual("test", response.elements[0].key)
+        self.assertEqual(["test"], response.elements[0].keys)
         self.assertEqual(
             bytes(
                 "payload:test_mock_message "
@@ -240,6 +237,7 @@ class TestServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         request = udfunction_pb2.Datum(
+            keys=["test"],
             value=mock_message(),
             event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
             watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
@@ -252,7 +250,6 @@ class TestServer(unittest.TestCase):
                 ]
             ),
             invocation_metadata={
-                (DATUM_KEY, "test"),
                 ("this_metadata_will_be_skipped", "test_ignore"),
             },
             request=request,
@@ -261,7 +258,7 @@ class TestServer(unittest.TestCase):
 
         response, metadata, code, details = method.termination()
         self.assertEqual(1, len(response.elements))
-        self.assertEqual("test", response.elements[0].key)
+        self.assertEqual(["test"], response.elements[0].keys)
         self.assertEqual(
             bytes(
                 "payload:test_mock_message "

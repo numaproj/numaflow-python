@@ -13,7 +13,6 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
     FUNCTION_SOCK_PATH,
-    DATUM_KEY,
     WIN_START_TIME,
     WIN_END_TIME,
     MAX_MESSAGE_SIZE,
@@ -30,9 +29,9 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-UDFMapCallable = Callable[[str, Datum], Messages]
-UDFMapTCallable = Callable[[str, Datum], MessageTs]
-UDFReduceCallable = Callable[[str, AsyncIterable[Datum], Metadata], Messages]
+UDFMapCallable = Callable[[list[str], Datum], Messages]
+UDFMapTCallable = Callable[[list[str], Datum], MessageTs]
+UDFReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -57,14 +56,14 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
     ...     Datum, Metadata, UserDefinedFunctionServicer
     ... import aiorun
     ...
-    >>> def map_handler(key: str, datum: Datum) -> Messages:
+    >>> def map_handler(key: [str], datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
     ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
     ...
-    >>> def mapt_handler(key: str, datum: Datum) -> MessageTs:
+    >>> def mapt_handler(key: [str], datum: Datum) -> MessageTs:
     ...   val = datum.value
     ...   new_event_time = datetime.time()
     ...   _ = datum.watermark
@@ -126,16 +125,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Applies a function to each datum element.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
-        key = ""
-        for metadata_key, metadata_value in context.invocation_metadata():
-            if metadata_key == DATUM_KEY:
-                key = metadata_value
 
         try:
             msgs = self.__map_handler(
-                key,
+                request.keys,
                 Datum(
-                    key=key,
+                    keys=request.keys,
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
@@ -146,8 +141,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             raise err
 
         datums = []
+
         for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+            datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
 
         return udfunction_pb2.DatumList(elements=datums)
 
@@ -158,16 +154,12 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Applies a function to each datum element.
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
-        key = ""
-        for metadata_key, metadata_value in context.invocation_metadata():
-            if metadata_key == DATUM_KEY:
-                key = metadata_value
 
         try:
             msgts = self.__mapt_handler(
-                key,
+                request.keys,
                 Datum(
-                    key=key,
+                    keys=request.keys,
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
@@ -185,7 +177,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
             datums.append(
                 udfunction_pb2.Datum(
-                    key=msgt.key,
+                    keys=msgt.keys,
                     value=msgt.value,
                     event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
                     watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
@@ -237,8 +229,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         callable_dict = {}
         # iterate through all the values
         async for d in request_iterator:
-            key = d.key
-            result = callable_dict.get(key, None)
+            keys = list(d.keys)
+            unified_key = ''.join(keys)
+            result = callable_dict.get(unified_key, None)
 
             if not result:
                 niter = NonBlockingIterator()
@@ -246,38 +239,38 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 # schedule an async task for consumer
                 # returns a future that will give the results later.
                 task = asyncio.create_task(
-                    self.__invoke_reduce(key, riter, Metadata(interval_window=interval_window))
+                    self.__invoke_reduce(keys, riter, Metadata(interval_window=interval_window))
                 )
                 # Save a reference to the result of this function, to avoid a
                 # task disappearing mid-execution.
                 self.background_tasks.add(task)
                 task.add_done_callback(lambda t: self.background_tasks.remove(t))
-                result = ReduceResult(task, niter, key)
+                result = ReduceResult(task, niter, keys)
 
-                callable_dict[key] = result
+                callable_dict[unified_key] = result
 
             await result.iterator.put(d)
 
-        for key in callable_dict:
-            await callable_dict[key].iterator.put(STREAM_EOF)
+        for unified_key in callable_dict:
+            await callable_dict[unified_key].iterator.put(STREAM_EOF)
 
         tasks = []
-        for key in callable_dict:
-            fut = callable_dict[key].future
+        for unified_key in callable_dict:
+            fut = callable_dict[unified_key].future
             tasks.append(fut)
 
         return tasks
 
-    async def __invoke_reduce(self, key: str, request_iterator: AsyncIterable[Datum], md: Metadata):
+    async def __invoke_reduce(self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata):
         try:
-            msgs = await self.__reduce_handler(key, request_iterator, md)
+            msgs = await self.__reduce_handler(keys, request_iterator, md)
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
             raise err
 
         datums = []
         for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(key=msg.key, value=msg.value))
+            datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
 
         return datums
 

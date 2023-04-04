@@ -135,9 +135,7 @@ class TestAsyncServer(unittest.TestCase):
                 watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
             )
 
-            metadata = (
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            )
+            metadata = (("this_metadata_will_be_skipped", "test_ignore"),)
             response = None
             try:
                 response = stub.MapFn(request=request, metadata=metadata)
@@ -170,9 +168,7 @@ class TestAsyncServer(unittest.TestCase):
             watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
         )
 
-        metadata = (
-            ("this_metadata_will_be_skipped", "test_ignore"),
-        )
+        metadata = (("this_metadata_will_be_skipped", "test_ignore"),)
 
         response = None
         try:

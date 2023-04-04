@@ -230,7 +230,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         # iterate through all the values
         async for d in request_iterator:
             keys = list(d.keys)
-            unified_key = ''.join(keys)
+            unified_key = "".join(keys)
             result = callable_dict.get(unified_key, None)
 
             if not result:
@@ -261,7 +261,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         return tasks
 
-    async def __invoke_reduce(self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata):
+    async def __invoke_reduce(
+        self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
+    ):
         try:
             msgs = await self.__reduce_handler(keys, request_iterator, md)
         except Exception as err:

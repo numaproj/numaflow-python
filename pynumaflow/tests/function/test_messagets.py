@@ -62,7 +62,11 @@ class TestMessageT(unittest.TestCase):
         self.assertEqual(mock_obj["Value"], msgt.value)
 
     def test_message_to(self):
-        mock_obj = {"Keys": list["__KEY__"], "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {
+            "Keys": list["__KEY__"],
+            "Value": mock_message_t(),
+            "EventTime": mock_event_time(),
+        }
         msgt = MessageT.to_vtx(
             keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
@@ -81,8 +85,16 @@ class TestMessageTs(unittest.TestCase):
 
     def test_items(self):
         mock_obj = [
-            {"Keys": list[b"U+005C__ALL__"], "Value": mock_message_t(), "EventTime": mock_event_time()},
-            {"Keys": list[b"U+005C__ALL__"], "Value": mock_message_t(), "EventTime": mock_event_time()},
+            {
+                "Keys": list[b"U+005C__ALL__"],
+                "Value": mock_message_t(),
+                "EventTime": mock_event_time(),
+            },
+            {
+                "Keys": list[b"U+005C__ALL__"],
+                "Value": mock_message_t(),
+                "EventTime": mock_event_time(),
+            },
         ]
         msgts = MessageTs(*mock_obj)
         self.assertEqual(len(mock_obj), len(msgts.items()))

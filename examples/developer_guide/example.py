@@ -1,4 +1,4 @@
-from typing import Iterator
+from typing import Iterator, List
 import aiorun
 from pynumaflow.function import (
     Messages,
@@ -9,7 +9,7 @@ from pynumaflow.function import (
 )
 
 
-def map_handler(keys: list[str], datum: Datum) -> Messages:
+def map_handler(keys: List[str], datum: Datum) -> Messages:
     # forward a message
     val = datum.value
     _ = datum.event_time
@@ -19,7 +19,7 @@ def map_handler(keys: list[str], datum: Datum) -> Messages:
     return messages
 
 
-async def my_handler(keys: list[str], datums: Iterator[Datum], md: Metadata) -> Messages:
+async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
     # count the number of events
     interval_window = md.interval_window
     counter = 0

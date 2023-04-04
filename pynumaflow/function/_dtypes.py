@@ -27,7 +27,7 @@ class Message(metaclass=NoPublicConstructor):
         _value: data in bytes
     """
 
-    _keys: list[str]
+    _keys: List[str]
     _value: bytes = b""
 
     @classmethod

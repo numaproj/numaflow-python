@@ -12,7 +12,7 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
 
-def my_handler(keys: list[str], datum: Datum) -> Messages:
+def my_handler(keys: List[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
@@ -32,7 +32,7 @@ MapT is only supported at source vertex to enable (a) early data filtering and (
 import datetime
 from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
 
-def mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
+def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     val = datum.value
     new_event_time = datetime.time()
     _ = datum.watermark
@@ -52,7 +52,7 @@ from typing import Iterator
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 
-async def my_handler(keys: list[str], datums: Iterator[Datum], md: Metadata) -> Messages:
+async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:

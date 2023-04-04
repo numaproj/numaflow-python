@@ -186,7 +186,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(
-        self, request_iterator: AsyncIterable[udfunction_pb2.Datum], context: NumaflowServicerContext
+        self,
+        request_iterator: AsyncIterable[udfunction_pb2.Datum],
+        context: NumaflowServicerContext,
     ) -> udfunction_pb2.DatumList:
         """
         Applies a reduce function to a datum stream.

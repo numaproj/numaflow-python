@@ -58,7 +58,14 @@ class Datum:
     >>> d = Datum(sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
     """
 
-    def __init__(self, keys: List[str], sink_msg_id: str, value: bytes, event_time: datetime, watermark: datetime):
+    def __init__(
+        self,
+        keys: List[str],
+        sink_msg_id: str,
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
+    ):
         self._keys = keys
         self._id = sink_msg_id or ""
         self._value = value or b""

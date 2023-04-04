@@ -58,7 +58,8 @@ class Datum:
     >>> d = Datum(sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
     """
 
-    def __init__(self, sink_msg_id: str, value: bytes, event_time: datetime, watermark: datetime):
+    def __init__(self, keys: List[str], sink_msg_id: str, value: bytes, event_time: datetime, watermark: datetime):
+        self._keys = keys
         self._id = sink_msg_id or ""
         self._value = value or b""
         if not isinstance(event_time, datetime):
@@ -71,6 +72,7 @@ class Datum:
     def __str__(self):
         value_string = self._value.decode("utf-8")
         return (
+            f"keys: {self._keys}, "
             f"id: {self._id}, value: {value_string}, "
             f"event_time: {str(self._event_time)}, "
             f"watermark: {str(self._watermark)}"
@@ -83,6 +85,11 @@ class Datum:
     def id(self) -> str:
         """Returns the id of the event."""
         return self._id
+
+    @property
+    def keys(self) -> List[str]:
+        """Returns the id of the event."""
+        return self._keys
 
     @property
     def value(self) -> bytes:

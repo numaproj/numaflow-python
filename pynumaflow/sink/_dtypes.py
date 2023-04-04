@@ -55,7 +55,8 @@ class Datum:
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
     >>> msg_id = "test_id"
-    >>> d = Datum(sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
+    >>> output_keys = ["test_key"]
+    >>> d = Datum(keys=output_keys, sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
     """
 
     def __init__(

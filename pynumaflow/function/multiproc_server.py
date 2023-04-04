@@ -25,6 +25,12 @@ _ONE_DAY = datetime.timedelta(days=1)
 
 
 class MultiProcServer:
+    """
+      Provides a multiprocessing implementation of the grpc server.
+      They use a given TCP socket with SOCK_REUSE to allow all servers,
+      to listen on the same port. We start servers equal to the CPU count of the
+      system.
+    """
     def __init__(self, udf_service, server_options):
         self.udf_service = udf_service
         self.sock_path = MULTIPROC_FUNCTION_SOCK_PATH
@@ -73,6 +79,7 @@ class MultiProcServer:
             sock.close()
 
     def start(self) -> None:
+        """ Start N grpc servers in different processes where N = CPU Count """
         with self._reserve_port() as port:
             bind_address = f"{MULTIPROC_FUNCTION_SOCK_ADDR}:{port}"
             workers = []

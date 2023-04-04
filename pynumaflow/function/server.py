@@ -337,5 +337,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         server.wait_for_termination()
 
     def start_multiproc(self) -> None:
+        """
+        Starts multiple gRPC servers, all bound on a given TCP socket.
+        """
         server = MultiProcServer(self, server_options=self._server_options)
         server.start()

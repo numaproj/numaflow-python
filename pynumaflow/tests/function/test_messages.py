@@ -23,7 +23,7 @@ class TestMessage(unittest.TestCase):
     def test_immutable(self):
         msg = Message.to_vtx(keys=ALL, value=mock_message())
         with self.assertRaises(FrozenInstanceError):
-            msg._keys = list[DROP]
+            msg._keys = [DROP]
 
     def test_value(self):
         mock_obj = {"Keys": ALL, "Value": mock_message()}
@@ -31,14 +31,14 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to_all(self):
-        mock_obj = {"Keys": list[ALL], "Value": mock_message()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message()}
         msg = Message.to_all(mock_obj["Value"])
         self.assertEqual(Message, type(msg))
         self.assertEqual(mock_obj["Keys"], msg.keys)
         self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to_drop(self):
-        mock_obj = {"Keys": list[DROP], "Value": b""}
+        mock_obj = {"Keys": [DROP], "Value": b""}
         msg = Message.to_drop()
         self.assertEqual(Message, type(msg))
         self.assertEqual(mock_obj["Keys"], msg.keys)
@@ -56,7 +56,7 @@ class TestMessages(unittest.TestCase):
     @staticmethod
     def mock_message_object():
         value = mock_message()
-        return Message.to_vtx(keys=list[ALL], value=value)
+        return Message.to_vtx(keys=[ALL], value=value)
 
     def test_items(self):
         mock_obj = [
@@ -105,8 +105,8 @@ class TestMessages(unittest.TestCase):
         msgs.append(self.mock_message_object())
         msgs.append(self.mock_message_object())
         self.assertEqual(
-            "[Message(_keys=list[b'U+005C__ALL__'], _value=b'test_mock_message'), "
-            "Message(_keys=list[b'U+005C__ALL__'], _value=b'test_mock_message')]",
+            "[Message(_keys=[b'U+005C__ALL__'], _value=b'test_mock_message'), "
+            "Message(_keys=[b'U+005C__ALL__'], _value=b'test_mock_message')]",
             msgs.dumps(),
         )
 

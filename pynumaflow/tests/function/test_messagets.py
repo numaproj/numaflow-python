@@ -33,21 +33,21 @@ class TestMessageT(unittest.TestCase):
             msgt._keys = DROP
 
     def test_value(self):
-        mock_obj = {"Keys": list[ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_vtx(
             keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_event_time()
         )
         self.assertEqual(mock_obj["Value"], msgt.value)
 
     def test_event_time(self):
-        mock_obj = {"Keys": list[ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_vtx(
             keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
 
     def test_message_to_all(self):
-        mock_obj = {"Keys": list[ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_all(mock_obj["Value"], mock_obj["EventTime"])
         self.assertEqual(MessageT, type(msgt))
         self.assertEqual(mock_obj["Keys"], msgt.keys)
@@ -55,7 +55,7 @@ class TestMessageT(unittest.TestCase):
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
 
     def test_message_to_drop(self):
-        mock_obj = {"Keys": list[DROP], "Value": b""}
+        mock_obj = {"Keys": [DROP], "Value": b""}
         msgt = MessageT.to_drop()
         self.assertEqual(MessageT, type(msgt))
         self.assertEqual(mock_obj["Keys"], msgt.keys)
@@ -63,7 +63,7 @@ class TestMessageT(unittest.TestCase):
 
     def test_message_to(self):
         mock_obj = {
-            "Keys": list["__KEY__"],
+            "Keys": ["__KEY__"],
             "Value": mock_message_t(),
             "EventTime": mock_event_time(),
         }
@@ -86,12 +86,12 @@ class TestMessageTs(unittest.TestCase):
     def test_items(self):
         mock_obj = [
             {
-                "Keys": list[b"U+005C__ALL__"],
+                "Keys": [b"U+005C__ALL__"],
                 "Value": mock_message_t(),
                 "EventTime": mock_event_time(),
             },
             {
-                "Keys": list[b"U+005C__ALL__"],
+                "Keys": [b"U+005C__ALL__"],
                 "Value": mock_message_t(),
                 "EventTime": mock_event_time(),
             },
@@ -102,9 +102,9 @@ class TestMessageTs(unittest.TestCase):
         self.assertEqual(mock_obj[0]["Value"], msgts.items()[0]["Value"])
         self.assertEqual(mock_obj[0]["EventTime"], msgts.items()[0]["EventTime"])
         self.assertEqual(
-            "[{'Keys': list[b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
+            "[{'Keys': [b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
             "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}, "
-            "{'Keys': list[b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
+            "{'Keys': [b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
             "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}]",
             repr(msgts),
         )
@@ -143,9 +143,9 @@ class TestMessageTs(unittest.TestCase):
         msgts.append(self.mock_messaget_object())
         msgts.append(self.mock_messaget_object())
         self.assertEqual(
-            "[MessageT(_keys=list[b'U+005C__ALL__'], _value=b'test_mock_message_t', "
+            "[MessageT(_keys=[b'U+005C__ALL__'], _value=b'test_mock_message_t', "
             "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)), "
-            "MessageT(_keys=list[b'U+005C__ALL__'], _value=b'test_mock_message_t', "
+            "MessageT(_keys=[b'U+005C__ALL__'], _value=b'test_mock_message_t', "
             "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc))]",
             msgts.dumps(),
         )

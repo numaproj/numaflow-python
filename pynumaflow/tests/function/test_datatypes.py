@@ -8,7 +8,7 @@ from pynumaflow.function._dtypes import (
     Datum,
 )
 
-TEST_KEYS = list["test"]
+TEST_KEYS = ["test"]
 
 
 def mock_message():
@@ -68,14 +68,14 @@ class TestDatum(unittest.TestCase):
         )
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
-            "keys: list['test'], "
+            "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",
             str(d),
         )
         self.assertEqual(
-            "keys: list['test'], "
+            "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",
@@ -91,14 +91,14 @@ class TestDatum(unittest.TestCase):
         )
         self.assertEqual(TEST_KEYS, d.keys())
         self.assertEqual(
-            "keys: list['test'], "
+            "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",
             str(d),
         )
         self.assertEqual(
-            "keys: list['test'], "
+            "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",

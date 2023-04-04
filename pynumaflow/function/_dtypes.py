@@ -37,8 +37,8 @@ class Message(metaclass=NoPublicConstructor):
         """
         return cls._create(keys, value)
 
-    to_all = partialmethod(to_vtx, list[ALL])
-    to_drop = partialmethod(to_vtx, list[DROP], b"")
+    to_all = partialmethod(to_vtx, [ALL])
+    to_drop = partialmethod(to_vtx, [DROP], b"")
 
     @property
     def value(self):
@@ -114,8 +114,8 @@ class MessageT(metaclass=NoPublicConstructor):
         """
         return cls._create(keys, value, event_time)
 
-    to_all = partialmethod(to_vtx, list[ALL])
-    to_drop = partialmethod(to_vtx, list[DROP], b"", datetime(1, 1, 1, 0, 0))
+    to_all = partialmethod(to_vtx, [ALL])
+    to_drop = partialmethod(to_vtx, [DROP], b"", datetime(1, 1, 1, 0, 0))
 
     @property
     def event_time(self):

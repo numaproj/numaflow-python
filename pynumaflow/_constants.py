@@ -1,4 +1,7 @@
 FUNCTION_SOCK_PATH = "/var/run/numaflow/function.sock"
+MULTIPROC_FUNCTION_SOCK_PATH = 55551
+MULTIPROC_FUNCTION_SOCK_ADDR = "0.0.0.0"
+
 SINK_SOCK_PATH = "/var/run/numaflow/udsink.sock"
 # TODO: need to make sure the DATUM_KEY value is the same as
 # https://github.com/numaproj/numaflow-go/blob/main/pkg/function/configs.go#L6

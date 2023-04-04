@@ -337,5 +337,5 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         server.wait_for_termination()
 
     def start_multiproc(self) -> None:
-        server = MultiProcServer(self, sock_path=self.sock_path, server_options=self._server_options)
+        server = MultiProcServer(self, server_options=self._server_options)
         server.start()

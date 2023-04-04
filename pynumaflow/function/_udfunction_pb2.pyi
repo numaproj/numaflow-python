@@ -46,7 +46,7 @@ class Datum(_message.Message):
 
     def __init__(
         self,
-        keys: _Optional[list[str]],
+        keys: _Optional[List[str]],
         value: _Optional[bytes],
         event_time: _Optional[_timestamp_pb2.Timestamp] = ...,
         watermark: _Optional[_timestamp_pb2.Timestamp] = ...,

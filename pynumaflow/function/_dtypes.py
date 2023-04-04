@@ -31,7 +31,7 @@ class Message(metaclass=NoPublicConstructor):
     _value: bytes = b""
 
     @classmethod
-    def to_vtx(cls: Type[M], keys: list[str], value: bytes) -> M:
+    def to_vtx(cls: Type[M], keys: List[str], value: bytes) -> M:
         """
         Returns a Message object to send value to a vertex.
         """
@@ -102,13 +102,13 @@ class MessageT(metaclass=NoPublicConstructor):
         _event_time: event time of the message, usually extracted from the payload.
     """
 
-    _keys: list[str]
+    _keys: List[str]
     _value: bytes = b""
     # There is no year 0, so setting following as default event time.
     _event_time: datetime = datetime(1, 1, 1, 0, 0)
 
     @classmethod
-    def to_vtx(cls: Type[MT], keys: list[str], value: bytes, event_time: datetime) -> MT:
+    def to_vtx(cls: Type[MT], keys: List[str], value: bytes, event_time: datetime) -> MT:
         """
         Returns a MessageT object to send value to a vertex.
         """
@@ -193,7 +193,7 @@ class Datum:
 
     __slots__ = ("_keys", "_value", "_event_time", "_watermark")
 
-    def __init__(self, keys: list[str], value: bytes, event_time: datetime, watermark: datetime):
+    def __init__(self, keys: List[str], value: bytes, event_time: datetime, watermark: datetime):
         self._keys = keys or list()
         self._value = value or b""
         if not isinstance(event_time, datetime):
@@ -286,7 +286,7 @@ class ReduceResult:
 
     __slots__ = ("_future", "_iterator", "_key")
 
-    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: list[str]):
+    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: List[str]):
         self._future = future
         self._iterator = iterator
         self._key = keys

@@ -18,56 +18,60 @@ def mock_event_time():
 class TestMessageT(unittest.TestCase):
     def test_cannot_use_public_construct(self):
         with self.assertRaises(TypeError):
-            MessageT(_key=ALL, _value=mock_message_t(), _event_time=mock_event_time())
+            MessageT(_keys=ALL, _value=mock_message_t(), _event_time=mock_event_time())
 
     def test_key(self):
-        mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_vtx(
-            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
+            keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
-        self.assertEqual(mock_obj["Key"], msgt.key)
+        self.assertEqual(mock_obj["Keys"], msgt.keys)
 
     def test_immutable(self):
         msgt = MessageT.to_all(value=mock_message_t(), event_time=mock_event_time())
         with self.assertRaises(FrozenInstanceError):
-            msgt._key = DROP
+            msgt._keys = DROP
 
     def test_value(self):
-        mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_vtx(
-            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_event_time()
+            keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_event_time()
         )
         self.assertEqual(mock_obj["Value"], msgt.value)
 
     def test_event_time(self):
-        mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_vtx(
-            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
+            keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
 
     def test_message_to_all(self):
-        mock_obj = {"Key": ALL, "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {"Keys": [ALL], "Value": mock_message_t(), "EventTime": mock_event_time()}
         msgt = MessageT.to_all(mock_obj["Value"], mock_obj["EventTime"])
         self.assertEqual(MessageT, type(msgt))
-        self.assertEqual(mock_obj["Key"], msgt.key)
+        self.assertEqual(mock_obj["Keys"], msgt.keys)
         self.assertEqual(mock_obj["Value"], msgt.value)
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
 
     def test_message_to_drop(self):
-        mock_obj = {"Key": DROP, "Value": b""}
+        mock_obj = {"Keys": [DROP], "Value": b""}
         msgt = MessageT.to_drop()
         self.assertEqual(MessageT, type(msgt))
-        self.assertEqual(mock_obj["Key"], msgt.key)
+        self.assertEqual(mock_obj["Keys"], msgt.keys)
         self.assertEqual(mock_obj["Value"], msgt.value)
 
     def test_message_to(self):
-        mock_obj = {"Key": "__KEY__", "Value": mock_message_t(), "EventTime": mock_event_time()}
+        mock_obj = {
+            "Keys": ["__KEY__"],
+            "Value": mock_message_t(),
+            "EventTime": mock_event_time(),
+        }
         msgt = MessageT.to_vtx(
-            key=mock_obj["Key"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
+            keys=mock_obj["Keys"], value=mock_obj["Value"], event_time=mock_obj["EventTime"]
         )
         self.assertEqual(MessageT, type(msgt))
-        self.assertEqual(mock_obj["Key"], msgt.key)
+        self.assertEqual(mock_obj["Keys"], msgt.keys)
         self.assertEqual(mock_obj["Value"], msgt.value)
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
 
@@ -81,18 +85,26 @@ class TestMessageTs(unittest.TestCase):
 
     def test_items(self):
         mock_obj = [
-            {"Key": b"U+005C__ALL__", "Value": mock_message_t(), "EventTime": mock_event_time()},
-            {"Key": b"U+005C__ALL__", "Value": mock_message_t(), "EventTime": mock_event_time()},
+            {
+                "Keys": [b"U+005C__ALL__"],
+                "Value": mock_message_t(),
+                "EventTime": mock_event_time(),
+            },
+            {
+                "Keys": [b"U+005C__ALL__"],
+                "Value": mock_message_t(),
+                "EventTime": mock_event_time(),
+            },
         ]
         msgts = MessageTs(*mock_obj)
         self.assertEqual(len(mock_obj), len(msgts.items()))
-        self.assertEqual(mock_obj[0]["Key"], msgts.items()[0]["Key"])
+        self.assertEqual(mock_obj[0]["Keys"], msgts.items()[0]["Keys"])
         self.assertEqual(mock_obj[0]["Value"], msgts.items()[0]["Value"])
         self.assertEqual(mock_obj[0]["EventTime"], msgts.items()[0]["EventTime"])
         self.assertEqual(
-            "[{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message_t', "
+            "[{'Keys': [b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
             "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}, "
-            "{'Key': b'U+005C__ALL__', 'Value': b'test_mock_message_t', "
+            "{'Keys': [b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
             "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}]",
             repr(msgts),
         )
@@ -111,7 +123,7 @@ class TestMessageTs(unittest.TestCase):
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
+            self.assertEqual(mock_obj.items()[i].keys, true_obj.items()[i].keys)
             self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
             self.assertEqual(mock_obj.items()[i].event_time, true_obj.items()[i].event_time)
 
@@ -122,7 +134,7 @@ class TestMessageTs(unittest.TestCase):
         self.assertEqual(type(mock_obj), type(true_obj))
         for i in range(len(true_obj.items())):
             self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i].key, true_obj.items()[i].key)
+            self.assertEqual(mock_obj.items()[i].keys, true_obj.items()[i].keys)
             self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
             self.assertEqual(mock_obj.items()[i].event_time, true_obj.items()[i].event_time)
 
@@ -131,9 +143,9 @@ class TestMessageTs(unittest.TestCase):
         msgts.append(self.mock_messaget_object())
         msgts.append(self.mock_messaget_object())
         self.assertEqual(
-            "[MessageT(_key=b'U+005C__ALL__', _value=b'test_mock_message_t', "
+            "[MessageT(_keys=[b'U+005C__ALL__'], _value=b'test_mock_message_t', "
             "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)), "
-            "MessageT(_key=b'U+005C__ALL__', _value=b'test_mock_message_t', "
+            "MessageT(_keys=[b'U+005C__ALL__'], _value=b'test_mock_message_t', "
             "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc))]",
             msgts.dumps(),
         )

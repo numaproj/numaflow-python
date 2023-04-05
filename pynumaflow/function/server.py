@@ -16,7 +16,7 @@ from pynumaflow._constants import (
     WIN_START_TIME,
     WIN_END_TIME,
     MAX_MESSAGE_SIZE,
-    STREAM_EOF,
+    STREAM_EOF, DELIMITER,
 )
 from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult
@@ -232,7 +232,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         # iterate through all the values
         async for d in request_iterator:
             keys = d.keys or []
-            unified_key = ":".join(keys)
+            unified_key = DELIMITER.join(keys)
             result = callable_dict.get(unified_key, None)
 
             if not result:

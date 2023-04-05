@@ -5,12 +5,11 @@ import unittest
 from typing import AsyncIterable
 
 import grpc
-
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import DATUM_KEY, WIN_START_TIME, WIN_END_TIME
+from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
@@ -64,7 +63,6 @@ def start_reduce_streaming_request() -> (Datum, tuple):
     )
 
     metadata = (
-        (DATUM_KEY, "test"),
         (WIN_START_TIME, f"{mock_interval_window_start()}"),
         (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )

@@ -45,6 +45,7 @@ class Datum:
     """
     Class to define the important information for the event.
     Args:
+        keys: the keys of the event.
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
@@ -55,10 +56,19 @@ class Datum:
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
     >>> msg_id = "test_id"
-    >>> d = Datum(sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
+    >>> output_keys = ["test_key"]
+    >>> d = Datum(keys=output_keys, sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
     """
 
-    def __init__(self, sink_msg_id: str, value: bytes, event_time: datetime, watermark: datetime):
+    def __init__(
+        self,
+        keys: List[str],
+        sink_msg_id: str,
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
+    ):
+        self._keys = keys
         self._id = sink_msg_id or ""
         self._value = value or b""
         if not isinstance(event_time, datetime):
@@ -71,6 +81,7 @@ class Datum:
     def __str__(self):
         value_string = self._value.decode("utf-8")
         return (
+            f"keys: {self._keys}, "
             f"id: {self._id}, value: {value_string}, "
             f"event_time: {str(self._event_time)}, "
             f"watermark: {str(self._watermark)}"
@@ -83,6 +94,11 @@ class Datum:
     def id(self) -> str:
         """Returns the id of the event."""
         return self._id
+
+    @property
+    def keys(self) -> List[str]:
+        """Returns the id of the event."""
+        return self._keys
 
     @property
     def value(self) -> bytes:

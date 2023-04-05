@@ -17,23 +17,24 @@ from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x10udfunction.proto\x12\x0b\x66unction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"z\n\x05\x44\x61tum\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12*\n\nevent_time\x18\x03 \x01(\x0b\x32\x16.function.v1.EventTime\x12)\n\twatermark\x18\x04 \x01(\x0b\x32\x16.function.v1.Watermark"1\n\tDatumList\x12$\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x12.function.v1.Datum"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\xfb\x01\n\x13UserDefinedFunction\x12\x33\n\x05MapFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12\x34\n\x06MapTFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12:\n\x08ReduceFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList(\x01\x30\x01\x12=\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x1a.function.v1.ReadyResponseb\x06proto3'
+    b'\n\x10udfunction.proto\x12\x0b\x66unction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto";\n\tEventTime\x12.\n\nevent_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp":\n\tWatermark\x12-\n\twatermark\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp"{\n\x05\x44\x61tum\x12\x0c\n\x04keys\x18\x01 \x03(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12*\n\nevent_time\x18\x03 \x01(\x0b\x32\x16.function.v1.EventTime\x12)\n\twatermark\x18\x04 \x01(\x0b\x32\x16.function.v1.Watermark"1\n\tDatumList\x12$\n\x08\x65lements\x18\x01 \x03(\x0b\x32\x12.function.v1.Datum"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\xfb\x01\n\x13UserDefinedFunction\x12\x33\n\x05MapFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12\x34\n\x06MapTFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList\x12:\n\x08ReduceFn\x12\x12.function.v1.Datum\x1a\x16.function.v1.DatumList(\x01\x30\x01\x12=\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x1a.function.v1.ReadyResponseb\x06proto3'
 )
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "udfunction_pb2", globals())
 if _descriptor._USE_C_DESCRIPTORS == False:
+
     DESCRIPTOR._options = None
     _EVENTTIME._serialized_start = 95
     _EVENTTIME._serialized_end = 154
     _WATERMARK._serialized_start = 156
     _WATERMARK._serialized_end = 214
     _DATUM._serialized_start = 216
-    _DATUM._serialized_end = 338
-    _DATUMLIST._serialized_start = 340
-    _DATUMLIST._serialized_end = 389
-    _READYRESPONSE._serialized_start = 391
-    _READYRESPONSE._serialized_end = 421
-    _USERDEFINEDFUNCTION._serialized_start = 424
-    _USERDEFINEDFUNCTION._serialized_end = 675
+    _DATUM._serialized_end = 339
+    _DATUMLIST._serialized_start = 341
+    _DATUMLIST._serialized_end = 390
+    _READYRESPONSE._serialized_start = 392
+    _READYRESPONSE._serialized_end = 422
+    _USERDEFINEDFUNCTION._serialized_start = 425
+    _USERDEFINEDFUNCTION._serialized_end = 676
 # @@protoc_insertion_point(module_scope)

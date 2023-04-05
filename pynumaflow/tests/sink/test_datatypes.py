@@ -27,7 +27,13 @@ class TestDatum(unittest.TestCase):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
         with self.assertRaises(Exception) as context:
-            Datum(sink_msg_id="test_id_0", value=mock_message(), event_time=ts, watermark=ts)
+            Datum(
+                keys=["test_key"],
+                sink_msg_id="test_id_0",
+                value=mock_message(),
+                event_time=ts,
+                watermark=ts,
+            )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.event_time",
@@ -39,6 +45,7 @@ class TestDatum(unittest.TestCase):
         ts.GetCurrentTime()
         with self.assertRaises(Exception) as context:
             Datum(
+                keys=["test_key"],
                 sink_msg_id="test_id_0",
                 value=mock_message(),
                 event_time=mock_event_time(),
@@ -52,6 +59,7 @@ class TestDatum(unittest.TestCase):
 
     def test_value(self):
         d = Datum(
+            keys=["test_key"],
             sink_msg_id="test_id_0",
             value=mock_message(),
             event_time=mock_event_time(),
@@ -59,11 +67,13 @@ class TestDatum(unittest.TestCase):
         )
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
+            "keys: ['test_key'], "
             "id: test_id_0, value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
             str(d),
         )
         self.assertEqual(
+            "keys: ['test_key'], "
             "id: test_id_0, value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
             "watermark: 2022-09-12 16:01:00+00:00",
@@ -72,6 +82,7 @@ class TestDatum(unittest.TestCase):
 
     def test_id(self):
         d = Datum(
+            keys=["test_key"],
             sink_msg_id="test_id_0",
             value=mock_message(),
             event_time=mock_event_time(),
@@ -81,6 +92,7 @@ class TestDatum(unittest.TestCase):
 
     def test_event_time(self):
         d = Datum(
+            keys=["test_key"],
             sink_msg_id="test_id_0",
             value=mock_message(),
             event_time=mock_event_time(),
@@ -90,6 +102,7 @@ class TestDatum(unittest.TestCase):
 
     def test_watermark(self):
         d = Datum(
+            keys=["test_key"],
             sink_msg_id="test_id_0",
             value=mock_message(),
             event_time=mock_event_time(),

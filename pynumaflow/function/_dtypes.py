@@ -220,17 +220,17 @@ class Datum:
         return self._keys
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         """Returns the value of the event."""
         return self._value
 
     @property
-    def event_time(self):
+    def event_time(self) -> datetime:
         """Returns the event time of the event."""
         return self._event_time
 
     @property
-    def watermark(self):
+    def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark
 

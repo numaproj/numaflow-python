@@ -4,7 +4,7 @@ import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Callable, AsyncIterable, List
+from typing import Callable, AsyncIterable, List, Iterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -35,6 +35,19 @@ UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
 UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+
+
+async def datum_generator(
+    request_iterator: AsyncIterable[udfunction_pb2.Datum],
+) -> AsyncIterable[Datum]:
+    async for d in request_iterator:
+        datum = Datum(
+            keys=list(d.keys),
+            value=d.value,
+            event_time=d.event_time.event_time.ToDatetime(),
+            watermark=d.watermark.watermark.ToDatetime(),
+        )
+        yield datum
 
 
 class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -160,7 +173,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             msgts = self.__mapt_handler(
                 request.keys,
                 Datum(
-                    keys=request.keys,
+                    keys=list(request.keys),
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
@@ -178,7 +191,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
             datums.append(
                 udfunction_pb2.Datum(
-                    keys=msgt.keys,
+                    keys=list(msgt.keys),
                     value=msgt.value,
                     event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
                     watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
@@ -188,7 +201,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def ReduceFn(
         self,
-        request_iterator: AsyncIterable[Datum],
+        request_iterator: AsyncIterable[udfunction_pb2.Datum],
         context: NumaflowServicerContext,
     ) -> udfunction_pb2.DatumList:
         """
@@ -212,8 +225,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
+        datum_iterator = datum_generator(request_iterator=request_iterator)
+
         response_task = asyncio.create_task(
-            self.__async_reduce_handler(interval_window, request_iterator)
+            self.__async_reduce_handler(interval_window, datum_iterator)
         )
 
         # Save a reference to the result of this function, to avoid a
@@ -228,11 +243,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             await fut
             yield udfunction_pb2.DatumList(elements=fut.result())
 
-    async def __async_reduce_handler(self, interval_window, request_iterator: AsyncIterable[Datum]):
+    async def __async_reduce_handler(self, interval_window, datum_iterator: AsyncIterable[Datum]):
         callable_dict = {}
         # iterate through all the values
-        async for d in request_iterator:
-            keys = d.keys or []
+        async for d in datum_iterator:
+            keys = d.keys()
             unified_key = DELIMITER.join(keys)
             result = callable_dict.get(unified_key, None)
 

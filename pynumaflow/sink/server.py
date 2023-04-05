@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Iterator
+from typing import Callable, Iterator, AsyncIterable, Iterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -23,6 +23,18 @@ if os.getenv("PYTHONDEBUG"):
 UDSinkCallable = Callable[[Iterator[Datum]], Responses]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+
+
+def datum_generator(request_iterator: Iterable[udsink_pb2.Datum]) -> Iterable[Datum]:
+    for d in request_iterator:
+        datum = Datum(
+            keys=list(d.keys),
+            sink_msg_id=d.id,
+            value=d.value,
+            event_time=d.event_time.event_time.ToDatetime(),
+            watermark=d.watermark.watermark.ToDatetime(),
+        )
+        yield datum
 
 
 class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
@@ -68,20 +80,21 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     def SinkFn(
-        self, request_iterator: Iterator[Datum], context: NumaflowServicerContext
+        self, request_iterator: Iterator[udsink_pb2.Datum], context: NumaflowServicerContext
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
         The pascal case function name comes from the proto udsink_pb2_grpc.py file.
         """
         # if there is an exception, we will mark all the responses as a failure
+        datum_iterator = datum_generator(request_iterator)
         try:
-            rspns = self.__sink_handler(request_iterator)
+            rspns = self.__sink_handler(datum_iterator)
         except Exception as err:
             err_msg = "UDSinkError: %r" % err
             _LOGGER.critical(err_msg, exc_info=True)
             rspns = Responses()
-            for _datum in request_iterator:
+            for _datum in datum_iterator:
                 rspns.append(Response.as_failure(_datum.id, err_msg))
 
         responses = []

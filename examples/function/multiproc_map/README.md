@@ -23,5 +23,3 @@ if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
     grpc_server.start_multiproc()
 ```
-
-To 

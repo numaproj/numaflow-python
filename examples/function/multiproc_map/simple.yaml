@@ -15,11 +15,12 @@ spec:
     - name: mult
       udf:
         container:
-          image: "quay.io/kohlisid/multiproc:v2"
-#          image: "multi:v1"
+          image: "quay.io/kohlisid/multiproc:mult3"
           env:
             - name: PYTHONDEBUG
               value: "true"
+            - name: NUM_CPU_MULTIPROC
+              value: "2"  # DO NOT forget the double quotes!!!
       containerTemplate:
         resources:
           limits:
@@ -33,6 +34,8 @@ spec:
             value: "true" # DO NOT forget the double quotes!!!
           - name: MAP_MULTIPROC
             value: "true" # DO NOT forget the double quotes!!!
+          - name: NUM_CPU_MULTIPROC
+            value: "2"  # DO NOT forget the double quotes!!!
 
     - name: out
       sink:

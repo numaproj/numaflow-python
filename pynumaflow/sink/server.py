@@ -2,7 +2,7 @@ import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Iterator, AsyncIterable, Iterable
+from typing import Callable, Iterator, Iterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2

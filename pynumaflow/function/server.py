@@ -4,7 +4,7 @@ import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Callable, AsyncIterable, List, Iterable
+from typing import Callable, AsyncIterable, List
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2

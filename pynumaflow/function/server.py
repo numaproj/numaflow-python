@@ -16,7 +16,8 @@ from pynumaflow._constants import (
     WIN_START_TIME,
     WIN_END_TIME,
     MAX_MESSAGE_SIZE,
-    STREAM_EOF, DELIMITER,
+    STREAM_EOF,
+    DELIMITER,
 )
 from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult

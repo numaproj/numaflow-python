@@ -26,11 +26,12 @@ _ONE_DAY = datetime.timedelta(days=1)
 
 class MultiProcServer:
     """
-      Provides a multiprocessing implementation of the grpc server.
-      They use a given TCP socket with SOCK_REUSE to allow all servers,
-      to listen on the same port. We start servers equal to the CPU count of the
-      system.
+    Provides a multiprocessing implementation of the grpc server.
+    They use a given TCP socket with SOCK_REUSE to allow all servers,
+    to listen on the same port. We start servers equal to the CPU count of the
+    system.
     """
+
     def __init__(self, udf_service, server_options):
         self.udf_service = udf_service
         self.sock_path = MULTIPROC_FUNCTION_SOCK_PATH
@@ -47,19 +48,20 @@ class MultiProcServer:
 
     def _run_server(self, bind_address):
         """Start a server in a subprocess."""
-        _LOGGER.info('Starting new server.')
-        options = [('grpc.so_reuseport', 1), ('grpc.so_reuseaddr', 1)]
+        _LOGGER.info("Starting new server.")
+        options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
         for x in options:
             self.server_options.append(x)
-        server = grpc.server(futures.ThreadPoolExecutor(
-            max_workers=self._THREAD_CONCURRENCY, ),
-            options=self.server_options)
+        server = grpc.server(
+            futures.ThreadPoolExecutor(
+                max_workers=self._THREAD_CONCURRENCY,
+            ),
+            options=self.server_options,
+        )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self.udf_service, server)
         server.add_insecure_port(bind_address)
         server.start()
-        _LOGGER.info(
-            "GRPC Server MULTIPROC listening on: %s %d", bind_address, os.getpid()
-        )
+        _LOGGER.info("GRPC Server MULTIPROC listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()
 
     @contextlib.contextmanager
@@ -72,14 +74,14 @@ class MultiProcServer:
             raise RuntimeError("Failed to set SO_REUSEADDR.")
         if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT) == 0:
             raise RuntimeError("Failed to set SO_REUSEPORT.")
-        sock.bind(('', self.sock_path))
+        sock.bind(("", self.sock_path))
         try:
             yield sock.getsockname()[1]
         finally:
             sock.close()
 
     def start(self) -> None:
-        """ Start N grpc servers in different processes where N = CPU Count """
+        """Start N grpc servers in different processes where N = CPU Count"""
         with self._reserve_port() as port:
             bind_address = f"{MULTIPROC_FUNCTION_SOCK_ADDR}:{port}"
             workers = []
@@ -87,8 +89,7 @@ class MultiProcServer:
                 # NOTE: It is imperative that the worker subprocesses be forked before
                 # any gRPC servers start up. See
                 # https://github.com/grpc/grpc/issues/16001 for more details.
-                worker = multiprocessing.Process(target=self._run_server,
-                                                 args=(bind_address,))
+                worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
                 worker.start()
                 workers.append(worker)
             for worker in workers:

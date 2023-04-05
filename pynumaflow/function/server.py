@@ -188,7 +188,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
     async def ReduceFn(
         self,
-        request_iterator: AsyncIterable[udfunction_pb2.Datum],
+        request_iterator: AsyncIterable[Datum],
         context: NumaflowServicerContext,
     ) -> udfunction_pb2.DatumList:
         """

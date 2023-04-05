@@ -231,8 +231,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         callable_dict = {}
         # iterate through all the values
         async for d in request_iterator:
-            keys = list(d.keys)
-            unified_key = "".join(keys)
+            keys = d.keys or []
+            unified_key = ":".join(keys)
             result = callable_dict.get(unified_key, None)
 
             if not result:

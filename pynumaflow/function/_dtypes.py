@@ -215,7 +215,7 @@ class Datum:
     def __repr__(self):
         return str(self)
 
-    def keys(self):
+    def keys(self) -> List[str]:
         """Returns the keys of the event"""
         return self._keys
 
@@ -302,6 +302,6 @@ class ReduceResult:
         return self._iterator
 
     @property
-    def keys(self):
+    def keys(self) -> List[str]:
         """Returns the keys of the partition."""
         return self._key

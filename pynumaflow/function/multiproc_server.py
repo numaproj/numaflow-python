@@ -35,7 +35,7 @@ class MultiProcServer:
     def __init__(self, udf_service, server_options):
         self.udf_service = udf_service
         self.sock_path = MULTIPROC_FUNCTION_SOCK_PATH
-        self._PROCESS_COUNT = multiprocessing.cpu_count()
+        self._PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
         self._THREAD_CONCURRENCY = self._PROCESS_COUNT
         self.server_options = server_options
 

@@ -340,5 +340,5 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         """
         Starts multiple gRPC servers, all bound on a given TCP socket.
         """
-        server = MultiProcServer(self, server_options=self._server_options)
+        server = MultiProcServer(udf_service=self, server_options=self._server_options)
         server.start()

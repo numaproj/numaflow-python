@@ -8,20 +8,18 @@ from concurrent import futures
 import logging
 import multiprocessing
 import socket
+from typing import TypeVar
 import grpc
-
 from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR
+from pynumaflow.exceptions import SocketError
 from pynumaflow.function.proto import udfunction_pb2_grpc
-
 from pynumaflow import setup_logging
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-
-class SocketError(Exception):
-    """To raise an error while creating socket or setting its property"""
+UDFServicer = TypeVar("UDFServicer", bound="UserDefinedFunctionServicer")
 
 
 class MultiProcServer:
@@ -53,7 +51,7 @@ class MultiProcServer:
 
     """
 
-    def __init__(self, udf_service, server_options):
+    def __init__(self, udf_service: UDFServicer, server_options: list[tuple[str, int]]):
         self.udf_service = udf_service
         self.sock_path = MULTIPROC_FUNCTION_SOCK_PORT
         self._PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))

@@ -8,7 +8,6 @@ from concurrent import futures
 import logging
 import multiprocessing
 import socket
-from typing import TypeVar
 import grpc
 from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR
 from pynumaflow.exceptions import SocketError

@@ -66,7 +66,7 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
 
 if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(reduce_handler=my_handler)
-    asyncio.run(grpc_server.start())
+    asyncio.run(grpc_server.start_async())
     asyncio.run(*grpc_server.cleanup_coroutines)
 ```
 

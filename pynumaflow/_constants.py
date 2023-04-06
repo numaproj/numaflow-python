@@ -1,5 +1,5 @@
 FUNCTION_SOCK_PATH = "/var/run/numaflow/function.sock"
-MULTIPROC_FUNCTION_SOCK_PATH = 55551
+MULTIPROC_FUNCTION_SOCK_PORT = 55551
 MULTIPROC_FUNCTION_SOCK_ADDR = "0.0.0.0"
 
 SINK_SOCK_PATH = "/var/run/numaflow/udsink.sock"

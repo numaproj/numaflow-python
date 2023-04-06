@@ -22,12 +22,12 @@ def my_handler(key: str, datum: Datum) -> Messages:
     return messages
 
 
-"""
-    Example of starting a multiprocessing map vertex.
-    To enable set the env variable 
-        MAP_MULTIPROC="true" 
-    in the pipeline config for the numa container.
-"""
 if __name__ == "__main__":
+    """
+    Example of starting a multiprocessing map vertex.
+    To enable set the env variable
+        MAP_MULTIPROC="true"
+    in the pipeline config for the numa container.
+    """
     grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
     grpc_server.start_multiproc()

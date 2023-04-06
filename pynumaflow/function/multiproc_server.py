@@ -19,8 +19,6 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-UDFServicer = TypeVar("UDFServicer", bound="UserDefinedFunctionServicer")
-
 
 class MultiProcServer:
     """
@@ -51,7 +49,7 @@ class MultiProcServer:
 
     """
 
-    def __init__(self, udf_service: UDFServicer, server_options: list[tuple[str, int]]):
+    def __init__(self, udf_service, server_options):
         self.udf_service = udf_service
         self.sock_path = MULTIPROC_FUNCTION_SOCK_PORT
         self._PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))

@@ -1,3 +1,5 @@
+from typing import List
+
 import datetime
 
 from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
@@ -16,7 +18,7 @@ january_first_2022 = datetime.datetime.fromtimestamp(1640995200)
 january_first_2023 = datetime.datetime.fromtimestamp(1672531200)
 
 
-def my_handler(key: str, datum: Datum) -> MessageTs:
+def my_handler(keys: List[str], datum: Datum) -> MessageTs:
     val = datum.value
     event_time = datum.event_time
     messages = MessageTs()
@@ -29,12 +31,12 @@ def my_handler(key: str, datum: Datum) -> MessageTs:
             "Got event time:%s, it is within year 2022, so forwarding to within_year_2022",
             event_time,
         )
-        messages.append(MessageT.to_vtx("within_year_2022", val, january_first_2022))
+        messages.append(MessageT.to_vtx(["within_year_2022"], val, january_first_2022))
     else:
         logging.info(
             "Got event time:%s, it is after year 2022, so forwarding to after_year_2022", event_time
         )
-        messages.append(MessageT.to_vtx("after_year_2022", val, january_first_2023))
+        messages.append(MessageT.to_vtx(["after_year_2022"], val, january_first_2023))
 
     return messages
 

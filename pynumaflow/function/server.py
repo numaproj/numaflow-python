@@ -139,12 +139,13 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         Applies a function to each datum element.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
-
+        # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
+        # we need to explicitly convert it to list
         try:
             msgs = self.__map_handler(
-                request.keys,
+                list(request.keys),
                 Datum(
-                    keys=request.keys,
+                    keys=list(request.keys),
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
@@ -169,9 +170,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
         """
 
+        # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
+        # we need to explicitly convert it to list
         try:
             msgts = self.__mapt_handler(
-                request.keys,
+                list(request.keys),
                 Datum(
                     keys=list(request.keys),
                     value=request.value,

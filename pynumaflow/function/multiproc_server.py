@@ -5,16 +5,12 @@ from __future__ import print_function
 import contextlib
 import os
 from concurrent import futures
-import datetime
 import logging
 import multiprocessing
 import socket
-import time
 import grpc
 
 from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR
-
-# from pynumaflow.function import UserDefinedFunctionServicer
 from pynumaflow.function.proto import udfunction_pb2_grpc
 
 from pynumaflow import setup_logging

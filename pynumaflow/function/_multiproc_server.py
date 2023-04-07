@@ -26,7 +26,7 @@ class MultiProcServer:
     to listen on the same port. We start servers equal to the CPU count of the
     system.
 
-    Attributes
+    Arguments
     ----------
     udf_service :  UserDefinedFunctionServicer
       The interface for the User Defined Function (UDFunction)
@@ -35,16 +35,6 @@ class MultiProcServer:
 
     server_options :  list[tuple[str, int]]
         the custom options for configuring the grpc server
-
-    _PROCESS_COUNT: int
-        the number of processes to create with each running a
-        single grpc server
-
-    _THREAD_CONCURRENCY: int
-        thread concurrency for the grpc executor pool
-
-    sock_path:
-        the port to which the servers will bind
 
     """
 
@@ -70,7 +60,7 @@ class MultiProcServer:
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self.udf_service, server)
         server.add_insecure_port(bind_address)
         server.start()
-        _LOGGER.info("GRPC Server MULTIPROC listening on: %s %d", bind_address, os.getpid())
+        _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()
 
     @contextlib.contextmanager

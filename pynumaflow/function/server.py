@@ -9,7 +9,7 @@ from typing import Callable, AsyncIterable, List
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from pynumaflow.function.multiproc_server import MultiProcServer
+from pynumaflow.function._multiproc_server import MultiProcServer
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (

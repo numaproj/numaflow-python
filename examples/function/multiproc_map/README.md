@@ -23,5 +23,5 @@ if __name__ == "__main__":
     grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
     grpc_server.start_multiproc()
 ```
-3) Set the flag `NUM_CPU_MULTIPROC="n"` for the UDF and numa container,
+3) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF and numa container,
 to set the value of the number of processes to be created. 

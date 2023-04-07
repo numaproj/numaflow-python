@@ -11,3 +11,7 @@ exclude_lines =
     def start
     def start_async
     def __serve_async
+    def start_multiproc
+    def _run_server
+    def _reserve_port
+    if os.getenv("PYTHONDEBUG"):

@@ -1,0 +1,48 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: simple-pipeline
+spec:
+  limits:
+    readBatchSize: 2
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        generator:
+          rpu: 10
+          duration: 1s
+    - name: mult
+      udf:
+        container:
+          image: "quay.io/numaio/numaflow-python/multiproc:latest"
+          env:
+            - name: PYTHONDEBUG
+              value: "true"
+            - name: NUM_CPU_MULTIPROC
+              value: "2"  # DO NOT forget the double quotes!!!
+      containerTemplate:
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: "500m"
+            memory: 1Gi
+        env:
+          - name: NUMAFLOW_DEBUG
+            value: "true" # DO NOT forget the double quotes!!!
+          - name: MAP_MULTIPROC
+            value: "true" # DO NOT forget the double quotes!!!
+          - name: NUM_CPU_MULTIPROC
+            value: "2"  # DO NOT forget the double quotes!!!
+
+    - name: out
+      sink:
+        # A simple log printing sink
+        log: {}
+  edges:
+    - from: in
+      to: mult
+    - from: mult
+      to: out

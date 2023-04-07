@@ -13,3 +13,4 @@ exclude_lines =
     def __serve_async
     def start_multiproc
     def _run_server
+    def _reserve_port

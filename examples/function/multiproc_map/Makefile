@@ -1,3 +1,3 @@
 .PHONY: image
 image:
-	docker build -t "quay.io/kohlisid/multiproc:latest" .
+	docker build -t "quay.io/numaio/numaflow-python/multiproc:latest" .

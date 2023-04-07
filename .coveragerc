@@ -14,3 +14,4 @@ exclude_lines =
     def start_multiproc
     def _run_server
     def _reserve_port
+    if os.getenv("PYTHONDEBUG"):

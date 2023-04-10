@@ -21,7 +21,7 @@ from pynumaflow._constants import (
     DELIMITER,
 )
 from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
-from pynumaflow.function._dtypes import ReduceResult
+from pynumaflow.function._dtypes import ReduceResult, DatumMetadata
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
@@ -47,6 +47,10 @@ async def datum_generator(
             value=d.value,
             event_time=d.event_time.event_time.ToDatetime(),
             watermark=d.watermark.watermark.ToDatetime(),
+            metadata=DatumMetadata(
+                msg_id=d.metadata.id,
+                num_delivered=d.metadata.num_delivered,
+            ),
         )
         yield datum
 
@@ -150,6 +154,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
+                    metadata=DatumMetadata(
+                        msg_id=request.metadata.id,
+                        num_delivered=request.metadata.num_delivered,
+                    ),
                 ),
             )
         except Exception as err:
@@ -181,6 +189,10 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
+                    metadata=DatumMetadata(
+                        msg_id=request.metadata.id,
+                        num_delivered=request.metadata.num_delivered,
+                    ),
                 ),
             )
         except Exception as err:

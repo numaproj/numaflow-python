@@ -53,6 +53,7 @@ message DatumResponse {
   bytes value = 2;
   EventTime event_time = 3;
   Watermark watermark = 4;
+  repeated string tags = 5;
 }
 
 /**

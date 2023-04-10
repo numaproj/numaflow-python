@@ -159,7 +159,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         datums = []
 
         for msg in msgs.items():
-            datums.append(udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value))
+            datums.append(
+                udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags)
+            )
 
         return udfunction_pb2.DatumResponseList(elements=datums)
 
@@ -197,6 +199,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
                 udfunction_pb2.DatumResponse(
                     keys=list(msgt.keys),
                     value=msgt.value,
+                    tags=msgt.tags,
                     event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
                     watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
                 )
@@ -294,7 +297,9 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         datum_responses = []
         for msg in msgs.items():
-            datum_responses.append(udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value))
+            datum_responses.append(
+                udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags)
+            )
 
         return datum_responses
 

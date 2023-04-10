@@ -17,18 +17,18 @@ class UserDefinedFunctionStub(object):
         """
         self.MapFn = channel.unary_unary(
             "/function.v1.UserDefinedFunction/MapFn",
-            request_serializer=udfunction__pb2.Datum.SerializeToString,
-            response_deserializer=udfunction__pb2.DatumList.FromString,
+            request_serializer=udfunction__pb2.DatumRequest.SerializeToString,
+            response_deserializer=udfunction__pb2.DatumResponseList.FromString,
         )
         self.MapTFn = channel.unary_unary(
             "/function.v1.UserDefinedFunction/MapTFn",
-            request_serializer=udfunction__pb2.Datum.SerializeToString,
-            response_deserializer=udfunction__pb2.DatumList.FromString,
+            request_serializer=udfunction__pb2.DatumRequest.SerializeToString,
+            response_deserializer=udfunction__pb2.DatumResponseList.FromString,
         )
         self.ReduceFn = channel.stream_stream(
             "/function.v1.UserDefinedFunction/ReduceFn",
-            request_serializer=udfunction__pb2.Datum.SerializeToString,
-            response_deserializer=udfunction__pb2.DatumList.FromString,
+            request_serializer=udfunction__pb2.DatumRequest.SerializeToString,
+            response_deserializer=udfunction__pb2.DatumResponseList.FromString,
         )
         self.IsReady = channel.unary_unary(
             "/function.v1.UserDefinedFunction/IsReady",
@@ -72,18 +72,18 @@ def add_UserDefinedFunctionServicer_to_server(servicer, server):
     rpc_method_handlers = {
         "MapFn": grpc.unary_unary_rpc_method_handler(
             servicer.MapFn,
-            request_deserializer=udfunction__pb2.Datum.FromString,
-            response_serializer=udfunction__pb2.DatumList.SerializeToString,
+            request_deserializer=udfunction__pb2.DatumRequest.FromString,
+            response_serializer=udfunction__pb2.DatumResponseList.SerializeToString,
         ),
         "MapTFn": grpc.unary_unary_rpc_method_handler(
             servicer.MapTFn,
-            request_deserializer=udfunction__pb2.Datum.FromString,
-            response_serializer=udfunction__pb2.DatumList.SerializeToString,
+            request_deserializer=udfunction__pb2.DatumRequest.FromString,
+            response_serializer=udfunction__pb2.DatumResponseList.SerializeToString,
         ),
         "ReduceFn": grpc.stream_stream_rpc_method_handler(
             servicer.ReduceFn,
-            request_deserializer=udfunction__pb2.Datum.FromString,
-            response_serializer=udfunction__pb2.DatumList.SerializeToString,
+            request_deserializer=udfunction__pb2.DatumRequest.FromString,
+            response_serializer=udfunction__pb2.DatumResponseList.SerializeToString,
         ),
         "IsReady": grpc.unary_unary_rpc_method_handler(
             servicer.IsReady,
@@ -118,8 +118,8 @@ class UserDefinedFunction(object):
             request,
             target,
             "/function.v1.UserDefinedFunction/MapFn",
-            udfunction__pb2.Datum.SerializeToString,
-            udfunction__pb2.DatumList.FromString,
+            udfunction__pb2.DatumRequest.SerializeToString,
+            udfunction__pb2.DatumResponseList.FromString,
             options,
             channel_credentials,
             insecure,
@@ -147,8 +147,8 @@ class UserDefinedFunction(object):
             request,
             target,
             "/function.v1.UserDefinedFunction/MapTFn",
-            udfunction__pb2.Datum.SerializeToString,
-            udfunction__pb2.DatumList.FromString,
+            udfunction__pb2.DatumRequest.SerializeToString,
+            udfunction__pb2.DatumResponseList.FromString,
             options,
             channel_credentials,
             insecure,
@@ -176,8 +176,8 @@ class UserDefinedFunction(object):
             request_iterator,
             target,
             "/function.v1.UserDefinedFunction/ReduceFn",
-            udfunction__pb2.Datum.SerializeToString,
-            udfunction__pb2.DatumList.FromString,
+            udfunction__pb2.DatumRequest.SerializeToString,
+            udfunction__pb2.DatumResponseList.FromString,
             options,
             channel_credentials,
             insecure,

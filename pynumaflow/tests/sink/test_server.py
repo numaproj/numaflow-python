@@ -77,13 +77,13 @@ class TestServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         test_datums = [
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_0",
                 value=mock_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
                 watermark=udsink_pb2.Watermark(watermark=watermark_timestamp),
             ),
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_1",
                 value=mock_err_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
@@ -120,13 +120,13 @@ class TestServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         test_datums = [
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_0",
                 value=mock_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
                 watermark=udsink_pb2.Watermark(watermark=watermark_timestamp),
             ),
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_1",
                 value=mock_err_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),

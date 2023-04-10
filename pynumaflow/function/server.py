@@ -39,7 +39,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 async def datum_generator(
-    request_iterator: AsyncIterable[udfunction_pb2.Datum],
+    request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
 ) -> AsyncIterable[Datum]:
     async for d in request_iterator:
         datum = Datum(
@@ -134,8 +134,8 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         ]
 
     def MapFn(
-        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
+        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+    ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
@@ -159,13 +159,13 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
         datums = []
 
         for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
+            datums.append(udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value))
 
-        return udfunction_pb2.DatumList(elements=datums)
+        return udfunction_pb2.DatumResponseList(elements=datums)
 
     def MapTFn(
-        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
+        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+    ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
         The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
@@ -194,20 +194,20 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             watermark_timestamp = _timestamp_pb2.Timestamp()
             watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
             datums.append(
-                udfunction_pb2.Datum(
+                udfunction_pb2.DatumResponse(
                     keys=list(msgt.keys),
                     value=msgt.value,
                     event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
                     watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
                 )
             )
-        return udfunction_pb2.DatumList(elements=datums)
+        return udfunction_pb2.DatumResponseList(elements=datums)
 
     async def ReduceFn(
         self,
-        request_iterator: AsyncIterable[udfunction_pb2.Datum],
+        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
         context: NumaflowServicerContext,
-    ) -> udfunction_pb2.DatumList:
+    ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
@@ -245,7 +245,7 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
 
         for fut in results_futures:
             await fut
-            yield udfunction_pb2.DatumList(elements=fut.result())
+            yield udfunction_pb2.DatumResponseList(elements=fut.result())
 
     async def __async_reduce_handler(self, interval_window, datum_iterator: AsyncIterable[Datum]):
         callable_dict = {}
@@ -292,11 +292,11 @@ class UserDefinedFunctionServicer(udfunction_pb2_grpc.UserDefinedFunctionService
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
             raise err
 
-        datums = []
+        datum_responses = []
         for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
+            datum_responses.append(udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value))
 
-        return datums
+        return datum_responses
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

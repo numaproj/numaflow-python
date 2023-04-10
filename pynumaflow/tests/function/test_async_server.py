@@ -52,7 +52,7 @@ def start_reduce_streaming_request() -> (Datum, tuple):
     watermark_timestamp = _timestamp_pb2.Timestamp()
     watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-    request = udfunction_pb2.Datum(
+    request = udfunction_pb2.DatumRequest(
         value=mock_message(),
         event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
         watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
@@ -128,7 +128,7 @@ class TestAsyncServer(unittest.TestCase):
             watermark_timestamp = _timestamp_pb2.Timestamp()
             watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-            request = udfunction_pb2.Datum(
+            request = udfunction_pb2.DatumRequest(
                 keys=["test"],
                 value=mock_message(),
                 event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
@@ -161,7 +161,7 @@ class TestAsyncServer(unittest.TestCase):
         watermark_timestamp = _timestamp_pb2.Timestamp()
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-        request = udfunction_pb2.Datum(
+        request = udfunction_pb2.DatumRequest(
             keys=["test"],
             value=mock_message(),
             event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),

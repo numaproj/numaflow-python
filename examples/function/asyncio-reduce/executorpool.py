@@ -1,11 +1,10 @@
+import aiorun
 import asyncio
 import concurrent.futures
 import os
+import requests
 import time
 from typing import AsyncIterable
-
-import aiorun
-import requests
 
 from pynumaflow import setup_logging
 from pynumaflow.function import (

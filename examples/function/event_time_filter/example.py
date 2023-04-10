@@ -1,9 +1,8 @@
+import datetime
+import logging
 from typing import List
 
-import datetime
-
 from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
-import logging
 
 """
 This is a simple User Defined Function example which receives a message, applies the following

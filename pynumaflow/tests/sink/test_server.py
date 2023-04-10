@@ -1,11 +1,10 @@
 import unittest
 from datetime import datetime, timezone
-from typing import Iterator
-
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
+from typing import Iterator
 
 from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
 from pynumaflow.sink.proto import udsink_pb2

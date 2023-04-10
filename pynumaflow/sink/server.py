@@ -1,11 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor
+
+import grpc
 import logging
 import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Iterator, Iterable
-
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
+from typing import Callable, Iterator, Iterable
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (

@@ -1,18 +1,17 @@
-import os
-import unittest
 from unittest import mock
 
 import grpc
+import os
+import unittest
 
 from pynumaflow.function import UserDefinedFunctionServicer
 from pynumaflow.function._multiproc_server import MultiProcServer
 from pynumaflow.function.proto import udfunction_pb2_grpc
+from pynumaflow.tests.function.test_async_server import async_reduce_handler
 from pynumaflow.tests.function.test_server import (
     mapt_handler,
     map_handler,
 )
-
-from pynumaflow.tests.function.test_async_server import async_reduce_handler
 
 
 def mockenv(**envvars):

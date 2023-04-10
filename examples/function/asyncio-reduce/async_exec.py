@@ -1,12 +1,11 @@
+import aiohttp
+import aiorun
 import asyncio
 import json
+import time
 from typing import AsyncIterable, List
 
-import aiorun
-import aiohttp
 from pynumaflow import setup_logging
-import time
-
 from pynumaflow.function import (
     Messages,
     Message,

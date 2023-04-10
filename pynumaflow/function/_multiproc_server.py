@@ -2,17 +2,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import contextlib
-import os
 from concurrent import futures
+
+import contextlib
+import grpc
 import logging
 import multiprocessing
+import os
 import socket
-import grpc
+
+from pynumaflow import setup_logging
 from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR
 from pynumaflow.exceptions import SocketError
 from pynumaflow.function.proto import udfunction_pb2_grpc
-from pynumaflow import setup_logging
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):

@@ -1,5 +1,4 @@
 import unittest
-from dataclasses import FrozenInstanceError
 
 from pynumaflow.function import Messages, Message, DROP
 

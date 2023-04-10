@@ -1,5 +1,4 @@
 import unittest
-from dataclasses import FrozenInstanceError
 from datetime import datetime, timezone
 
 from pynumaflow.function import MessageTs, MessageT, DROP

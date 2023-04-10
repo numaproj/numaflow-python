@@ -1,6 +1,5 @@
-from typing import AsyncIterable, List
-
 import aiorun
+from typing import AsyncIterable, List
 
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 

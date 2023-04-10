@@ -1,13 +1,11 @@
 import asyncio
+import grpc
 import logging
 import threading
 import unittest
-from typing import AsyncIterable, List
-
-import grpc
-
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
+from typing import AsyncIterable, List
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME

@@ -1,4 +1,5 @@
 from typing import Iterator
+
 from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
 
 

@@ -2,7 +2,7 @@ from asyncio import Task
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Type, List
+from typing import TypeVar, List
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 

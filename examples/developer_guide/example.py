@@ -1,5 +1,6 @@
-from typing import Iterator, List
 import aiorun
+from typing import Iterator, List
+
 from pynumaflow.function import (
     Messages,
     Message,

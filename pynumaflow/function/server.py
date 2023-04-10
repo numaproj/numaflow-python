@@ -1,15 +1,14 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import asyncio
+import grpc
 import logging
 import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
-from typing import Callable, AsyncIterable, List
-
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from pynumaflow.function._multiproc_server import MultiProcServer
+from typing import Callable, AsyncIterable, List
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -22,6 +21,7 @@ from pynumaflow._constants import (
 )
 from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult
+from pynumaflow.function._multiproc_server import MultiProcServer
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc

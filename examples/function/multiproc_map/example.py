@@ -1,6 +1,5 @@
-from typing import List
-
 import math
+from typing import List
 
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 

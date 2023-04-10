@@ -31,12 +31,16 @@ def my_handler(keys: List[str], datum: Datum) -> MessageTs:
             "Got event time:%s, it is within year 2022, so forwarding to within_year_2022",
             event_time,
         )
-        messages.append(MessageT.to_vtx(["within_year_2022"], val, january_first_2022))
+        messages.append(
+            MessageT(val).with_keys(["within_year_2022"]).with_event_time(january_first_2022)
+        )
     else:
         logging.info(
             "Got event time:%s, it is after year 2022, so forwarding to after_year_2022", event_time
         )
-        messages.append(MessageT.to_vtx(["after_year_2022"], val, january_first_2023))
+        messages.append(
+            MessageT(val).with_keys(["after_year_2022"]).with_event_time(january_first_2023)
+        )
 
     return messages
 

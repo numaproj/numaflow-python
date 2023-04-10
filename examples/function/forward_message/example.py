@@ -8,7 +8,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
     _ = datum.event_time
     _ = datum.watermark
     messages = Messages()
-    messages.append(Message.to_vtx(keys, val))
+    messages.append(Message(keys, val))
     return messages
 
 

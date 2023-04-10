@@ -1,14 +1,12 @@
 from asyncio import Task
+
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partialmethod
-from typing import TypeVar, Type, List, Optional
+from typing import TypeVar, Type, List
 
 from pynumaflow.function.asynciter import NonBlockingIterator
-from pynumaflow.types import NoPublicConstructor
 
-DROP = b"U+005C__DROP__"
-ALL = b"U+005C__ALL__"
+DROP = "U+005C__DROP__"
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -16,8 +14,8 @@ MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
 
 
-@dataclass(frozen=True)
-class Message(metaclass=NoPublicConstructor):
+@dataclass()
+class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
 
@@ -28,17 +26,27 @@ class Message(metaclass=NoPublicConstructor):
     """
 
     _keys: List[str]
+    _tags: List[str]
     _value: bytes = b""
 
-    @classmethod
-    def to_vtx(cls: Type[M], keys: List[str], value: bytes) -> M:
+    def __init__(self, value: bytes):
         """
         Returns a Message object to send value to a vertex.
         """
-        return cls._create(keys, value)
+        self._tags = []
+        self._keys = []
+        self._value = value
 
-    to_all = partialmethod(to_vtx, [ALL])
-    to_drop = partialmethod(to_vtx, [DROP], b"")
+    def to_drop(self):
+        return self.with_tags([DROP])
+
+    def with_keys(self, keys: List[str]):
+        self._keys = keys
+        return self
+
+    def with_tags(self, tags: List[str]):
+        self._tags = tags
+        return self
 
     @property
     def value(self):
@@ -47,6 +55,10 @@ class Message(metaclass=NoPublicConstructor):
     @property
     def keys(self):
         return self._keys
+
+    @property
+    def tags(self):
+        return self._tags
 
 
 class Messages:
@@ -74,15 +86,6 @@ class Messages:
     def items(self) -> List[Message]:
         return self._messages
 
-    @classmethod
-    def as_forward_all(cls: Type[Ms], value: Optional[bytes]) -> Ms:
-        msgs = cls()
-        if value:
-            msgs.append(Message.to_all(value=value))
-        else:
-            msgs.append(Message.to_drop())
-        return msgs
-
     def dumps(self) -> str:
         return str(self)
 
@@ -90,8 +93,8 @@ class Messages:
         pass
 
 
-@dataclass(frozen=True)
-class MessageT(metaclass=NoPublicConstructor):
+@dataclass()
+class MessageT:
     """
     Basic datatype for data passing to the next vertex/vertices.
 
@@ -103,19 +106,33 @@ class MessageT(metaclass=NoPublicConstructor):
     """
 
     _keys: List[str]
+    _tags: List[str]
     _value: bytes = b""
     # There is no year 0, so setting following as default event time.
     _event_time: datetime = datetime(1, 1, 1, 0, 0)
 
-    @classmethod
-    def to_vtx(cls: Type[MT], keys: List[str], value: bytes, event_time: datetime) -> MT:
+    def __init__(self, value: bytes):
         """
-        Returns a MessageT object to send value to a vertex.
+        Returns a Message object to send value to a vertex.
         """
-        return cls._create(keys, value, event_time)
+        self._tags = []
+        self._keys = []
+        self._value = value
 
-    to_all = partialmethod(to_vtx, [ALL])
-    to_drop = partialmethod(to_vtx, [DROP], b"", datetime(1, 1, 1, 0, 0))
+    def to_drop(self):
+        return self.with_tags([DROP])
+
+    def with_keys(self, keys: List[str]):
+        self._keys = keys
+        return self
+
+    def with_tags(self, tags: List[str]):
+        self._tags = tags
+        return self
+
+    def with_event_time(self, event_time: datetime):
+        self._event_time = event_time
+        return self
 
     @property
     def event_time(self):
@@ -128,6 +145,10 @@ class MessageT(metaclass=NoPublicConstructor):
     @property
     def value(self):
         return self._value
+
+    @property
+    def tags(self):
+        return self._tags
 
 
 class MessageTs:
@@ -154,17 +175,6 @@ class MessageTs:
 
     def items(self) -> List[MessageT]:
         return self._message_ts
-
-    @classmethod
-    def as_forward_all(
-        cls: Type[MTs], value: Optional[bytes], event_time: Optional[datetime]
-    ) -> MTs:
-        msg_ts = cls()
-        if value and event_time:
-            msg_ts.append(MessageT.to_all(value=value, event_time=event_time))
-        else:
-            msg_ts.append(MessageT.to_drop())
-        return msg_ts
 
     def dumps(self) -> str:
         return str(self)

@@ -9,8 +9,11 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
     _ = datum.watermark
     strs = val.decode("utf-8").split(",")
     messages = Messages()
+    if len(strs) == 0:
+        messages.append(Message(b"").to_drop())
+        return messages
     for s in strs:
-        messages.append(Message.to_vtx(keys, str.encode(s)))
+        messages.append(Message(str.encode(s)))
     return messages
 
 

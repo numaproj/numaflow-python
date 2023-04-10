@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from typing import AsyncIterable
+from typing import AsyncIterable, List
 
 import grpc
 
@@ -26,7 +26,9 @@ from pynumaflow.tests.function.test_server import (
 LOGGER = setup_logging(__name__)
 
 
-async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def async_reduce_handler(
+    key: List[str], datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -36,7 +38,7 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
         f"interval_window_end:{interval_window.end}"
     )
 
-    return Messages(Message.to_vtx(key, str.encode(msg)))
+    return Messages(Message(str.encode(msg)).with_keys(key))
 
 
 def request_generator(count, request, resetkey: bool = False):

@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import AsyncIterable
+from typing import AsyncIterable, List
 
 import aiorun
 import aiohttp
@@ -29,7 +29,7 @@ async def http_request(session, url):
             return "Error"
 
 
-async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     async with aiohttp.ClientSession() as session:
         tasks = []
@@ -44,7 +44,7 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
         f"batch_time:{end_time-start_time} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message.to_vtx(key, str.encode(msg)))
+    return Messages(Message(str.encode(msg)).with_keys(keys))
 
 
 if __name__ == "__main__":

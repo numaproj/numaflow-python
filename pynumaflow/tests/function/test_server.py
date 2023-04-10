@@ -16,7 +16,7 @@ from pynumaflow.function import (
     Metadata,
 )
 from pynumaflow.function.proto import udfunction_pb2
-from pynumaflow.function.server import UserDefinedFunctionServicer
+from pynumaflow.function.sync_server import SyncServerServicer
 
 
 def map_handler(key: str, datum: Datum) -> Messages:
@@ -95,14 +95,14 @@ def mock_interval_window_end():
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = UserDefinedFunctionServicer(
+        my_servicer = SyncServerServicer(
             map_handler=map_handler, mapt_handler=mapt_handler, reduce_handler=reduce_handler
         )
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
-        my_servicer = UserDefinedFunctionServicer(
+        my_servicer = SyncServerServicer(
             map_handler=map_handler,
             mapt_handler=mapt_handler,
             reduce_handler=reduce_handler,
@@ -113,7 +113,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
 
     def test_udf_map_err(self):
-        my_servicer = UserDefinedFunctionServicer(map_handler=err_map_handler)
+        my_servicer = SyncServerServicer(map_handler=err_map_handler)
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -144,7 +144,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(None, response)
 
     def test_udf_mapt_err(self):
-        my_servicer = UserDefinedFunctionServicer(mapt_handler=err_mapt_handler)
+        my_servicer = SyncServerServicer(mapt_handler=err_mapt_handler)
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -278,7 +278,7 @@ class TestServer(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
-            UserDefinedFunctionServicer()
+            SyncServerServicer()
 
 
 if __name__ == "__main__":

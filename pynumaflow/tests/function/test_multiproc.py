@@ -4,7 +4,7 @@ from unittest import mock
 
 import grpc
 
-from pynumaflow.function import UserDefinedFunctionServicer
+from pynumaflow.function import SyncServerServicer
 from pynumaflow.function._multiproc_server import MultiProcServer
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
@@ -23,7 +23,7 @@ class TestMultiProcMethods(unittest.TestCase):
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
         serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
-        udfs = UserDefinedFunctionServicer(
+        udfs = SyncServerServicer(
             reduce_handler=async_reduce_handler,
             map_handler=map_handler,
             mapt_handler=mapt_handler,
@@ -38,7 +38,7 @@ class TestMultiProcMethods(unittest.TestCase):
     # bindings to the same server
     def test_reuse_port(self):
         serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
-        udfs = UserDefinedFunctionServicer(
+        udfs = SyncServerServicer(
             reduce_handler=async_reduce_handler,
             map_handler=map_handler,
             mapt_handler=mapt_handler,

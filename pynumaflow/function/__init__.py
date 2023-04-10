@@ -9,7 +9,7 @@ from pynumaflow.function._dtypes import (
     ALL,
     DROP,
 )
-from pynumaflow.function.server import UserDefinedFunctionServicer
+from pynumaflow.function.sync_server import SyncServerServicer
 
 __all__ = [
     "Message",
@@ -19,7 +19,7 @@ __all__ = [
     "Datum",
     "IntervalWindow",
     "Metadata",
-    "UserDefinedFunctionServicer",
+    "SyncServerServicer",
     "ALL",
     "DROP",
 ]

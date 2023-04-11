@@ -88,7 +88,7 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
-    >>> aiorun.run(grpc_server.start_async())
+    >>> aiorun.run(grpc_server.start())
     """
 
     def __init__(

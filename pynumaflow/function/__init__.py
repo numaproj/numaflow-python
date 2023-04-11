@@ -10,6 +10,7 @@ from pynumaflow.function._dtypes import (
     DROP,
 )
 from pynumaflow.function.sync_server import SyncServerServicer
+from pynumaflow.function.async_server import AsyncServerServicer
 
 __all__ = [
     "Message",

@@ -101,7 +101,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
-    >>> aiorun.run(grpc_server.start_async())
+    >>> aiorun.run(grpc_server.start())
     """
 
     def __init__(
@@ -133,7 +133,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             ("grpc.max_receive_message_length", self._max_message_size),
         ]
 
-    def MapFn(
+    async def MapFn(
         self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
@@ -142,26 +142,8 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         """
         # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
         # we need to explicitly convert it to list
-        try:
-            msgs = self.__map_handler(
-                list(request.keys),
-                Datum(
-                    keys=list(request.keys),
-                    value=request.value,
-                    event_time=request.event_time.event_time.ToDatetime(),
-                    watermark=request.watermark.watermark.ToDatetime(),
-                ),
-            )
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
-            raise err
-
-        datums = []
-
-        for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
-
-        return udfunction_pb2.DatumList(elements=datums)
+        _LOGGER.error("ASYNC MAP NOT IMPLEMENTED --")
+        raise ValueError("MAP NOT SUPPORTED ASYNC")
 
     def MapTFn(
         self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
@@ -298,7 +280,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
         return datums
 
-    def IsReady(
+    async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
@@ -332,7 +314,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    async def start_async(self) -> None:
+    async def start(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
         await self.__serve_async(server)

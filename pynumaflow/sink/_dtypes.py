@@ -97,7 +97,7 @@ class Datum:
 
     @property
     def keys(self) -> List[str]:
-        """Returns the id of the event."""
+        """Returns the keys of the event."""
         return self._keys
 
     @property

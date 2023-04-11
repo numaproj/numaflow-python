@@ -201,7 +201,7 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
-        _LOGGER.info("HERE")
+        _LOGGER.error("HERE")
         raise NotImplementedError("Reduce Not supported on sync")
 
     def IsReady(
@@ -220,9 +220,13 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server = grpc.server(
             ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
+        _LOGGER.error("SERV1")
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
+        _LOGGER.error("SERV2")
         server.add_insecure_port(self.sock_path)
+        _LOGGER.error("SERV3")
         server.start()
+        _LOGGER.error("SERV4")
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

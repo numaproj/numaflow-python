@@ -13,6 +13,10 @@ from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionSer
 from typing import List
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
+    delivery_count = datum.metadata.delivery_count
+    if delivery_count > 3:
+        # If the message has been delivered more than 3 times, drop the message
+        return Messages(Message.to_vtx(keys, b"").to_drop())
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
@@ -34,6 +38,10 @@ from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionS
 from typing import List
 
 def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
+    delivery_count = datum.metadata.delivery_count
+    if delivery_count > 3:
+        # If the message has been delivered more than 3 times, drop the message
+        return MessageTs(MessageT.to_vtx(keys, b"").to_drop())
     val = datum.value
     new_event_time = datetime.time()
     _ = datum.watermark
@@ -56,7 +64,11 @@ from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedF
 async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    async for _ in datums:
+    async for msg in datums:
+        delivery_count = msg.metadata.delivery_count
+        if delivery_count > 3:
+            # If the message has been delivered more than 3 times, drop the message
+            continue
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "

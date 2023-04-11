@@ -3,22 +3,21 @@ from __future__ import division
 from __future__ import print_function
 
 import contextlib
-import os
-from concurrent import futures
 import logging
 import multiprocessing
+import os
 import socket
+from concurrent import futures
 from typing import Callable, List, AsyncIterable
 
 import grpc
+from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
+
+from pynumaflow import setup_logging
 from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR, MAX_MESSAGE_SIZE
 from pynumaflow.exceptions import SocketError
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from google.protobuf import empty_pb2 as _empty_pb2
-from pynumaflow import setup_logging
-from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
-from pynumaflow.function._dtypes import ReduceResult
-from pynumaflow.function.asynciter import NonBlockingIterator
+from pynumaflow.function import Messages, MessageTs, Datum, Metadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext

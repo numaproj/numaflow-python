@@ -140,16 +140,33 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         """
         # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
         # we need to explicitly convert it to list
+        response_task = asyncio.create_task(
+            self.__invoke_map(list(request.keys),
+                              Datum(
+                                  keys=list(request.keys),
+                                  value=request.value,
+                                  event_time=request.event_time.event_time.ToDatetime(),
+                                  watermark=request.watermark.watermark.ToDatetime(),
+                              ))
+        )
+        # Save a reference to the result of this function, to avoid a
+        # task disappearing mid-execution.
+        self.background_tasks.add(response_task)
+        response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
+
+        await response_task
+        results_futures = response_task.result()
+
+        for fut in results_futures:
+            await fut
+            yield udfunction_pb2.DatumList(elements=fut.result())
+
+        # _LOGGER.error("ASYNC MAP NOT IMPLEMENTED --")
+        # raise ValueError("MAP NOT SUPPORTED ASYNC")
+
+    async def __invoke_map(self, keys: List[str], req: Datum):
         try:
-            msgs = self.__map_handler(
-                list(request.keys),
-                Datum(
-                    keys=list(request.keys),
-                    value=request.value,
-                    event_time=request.event_time.event_time.ToDatetime(),
-                    watermark=request.watermark.watermark.ToDatetime(),
-                ),
-            )
+            msgs = await self.__map_handler(keys, req)
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
             raise err
@@ -160,8 +177,6 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
 
         return udfunction_pb2.DatumList(elements=datums)
-        # _LOGGER.error("ASYNC MAP NOT IMPLEMENTED --")
-        # raise ValueError("MAP NOT SUPPORTED ASYNC")
 
     def MapTFn(
             self, request: udfunction_pb2.Datum, context: NumaflowServicerContext

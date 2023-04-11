@@ -183,6 +183,44 @@ class MessageTs:
         pass
 
 
+class DatumMetadata:
+    """
+    Class to define the metadata information for the event.
+    Args:
+        msg_id: the id of the event.
+        num_delivered: the number the event has been delivered.
+    >>> # Example usage
+    >>> from pynumaflow.function import DatumMetadata
+    >>> msg_id = "id"
+    >>> num_delivered = 1
+    >>> d = Datum(id=msg_id, num_delivered=num_delivered)
+    """
+
+    def __init__(
+        self,
+        msg_id: str,
+        num_delivered: int,
+    ):
+        self._id = msg_id or ""
+        self._num_delivered = num_delivered or 0
+
+    def __str__(self):
+        return f"id: {self._id}, " f"num_delivered: {str(self._num_delivered)}"
+
+    def __repr__(self):
+        return str(self)
+
+    @property
+    def id(self) -> str:
+        """Returns the id of the event."""
+        return self._id
+
+    @property
+    def num_delivered(self):
+        """Returns the number the event has been delivered."""
+        return self._num_delivered
+
+
 class Datum:
     """
     Class to define the important information for the event.
@@ -191,6 +229,7 @@ class Datum:
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
+        metadata: the metadata of the event.
     >>> # Example usage
     >>> from pynumaflow.function import Datum
     >>> from datetime import datetime, timezone
@@ -198,12 +237,20 @@ class Datum:
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> d = Datum(keys=keys, value=payload, event_time=t1, watermark=t2)
+    >>> metadata = DatumMetadata(msg_id="test_id", num_delivered=1)
+    >>> d = Datum(keys=keys, value=payload, event_time=t1, watermark=t2, metadata=metadata
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark")
+    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_metadata")
 
-    def __init__(self, keys: List[str], value: bytes, event_time: datetime, watermark: datetime):
+    def __init__(
+        self,
+        keys: List[str],
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
+        metadata: DatumMetadata,
+    ):
         self._keys = keys or list()
         self._value = value or b""
         if not isinstance(event_time, datetime):
@@ -212,6 +259,7 @@ class Datum:
         if not isinstance(watermark, datetime):
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
+        self._metadata = metadata
 
     def __str__(self):
         value_string = self._value.decode("utf-8")
@@ -219,7 +267,8 @@ class Datum:
             f"keys: {self._keys}, "
             f"value: {value_string}, "
             f"event_time: {str(self._event_time)}, "
-            f"watermark: {str(self._watermark)}"
+            f"watermark: {str(self._watermark)}, "
+            f"metadata: {str(self._metadata)}"
         )
 
     def __repr__(self):
@@ -243,6 +292,11 @@ class Datum:
     def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark
+
+    @property
+    def metadata(self) -> DatumMetadata:
+        """Returns the metadata of the event."""
+        return self._metadata
 
 
 class IntervalWindow:

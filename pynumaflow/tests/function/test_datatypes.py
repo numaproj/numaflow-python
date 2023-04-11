@@ -6,9 +6,11 @@ from pynumaflow.function._dtypes import (
     IntervalWindow,
     Metadata,
     Datum,
+    DatumMetadata,
 )
 
 TEST_KEYS = ["test"]
+TEST_ID = "test_id"
 
 
 def mock_message():
@@ -40,8 +42,14 @@ class TestDatum(unittest.TestCase):
     def test_err_event_time(self):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
         with self.assertRaises(Exception) as context:
-            Datum(keys=TEST_KEYS, value=mock_message(), event_time=ts, watermark=ts)
+            Datum(
+                keys=TEST_KEYS, value=mock_message(), event_time=ts, watermark=ts, metadata=metadata
+            )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.event_time",
@@ -51,8 +59,18 @@ class TestDatum(unittest.TestCase):
     def test_err_watermark(self):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
         with self.assertRaises(Exception) as context:
-            Datum(keys=TEST_KEYS, value=mock_message(), event_time=mock_event_time(), watermark=ts)
+            Datum(
+                keys=TEST_KEYS,
+                value=mock_message(),
+                event_time=mock_event_time(),
+                watermark=ts,
+                metadata=metadata,
+            )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.watermark",
@@ -60,68 +78,120 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_value(self):
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
         d = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            metadata=metadata,
         )
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
             "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00",
+            "watermark: 2022-09-12 16:01:00+00:00, "
+            "metadata: id: test_id, num_delivered: 1",
             str(d),
         )
         self.assertEqual(
             "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00",
+            "watermark: 2022-09-12 16:01:00+00:00, "
+            "metadata: id: test_id, num_delivered: 1",
             repr(d),
         )
 
     def test_key(self):
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
         d = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            metadata=metadata,
         )
         self.assertEqual(TEST_KEYS, d.keys())
         self.assertEqual(
             "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00",
+            "watermark: 2022-09-12 16:01:00+00:00, "
+            "metadata: id: test_id, num_delivered: 1",
             str(d),
         )
         self.assertEqual(
             "keys: ['test'], "
             "value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00",
+            "watermark: 2022-09-12 16:01:00+00:00, "
+            "metadata: id: test_id, num_delivered: 1",
             repr(d),
         )
 
     def test_event_time(self):
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
         d = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            metadata=metadata,
         )
         self.assertEqual(mock_event_time(), d.event_time)
 
     def test_watermark(self):
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
         d = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            metadata=metadata,
         )
         self.assertEqual(mock_watermark(), d.watermark)
+
+    def test_id(self):
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
+        d = Datum(
+            keys=TEST_KEYS,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+            metadata=metadata,
+        )
+        self.assertEqual(TEST_ID, d.metadata.id)
+
+    def test_num_delivered(self):
+        metadata = DatumMetadata(
+            msg_id=TEST_ID,
+            num_delivered=1,
+        )
+        d = Datum(
+            keys=TEST_KEYS,
+            value=mock_message(),
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+            metadata=metadata,
+        )
+        self.assertEqual(1, d.metadata.num_delivered)
 
 
 class TestIntervalWindow(unittest.TestCase):

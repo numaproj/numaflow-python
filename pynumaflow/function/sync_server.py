@@ -202,7 +202,7 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
         _LOGGER.error("HERE")
-        raise NotImplementedError("Reduce Not supported on sync")
+        raise RuntimeError("Reduce Not supported on sync")
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext

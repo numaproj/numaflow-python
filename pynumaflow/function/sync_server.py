@@ -192,7 +192,7 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
         return udfunction_pb2.DatumList(elements=datums)
 
-    def ReduceFn(
+    async def ReduceFn(
             self,
             request_iterator: AsyncIterable[udfunction_pb2.Datum],
             context: NumaflowServicerContext,

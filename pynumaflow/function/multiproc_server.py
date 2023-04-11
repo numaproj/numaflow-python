@@ -1,25 +1,21 @@
-import asyncio
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import contextlib
+import os
+from concurrent import futures
 import logging
 import multiprocessing
-import os
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
-from typing import Callable, AsyncIterable, List
+import socket
+from typing import Callable, List, AsyncIterable
 
 import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
+from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR, MAX_MESSAGE_SIZE
+from pynumaflow.exceptions import SocketError
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from pynumaflow.function._multiproc_server import MultiProcServer
-
+from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow import setup_logging
-from pynumaflow._constants import (
-    FUNCTION_SOCK_PATH,
-    WIN_START_TIME,
-    WIN_END_TIME,
-    MAX_MESSAGE_SIZE,
-    STREAM_EOF,
-    DELIMITER,
-)
 from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult
 from pynumaflow.function.asynciter import NonBlockingIterator
@@ -34,61 +30,27 @@ if os.getenv("PYTHONDEBUG"):
 UDFMapCallable = Callable[[List[str], Datum], Messages]
 UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
 UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
-_PROCESS_COUNT = multiprocessing.cpu_count()
+_PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
+class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
-    Provides an interface to write a User Defined Function (UDFunction)
-    which will be exposed over gRPC.
+    MultiProcServer Class a multiprocessing implementation of the grpc server.
+    They use a given TCP socket with SOCK_REUSE to allow all servers,
+    to listen on the same port. We start servers equal to the CPU count of the
+    system.
 
-    Args:
-        map_handler: Function callable following the type signature of UDFMapCallable
-        mapt_handler: Function callable following the type signature of UDFMapTCallable
-        reduce_handler: Function callable following the type signature of UDFReduceCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
+    Arguments
+    ----------
+    udf_service :  UserDefinedFunctionServicer
+      The interface for the User Defined Function (UDFunction)
+        which will be exposed over gRPC.
 
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.function import Messages, Message, MessageTs, MessageT, \
-    ...     Datum, Metadata, SyncServerServicer
-    ... import aiorun
-    ...
-    >>> def map_handler(key: [str], datum: Datum) -> Messages:
-    ...   val = datum.value
-    ...   _ = datum.event_time
-    ...   _ = datum.watermark
-    ...   messages = Messages(Message.to_vtx(key, val))
-    ...   return messages
-    ...
-    >>> def mapt_handler(key: [str], datum: Datum) -> MessageTs:
-    ...   val = datum.value
-    ...   new_event_time = datetime.time()
-    ...   _ = datum.watermark
-    ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
-    ...   return message_t_s
-    ...
-    >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
-    ...   interval_window = md.interval_window
-    ...   counter = 0
-    ...   async for _ in datums:
-    ...     counter += 1
-    ...   msg = (
-    ...       f"counter:{counter} interval_window_start:{interval_window.start} "
-    ...       f"interval_window_end:{interval_window.end}"
-    ...   )
-    ...   return Messages(Message.to_vtx(key, str.encode(msg)))
-    ...
-    >>> grpc_server = UserDefinedFunctionServicer(
-    ...   reduce_handler=reduce_handler,
-    ...   mapt_handler=mapt_handler,
-    ...   map_handler=map_handler,
-    ... )
-    >>> aiorun.run(grpc_server.start())
+
+    server_options :  list[tuple[str, int]]
+        the custom options for configuring the grpc server
+
     """
 
     def __init__(
@@ -96,7 +58,7 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             map_handler: UDFMapCallable = None,
             mapt_handler: UDFMapTCallable = None,
             reduce_handler: UDFReduceCallable = None,
-            sock_path=FUNCTION_SOCK_PATH,
+            sock_path=MULTIPROC_FUNCTION_SOCK_PORT,
             max_message_size=MAX_MESSAGE_SIZE,
             max_threads=MAX_THREADS,
     ):
@@ -106,7 +68,6 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         self.__map_handler: UDFMapCallable = map_handler
         self.__mapt_handler: UDFMapTCallable = mapt_handler
         self.__reduce_handler: UDFReduceCallable = reduce_handler
-        self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
         self.cleanup_coroutines = []
@@ -119,6 +80,9 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             ("grpc.max_send_message_length", self._max_message_size),
             ("grpc.max_receive_message_length", self._max_message_size),
         ]
+        self._sock_path = sock_path
+        self._PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
+        self._THREAD_CONCURRENCY = self._PROCESS_COUNT
 
     def MapFn(
             self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
@@ -215,21 +179,51 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         """
         return udfunction_pb2.ReadyResponse(ready=True)
 
-    def start(self) -> None:
-        """
-        Starts the gRPC server on the given UNIX socket with given max threads.
-        """
+    def _run_server(self, bind_address):
+        """Start a server in a subprocess."""
+        _LOGGER.info("Starting new server.")
+        options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
+        for x in options:
+            self._server_options.append(x)
         server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
+            futures.ThreadPoolExecutor(
+                max_workers=self._THREAD_CONCURRENCY,
+            ),
+            options=self._server_options,
         )
-        _LOGGER.error("SERV1")
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
-        _LOGGER.error("SERV2")
-        server.add_insecure_port(self.sock_path)
-        _LOGGER.error("SERV3")
+        server.add_insecure_port(bind_address)
         server.start()
-        _LOGGER.error("SERV4")
-        _LOGGER.info(
-            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
-        )
+        _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()
+
+    @contextlib.contextmanager
+    def _reserve_port(self) -> int:
+        """Find and reserve a port for all subprocesses to use."""
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR) == 0:
+            raise SocketError("Failed to set SO_REUSEADDR.")
+        if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT) == 0:
+            raise SocketError("Failed to set SO_REUSEPORT.")
+        sock.bind(("", self._sock_path))
+        try:
+            yield sock.getsockname()[1]
+        finally:
+            sock.close()
+
+    def start(self) -> None:
+        """Start N grpc servers in different processes where N = CPU Count"""
+        with self._reserve_port() as port:
+            bind_address = f"{MULTIPROC_FUNCTION_SOCK_ADDR}:{port}"
+            workers = []
+            for _ in range(self._PROCESS_COUNT):
+                # NOTE: It is imperative that the worker subprocesses be forked before
+                # any gRPC servers start up. See
+                # https://github.com/grpc/grpc/issues/16001 for more details.
+                worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
+                worker.start()
+                workers.append(worker)
+            for worker in workers:
+                worker.join()

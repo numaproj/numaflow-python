@@ -11,6 +11,8 @@ from pynumaflow.function._dtypes import (
 )
 from pynumaflow.function.sync_server import SyncServerServicer
 from pynumaflow.function.async_server import AsyncServerServicer
+from pynumaflow.function.async_server import MultiProcServer
+
 
 __all__ = [
     "Message",
@@ -23,4 +25,6 @@ __all__ = [
     "SyncServerServicer",
     "ALL",
     "DROP",
+    "AsyncServerServicer",
+    "MultiProcServer",
 ]

@@ -129,6 +129,8 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         """
         # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
         # we need to explicitly convert it to list
+        _LOGGER.info("MAP HERE")
+
         try:
             msgs = self.__map_handler(
                 list(request.keys),
@@ -199,7 +201,8 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
         """
-        raise NotImplementedError("Sync Reduce Not supported")
+        _LOGGER.info("HERE")
+        raise NotImplementedError("Reduce Not supported on sync")
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext

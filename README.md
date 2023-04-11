@@ -10,13 +10,13 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 
 ```python
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
-
+from typing import List
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
-    messages = Messages(Message.to_vtx(keys, val))
+    messages = Messages(Message(val).with_keys(keys))
     return messages
 
 
@@ -31,12 +31,13 @@ MapT is only supported at source vertex to enable (a) early data filtering and (
 ```python
 import datetime
 from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
+from typing import List
 
 def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     val = datum.value
     new_event_time = datetime.time()
     _ = datum.watermark
-    message_t_s = MessageTs(MessageT.to_vtx(keys, val, new_event_time))
+    message_t_s = MessageTs(MessageT(val).with_keys(keys).with_event_time(new_event_time))
     return message_t_s
 
 if __name__ == "__main__":
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 
 ```python
 import asyncio
-from typing import Iterator
+from typing import Iterator, List
 from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
 
 
@@ -61,7 +62,7 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
         f"counter:{counter} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message.to_vtx(keys, str.encode(msg)))
+    return Messages(Message(str.encode(msg)).with_keys(keys))
 
 
 if __name__ == "__main__":

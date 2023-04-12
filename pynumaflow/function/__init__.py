@@ -8,7 +8,10 @@ from pynumaflow.function._dtypes import (
     Metadata,
     DROP,
 )
-from pynumaflow.function.server import UserDefinedFunctionServicer
+
+from pynumaflow.function.sync_server import SyncServer
+from pynumaflow.function.async_server import AsyncServer
+from pynumaflow.function.multiproc_server import MultiProcServer
 
 __all__ = [
     "Message",
@@ -18,6 +21,8 @@ __all__ = [
     "Datum",
     "IntervalWindow",
     "Metadata",
-    "UserDefinedFunctionServicer",
     "DROP",
+    "SyncServer",
+    "AsyncServer",
+    "MultiProcServer",
 ]

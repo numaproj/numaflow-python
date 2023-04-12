@@ -147,7 +147,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                                   event_time=request.event_time.event_time.ToDatetime(),
                                   watermark=request.watermark.watermark.ToDatetime(),
                               ))
-        yield udfunction_pb2.DatumList(elements=res)
+        return udfunction_pb2.DatumList(elements=res)
         # response_task = asyncio.create_task(
         #     self.__invoke_map(list(request.keys),
         #                       Datum(

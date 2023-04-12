@@ -49,59 +49,7 @@ async def datum_generator(
         yield datum
 
 
-class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
-    """
-    Provides an interface to write a User Defined Function (UDFunction)
-    which will be exposed over gRPC.
-
-    Args:
-        map_handler: Function callable following the type signature of UDFMapCallable
-        mapt_handler: Function callable following the type signature of UDFMapTCallable
-        reduce_handler: Function callable following the type signature of UDFReduceCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.function import Messages, Message, MessageTs, MessageT, \
-    ...     Datum, Metadata, AsyncServerServicer
-    ... import aiorun
-    ...
-    >>> def map_handler(key: [str], datum: Datum) -> Messages:
-    ...   val = datum.value
-    ...   _ = datum.event_time
-    ...   _ = datum.watermark
-    ...   messages = Messages(Message.to_vtx(key, val))
-    ...   return messages
-    ...
-    >>> def mapt_handler(key: [str], datum: Datum) -> MessageTs:
-    ...   val = datum.value
-    ...   new_event_time = datetime.time()
-    ...   _ = datum.watermark
-    ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
-    ...   return message_t_s
-    ...
-    >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
-    ...   interval_window = md.interval_window
-    ...   counter = 0
-    ...   async for _ in datums:
-    ...     counter += 1
-    ...   msg = (
-    ...       f"counter:{counter} interval_window_start:{interval_window.start} "
-    ...       f"interval_window_end:{interval_window.end}"
-    ...   )
-    ...   return Messages(Message.to_vtx(key, str.encode(msg)))
-    ...
-    >>> grpc_server = UserDefinedFunctionServicer(
-    ...   reduce_handler=reduce_handler,
-    ...   mapt_handler=mapt_handler,
-    ...   map_handler=map_handler,
-    ... )
-    >>> aiorun.run(grpc_server.start())
-    """
-
+class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     def __init__(
             self,
             map_handler: UDFMapCallable = None,
@@ -307,7 +255,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
     async def __serve_async(self, server) -> None:
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(
-            AsyncServerServicer(
+            AsyncServer(
                 map_handler=self.__map_handler,
                 mapt_handler=self.__mapt_handler,
                 reduce_handler=self.__reduce_handler,

@@ -25,7 +25,7 @@ LOGGER = setup_logging(__name__)
 
 
 async def async_reduce_handler(
-    key: List[str], datums: AsyncIterable[Datum], md: Metadata
+    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0
@@ -36,7 +36,7 @@ async def async_reduce_handler(
         f"interval_window_end:{interval_window.end}"
     )
 
-    return Messages(Message(str.encode(msg)).with_keys(key))
+    return Messages(Message(str.encode(msg), keys=keys))
 
 
 def request_generator(count, request, resetkey: bool = False):

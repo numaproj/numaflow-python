@@ -19,7 +19,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
     messages = Messages()
     for i in range(2, 100000):
         is_prime(i)
-    messages.append(Message(val).with_keys(keys))
+    messages.append(Message(val, keys=keys))
     return messages
 
 

@@ -8,7 +8,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
     _ = datum.event_time
     _ = datum.watermark
     messages = Messages()
-    messages.append(Message(val).with_keys(keys))
+    messages.append(Message(val, keys=keys))
     return messages
 
 

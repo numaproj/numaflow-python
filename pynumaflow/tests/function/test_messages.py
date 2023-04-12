@@ -11,13 +11,13 @@ def mock_message():
 class TestMessage(unittest.TestCase):
     def test_key(self):
         mock_obj = {"Keys": "test-key", "Value": mock_message()}
-        msg = Message(value=mock_obj["Value"]).with_keys(mock_obj["Keys"])
+        msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"])
         print(msg)
         self.assertEqual(mock_obj["Keys"], msg.keys)
 
     def test_value(self):
         mock_obj = {"Keys": "test-key", "Value": mock_message()}
-        msg = Message(value=mock_obj["Value"]).with_keys(mock_obj["Keys"])
+        msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"])
         self.assertEqual(mock_obj["Value"], msg.value)
 
     def test_message_to_all(self):
@@ -38,11 +38,7 @@ class TestMessage(unittest.TestCase):
 
     def test_message_to(self):
         mock_obj = {"Keys": ["__KEY__"], "Value": mock_message(), "Tags": ["__TAG__"]}
-        msg = (
-            Message(value=mock_obj["Value"])
-            .with_keys(keys=mock_obj["Keys"])
-            .with_tags(mock_obj["Tags"])
-        )
+        msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"], tags=mock_obj["Tags"])
         self.assertEqual(Message, type(msg))
         self.assertEqual(mock_obj["Keys"], msg.keys)
         self.assertEqual(mock_obj["Value"], msg.value)

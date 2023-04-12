@@ -16,7 +16,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
-    messages = Messages(Message(val).with_keys(keys))
+    messages = Messages(Message(value=val, keys=keys))
     return messages
 
 
@@ -37,7 +37,7 @@ def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     val = datum.value
     new_event_time = datetime.time()
     _ = datum.watermark
-    message_t_s = MessageTs(MessageT(val).with_keys(keys).with_event_time(new_event_time))
+    message_t_s = MessageTs(MessageT(new_event_time, val, keys))
     return message_t_s
 
 if __name__ == "__main__":
@@ -62,7 +62,7 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
         f"counter:{counter} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message(str.encode(msg)).with_keys(keys))
+    return Messages(Message(str.encode(msg), keys))
 
 
 if __name__ == "__main__":

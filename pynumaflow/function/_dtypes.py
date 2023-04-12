@@ -2,7 +2,7 @@ from asyncio import Task
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, List
+from typing import TypeVar, List, Type
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 
@@ -14,39 +14,33 @@ MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
 
 
-@dataclass()
+@dataclass
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        _keys: []string keys for vertex;
-             special values are ALL (send to all), DROP (drop message)
         _value: data in bytes
+         _keys: []string keys for vertex (optional)
+         _tags: []string tags for conditional forwarding (optional)
     """
 
     _keys: List[str]
     _tags: List[str]
     _value: bytes = b""
 
-    def __init__(self, value: bytes):
+    def __init__(self, value: bytes, keys=None, tags=None):
         """
-        Returns a Message object to send value to a vertex.
+        Creates a Message object to send value to a vertex.
         """
-        self._tags = []
-        self._keys = []
-        self._value = value
+        self._keys = keys or []
+        self._tags = tags or []
+        self._value = value or b""
 
-    def to_drop(self):
-        return self.with_tags([DROP])
-
-    def with_keys(self, keys: List[str]):
-        self._keys = keys
-        return self
-
-    def with_tags(self, tags: List[str]):
-        self._tags = tags
-        return self
+    # returns the Message Object which will be dropped
+    @classmethod
+    def to_drop(cls: Type[MT]) -> MT:
+        return cls(b"", None, [DROP])
 
     @property
     def value(self):
@@ -93,16 +87,16 @@ class Messages:
         pass
 
 
-@dataclass()
+@dataclass
 class MessageT:
     """
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        _keys: []string keys for vertex;
-             special values are ALL (send to all), DROP (drop message)
         _value: data in bytes
         _event_time: event time of the message, usually extracted from the payload.
+         _keys: []string keys for vertex (optional)
+         _tags: []string tags for conditional forwarding (optional)
     """
 
     _keys: List[str]
@@ -111,28 +105,18 @@ class MessageT:
     # There is no year 0, so setting following as default event time.
     _event_time: datetime = datetime(1, 1, 1, 0, 0)
 
-    def __init__(self, value: bytes):
+    def __init__(self, value: bytes, event_time: datetime, keys=None, tags=None):
         """
-        Returns a Message object to send value to a vertex.
+        Creates a MessageT object to send value to a vertex.
         """
-        self._tags = []
-        self._keys = []
-        self._value = value
-
-    def to_drop(self):
-        return self.with_tags([DROP])
-
-    def with_keys(self, keys: List[str]):
-        self._keys = keys
-        return self
-
-    def with_tags(self, tags: List[str]):
-        self._tags = tags
-        return self
-
-    def with_event_time(self, event_time: datetime):
+        self._tags = tags or []
+        self._keys = keys or []
         self._event_time = event_time
-        return self
+        self._value = value or b""
+
+    @classmethod
+    def to_drop(cls: Type[MT]) -> MT:
+        return cls(b"", None, None, [DROP])
 
     @property
     def event_time(self):

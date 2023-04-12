@@ -43,7 +43,7 @@ async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Meta
         f"batch_time:{end_time-start_time} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message(str.encode(msg)).with_keys(keys))
+    return Messages(Message(str.encode(msg), keys=keys))
 
 
 if __name__ == "__main__":

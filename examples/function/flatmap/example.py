@@ -10,7 +10,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
     strs = val.decode("utf-8").split(",")
     messages = Messages()
     if len(strs) == 0:
-        messages.append(Message(b"").to_drop())
+        messages.append(Message.to_drop())
         return messages
     for s in strs:
         messages.append(Message(str.encode(s)))

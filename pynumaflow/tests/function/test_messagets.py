@@ -22,11 +22,8 @@ class TestMessageT(unittest.TestCase):
             "EventTime": mock_event_time(),
             "Tags": ["test_tag"],
         }
-        msgt = (
-            MessageT(mock_obj["Value"])
-            .with_keys(keys=mock_obj["Keys"])
-            .with_event_time(mock_obj["EventTime"])
-            .with_tags(mock_obj["Tags"])
+        msgt = MessageT(
+            mock_obj["Value"], mock_obj["EventTime"], keys=mock_obj["Keys"], tags=mock_obj["Tags"]
         )
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
         self.assertEqual(mock_obj["Value"], msgt.value)
@@ -35,7 +32,7 @@ class TestMessageT(unittest.TestCase):
 
     def test_message_to_drop(self):
         mock_obj = {"Keys": [], "Value": b"", "Tags": [DROP]}
-        msgt = MessageT(b"").to_drop()
+        msgt = MessageT(b"", mock_event_time()).to_drop()
         self.assertEqual(MessageT, type(msgt))
         self.assertEqual(mock_obj["Keys"], msgt.keys)
         self.assertEqual(mock_obj["Value"], msgt.value)
@@ -47,7 +44,7 @@ class TestMessageTs(unittest.TestCase):
     def mock_messaget_object():
         value = mock_message_t()
         event_time = mock_event_time()
-        return MessageT(value=value).with_event_time(event_time)
+        return MessageT(value=value, event_time=event_time)
 
     def test_items(self):
         mock_obj = [

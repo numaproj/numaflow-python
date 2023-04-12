@@ -4,7 +4,6 @@ from unittest import mock
 
 import grpc
 
-from pynumaflow.function import AsyncServer
 from pynumaflow.function.multiproc_server import MultiProcServer
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
@@ -22,8 +21,9 @@ def mockenv(**envvars):
 class TestMultiProcMethods(unittest.TestCase):
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
-        server = MultiProcServer(reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler)
+        server = MultiProcServer(
+            reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
+        )
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._PROCESS_COUNT, 3)
         self.assertEqual(server._THREAD_CONCURRENCY, 3)
@@ -33,8 +33,9 @@ class TestMultiProcMethods(unittest.TestCase):
     def test_reuse_port(self):
         serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
 
-        server = MultiProcServer(reduce_handler=async_reduce_handler, map_handler=map_handler,
-                                 mapt_handler=mapt_handler)
+        server = MultiProcServer(
+            reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
+        )
 
         with server._reserve_port() as port:
             print(port)

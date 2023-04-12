@@ -1,9 +1,7 @@
 import logging
-import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from typing import Callable, AsyncIterable, List
 
 import grpc
@@ -86,13 +84,13 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
 
     def __init__(
-            self,
-            map_handler: UDFMapCallable = None,
-            mapt_handler: UDFMapTCallable = None,
-            reduce_handler: UDFReduceCallable = None,
-            sock_path=FUNCTION_SOCK_PATH,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        map_handler: UDFMapCallable = None,
+        mapt_handler: UDFMapTCallable = None,
+        reduce_handler: UDFReduceCallable = None,
+        sock_path=FUNCTION_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
             raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
@@ -115,7 +113,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         ]
 
     def MapFn(
-            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
@@ -134,7 +132,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     metadata=DatumMetadata(
                         msg_id=request.metadata.id,
                         num_delivered=request.metadata.num_delivered,
-                    )
+                    ),
                 ),
             )
         except Exception as err:
@@ -149,7 +147,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return udfunction_pb2.DatumList(elements=datums)
 
     def MapTFn(
-            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+        self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumList:
         """
         Applies a function to each datum element.
@@ -169,7 +167,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     metadata=DatumMetadata(
                         msg_id=request.metadata.id,
                         num_delivered=request.metadata.num_delivered,
-                    )
+                    ),
                 ),
             )
         except Exception as err:
@@ -187,7 +185,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     keys=list(msgt.keys),
                     value=msgt.value,
                     event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
-                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp)
+                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
                 )
             )
         return udfunction_pb2.DatumList(elements=datums)
@@ -205,7 +203,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     #     raise ValueError("Reduce Not supported on sync")
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

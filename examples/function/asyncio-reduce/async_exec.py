@@ -7,13 +7,7 @@ import aiohttp
 from pynumaflow import setup_logging
 import time
 
-from pynumaflow.function import (
-    Messages,
-    Message,
-    Datum,
-    Metadata,
-    UserDefinedFunctionServicer,
-)
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 _LOGGER = setup_logging(__name__)
 
@@ -35,9 +29,9 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
         tasks = []
         start_time = time.time()
         async for _ in datums:
-            url = f"http://host.docker.internal:9888/ping"
+            url = "http://host.docker.internal:9888/ping"
             tasks.append(http_request(session, url))
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
         end_time = time.time()
 
     msg = (
@@ -48,5 +42,5 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
-    aiorun.run(grpc_server.start_async())
+    grpc_server = AsyncServer(reduce_handler=reduce_handler)
+    aiorun.run(grpc_server.start())

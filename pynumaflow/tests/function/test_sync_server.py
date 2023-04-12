@@ -1,9 +1,8 @@
 import unittest
 from datetime import datetime, timezone
-from typing import Iterator, List, Optional
+from typing import Iterator, List
 
 import grpc
-from _pytest import logging
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
@@ -15,10 +14,10 @@ from pynumaflow.function import (
     MessageT,
     MessageTs,
     Datum,
-    Metadata, SyncServer,
+    Metadata,
+    SyncServer,
 )
 from pynumaflow.function.proto import udfunction_pb2
-from pynumaflow.tests.function.test_async_server import start_reduce_streaming_request
 
 
 def map_handler(keys: List[str], datum: Datum) -> Messages:
@@ -286,11 +285,10 @@ class TestServer(unittest.TestCase):
         try:
             self.test_server.invoke_stream_stream(
                 method_descriptor=(
-                    udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
-                        "ReduceFn"
-                    ]
+                    udfunction_pb2.DESCRIPTOR.services_by_name[
+                        "UserDefinedFunction"
+                    ].methods_by_name["ReduceFn"]
                 ),
-
                 invocation_metadata={
                     ("this_metadata_will_be_skipped", "test_ignore"),
                 },

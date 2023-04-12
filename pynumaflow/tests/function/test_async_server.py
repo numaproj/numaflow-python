@@ -11,16 +11,23 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.function import Messages, Message, Datum, Metadata, SyncServer, AsyncServer, MessageTs, MessageT
+from pynumaflow.function import (
+    Messages,
+    Message,
+    Datum,
+    AsyncServer,
+    MessageTs,
+    MessageT,
+    Metadata,
+)
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
-    mapt_handler,
-    map_handler,
     mock_event_time,
     mock_watermark,
     mock_message,
     mock_interval_window_start,
-    mock_interval_window_end, mock_new_event_time,
+    mock_interval_window_end,
+    mock_new_event_time,
 )
 
 LOGGER = setup_logging(__name__)
@@ -52,7 +59,9 @@ async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     return messagets
 
 
-async def async_reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def async_reduce_handler(
+    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:

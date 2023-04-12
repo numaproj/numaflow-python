@@ -8,13 +8,7 @@ import aiorun
 import requests
 
 from pynumaflow import setup_logging
-from pynumaflow.function import (
-    Messages,
-    Message,
-    Datum,
-    Metadata,
-    UserDefinedFunctionServicer,
-)
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 _LOGGER = setup_logging(__name__)
 
@@ -36,10 +30,10 @@ class ReduceHandler:
         self.exec_pool.set_loop(asyncio.get_event_loop())
         start_time = time.time()
         async for _ in datums:
-            url = f"http://host.docker.internal:9888/ping"
+            url = "http://host.docker.internal:9888/ping"
             fut = threadPool.submit(blocking_call, url)
             tasks.append(fut)
-        results = await threadPool.gather(tasks)
+        await threadPool.gather(tasks)
         end_time = time.time()
         msg = (
             f"batch_time:{end_time - start_time} interval_window_start:{interval_window.start} "
@@ -137,5 +131,5 @@ if __name__ == "__main__":
     threadPool = ExecutorPool(exec_type=e_type, max_workers=mx_workers)
     handler = ReduceHandler(exec_pool=threadPool)
 
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=handler.reduce_handler)
-    aiorun.run(grpc_server.start_async())
+    grpc_server = AsyncServer(reduce_handler=handler.reduce_handler)
+    aiorun.run(grpc_server.start())

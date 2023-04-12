@@ -16,6 +16,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
 from pynumaflow.function import Messages, MessageTs, Datum, Metadata
+from pynumaflow.function._dtypes import DatumMetadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -65,10 +66,10 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
     ...   return message_t_s
     ...
-    >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    >>> def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window
     ...   counter = 0
-    ...   async for _ in datums:
+    ...   for _ in datums:
     ...     counter += 1
     ...   msg = (
     ...       f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -81,7 +82,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
-    >>> aiorun.run(grpc_server.start())
+    >>> grpc_server.start()
     """
 
     def __init__(
@@ -130,6 +131,10 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
+                    metadata=DatumMetadata(
+                        msg_id=request.metadata.id,
+                        num_delivered=request.metadata.num_delivered,
+                    )
                 ),
             )
         except Exception as err:
@@ -161,6 +166,10 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
+                    metadata=DatumMetadata(
+                        msg_id=request.metadata.id,
+                        num_delivered=request.metadata.num_delivered,
+                    )
                 ),
             )
         except Exception as err:
@@ -178,7 +187,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     keys=list(msgt.keys),
                     value=msgt.value,
                     event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
-                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp)
                 )
             )
         return udfunction_pb2.DatumList(elements=datums)

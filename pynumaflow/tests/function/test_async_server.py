@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from typing import AsyncIterable
+from typing import AsyncIterable, List
 
 import grpc
 
@@ -11,7 +11,7 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.function import Messages, Message, Datum, Metadata, SyncServerServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, SyncServer, AsyncServer, MessageTs, MessageT
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
     mapt_handler,
@@ -20,13 +20,39 @@ from pynumaflow.tests.function.test_server import (
     mock_watermark,
     mock_message,
     mock_interval_window_start,
-    mock_interval_window_end,
+    mock_interval_window_end, mock_new_event_time,
 )
 
 LOGGER = setup_logging(__name__)
 
 
-async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
+    val = datum.value
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time,
+        datum.watermark,
+    )
+    val = bytes(msg, encoding="utf-8")
+    messages = Messages()
+    messages.append(Message.to_vtx(keys, val))
+    return messages
+
+
+async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
+    val = datum.value
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time,
+        datum.watermark,
+    )
+    val = bytes(msg, encoding="utf-8")
+    messagets = MessageTs()
+    messagets.append(MessageT.to_vtx(keys, val, mock_new_event_time()))
+    return messagets
+
+
+async def async_reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -36,7 +62,7 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
         f"interval_window_end:{interval_window.end}"
     )
 
-    return Messages(Message.to_vtx(key, str.encode(msg)))
+    return Messages(Message.to_vtx(keys, str.encode(msg)))
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -77,10 +103,10 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = SyncServerServicer(
+    udfs = AsyncServer(
         reduce_handler=async_reduce_handler,
-        map_handler=map_handler,
-        mapt_handler=mapt_handler,
+        map_handler=async_map_handler,
+        mapt_handler=async_mapt_handler,
     )
     udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
     listen_addr = "[::]:50051"

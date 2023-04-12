@@ -18,6 +18,7 @@ from pynumaflow import setup_logging
 from pynumaflow._constants import MULTIPROC_FUNCTION_SOCK_PORT, MULTIPROC_FUNCTION_SOCK_ADDR, MAX_MESSAGE_SIZE
 from pynumaflow.exceptions import SocketError
 from pynumaflow.function import Messages, MessageTs, Datum, Metadata
+from pynumaflow.function._dtypes import DatumMetadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -100,6 +101,10 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                     value=request.value,
                     event_time=request.event_time.event_time.ToDatetime(),
                     watermark=request.watermark.watermark.ToDatetime(),
+                    metadata=DatumMetadata(
+                        msg_id=request.metadata.id,
+                        num_delivered=request.metadata.num_delivered,
+                    )
                 ),
             )
         except Exception as err:

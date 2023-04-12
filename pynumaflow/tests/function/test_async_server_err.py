@@ -10,7 +10,7 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.function import Messages, Message, Datum, Metadata, SyncServerServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.tests.function.test_server import (
     mapt_handler,
@@ -81,7 +81,7 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = SyncServerServicer(
+    udfs = AsyncServer(
         reduce_handler=err_async_reduce_handler,
         map_handler=map_handler,
         mapt_handler=mapt_handler,

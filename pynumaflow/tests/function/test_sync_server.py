@@ -1,7 +1,9 @@
 import unittest
 from datetime import datetime, timezone
-from typing import Iterator, List
+from typing import Iterator, List, Optional
 
+import grpc
+from _pytest import logging
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
@@ -13,10 +15,10 @@ from pynumaflow.function import (
     MessageT,
     MessageTs,
     Datum,
-    Metadata,
+    Metadata, SyncServer,
 )
 from pynumaflow.function.proto import udfunction_pb2
-from pynumaflow.function.sync_server import SyncServer
+from pynumaflow.tests.function.test_async_server import start_reduce_streaming_request
 
 
 def map_handler(keys: List[str], datum: Datum) -> Messages:
@@ -45,10 +47,10 @@ def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     return messagets
 
 
-async def reduce_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
+def reduce_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    async for _ in datums:
+    for _ in datums:
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -57,11 +59,11 @@ async def reduce_handler(keys: List[str], datums: Iterator[Datum], md: Metadata)
     return Messages(Message.to_vtx(keys, str.encode(msg)))
 
 
-def err_map_handler(_: str, __: Datum) -> Messages:
+def err_map_handler(_: List[str], __: Datum) -> Messages:
     raise RuntimeError("Something is fishy!")
 
 
-def err_mapt_handler(_: str, __: Datum) -> MessageTs:
+def err_mapt_handler(_: List[str], __: Datum) -> MessageTs:
     raise RuntimeError("Something is fishy!")
 
 
@@ -279,6 +281,23 @@ class TestServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
             SyncServer()
+
+    def test_reduce_handler(self):
+        try:
+            self.test_server.invoke_stream_stream(
+                method_descriptor=(
+                    udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                        "ReduceFn"
+                    ]
+                ),
+
+                invocation_metadata={
+                    ("this_metadata_will_be_skipped", "test_ignore"),
+                },
+                timeout=1,
+            )
+        except grpc.RpcError as e:
+            self.assertEqual(e.code(), grpc.StatusCode.UNIMPLEMENTED)
 
 
 if __name__ == "__main__":

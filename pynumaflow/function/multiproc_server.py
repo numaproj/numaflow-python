@@ -232,7 +232,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             ),
             options=self._server_options,
         )
-        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self.udf_service, server)
+        udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
         server.add_insecure_port(bind_address)
         server.start()
         _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())

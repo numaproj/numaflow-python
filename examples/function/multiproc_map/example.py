@@ -1,4 +1,5 @@
 import math
+from typing import List
 
 from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
 
@@ -11,14 +12,14 @@ def is_prime(n):
         return True
 
 
-def my_handler(key: str, datum: Datum) -> Messages:
+def my_handler(keys: List[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
     messages = Messages()
     for i in range(2, 100000):
         is_prime(i)
-    messages.append(Message.to_vtx(key, val))
+    messages.append(Message(val, keys=keys))
     return messages
 
 

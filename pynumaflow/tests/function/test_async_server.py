@@ -1,13 +1,11 @@
 import asyncio
+import grpc
 import logging
 import threading
 import unittest
-from typing import AsyncIterable
-
-import grpc
-
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
+from typing import AsyncIterable, List
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
@@ -26,7 +24,9 @@ from pynumaflow.tests.function.test_server import (
 LOGGER = setup_logging(__name__)
 
 
-async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def async_reduce_handler(
+    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -36,7 +36,7 @@ async def async_reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metad
         f"interval_window_end:{interval_window.end}"
     )
 
-    return Messages(Message.to_vtx(key, str.encode(msg)))
+    return Messages(Message(str.encode(msg), keys=keys))
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -52,7 +52,7 @@ def start_reduce_streaming_request() -> (Datum, tuple):
     watermark_timestamp = _timestamp_pb2.Timestamp()
     watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-    request = udfunction_pb2.Datum(
+    request = udfunction_pb2.DatumRequest(
         value=mock_message(),
         event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
         watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
@@ -128,7 +128,7 @@ class TestAsyncServer(unittest.TestCase):
             watermark_timestamp = _timestamp_pb2.Timestamp()
             watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-            request = udfunction_pb2.Datum(
+            request = udfunction_pb2.DatumRequest(
                 keys=["test"],
                 value=mock_message(),
                 event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
@@ -161,7 +161,7 @@ class TestAsyncServer(unittest.TestCase):
         watermark_timestamp = _timestamp_pb2.Timestamp()
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-        request = udfunction_pb2.Datum(
+        request = udfunction_pb2.DatumRequest(
             keys=["test"],
             value=mock_message(),
             event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),

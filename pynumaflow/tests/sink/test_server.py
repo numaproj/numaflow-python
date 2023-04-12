@@ -1,11 +1,10 @@
 import unittest
 from datetime import datetime, timezone
-from typing import Iterator
-
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
+from typing import Iterator
 
 from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
 from pynumaflow.sink.proto import udsink_pb2
@@ -77,13 +76,13 @@ class TestServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         test_datums = [
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_0",
                 value=mock_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
                 watermark=udsink_pb2.Watermark(watermark=watermark_timestamp),
             ),
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_1",
                 value=mock_err_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
@@ -120,13 +119,13 @@ class TestServer(unittest.TestCase):
         watermark_timestamp.FromDatetime(dt=mock_watermark())
 
         test_datums = [
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_0",
                 value=mock_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
                 watermark=udsink_pb2.Watermark(watermark=watermark_timestamp),
             ),
-            udsink_pb2.Datum(
+            udsink_pb2.DatumRequest(
                 id="test_id_1",
                 value=mock_err_message(),
                 event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),

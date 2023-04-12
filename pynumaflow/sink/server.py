@@ -1,11 +1,11 @@
+from concurrent.futures import ThreadPoolExecutor
+
+import grpc
 import logging
 import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Iterator, Iterable
-
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
+from typing import Callable, Iterator, Iterable
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -25,7 +25,7 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-def datum_generator(request_iterator: Iterable[udsink_pb2.Datum]) -> Iterable[Datum]:
+def datum_generator(request_iterator: Iterable[udsink_pb2.DatumRequest]) -> Iterable[Datum]:
     for d in request_iterator:
         datum = Datum(
             keys=list(d.keys),
@@ -80,7 +80,7 @@ class UserDefinedSinkServicer(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     def SinkFn(
-        self, request_iterator: Iterator[udsink_pb2.Datum], context: NumaflowServicerContext
+        self, request_iterator: Iterator[udsink_pb2.DatumRequest], context: NumaflowServicerContext
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.

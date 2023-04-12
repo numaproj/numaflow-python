@@ -1,12 +1,11 @@
+import aiohttp
+import aiorun
 import asyncio
 import json
-from typing import AsyncIterable
-
-import aiorun
-import aiohttp
-from pynumaflow import setup_logging
 import time
+from typing import AsyncIterable, List
 
+from pynumaflow import setup_logging
 from pynumaflow.function import (
     Messages,
     Message,
@@ -29,7 +28,7 @@ async def http_request(session, url):
             return "Error"
 
 
-async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     async with aiohttp.ClientSession() as session:
         tasks = []
@@ -44,7 +43,7 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
         f"batch_time:{end_time-start_time} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message.to_vtx(key, str.encode(msg)))
+    return Messages(Message(str.encode(msg), keys=keys))
 
 
 if __name__ == "__main__":

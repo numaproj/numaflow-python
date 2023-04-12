@@ -17,7 +17,7 @@ class UserDefinedSinkStub(object):
         """
         self.SinkFn = channel.stream_unary(
             "/sink.v1.UserDefinedSink/SinkFn",
-            request_serializer=udsink__pb2.Datum.SerializeToString,
+            request_serializer=udsink__pb2.DatumRequest.SerializeToString,
             response_deserializer=udsink__pb2.ResponseList.FromString,
         )
         self.IsReady = channel.unary_unary(
@@ -47,7 +47,7 @@ def add_UserDefinedSinkServicer_to_server(servicer, server):
     rpc_method_handlers = {
         "SinkFn": grpc.stream_unary_rpc_method_handler(
             servicer.SinkFn,
-            request_deserializer=udsink__pb2.Datum.FromString,
+            request_deserializer=udsink__pb2.DatumRequest.FromString,
             response_serializer=udsink__pb2.ResponseList.SerializeToString,
         ),
         "IsReady": grpc.unary_unary_rpc_method_handler(
@@ -83,7 +83,7 @@ class UserDefinedSink(object):
             request_iterator,
             target,
             "/sink.v1.UserDefinedSink/SinkFn",
-            udsink__pb2.Datum.SerializeToString,
+            udsink__pb2.DatumRequest.SerializeToString,
             udsink__pb2.ResponseList.FromString,
             options,
             channel_credentials,

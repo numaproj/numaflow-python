@@ -159,6 +159,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
         for fut in results_futures:
             await fut
+            _LOGGER.error("FUT RES ", fut.result())
             yield udfunction_pb2.DatumList(elements=fut.result())
 
         # _LOGGER.error("ASYNC MAP NOT IMPLEMENTED --")
@@ -170,13 +171,12 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
             raise err
-
         datums = []
-
         for msg in msgs.items():
             datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
+        _LOGGER.error("MSG F ", datums)
 
-        return udfunction_pb2.DatumList(elements=datums)
+        return datums
 
     def MapTFn(
             self, request: udfunction_pb2.Datum, context: NumaflowServicerContext

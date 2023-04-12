@@ -1,14 +1,24 @@
 import unittest
-from datetime import datetime, timezone
+
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from typing import Iterator, List
 
 from pynumaflow.function import SyncServer
-from pynumaflow.tests.function.server_utils import *
 from pynumaflow.function.proto import udfunction_pb2
+from pynumaflow.tests.function.server_utils import (
+    mapt_handler,
+    map_handler,
+    reduce_handler,
+    err_map_handler,
+    mock_event_time,
+    mock_watermark,
+    mock_message,
+    err_mapt_handler,
+    mock_new_event_time,
+)
+
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:

@@ -225,12 +225,12 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         _LOGGER.info("Starting new server.")
         options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
         for x in options:
-            self.server_options.append(x)
+            self._server_options.append(x)
         server = grpc.server(
             futures.ThreadPoolExecutor(
                 max_workers=self._THREAD_CONCURRENCY,
             ),
-            options=self.server_options,
+            options=self._server_options,
         )
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self.udf_service, server)
         server.add_insecure_port(bind_address)

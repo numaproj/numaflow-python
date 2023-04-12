@@ -158,49 +158,48 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         datums = []
         for msg in msgs.items():
             datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
-        _LOGGER.error(f"MSG F {datums}")
 
         return datums
 
-    def MapTFn(
-            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
-        """
-        Applies a function to each datum element.
-        The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
-        """
-
-        # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        try:
-            msgts = self.__mapt_handler(
-                list(request.keys),
-                Datum(
-                    keys=list(request.keys),
-                    value=request.value,
-                    event_time=request.event_time.event_time.ToDatetime(),
-                    watermark=request.watermark.watermark.ToDatetime(),
-                ),
-            )
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
-            raise err
-
-        datums = []
-        for msgt in msgts.items():
-            event_time_timestamp = _timestamp_pb2.Timestamp()
-            event_time_timestamp.FromDatetime(dt=msgt.event_time)
-            watermark_timestamp = _timestamp_pb2.Timestamp()
-            watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
-            datums.append(
-                udfunction_pb2.Datum(
-                    keys=list(msgt.keys),
-                    value=msgt.value,
-                    event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
-                    watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
-                )
-            )
-        return udfunction_pb2.DatumList(elements=datums)
+    # def MapTFn(
+    #         self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
+    # ) -> udfunction_pb2.DatumList:
+    #     """
+    #     Applies a function to each datum element.
+    #     The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
+    #     """
+    #
+    #     # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
+    #     # we need to explicitly convert it to list
+    #     try:
+    #         msgts = self.__mapt_handler(
+    #             list(request.keys),
+    #             Datum(
+    #                 keys=list(request.keys),
+    #                 value=request.value,
+    #                 event_time=request.event_time.event_time.ToDatetime(),
+    #                 watermark=request.watermark.watermark.ToDatetime(),
+    #             ),
+    #         )
+    #     except Exception as err:
+    #         _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+    #         raise err
+    #
+    #     datums = []
+    #     for msgt in msgts.items():
+    #         event_time_timestamp = _timestamp_pb2.Timestamp()
+    #         event_time_timestamp.FromDatetime(dt=msgt.event_time)
+    #         watermark_timestamp = _timestamp_pb2.Timestamp()
+    #         watermark_timestamp.FromDatetime(dt=request.watermark.watermark.ToDatetime())
+    #         datums.append(
+    #             udfunction_pb2.Datum(
+    #                 keys=list(msgt.keys),
+    #                 value=msgt.value,
+    #                 event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+    #                 watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+    #             )
+    #         )
+    #     return udfunction_pb2.DatumList(elements=datums)
 
     async def ReduceFn(
             self,

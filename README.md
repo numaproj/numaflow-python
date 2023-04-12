@@ -99,3 +99,16 @@ if __name__ == "__main__":
 
 A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided 
 under [examples](examples/sink/log).
+
+### Datum Metadata
+The Datum object contains the message payload and metadata. Currently, there are two fields
+in metadata: the message ID, the message delivery count to indicate how many times the message
+has been delivered. You can use these metadata to implement customized logic. For example,
+```python
+...
+def my_handler(keys: List[str], datum: Datum) -> Messages:
+    delivery_count = datum.metadata.delivery_count
+    # Choose to do specific actions, if the message delivery count reaches a certain threshold.
+    if delivery_count > 3:
+        ...
+```

@@ -114,7 +114,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             ("grpc.max_send_message_length", self._max_message_size),
             ("grpc.max_receive_message_length", self._max_message_size),
         ]
-        self.sock_path = sock_path
+        self._sock_path = sock_path
         self._PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
         self._THREAD_CONCURRENCY = self._PROCESS_COUNT
 
@@ -248,7 +248,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             raise SocketError("Failed to set SO_REUSEADDR.")
         if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT) == 0:
             raise SocketError("Failed to set SO_REUSEPORT.")
-        sock.bind(("", self.sock_path))
+        sock.bind(("", self._sock_path))
         try:
             yield sock.getsockname()[1]
         finally:

@@ -135,8 +135,8 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         ]
 
     async def MapFn(
-            self, request: udfunction_pb2.Datum, context: NumaflowServicerContext
-    ) -> udfunction_pb2.DatumList:
+            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+    ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
         The pascal case function name comes from the proto udfunction_pb2_grpc.py file.

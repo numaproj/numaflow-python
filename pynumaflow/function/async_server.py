@@ -182,7 +182,7 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         datums = []
         for msg in msgs.items():
             datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
-        _LOGGER.error("MSG F ", datums)
+        _LOGGER.error(f"MSG F {datums}")
 
         return datums
 

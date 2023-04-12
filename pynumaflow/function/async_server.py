@@ -156,7 +156,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                 ),
             ),
         )
-        return udfunction_pb2.DatumList(elements=res)
+        return udfunction_pb2.DatumResponseList(elements=res)
 
     async def __invoke_map(self, keys: List[str], req: Datum):
         try:
@@ -166,7 +166,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             raise err
         datums = []
         for msg in msgs.items():
-            datums.append(udfunction_pb2.Datum(keys=msg.keys, value=msg.value))
+            datums.append(udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags))
 
         return datums
 

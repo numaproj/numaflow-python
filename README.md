@@ -13,10 +13,6 @@ from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionSer
 from typing import List
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
-    delivery_count = datum.metadata.delivery_count
-    if delivery_count > 3:
-        # If the message has been delivered more than 3 times, drop the message
-        return Messages(Message.to_vtx(keys, b"").to_drop())
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
@@ -38,10 +34,6 @@ from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionS
 from typing import List
 
 def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
-    delivery_count = datum.metadata.delivery_count
-    if delivery_count > 3:
-        # If the message has been delivered more than 3 times, drop the message
-        return MessageTs(MessageT.to_vtx(keys, b"").to_drop())
     val = datum.value
     new_event_time = datetime.time()
     _ = datum.watermark
@@ -64,11 +56,7 @@ from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedF
 async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
-    async for msg in datums:
-        delivery_count = msg.metadata.delivery_count
-        if delivery_count > 3:
-            # If the message has been delivered more than 3 times, drop the message
-            continue
+    async for _ in datums:
         counter += 1
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -111,3 +99,16 @@ if __name__ == "__main__":
 
 A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided 
 under [examples](examples/sink/log).
+
+### Datum Metadata
+The Datum object contains the message payload and metadata. Currently, there are two fields
+in metadata: the message ID, the message delivery count to indicate how many times the message
+has been delivered. You can use these metadata to implement customized logic. For example,
+```python
+...
+def my_handler(keys: List[str], datum: Datum) -> Messages:
+    delivery_count = datum.metadata.delivery_count
+    # Choose to do specific actions, if the message delivery count reaches a certain threshold.
+    if delivery_count > 3:
+        ...
+```

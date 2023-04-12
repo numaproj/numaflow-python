@@ -153,21 +153,21 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
         return udfunction_pb2.DatumList(elements=datums)
 
-    def ReduceFn(
-            self,
-            request_iterator: AsyncIterable[udfunction_pb2.Datum],
-            context: NumaflowServicerContext,
-    ) -> udfunction_pb2.DatumList:
-        """
-        Applies a reduce function to a datum stream.
-        The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
-        """
-        _LOGGER.error("Reduce not supported on NEW SYNC --")
-        # context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        # context.set_details("Reduce Not supported")
-        # return udfunction_pb2.DatumList()
-        raise ValueError("Reduce Not supported on sync")
-        _LOGGER.error("Reduce not supported on SYNC -- 2")
+    # def ReduceFn(
+    #         self,
+    #         request_iterator: AsyncIterable[udfunction_pb2.Datum],
+    #         context: NumaflowServicerContext,
+    # ) -> udfunction_pb2.DatumList:
+    #     """
+    #     Applies a reduce function to a datum stream.
+    #     The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
+    #     """
+    #     _LOGGER.error("Reduce not supported on NEW SYNC --")
+    #     # context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    #     # context.set_details("Reduce Not supported")
+    #     # return udfunction_pb2.DatumList()
+    #     raise ValueError("Reduce Not supported on sync")
+    #     _LOGGER.error("Reduce not supported on SYNC -- 2")
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext

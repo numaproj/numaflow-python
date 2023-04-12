@@ -183,21 +183,21 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
         return udfunction_pb2.DatumList(elements=datums)
 
-    def ReduceFn(
-            self,
-            request_iterator: AsyncIterable[udfunction_pb2.Datum],
-            context: NumaflowServicerContext,
-    ) -> udfunction_pb2.DatumList:
-        """
-        Applies a reduce function to a datum stream.
-        The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
-        """
-        _LOGGER.error("Reduce not supported on NEW SYNC --")
-        # context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        # context.set_details("Reduce Not supported")
-        # return udfunction_pb2.DatumList()
-        raise ValueError("Reduce Not supported on sync")
-        _LOGGER.error("Reduce not supported on SYNC -- 2")
+    # def ReduceFn(
+    #         self,
+    #         request_iterator: AsyncIterable[udfunction_pb2.Datum],
+    #         context: NumaflowServicerContext,
+    # ) -> udfunction_pb2.DatumList:
+    #     """
+    #     Applies a reduce function to a datum stream.
+    #     The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
+    #     """
+    #     _LOGGER.error("Reduce not supported on NEW SYNC --")
+    #     # context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    #     # context.set_details("Reduce Not supported")
+    #     # return udfunction_pb2.DatumList()
+    #     raise ValueError("Reduce Not supported on sync")
+    #     _LOGGER.error("Reduce not supported on SYNC -- 2")
 
     def IsReady(
             self, request: _empty_pb2.Empty, context: NumaflowServicerContext
@@ -215,13 +215,9 @@ class SyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server = grpc.server(
             ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
-        _LOGGER.error("SERV1")
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
-        _LOGGER.error("SERV2")
         server.add_insecure_port(self.sock_path)
-        _LOGGER.error("SERV3")
         server.start()
-        _LOGGER.error("SERV4")
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

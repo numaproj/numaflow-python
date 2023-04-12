@@ -148,30 +148,6 @@ class AsyncServerServicer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                                   watermark=request.watermark.watermark.ToDatetime(),
                               ))
         return udfunction_pb2.DatumList(elements=res)
-        # response_task = asyncio.create_task(
-        #     self.__invoke_map(list(request.keys),
-        #                       Datum(
-        #                           keys=list(request.keys),
-        #                           value=request.value,
-        #                           event_time=request.event_time.event_time.ToDatetime(),
-        #                           watermark=request.watermark.watermark.ToDatetime(),
-        #                       ))
-        # )
-        # # Save a reference to the result of this function, to avoid a
-        # # task disappearing mid-execution.
-        # self.background_tasks.add(response_task)
-        # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
-        #
-        # await response_task
-        # results_futures = response_task.result()
-        #
-        # for fut in results_futures:
-        #     await fut
-        #     _LOGGER.error("FUT RES ", fut.result())
-        #     yield udfunction_pb2.DatumList(elements=fut.result())
-
-        # _LOGGER.error("ASYNC MAP NOT IMPLEMENTED --")
-        # raise ValueError("MAP NOT SUPPORTED ASYNC")
 
     async def __invoke_map(self, keys: List[str], req: Datum):
         try:

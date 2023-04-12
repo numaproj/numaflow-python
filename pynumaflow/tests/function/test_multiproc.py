@@ -6,7 +6,7 @@ import grpc
 
 from pynumaflow.function.multiproc_server import MultiProcServer
 from pynumaflow.function.proto import udfunction_pb2_grpc
-from pynumaflow.tests.function.test_server import (
+from pynumaflow.tests.function.server_utils import (
     mapt_handler,
     map_handler,
 )

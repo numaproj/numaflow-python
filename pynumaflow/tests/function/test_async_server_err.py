@@ -12,7 +12,7 @@ from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.test_server import (
+from pynumaflow.tests.function.server_utils import (
     mapt_handler,
     map_handler,
     mock_event_time,

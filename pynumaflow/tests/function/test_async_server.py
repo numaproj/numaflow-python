@@ -5,6 +5,7 @@ import unittest
 from typing import AsyncIterable, List
 
 import grpc
+from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
@@ -292,6 +293,19 @@ class TestAsyncServer(unittest.TestCase):
                 r.elements[0].value,
             )
         self.assertEqual(100, count)
+
+    def test_is_ready(self) -> None:
+        with grpc.insecure_channel("localhost:50051") as channel:
+            stub = udfunction_pb2_grpc.UserDefinedFunctionStub(channel)
+
+            request = _empty_pb2.Empty()
+            response = None
+            try:
+                response = stub.IsReady(request=request)
+            except grpc.RpcError as e:
+                logging.error(e)
+
+            self.assertTrue(response.ready)
 
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)

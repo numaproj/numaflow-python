@@ -142,6 +142,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
 
+    def test_invalid_input(self):
+        with self.assertRaises(ValueError):
+            AsyncServer()
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

@@ -51,6 +51,7 @@ if __name__ == "__main__":
 ### Reduce
 
 ```python
+import aiorun
 import asyncio
 from typing import Iterator, List
 from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
@@ -70,8 +71,7 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
 
 if __name__ == "__main__":
     grpc_server = AsyncServer(reduce_handler=my_handler)
-    asyncio.run(grpc_server.start())
-    asyncio.run(*grpc_server.cleanup_coroutines)
+    aiorun.run(grpc_server.start())
 ```
 
 ### Sample Image

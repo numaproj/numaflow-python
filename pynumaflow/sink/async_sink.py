@@ -1,21 +1,17 @@
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
-
-import grpc
 import logging
 import multiprocessing
 import os
+from typing import Callable, Iterator, AsyncIterable
+
+import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from typing import Callable, Iterator, Iterable, AsyncIterable
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
     SINK_SOCK_PATH,
-    MAX_MESSAGE_SIZE, DELIMITER, STREAM_EOF,
+    MAX_MESSAGE_SIZE,
 )
-from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.sink import Responses, Datum, Response
-from pynumaflow.sink._dtypes import SinkResult
 from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
@@ -28,7 +24,9 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-async def datum_generator(request_iterator: AsyncIterable[udsink_pb2.DatumRequest]) -> AsyncIterable[Datum]:
+async def datum_generator(
+        request_iterator: AsyncIterable[udsink_pb2.DatumRequest],
+) -> AsyncIterable[Datum]:
     async for d in request_iterator:
         datum = Datum(
             keys=list(d.keys),
@@ -84,7 +82,9 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     async def SinkFn(
-            self, request_iterator: AsyncIterable[udsink_pb2.DatumRequest], context: NumaflowServicerContext
+            self,
+            request_iterator: AsyncIterable[udsink_pb2.DatumRequest],
+            context: NumaflowServicerContext,
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
@@ -92,62 +92,9 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         """
         # if there is an exception, we will mark all the responses as a failure
         datum_iterator = datum_generator(request_iterator=request_iterator)
-        # response_task = asyncio.create_task(
-        #     # self.__async_sink_handler(datum_iterator)
-        #     self.__async_sink_handler(datum_iterator)
-        # )
-        #
-        # # Save a reference to the result of this function, to avoid a
-        # # task disappearing mid-execution.
-        # self.background_tasks.add(response_task)
-        # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
-
-        # await response_task
-        # results_futures = response_task.result()
-        # resp = []
         results = await self.__invoke_sink(datum_iterator)
 
-        # for fut in results_futures:
-        #     await fut
-        #     resp.append(fut.result())
-
         return udsink_pb2.ResponseList(responses=results)
-
-    # async def __async_sink_handler(self, datum_iterator: AsyncIterable[Datum]):
-    #     callable_dict = {}
-    #     # iterate through all the values
-    #     async for d in datum_iterator:
-    #         keys = d.keys
-    #         unified_key = DELIMITER.join(keys)
-    #         result = callable_dict.get(unified_key, None)
-    #
-    #         if not result:
-    #             niter = NonBlockingIterator()
-    #             riter = niter.read_iterator()
-    #             # schedule an async task for consumer
-    #             # returns a future that will give the results later.
-    #             task = asyncio.create_task(
-    #                 self.__invoke_sink(riter)
-    #             )
-    #             # Save a reference to the result of this function, to avoid a
-    #             # task disappearing mid-execution.
-    #             self.background_tasks.add(task)
-    #             task.add_done_callback(lambda t: self.background_tasks.remove(t))
-    #             result = SinkResult(task, niter, keys)
-    #
-    #             callable_dict[unified_key] = result
-    #
-    #         await result.iterator.put(d)
-    #
-    #     for unified_key in callable_dict:
-    #         await callable_dict[unified_key].iterator.put(STREAM_EOF)
-    #
-    #     tasks = []
-    #     for unified_key in callable_dict:
-    #         fut = callable_dict[unified_key].future
-    #         tasks.append(fut)
-    #
-    #     return tasks
 
     async def __invoke_sink(self, datum_iterator: AsyncIterable[Datum]):
         try:

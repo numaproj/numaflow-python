@@ -115,9 +115,7 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         return udsink_pb2.ReadyResponse(ready=True)
 
     async def __serve_async(self, server) -> None:
-        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
-            Sink(self.__sink_handler), server
-        )
+        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(Sink(self.__sink_handler), server)
         server.add_insecure_port(self.sock_path)
         _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
         await server.start()
@@ -146,9 +144,7 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         server = grpc.server(
             ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
-        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
-            Sink(self.__sink_handler), server
-        )
+        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(Sink(self.__sink_handler), server)
         server.add_insecure_port(self.sock_path)
         server.start()
         _LOGGER.info(

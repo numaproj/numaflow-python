@@ -2,7 +2,7 @@ import datetime
 import logging
 from typing import List
 
-from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
+from pynumaflow.function import MessageTs, MessageT, Datum, SyncServer
 
 """
 This is a simple User Defined Function example which receives a message, applies the following
@@ -45,5 +45,5 @@ def my_handler(keys: List[str], datum: Datum) -> MessageTs:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(mapt_handler=my_handler)
+    grpc_server = SyncServer(mapt_handler=my_handler)
     grpc_server.start()

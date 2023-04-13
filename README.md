@@ -9,7 +9,7 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 ### Map
 
 ```python
-from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, SyncServer
 from typing import List
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
@@ -21,7 +21,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
+    grpc_server = SyncServer(map_handler=my_handler)
     grpc_server.start()
 ```
 ### MapT - Map with event time assignment capability
@@ -30,7 +30,7 @@ MapT is only supported at source vertex to enable (a) early data filtering and (
 
 ```python
 import datetime
-from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
+from pynumaflow.function import MessageTs, MessageT, Datum, SyncServer
 from typing import List
 
 def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
@@ -41,7 +41,7 @@ def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     return message_t_s
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(mapt_handler=mapt_handler)
+    grpc_server = SyncServer(mapt_handler=mapt_handler)
     grpc_server.start()
 ```
 
@@ -50,7 +50,7 @@ if __name__ == "__main__":
 ```python
 import asyncio
 from typing import Iterator, List
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 
 async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
@@ -66,8 +66,8 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=my_handler)
-    asyncio.run(grpc_server.start_async())
+    grpc_server = AsyncServer(reduce_handler=my_handler)
+    asyncio.run(grpc_server.start())
     asyncio.run(*grpc_server.cleanup_coroutines)
 ```
 

@@ -6,7 +6,8 @@ authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-pynumaflow = "~0.3.2"
+#pynumaflow = "~0.3.2"
+pynumaflow = { path = "/Users/skohli/numa/pynuma-main/numaflow-python", develop = true }
 
 [tool.poetry.dev-dependencies]
 

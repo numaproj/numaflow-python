@@ -33,7 +33,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
-    which will be exposed over gRPC.
+    which will be exposed over a Syncronous gRPC server.
 
     Args:
         map_handler: Function callable following the type signature of UDFMapCallable
@@ -56,30 +56,21 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   messages = Messages(Message.to_vtx(key, val))
     ...   return messages
     ...
+    ... def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    ...           "Not supported"
+    ...
     >>> def mapt_handler(key: [str], datum: Datum) -> MessageTs:
     ...   val = datum.value
     ...   new_event_time = datetime.time()
     ...   _ = datum.watermark
-    ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
+    ...   message_t_s = MessageTs(MessageT(val, event_time=new_event_time, keys=key))
     ...   return message_t_s
     ...
-    >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
-    ...   interval_window = md.interval_window
-    ...   counter = 0
-    ...   async for _ in datums:
-    ...     counter += 1
-    ...   msg = (
-    ...       f"counter:{counter} interval_window_start:{interval_window.start} "
-    ...       f"interval_window_end:{interval_window.end}"
-    ...   )
-    ...   return Messages(Message.to_vtx(key, str.encode(msg)))
-    ...
     >>> grpc_server = SyncServer(
-    ...   reduce_handler=reduce_handler,
     ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
-    >>> aiorun.run(grpc_server.start())
+    >>> grpc_server.start()
     """
 
     def __init__(

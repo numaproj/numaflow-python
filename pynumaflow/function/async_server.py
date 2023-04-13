@@ -72,19 +72,13 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...     Datum, Metadata, AsyncServer
     ... import aiorun
     ...
-    >>> def map_handler(key: [str], datum: Datum) -> Messages:
+    >>> async def map_handler(key: [str], datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
-    ...   messages = Messages(Message.to_vtx(key, val))
+    ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
-    >>> def mapt_handler(key: [str], datum: Datum) -> MessageTs:
-    ...   val = datum.value
-    ...   new_event_time = datetime.time()
-    ...   _ = datum.watermark
-    ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
-    ...   return message_t_s
     ...
     >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window
@@ -95,11 +89,10 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...       f"counter:{counter} interval_window_start:{interval_window.start} "
     ...       f"interval_window_end:{interval_window.end}"
     ...   )
-    ...   return Messages(Message.to_vtx(key, str.encode(msg)))
+    ...   return Messages(Message(value=str.encode(msg), keys=keys))
     ...
     >>> grpc_server = AsyncServer(
     ...   reduce_handler=reduce_handler,
-    ...   mapt_handler=mapt_handler,
     ...   map_handler=map_handler,
     ... )
     >>> aiorun.run(grpc_server.start())

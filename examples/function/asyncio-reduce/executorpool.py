@@ -12,7 +12,7 @@ from pynumaflow.function import (
     Message,
     Datum,
     Metadata,
-    UserDefinedFunctionServicer,
+    AsyncServer,
 )
 
 _LOGGER = setup_logging(__name__)
@@ -136,5 +136,5 @@ if __name__ == "__main__":
     threadPool = ExecutorPool(exec_type=e_type, max_workers=mx_workers)
     handler = ReduceHandler(exec_pool=threadPool)
 
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=handler.reduce_handler)
-    aiorun.run(grpc_server.start_async())
+    grpc_server = AsyncServer(reduce_handler=handler.reduce_handler)
+    aiorun.run(grpc_server.start())

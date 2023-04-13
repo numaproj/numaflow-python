@@ -28,7 +28,7 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-def datum_generator(request_iterator: AsyncIterable[udsink_pb2.DatumRequest]) -> AsyncIterable[Datum]:
+async def datum_generator(request_iterator: AsyncIterable[udsink_pb2.DatumRequest]) -> AsyncIterable[Datum]:
     async for d in request_iterator:
         datum = Datum(
             keys=list(d.keys),

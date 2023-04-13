@@ -1,6 +1,6 @@
 from typing import List
 
-from pynumaflow.function import Messages, Message, Datum, SyncServer
+from pynumaflow.function import Messages, Message, Datum, Server
 
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
@@ -18,5 +18,5 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SyncServer(map_handler=my_handler)
+    grpc_server = Server(map_handler=my_handler)
     grpc_server.start()

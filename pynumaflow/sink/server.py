@@ -37,7 +37,7 @@ def datum_generator(request_iterator: Iterable[udsink_pb2.DatumRequest]) -> Iter
         yield datum
 
 
-class SyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
+class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
     """
     Provides an interface to write a User Defined Sink (UDSink)
     which will be exposed over gRPC.
@@ -51,13 +51,13 @@ class SyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
 
     Example invocation:
     >>> from typing import List
-    >>> from pynumaflow.sink import Datum, Responses, Response, SyncSink
+    >>> from pynumaflow.sink import Datum, Responses, Response, Sink
     >>> def my_handler(datums: Iterator[Datum]) -> Responses:
     ...   responses = Responses()
     ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
     ...   return responses
-    >>> grpc_server = SyncSink(my_handler)
+    >>> grpc_server = Sink(my_handler)
     >>> grpc_server.start()
     """
 
@@ -116,7 +116,7 @@ class SyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
 
     async def __serve_async(self, server) -> None:
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
-            SyncSink(self.__sink_handler), server
+            Sink(self.__sink_handler), server
         )
         server.add_insecure_port(self.sock_path)
         _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
@@ -147,7 +147,7 @@ class SyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
             ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(
-            SyncSink(self.__sink_handler), server
+            Sink(self.__sink_handler), server
         )
         server.add_insecure_port(self.sock_path)
         server.start()

@@ -30,7 +30,7 @@ _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
+class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
     which will be exposed over a Syncronous gRPC server.
@@ -47,7 +47,7 @@ class SyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     Example invocation:
     >>> from typing import Iterator
     >>> from pynumaflow.function import Messages, Message, MessageTs, MessageT, \
-    ...     Datum, Metadata, SyncServer
+    ...     Datum, Metadata, Server
     ...
     >>> def map_handler(key: [str], datum: Datum) -> Messages:
     ...   val = datum.value

@@ -3,12 +3,19 @@ import unittest
 from unittest import mock
 
 import grpc
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from grpc import StatusCode
+from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.function.multiproc_server import MultiProcServer
-from pynumaflow.function.proto import udfunction_pb2_grpc
+from pynumaflow.function.proto import udfunction_pb2_grpc, udfunction_pb2
 from pynumaflow.tests.function.server_utils import (
     mapt_handler,
     map_handler,
+    err_map_handler,
+    mock_event_time,
+    mock_watermark,
+    mock_message,
 )
 from pynumaflow.tests.function.test_async_server import async_reduce_handler
 
@@ -18,6 +25,13 @@ def mockenv(**envvars):
 
 
 class TestMultiProcMethods(unittest.TestCase):
+    def setUp(self) -> None:
+        my_servicer = MultiProcServer(
+            map_handler=map_handler, mapt_handler=mapt_handler, reduce_handler=async_reduce_handler
+        )
+        services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
         server = MultiProcServer(
@@ -52,6 +66,76 @@ class TestMultiProcMethods(unittest.TestCase):
             server3 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 1),))
             udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(server, server3)
             server3.add_insecure_port(bind_address)
+
+    def test_udf_map_err(self):
+        my_servicer = MultiProcServer(map_handler=err_map_handler)
+        services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "MapFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+        response, metadata, code, details = method.termination()
+        self.assertEqual(None, response)
+
+    def test_map_forward_message(self):
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            keys=["test"],
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "MapFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+
+        response, metadata, code, details = method.termination()
+        self.assertEqual(1, len(response.elements))
+        self.assertEqual(["test"], response.elements[0].keys)
+        self.assertEqual(
+            bytes(
+                "payload:test_mock_message "
+                "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+                encoding="utf-8",
+            ),
+            response.elements[0].value,
+        )
+        self.assertEqual(code, StatusCode.OK)
 
 
 if __name__ == "__main__":

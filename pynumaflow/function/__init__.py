@@ -9,7 +9,7 @@ from pynumaflow.function._dtypes import (
     DROP,
 )
 
-from pynumaflow.function.sync_server import Server
+from pynumaflow.function.server import Server
 from pynumaflow.function.async_server import AsyncServer
 from pynumaflow.function.multiproc_server import MultiProcServer
 

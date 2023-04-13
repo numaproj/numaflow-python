@@ -9,7 +9,7 @@ from pynumaflow.function._dtypes import (
     DROP,
 )
 
-from pynumaflow.function.sync_server import SyncServer
+from pynumaflow.function.sync_server import Server
 from pynumaflow.function.async_server import AsyncServer
 from pynumaflow.function.multiproc_server import MultiProcServer
 
@@ -22,7 +22,7 @@ __all__ = [
     "IntervalWindow",
     "Metadata",
     "DROP",
-    "SyncServer",
+    "Server",
     "AsyncServer",
     "MultiProcServer",
 ]

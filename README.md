@@ -9,8 +9,9 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 ### Map
 
 ```python
-from pynumaflow.function import Messages, Message, Datum, SyncServer
+from pynumaflow.function import Messages, Message, Datum, Server
 from typing import List
+
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
     val = datum.value
@@ -21,7 +22,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SyncServer(map_handler=my_handler)
+    grpc_server = Server(map_handler=my_handler)
     grpc_server.start()
 ```
 ### MapT - Map with event time assignment capability
@@ -30,8 +31,9 @@ MapT is only supported at source vertex to enable (a) early data filtering and (
 
 ```python
 import datetime
-from pynumaflow.function import MessageTs, MessageT, Datum, SyncServer
+from pynumaflow.function import MessageTs, MessageT, Datum, Server
 from typing import List
+
 
 def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     val = datum.value
@@ -40,8 +42,9 @@ def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     message_t_s = MessageTs(MessageT(new_event_time, val, keys))
     return message_t_s
 
+
 if __name__ == "__main__":
-    grpc_server = SyncServer(mapt_handler=mapt_handler)
+    grpc_server = Server(mapt_handler=mapt_handler)
     grpc_server.start()
 ```
 

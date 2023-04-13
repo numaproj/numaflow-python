@@ -6,7 +6,7 @@ from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 from typing import Iterator
 
-from pynumaflow.sink import Responses, Datum, Response, SyncSink
+from pynumaflow.sink import Responses, Datum, Response, Sink
 from pynumaflow.sink.proto import udsink_pb2
 
 
@@ -46,7 +46,7 @@ def mock_watermark():
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = SyncSink(udsink_handler)
+        my_servicer = Sink(udsink_handler)
         services = {udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -66,7 +66,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_udsink_err(self):
-        my_servicer = SyncSink(err_udsink_handler)
+        my_servicer = Sink(err_udsink_handler)
         services = {udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

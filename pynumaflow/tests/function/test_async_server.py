@@ -5,7 +5,6 @@ import unittest
 from typing import AsyncIterable, List
 
 import grpc
-
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
@@ -60,7 +59,7 @@ async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
 
 
 async def async_reduce_handler(
-    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
+        keys: List[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0

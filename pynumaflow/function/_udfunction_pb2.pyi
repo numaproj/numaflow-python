@@ -1,13 +1,15 @@
-from google.protobuf import descriptor as _descriptor
-from google.protobuf import message as _message
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from typing import (
     ClassVar as _ClassVar,
     Optional as _Optional,
     List,
 )
 
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
+
 DESCRIPTOR: _descriptor.FileDescriptor
+
 
 class ReadyResponse(_message.Message):
     __slots__ = ["ready"]
@@ -16,6 +18,7 @@ class ReadyResponse(_message.Message):
 
     def __init__(self, ready: _Optional[bool] = ...) -> None: ...
 
+
 class EventTime(_message.Message):
     __slots__ = ["event_time"]
     EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
@@ -23,12 +26,14 @@ class EventTime(_message.Message):
 
     def __init__(self, event_time: _Optional[_timestamp_pb2.Timestamp] = ...) -> None: ...
 
+
 class Watermark(_message.Message):
     __slots__ = ["watermark"]
     WATERMARK_FIELD_NUMBER: _ClassVar[int]
     watermark: _timestamp_pb2.Timestamp
 
     def __init__(self, watermark: _Optional[_timestamp_pb2.Timestamp] = ...) -> None: ...
+
 
 class Datum(_message.Message):
     __slots__ = ["keys", "value", "event_time", "watermark"]
@@ -42,12 +47,13 @@ class Datum(_message.Message):
     watermark: _timestamp_pb2.Timestamp
 
     def __init__(
-        self,
-        keys: _Optional[List[str]],
-        value: _Optional[bytes],
-        event_time: _Optional[_timestamp_pb2.Timestamp] = ...,
-        watermark: _Optional[_timestamp_pb2.Timestamp] = ...,
+            self,
+            keys: _Optional[List[str]],
+            value: _Optional[bytes],
+            event_time: _Optional[_timestamp_pb2.Timestamp] = ...,
+            watermark: _Optional[_timestamp_pb2.Timestamp] = ...,
     ) -> None: ...
+
 
 class DatumList(_message.Message):
     __slots__ = ["elements"]

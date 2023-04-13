@@ -8,10 +8,9 @@ from pynumaflow.function._dtypes import (
     Metadata,
     DROP,
 )
-
-from pynumaflow.function.server import Server
 from pynumaflow.function.async_server import AsyncServer
 from pynumaflow.function.multiproc_server import MultiProcServer
+from pynumaflow.function.server import Server
 
 __all__ = [
     "Message",

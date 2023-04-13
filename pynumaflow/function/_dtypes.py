@@ -1,5 +1,4 @@
 from asyncio import Task
-
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, List, Type
@@ -181,9 +180,9 @@ class DatumMetadata:
     """
 
     def __init__(
-        self,
-        msg_id: str,
-        num_delivered: int,
+            self,
+            msg_id: str,
+            num_delivered: int,
     ):
         self._id = msg_id or ""
         self._num_delivered = num_delivered or 0
@@ -228,12 +227,12 @@ class Datum:
     __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_metadata")
 
     def __init__(
-        self,
-        keys: List[str],
-        value: bytes,
-        event_time: datetime,
-        watermark: datetime,
-        metadata: DatumMetadata,
+            self,
+            keys: List[str],
+            value: bytes,
+            event_time: datetime,
+            watermark: datetime,
+            metadata: DatumMetadata,
     ):
         self._keys = keys or list()
         self._value = value or b""

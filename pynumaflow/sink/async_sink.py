@@ -25,7 +25,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 async def datum_generator(
-    request_iterator: AsyncIterable[udsink_pb2.DatumRequest],
+        request_iterator: AsyncIterable[udsink_pb2.DatumRequest],
 ) -> AsyncIterable[Datum]:
     async for d in request_iterator:
         datum = Datum(
@@ -63,11 +63,11 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
     """
 
     def __init__(
-        self,
-        sink_handler: UDSinkCallable,
-        sock_path=SINK_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            sink_handler: UDSinkCallable,
+            sock_path=SINK_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
         self.background_tasks = set()
         self.__sink_handler: UDSinkCallable = sink_handler
@@ -82,9 +82,9 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     async def SinkFn(
-        self,
-        request_iterator: AsyncIterable[udsink_pb2.DatumRequest],
-        context: NumaflowServicerContext,
+            self,
+            request_iterator: AsyncIterable[udsink_pb2.DatumRequest],
+            context: NumaflowServicerContext,
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
@@ -113,7 +113,7 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         return responses
 
     async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

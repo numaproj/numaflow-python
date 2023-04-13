@@ -1,9 +1,6 @@
-from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, TypeVar, Type, Optional
-
-from pynumaflow.function.asynciter import NonBlockingIterator
 
 R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
@@ -64,12 +61,12 @@ class Datum:
     """
 
     def __init__(
-        self,
-        keys: List[str],
-        sink_msg_id: str,
-        value: bytes,
-        event_time: datetime,
-        watermark: datetime,
+            self,
+            keys: List[str],
+            sink_msg_id: str,
+            value: bytes,
+            event_time: datetime,
+            watermark: datetime,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""

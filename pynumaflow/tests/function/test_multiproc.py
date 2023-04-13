@@ -10,7 +10,6 @@ from pynumaflow.tests.function.server_utils import (
     mapt_handler,
     map_handler,
 )
-
 from pynumaflow.tests.function.test_async_server import async_reduce_handler
 
 

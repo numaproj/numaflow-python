@@ -61,12 +61,12 @@ class Datum:
     """
 
     def __init__(
-            self,
-            keys: List[str],
-            sink_msg_id: str,
-            value: bytes,
-            event_time: datetime,
-            watermark: datetime,
+        self,
+        keys: List[str],
+        sink_msg_id: str,
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""

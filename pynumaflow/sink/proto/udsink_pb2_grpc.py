@@ -68,16 +68,16 @@ class UserDefinedSink(object):
 
     @staticmethod
     def SinkFn(
-            request_iterator,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None,
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
     ):
         return grpc.experimental.stream_unary(
             request_iterator,
@@ -97,16 +97,16 @@ class UserDefinedSink(object):
 
     @staticmethod
     def IsReady(
-            request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None,
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
     ):
         return grpc.experimental.unary_unary(
             request,

@@ -103,16 +103,16 @@ class UserDefinedFunction(object):
 
     @staticmethod
     def MapFn(
-            request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None,
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
     ):
         return grpc.experimental.unary_unary(
             request,
@@ -132,16 +132,16 @@ class UserDefinedFunction(object):
 
     @staticmethod
     def MapTFn(
-            request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None,
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
     ):
         return grpc.experimental.unary_unary(
             request,
@@ -161,16 +161,16 @@ class UserDefinedFunction(object):
 
     @staticmethod
     def ReduceFn(
-            request_iterator,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None,
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
     ):
         return grpc.experimental.stream_stream(
             request_iterator,
@@ -190,16 +190,16 @@ class UserDefinedFunction(object):
 
     @staticmethod
     def IsReady(
-            request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None,
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
     ):
         return grpc.experimental.unary_unary(
             request,

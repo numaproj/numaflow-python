@@ -59,7 +59,7 @@ async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
 
 
 async def async_reduce_handler(
-        keys: List[str], datums: AsyncIterable[Datum], md: Metadata
+    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0

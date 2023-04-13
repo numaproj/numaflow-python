@@ -75,13 +75,13 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
 
     def __init__(
-            self,
-            map_handler: UDFMapCallable = None,
-            mapt_handler: UDFMapTCallable = None,
-            reduce_handler: UDFReduceCallable = None,
-            sock_path=MULTIPROC_FUNCTION_SOCK_PORT,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        map_handler: UDFMapCallable = None,
+        mapt_handler: UDFMapTCallable = None,
+        reduce_handler: UDFReduceCallable = None,
+        sock_path=MULTIPROC_FUNCTION_SOCK_PORT,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
             raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
@@ -106,7 +106,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         self._THREAD_CONCURRENCY = self._PROCESS_COUNT
 
     def MapFn(
-            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
@@ -142,7 +142,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return udfunction_pb2.DatumResponseList(elements=datums)
 
     def MapTFn(
-            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
@@ -199,7 +199,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     #     raise NotImplementedError("Reduce Not supported on sync")
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

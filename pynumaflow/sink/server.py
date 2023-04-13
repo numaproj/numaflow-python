@@ -62,11 +62,11 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
     """
 
     def __init__(
-            self,
-            sink_handler: UDSinkCallable,
-            sock_path=SINK_SOCK_PATH,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        sink_handler: UDSinkCallable,
+        sock_path=SINK_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
         self.__sink_handler: UDSinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
@@ -80,7 +80,7 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     def SinkFn(
-            self, request_iterator: Iterator[udsink_pb2.DatumRequest], context: NumaflowServicerContext
+        self, request_iterator: Iterator[udsink_pb2.DatumRequest], context: NumaflowServicerContext
     ) -> udsink_pb2.ResponseList:
         """
         Applies a sink function to a list of datum elements.
@@ -106,7 +106,7 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         return udsink_pb2.ResponseList(responses=responses)
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udsink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

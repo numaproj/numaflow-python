@@ -27,7 +27,7 @@ LOGGER = setup_logging(__name__)
 
 # This handler mimics the scenario where reduce UDF throws a runtime error.
 async def err_async_reduce_handler(
-        key: str, datums: AsyncIterable[Datum], md: Metadata
+    key: str, datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0

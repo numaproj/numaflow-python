@@ -1,6 +1,9 @@
+from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, TypeVar, Type, Optional
+
+from pynumaflow.function.asynciter import NonBlockingIterator
 
 R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
@@ -61,12 +64,12 @@ class Datum:
     """
 
     def __init__(
-        self,
-        keys: List[str],
-        sink_msg_id: str,
-        value: bytes,
-        event_time: datetime,
-        watermark: datetime,
+            self,
+            keys: List[str],
+            sink_msg_id: str,
+            value: bytes,
+            event_time: datetime,
+            watermark: datetime,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""
@@ -114,3 +117,29 @@ class Datum:
     def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark
+
+
+class SinkResult:
+    """Defines the object to hold the result of reduce computation."""
+
+    __slots__ = ("_future", "_iterator", "_key")
+
+    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: List[str]):
+        self._future = future
+        self._iterator = iterator
+        self._key = keys
+
+    @property
+    def future(self):
+        """Returns the future result of computation."""
+        return self._future
+
+    @property
+    def iterator(self):
+        """Returns the handle to the producer queue."""
+        return self._iterator
+
+    @property
+    def keys(self) -> List[str]:
+        """Returns the keys of the partition."""
+        return self._key

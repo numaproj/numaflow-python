@@ -103,7 +103,7 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
 
         await response_task
         results_futures = response_task.result()
-        resp =[]
+        resp = []
 
         for fut in results_futures:
             await fut
@@ -115,7 +115,7 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         callable_dict = {}
         # iterate through all the values
         async for d in datum_iterator:
-            keys = d.keys()
+            keys = d.keys
             unified_key = DELIMITER.join(keys)
             result = callable_dict.get(unified_key, None)
 

@@ -157,7 +157,7 @@ class TestServer(unittest.TestCase):
         )
         self.assertEqual(code, StatusCode.OK)
 
-    def test_mapt_assign_new_event_time(self):
+    def test_mapt_assign_new_event_time(self, test_server=None):
         event_time_timestamp = _timestamp_pb2.Timestamp()
         event_time_timestamp.FromDatetime(dt=mock_event_time())
         watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -169,8 +169,11 @@ class TestServer(unittest.TestCase):
             event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
             watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
         )
+        serv = self.test_server
+        if test_server:
+            serv = test_server
 
-        method = self.test_server.invoke_unary_unary(
+        method = serv.invoke_unary_unary(
             method_descriptor=(
                 udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
                     "MapTFn"

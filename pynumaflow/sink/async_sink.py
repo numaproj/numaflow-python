@@ -103,10 +103,13 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
 
         await response_task
         results_futures = response_task.result()
+        resp =[]
 
         for fut in results_futures:
             await fut
-            yield udsink_pb2.ResponseList(responses=fut.result())
+            resp.append(fut.result())
+
+        return udsink_pb2.ResponseList(responses=resp)
 
     async def __async_sink_handler(self, datum_iterator: AsyncIterable[Datum]):
         callable_dict = {}

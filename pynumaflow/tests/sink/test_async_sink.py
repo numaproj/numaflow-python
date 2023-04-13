@@ -10,20 +10,17 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import (
     Datum,
 )
-from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
 from pynumaflow.sink import Responses, Response, AsyncSink
-from pynumaflow.sink.proto import udsink_pb2_grpc
 from pynumaflow.sink.proto import udsink_pb2
+from pynumaflow.sink.proto import udsink_pb2_grpc
 from pynumaflow.tests.sink.test_server import (
     mock_event_time,
     mock_watermark,
     mock_message,
 )
-
 
 LOGGER = setup_logging(__name__)
 

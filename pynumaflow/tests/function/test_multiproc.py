@@ -16,7 +16,9 @@ from pynumaflow.tests.function.server_utils import (
     err_map_handler,
     mock_event_time,
     mock_watermark,
-    mock_message, mock_new_event_time, err_mapt_handler,
+    mock_message,
+    mock_new_event_time,
+    err_mapt_handler,
 )
 from pynumaflow.tests.function.test_async_server import async_reduce_handler
 

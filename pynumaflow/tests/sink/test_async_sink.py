@@ -20,6 +20,7 @@ from pynumaflow.tests.sink.test_server import (
     mock_event_time,
     mock_watermark,
     mock_message,
+    mock_err_message,
 )
 
 LOGGER = setup_logging(__name__)
@@ -28,30 +29,33 @@ LOGGER = setup_logging(__name__)
 async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
     responses = Responses()
     async for msg in datums:
+        if msg.value.decode("utf-8") == "test_mock_err_message":
+            raise ValueError("test_mock_err_message")
         print("User Defined Sink", msg.value.decode("utf-8"))
         responses.append(Response.as_success(msg.id))
     return responses
 
 
 #
-def request_generator(count, request, resetkey: bool = False):
+def request_generator(count, request):
     for i in range(count):
         request.id = str(i)
-        if resetkey:
-            request.keys.extend([f"key-{i}"])
         yield request
 
 
 #
 #
-def start_sink_streaming_request() -> (Datum, tuple):
+def start_sink_streaming_request(err=False) -> (Datum, tuple):
     event_time_timestamp = _timestamp_pb2.Timestamp()
     event_time_timestamp.FromDatetime(dt=mock_event_time())
     watermark_timestamp = _timestamp_pb2.Timestamp()
     watermark_timestamp.FromDatetime(dt=mock_watermark())
+    value = mock_message()
+    if err:
+        value = mock_err_message()
 
     request = udsink_pb2.DatumRequest(
-        value=mock_message(),
+        value=value,
         event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
         watermark=udsink_pb2.Watermark(watermark=watermark_timestamp),
     )
@@ -139,6 +143,22 @@ class TestAsyncSink(unittest.TestCase):
         self.assertEqual(10, len(generator_response.responses))
         for x in generator_response.responses:
             self.assertTrue(x.success)
+
+    def test_sink_err(self) -> None:
+        stub = self.__stub()
+        request = start_sink_streaming_request(err=True)
+        # print(request)
+        generator_response = None
+        try:
+            generator_response = stub.SinkFn(
+                request_iterator=request_generator(count=10, request=request)
+            )
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        # capture the output from the ReduceFn generator and assert.
+        for x in generator_response.responses:
+            self.assertFalse(x.success)
 
         # since there is only one key, the output count is 1
 

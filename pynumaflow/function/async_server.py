@@ -167,19 +167,6 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
         return datums
 
-    # def MapTFn(
-    #     self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
-    # ) -> udfunction_pb2.DatumResponseList:
-    #     """
-    #     Applies a function to each datum element.
-    #     The pascal case function name comes from the generated udfunction_pb2_grpc.py file.
-    #     """
-    #
-    #     # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
-    #     # we need to explicitly convert it to list
-    #     _LOGGER.error("MapT not supported on Async Server --")
-    #     raise NotImplementedError("MapT not supported on Async Server")
-
     async def ReduceFn(
         self,
         request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],

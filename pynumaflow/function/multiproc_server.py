@@ -103,10 +103,12 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         self._server_options = [
             ("grpc.max_send_message_length", self._max_message_size),
             ("grpc.max_receive_message_length", self._max_message_size),
+            ("grpc.so_reuseport", 1),
+            ("grpc.so_reuseaddr", 1),
         ]
         self._sock_path = sock_path
-        self._PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
-        self._THREAD_CONCURRENCY = self._PROCESS_COUNT
+        self._process_count = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
+        self._thread_concurrency = MAX_THREADS
 
     def MapFn(
         self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
@@ -189,18 +191,6 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
         return udfunction_pb2.DatumResponseList(elements=datums)
 
-    # def ReduceFn(
-    #         self,
-    #         request_iterator: AsyncIterable[udfunction_pb2.Datum],
-    #         context: NumaflowServicerContext,
-    # ) -> udfunction_pb2.DatumList:
-    #     """
-    #     Applies a reduce function to a datum stream.
-    #     The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
-    #     """
-    #     _LOGGER.error("Reduce not supported on NEW SYNC --")
-    #     raise NotImplementedError("Reduce Not supported on sync")
-
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
@@ -213,12 +203,9 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     def _run_server(self, bind_address):
         """Start a server in a subprocess."""
         _LOGGER.info("Starting new server.")
-        options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
-        for x in options:
-            self._server_options.append(x)
         server = grpc.server(
             futures.ThreadPoolExecutor(
-                max_workers=self._THREAD_CONCURRENCY,
+                max_workers=self._thread_concurrency,
             ),
             options=self._server_options,
         )
@@ -249,7 +236,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         with self._reserve_port() as port:
             bind_address = f"{MULTIPROC_FUNCTION_SOCK_ADDR}:{port}"
             workers = []
-            for _ in range(self._PROCESS_COUNT):
+            for _ in range(self._process_count):
                 # NOTE: It is imperative that the worker subprocesses be forked before
                 # any gRPC servers start up. See
                 # https://github.com/grpc/grpc/issues/16001 for more details.

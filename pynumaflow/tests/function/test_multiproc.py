@@ -41,8 +41,7 @@ class TestMultiProcMethods(unittest.TestCase):
             reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
         )
         self.assertEqual(server._sock_path, 55551)
-        self.assertEqual(server._PROCESS_COUNT, 3)
-        self.assertEqual(server._THREAD_CONCURRENCY, 3)
+        self.assertEqual(server._process_count, 3)
 
     # To test the reuse property for the grpc servers which allow multiple
     # bindings to the same server

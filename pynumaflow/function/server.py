@@ -33,7 +33,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
     Provides an interface to write a User Defined Function (UDFunction)
-    which will be exposed over a Syncronous gRPC server.
+    which will be exposed over a Synchronous gRPC server.
 
     Args:
         map_handler: Function callable following the type signature of UDFMapCallable
@@ -182,18 +182,6 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                 )
             )
         return udfunction_pb2.DatumResponseList(elements=datums)
-
-    # def ReduceFn(
-    #         self,
-    #         request_iterator: AsyncIterable[udfunction_pb2.Datum],
-    #         context: NumaflowServicerContext,
-    # ) -> udfunction_pb2.DatumList:
-    #     """
-    #     Applies a reduce function to a datum stream.
-    #     The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
-    #     """
-    #     _LOGGER.error("Reduce not supported on NEW SYNC --")
-    #     raise NotImplementedError("Reduce Not supported on sync")
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

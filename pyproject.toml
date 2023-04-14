@@ -19,7 +19,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.11"
+python = ">=3.9, <3.12"
 grpcio = "^1.48.1"
 grpcio-tools = "^1.48.1"
 google-cloud = "^0.34.0"

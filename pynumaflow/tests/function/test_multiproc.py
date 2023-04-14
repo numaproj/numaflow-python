@@ -237,6 +237,10 @@ class TestMultiProcMethods(unittest.TestCase):
         )
         self.assertEqual(code, StatusCode.OK)
 
+    def test_invalid_input(self):
+        with self.assertRaises(ValueError):
+            MultiProcServer()
+
 
 if __name__ == "__main__":
     unittest.main()

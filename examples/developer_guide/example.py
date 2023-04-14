@@ -6,11 +6,11 @@ from pynumaflow.function import (
     Message,
     Datum,
     Metadata,
-    UserDefinedFunctionServicer,
+    AsyncServer,
 )
 
 
-def map_handler(keys: List[str], datum: Datum) -> Messages:
+async def map_handler(keys: List[str], datum: Datum) -> Messages:
     # forward a message
     val = datum.value
     _ = datum.event_time
@@ -35,6 +35,5 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler=map_handler, reduce_handler=my_handler)
-
-    aiorun.run(grpc_server.start_async())
+    grpc_server = AsyncServer(map_handler=map_handler, reduce_handler=my_handler)
+    aiorun.run(grpc_server.start())

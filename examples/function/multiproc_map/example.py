@@ -1,7 +1,7 @@
 import math
 from typing import List
 
-from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, MultiProcServer
 
 
 def is_prime(n):
@@ -30,5 +30,5 @@ if __name__ == "__main__":
         MAP_MULTIPROC="true"
     in the pipeline config for the numa container.
     """
-    grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
-    grpc_server.start_multiproc()
+    grpc_server = MultiProcServer(map_handler=my_handler)
+    grpc_server.start()

@@ -9,8 +9,9 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 ### Map
 
 ```python
-from pynumaflow.function import Messages, Message, Datum, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, Server
 from typing import List
+
 
 def my_handler(keys: List[str], datum: Datum) -> Messages:
     val = datum.value
@@ -21,7 +22,7 @@ def my_handler(keys: List[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
+    grpc_server = Server(map_handler=my_handler)
     grpc_server.start()
 ```
 ### MapT - Map with event time assignment capability
@@ -30,8 +31,9 @@ MapT is only supported at source vertex to enable (a) early data filtering and (
 
 ```python
 import datetime
-from pynumaflow.function import MessageTs, MessageT, Datum, UserDefinedFunctionServicer
+from pynumaflow.function import MessageTs, MessageT, Datum, Server
 from typing import List
+
 
 def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     val = datum.value
@@ -40,17 +42,19 @@ def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     message_t_s = MessageTs(MessageT(new_event_time, val, keys))
     return message_t_s
 
+
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(mapt_handler=mapt_handler)
+    grpc_server = Server(mapt_handler=mapt_handler)
     grpc_server.start()
 ```
 
 ### Reduce
 
 ```python
+import aiorun
 import asyncio
 from typing import Iterator, List
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 
 async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
@@ -66,9 +70,8 @@ async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> 
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=my_handler)
-    asyncio.run(grpc_server.start_async())
-    asyncio.run(*grpc_server.cleanup_coroutines)
+    grpc_server = AsyncServer(reduce_handler=my_handler)
+    aiorun.run(grpc_server.start())
 ```
 
 ### Sample Image
@@ -79,7 +82,7 @@ under [examples](examples/function/forward_message).
 
 ```python
 from typing import Iterator
-from pynumaflow.sink import Datum, Responses, Response, UserDefinedSinkServicer
+from pynumaflow.sink import Datum, Responses, Response, Sink
 
 
 def my_handler(datums: Iterator[Datum]) -> Responses:
@@ -91,7 +94,7 @@ def my_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedSinkServicer(my_handler)
+    grpc_server = Sink(my_handler)
     grpc_server.start()
 ```
 

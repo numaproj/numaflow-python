@@ -11,7 +11,7 @@ from pynumaflow.function import (
     Message,
     Datum,
     Metadata,
-    UserDefinedFunctionServicer,
+    AsyncServer,
 )
 
 _LOGGER = setup_logging(__name__)
@@ -47,5 +47,5 @@ async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Meta
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
-    aiorun.run(grpc_server.start_async())
+    grpc_server = AsyncServer(reduce_handler=reduce_handler)
+    aiorun.run(grpc_server.start())

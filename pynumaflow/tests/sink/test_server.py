@@ -1,12 +1,13 @@
 import unittest
 from datetime import datetime, timezone
+from typing import Iterator
+
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from typing import Iterator
 
-from pynumaflow.sink import Responses, Datum, Response, UserDefinedSinkServicer
+from pynumaflow.sink import Responses, Datum, Response, Sink
 from pynumaflow.sink.proto import udsink_pb2
 
 
@@ -46,7 +47,7 @@ def mock_watermark():
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = UserDefinedSinkServicer(udsink_handler)
+        my_servicer = Sink(udsink_handler)
         services = {udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -66,7 +67,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_udsink_err(self):
-        my_servicer = UserDefinedSinkServicer(err_udsink_handler)
+        my_servicer = Sink(err_udsink_handler)
         services = {udsink_pb2.DESCRIPTOR.services_by_name["UserDefinedSink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

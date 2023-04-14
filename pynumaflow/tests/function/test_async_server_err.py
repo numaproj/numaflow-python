@@ -1,17 +1,18 @@
 import asyncio
-import grpc
 import logging
 import threading
 import unittest
+from typing import AsyncIterable
+
+import grpc
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
-from typing import AsyncIterable
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.test_server import (
+from pynumaflow.tests.function.server_utils import (
     mapt_handler,
     map_handler,
     mock_event_time,
@@ -80,7 +81,7 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = UserDefinedFunctionServicer(
+    udfs = AsyncServer(
         reduce_handler=err_async_reduce_handler,
         map_handler=map_handler,
         mapt_handler=mapt_handler,
@@ -140,6 +141,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
 
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
+
+    def test_invalid_input(self):
+        with self.assertRaises(ValueError):
+            AsyncServer()
 
 
 if __name__ == "__main__":

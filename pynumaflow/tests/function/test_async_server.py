@@ -1,27 +1,62 @@
 import asyncio
-import grpc
 import logging
 import threading
 import unittest
+from typing import AsyncIterable, List
+
+import grpc
+from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
-from typing import AsyncIterable, List
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import (
+    Messages,
+    Message,
+    Datum,
+    AsyncServer,
+    MessageTs,
+    MessageT,
+    Metadata,
+)
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.test_server import (
-    mapt_handler,
-    map_handler,
+from pynumaflow.tests.function.server_utils import (
     mock_event_time,
     mock_watermark,
     mock_message,
     mock_interval_window_start,
     mock_interval_window_end,
+    mock_new_event_time,
 )
 
 LOGGER = setup_logging(__name__)
+
+
+async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
+    val = datum.value
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time,
+        datum.watermark,
+    )
+    val = bytes(msg, encoding="utf-8")
+    messages = Messages()
+    messages.append(Message(str.encode(msg), keys=keys))
+    return messages
+
+
+async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
+    val = datum.value
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time,
+        datum.watermark,
+    )
+    val = bytes(msg, encoding="utf-8")
+    messagets = MessageTs()
+    messagets.append(MessageT(value=val, keys=keys, event_time=mock_new_event_time()))
+    return messagets
 
 
 async def async_reduce_handler(
@@ -77,10 +112,10 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = UserDefinedFunctionServicer(
+    udfs = AsyncServer(
         reduce_handler=async_reduce_handler,
-        map_handler=map_handler,
-        mapt_handler=mapt_handler,
+        map_handler=async_map_handler,
+        mapt_handler=async_mapt_handler,
     )
     udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
     listen_addr = "[::]:50051"
@@ -258,6 +293,19 @@ class TestAsyncServer(unittest.TestCase):
                 r.elements[0].value,
             )
         self.assertEqual(100, count)
+
+    def test_is_ready(self) -> None:
+        with grpc.insecure_channel("localhost:50051") as channel:
+            stub = udfunction_pb2_grpc.UserDefinedFunctionStub(channel)
+
+            request = _empty_pb2.Empty()
+            response = None
+            try:
+                response = stub.IsReady(request=request)
+            except grpc.RpcError as e:
+                logging.error(e)
+
+            self.assertTrue(response.ready)
 
     def __stub(self):
         return udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)

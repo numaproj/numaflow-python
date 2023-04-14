@@ -1,7 +1,7 @@
 import aiorun
 from typing import AsyncIterable, List
 
-from pynumaflow.function import Messages, Message, Datum, Metadata, UserDefinedFunctionServicer
+from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 
 async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
@@ -17,6 +17,5 @@ async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Meta
 
 
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(reduce_handler=reduce_handler)
-
-    aiorun.run(grpc_server.start_async())
+    grpc_server = AsyncServer(reduce_handler=reduce_handler)
+    aiorun.run(grpc_server.start())

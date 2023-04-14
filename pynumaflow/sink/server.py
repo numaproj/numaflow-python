@@ -114,29 +114,6 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         """
         return udsink_pb2.ReadyResponse(ready=True)
 
-    async def __serve_async(self, server) -> None:
-        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(Sink(self.__sink_handler), server)
-        server.add_insecure_port(self.sock_path)
-        _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
-        await server.start()
-
-        async def server_graceful_shutdown():
-            _LOGGER.info("Starting graceful shutdown...")
-            """
-            Shuts down the server with 5 seconds of grace period. During the
-            grace period, the server won't accept new connections and allow
-            existing RPCs to continue within the grace period.
-            await server.stop(5)
-            """
-
-        self.cleanup_coroutines.append(server_graceful_shutdown())
-        await server.wait_for_termination()
-
-    async def start_async(self) -> None:
-        """Starts the Async gRPC server on the given UNIX socket."""
-        server = grpc.aio.server(options=self._server_options)
-        await self.__serve_async(server)
-
     def start(self) -> None:
         """
         Starts the gRPC server on the given UNIX socket with given max threads.

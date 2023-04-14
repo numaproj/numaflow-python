@@ -15,4 +15,4 @@ exclude_lines =
     def _run_server
     def _reserve_port
     if os.getenv("PYTHONDEBUG"):
-        _LOGGER.setLevel(logging.DEBUG)
+    _LOGGER.setLevel(logging.DEBUG)

@@ -1,12 +1,11 @@
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import message as _message
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from typing import (
     ClassVar as _ClassVar,
     Optional as _Optional,
     List,
 )
-
-from google.protobuf import descriptor as _descriptor
-from google.protobuf import message as _message
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 DESCRIPTOR: _descriptor.FileDescriptor
 

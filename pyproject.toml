@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pynumaflow"
-version = "0.3.3"
+version = "0.4.0"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = ["NumaFlow Developers"]
 readme = "README.md"
@@ -13,13 +13,14 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11"
 ]
+repository = "https://github.com/numaproj/numaflow-python"
 
 [tool.poetry.dependencies]
-python = ">=3.8, <3.11"
+python = ">=3.9, <3.12"
 grpcio = "^1.48.1"
 grpcio-tools = "^1.48.1"
 google-cloud = "^0.34.0"

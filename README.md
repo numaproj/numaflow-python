@@ -107,8 +107,8 @@ has been delivered. You can use these metadata to implement customized logic. Fo
 ```python
 ...
 def my_handler(keys: List[str], datum: Datum) -> Messages:
-    delivery_count = datum.metadata.delivery_count
+    num_delivered = datum.metadata.num_delivered
     # Choose to do specific actions, if the message delivery count reaches a certain threshold.
-    if delivery_count > 3:
+    if num_delivered > 3:
         ...
 ```

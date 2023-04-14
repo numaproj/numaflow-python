@@ -8,7 +8,7 @@ packages = [{include = "mapt_event_time_filter"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.11"
-pynumaflow = "~0.3.3"
+pynumaflow = "~0.4.0"
 
 [build-system]
 requires = ["poetry-core"]

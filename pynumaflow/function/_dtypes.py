@@ -38,19 +38,19 @@ class Message:
 
     # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: Type[MT]) -> MT:
+    def to_drop(cls: Type[M]) -> M:
         return cls(b"", None, [DROP])
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         return self._value
 
     @property
-    def keys(self):
+    def keys(self) -> List[str]:
         return self._keys
 
     @property
-    def tags(self):
+    def tags(self) -> List[str]:
         return self._tags
 
 
@@ -110,27 +110,27 @@ class MessageT:
         """
         self._tags = tags or []
         self._keys = keys or []
-        self._event_time = event_time
+        self._event_time = event_time or datetime(1, 1, 1, 0, 0)
         self._value = value or b""
 
     @classmethod
     def to_drop(cls: Type[MT]) -> MT:
-        return cls(b"", None, None, [DROP])
+        return cls(b"", datetime(1, 1, 1, 0, 0), None, [DROP])
 
     @property
-    def event_time(self):
+    def event_time(self) -> datetime:
         return self._event_time
 
     @property
-    def keys(self):
+    def keys(self) -> List[str]:
         return self._keys
 
     @property
-    def value(self):
+    def value(self) -> bytes:
         return self._value
 
     @property
-    def tags(self):
+    def tags(self) -> List[str]:
         return self._tags
 
 

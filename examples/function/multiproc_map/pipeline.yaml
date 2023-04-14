@@ -15,19 +15,12 @@ spec:
     - name: mult
       udf:
         container:
-          image: "refactor:v2"
+          image: "quay.io/numaio/numaflow-python/multiproc:latest"
           env:
             - name: PYTHONDEBUG
               value: "true"
             - name: NUM_CPU_MULTIPROC
               value: "2"  # DO NOT forget the double quotes!!!
-        groupBy:
-          window:
-            fixed:
-              length: 10s
-          keyed: true
-          storage:
-            emptyDir: {}
       containerTemplate:
         resources:
           limits:
@@ -40,7 +33,7 @@ spec:
           - name: NUMAFLOW_DEBUG
             value: "true" # DO NOT forget the double quotes!!!
           - name: MAP_MULTIPROC
-            value: "false" # DO NOT forget the double quotes!!!
+            value: "true" # DO NOT forget the double quotes!!!
           - name: NUM_CPU_MULTIPROC
             value: "2"  # DO NOT forget the double quotes!!!
 

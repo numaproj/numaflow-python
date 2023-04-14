@@ -1,3 +1,3 @@
 .PHONY: image
 image:
-	docker build --no-cache -t "refactor:v2" .
+	docker build -t "quay.io/numaio/numaflow-python/multiproc:latest" .

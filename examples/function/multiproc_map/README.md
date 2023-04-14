@@ -20,8 +20,8 @@ To enable multiprocessing mode
 2) Start the multiproc server in the UDF using the following command 
 ```python
 if __name__ == "__main__":
-    grpc_server = UserDefinedFunctionServicer(map_handler=my_handler)
-    grpc_server.start_multiproc()
+    grpc_server = MultiProcServer(map_handler=my_handler)
+    grpc_server.start()
 ```
 3) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF and numa container,
 to set the value of the number of processes to be created. 

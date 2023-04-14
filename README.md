@@ -82,7 +82,7 @@ under [examples](examples/function/forward_message).
 
 ```python
 from typing import Iterator
-from pynumaflow.sink import Datum, Responses, Response, SyncSink
+from pynumaflow.sink import Datum, Responses, Response, Sink
 
 
 def my_handler(datums: Iterator[Datum]) -> Responses:
@@ -94,7 +94,7 @@ def my_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = SyncSink(my_handler)
+    grpc_server = Sink(my_handler)
     grpc_server.start()
 ```
 

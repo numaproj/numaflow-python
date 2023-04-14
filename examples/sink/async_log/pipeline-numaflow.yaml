@@ -1,0 +1,34 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: udsink-pipeline
+spec:
+  vertices:
+    - name: in
+      source:
+        generator:
+          rpu: 1
+          duration: 1s
+          msgSize: 10
+    - name: p1
+      udf:
+        builtin:
+          name: cat
+    - name: out
+      sink:
+        udsink:
+          container:
+            args:
+            - python
+            - example.py
+            image: quay.io/numaio/numaflow-python/async-sink-log:latest
+    - name: log-output
+      sink:
+        log: {}
+  edges:
+    - from: in
+      to: p1
+    - from: p1
+      to: out
+    - from: p1
+      to: log-output

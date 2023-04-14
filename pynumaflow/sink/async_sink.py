@@ -41,7 +41,7 @@ async def datum_generator(
 class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
     """
     Provides an interface to write a User Defined Sink (UDSink)
-    which will be exposed over gRPC.
+    which will be exposed over an Asyncronous gRPC server.
 
     Args:
         sink_handler: Function callable following the type signature of UDSinkCallable
@@ -53,13 +53,13 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
     Example invocation:
     >>> from typing import List
     >>> from pynumaflow.sink import Datum, Responses, Response, Sink
-    >>> def my_handler(datums: Iterator[Datum]) -> Responses:
+    >>> async def my_handler(datums: AsyncIterable[Datum]) -> Responses:
     ...   responses = Responses()
-    ...   for msg in datums:
+    ...   async for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
     ...   return responses
-    >>> grpc_server = Sink(my_handler)
-    >>> grpc_server.start()
+    >>> grpc_server = AsyncSink(my_handler)
+    >>> aiorun.run(grpc_server.start())
     """
 
     def __init__(
@@ -141,7 +141,7 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         self.cleanup_coroutines.append(server_graceful_shutdown())
         await server.wait_for_termination()
 
-    async def start_async(self) -> None:
+    async def start(self) -> None:
         """Starts the Async gRPC server on the given UNIX socket."""
         server = grpc.aio.server(options=self._server_options)
         await self.__serve_async(server)

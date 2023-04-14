@@ -56,14 +56,17 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
-    ...   messages = Messages(Message.to_vtx(key, val))
+    ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
+    ...
+    ... def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    ...           "Not supported"
     ...
     >>> def mapt_handler(key: [str], datum: Datum) -> MessageTs:
     ...   val = datum.value
     ...   new_event_time = datetime.time()
     ...   _ = datum.watermark
-    ...   message_t_s = MessageTs(MessageT.to_vtx(key, val, new_event_time))
+    ...   message_t_s = MessageTs(MessageT(val, event_time=new_event_time, keys=key))
     ...   return message_t_s
     ...
     ...

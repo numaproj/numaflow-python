@@ -79,6 +79,8 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
+    ...async def mapT_handler(key: [str], datum: Datum) -> Messages:
+    ...         "Not supported"
     ...
     >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window

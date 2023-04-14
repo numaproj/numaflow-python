@@ -53,7 +53,7 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
-    ...   messages = Messages(Message.to_vtx(key, val))
+    ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
     ... def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:

@@ -1,5 +1,6 @@
 import unittest
 
+import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
@@ -68,7 +69,38 @@ class TestServer(unittest.TestCase):
             timeout=1,
         )
         response, metadata, code, details = method.termination()
-        self.assertEqual(None, response)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+
+    def test_udf_map_error_response(self):
+        my_servicer = Server(map_handler=err_map_handler)
+        services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "MapFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+        response, metadata, code, details = method.termination()
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_udf_mapt_err(self):
         my_servicer = Server(mapt_handler=err_mapt_handler)
@@ -99,7 +131,25 @@ class TestServer(unittest.TestCase):
             timeout=1,
         )
         response, metadata, code, details = method.termination()
-        self.assertEqual(None, response)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+
+    def test_unimplemented_reduce(self):
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "ReduceFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            timeout=1,
+        )
+
+        metadata, code, details = method.termination()
+
+        self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, code)
+        self.assertEqual('Method not implemented!', details)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(

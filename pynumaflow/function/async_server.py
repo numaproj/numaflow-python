@@ -36,7 +36,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 async def datum_generator(
-    request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
+        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
 ) -> AsyncIterable[Datum]:
     async for d in request_iterator:
         datum = Datum(
@@ -101,13 +101,13 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
 
     def __init__(
-        self,
-        map_handler: UDFMapCallable = None,
-        mapt_handler: UDFMapTCallable = None,
-        reduce_handler: UDFReduceCallable = None,
-        sock_path=FUNCTION_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            map_handler: UDFMapCallable = None,
+            mapt_handler: UDFMapTCallable = None,
+            reduce_handler: UDFReduceCallable = None,
+            sock_path=FUNCTION_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
             raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
@@ -130,7 +130,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         ]
 
     async def MapFn(
-        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
@@ -138,20 +138,33 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         """
         # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
         # we need to explicitly convert it to list
-        res = await self.__invoke_map(
-            list(request.keys),
-            Datum(
-                keys=list(request.keys),
-                value=request.value,
-                event_time=request.event_time.event_time.ToDatetime(),
-                watermark=request.watermark.watermark.ToDatetime(),
-                metadata=DatumMetadata(
-                    msg_id=request.metadata.id,
-                    num_delivered=request.metadata.num_delivered,
+        try:
+            res = await self.__invoke_map(
+                list(request.keys),
+                Datum(
+                    keys=list(request.keys),
+                    value=request.value,
+                    event_time=request.event_time.event_time.ToDatetime(),
+                    watermark=request.watermark.watermark.ToDatetime(),
+                    metadata=DatumMetadata(
+                        msg_id=request.metadata.id,
+                        num_delivered=request.metadata.num_delivered,
+                    ),
                 ),
-            ),
-        )
+            )
+        except Exception as e:
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(str(e))
+            return udfunction_pb2.DatumResponseList(elements=[])
+
         return udfunction_pb2.DatumResponseList(elements=res)
+
+    async def MapTFn(
+            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+    ) -> udfunction_pb2.DatumResponseList:
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        return udfunction_pb2.DatumResponseList(elements=[])
 
     async def __invoke_map(self, keys: List[str], req: Datum):
         try:
@@ -168,9 +181,9 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return datums
 
     async def ReduceFn(
-        self,
-        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
-        context: NumaflowServicerContext,
+            self,
+            request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
+            context: NumaflowServicerContext,
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a reduce function to a datum stream.
@@ -184,10 +197,13 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             elif metadata_key == WIN_END_TIME:
                 end = metadata_value
         if not (start or end):
-            raise ValueError(
+            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+            context.set_details(
                 f"Expected to have all key/window_start_time/window_end_time; "
                 f"got start: {start}, end: {end}."
             )
+            yield udfunction_pb2.DatumResponseList(elements=[])
+            return
 
         start_dt = datetime.fromtimestamp(int(start) / 1e3, timezone.utc)
         end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
@@ -207,9 +223,14 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         await response_task
         results_futures = response_task.result()
 
-        for fut in results_futures:
-            await fut
-            yield udfunction_pb2.DatumResponseList(elements=fut.result())
+        try:
+            for fut in results_futures:
+                await fut
+                yield udfunction_pb2.DatumResponseList(elements=fut.result())
+        except Exception as e:
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(e.__str__())
+            yield udfunction_pb2.DatumResponseList(elements=[])
 
     async def __async_reduce_handler(self, interval_window, datum_iterator: AsyncIterable[Datum]):
         callable_dict = {}
@@ -248,7 +269,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return tasks
 
     async def __invoke_reduce(
-        self, keys: List[str], request_iterator: AsyncIterable[Datum], md: Metadata
+            self, keys: List[str], request_iterator: AsyncIterable[Datum], md: Metadata
     ):
         try:
             msgs = await self.__reduce_handler(keys, request_iterator, md)
@@ -265,7 +286,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return datum_responses
 
     async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

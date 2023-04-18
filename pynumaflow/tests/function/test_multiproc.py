@@ -256,7 +256,7 @@ class TestMultiProcMethods(unittest.TestCase):
         metadata, code, details = method.termination()
 
         self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, code)
-        self.assertEqual('Method not implemented!', details)
+        self.assertEqual("Method not implemented!", details)
 
 
 if __name__ == "__main__":

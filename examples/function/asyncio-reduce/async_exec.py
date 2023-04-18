@@ -34,9 +34,9 @@ async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Meta
         tasks = []
         start_time = time.time()
         async for _ in datums:
-            url = f"http://host.docker.internal:9888/ping"
+            url = "http://host.docker.internal:9888/ping"
             tasks.append(http_request(session, url))
-        results = await asyncio.gather(*tasks)
+        await asyncio.gather(*tasks)
         end_time = time.time()
 
     msg = (

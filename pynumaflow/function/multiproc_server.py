@@ -196,16 +196,16 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return udfunction_pb2.DatumResponseList(elements=datums)
 
     def ReduceFn(
-            self,
-            request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
-            context: NumaflowServicerContext,
+        self,
+        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
+        context: NumaflowServicerContext,
     ) -> udfunction_pb2.DatumResponseList:
         """
         This method is not implemented because we multiplex different keys
         on to a single stream and reduce requires a persistent connection.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
+        context.set_details("Method not implemented!")
         yield from ()
 
     def IsReady(

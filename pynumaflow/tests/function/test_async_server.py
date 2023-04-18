@@ -68,7 +68,7 @@ async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
 
 
 async def async_reduce_handler(
-        keys: List[str], datums: AsyncIterable[Datum], md: Metadata
+    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0
@@ -118,8 +118,11 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-def NewAsyncServer(map_handler=async_map_handler, mapt_handler=async_mapt_handler,
-                   reduce_handler=async_reduce_handler):
+def NewAsyncServer(
+    map_handler=async_map_handler,
+    mapt_handler=async_mapt_handler,
+    reduce_handler=async_reduce_handler,
+):
     udfs = AsyncServer(
         reduce_handler=reduce_handler,
         map_handler=map_handler,
@@ -290,7 +293,7 @@ class TestAsyncServer(unittest.TestCase):
         except grpc.RpcError as e:
             grpcException = e
             self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, e.code())
-            self.assertEqual('Method not implemented!', e.details())
+            self.assertEqual("Method not implemented!", e.details())
 
         self.assertIsNotNone(grpcException)
 
@@ -308,9 +311,14 @@ class TestAsyncServer(unittest.TestCase):
                 count += 1
         except grpc.RpcError as e:
             self.assertEqual(grpc.StatusCode.INVALID_ARGUMENT, e.code())
-            self.assertEqual('Expected to have all key/window_start_time/window_end_time; got start: None, end: None.', e.details())
+            self.assertEqual(
+                "Expected to have all key/window_start_time/window_end_time;"
+                " got start: None, end: None.",
+                e.details(),
+            )
         except Exception as err:
             self.fail("Expected an exception.")
+            logging.error(err)
 
     def test_reduce(self) -> None:
         stub = self.__stub()

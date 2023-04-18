@@ -35,10 +35,10 @@ class ReduceHandler:
         self.exec_pool.set_loop(asyncio.get_event_loop())
         start_time = time.time()
         async for _ in datums:
-            url = f"http://host.docker.internal:9888/ping"
+            url = "http://host.docker.internal:9888/ping"
             fut = threadPool.submit(blocking_call, url)
             tasks.append(fut)
-        results = await threadPool.gather(tasks)
+        await threadPool.gather(tasks)
         end_time = time.time()
         msg = (
             f"batch_time:{end_time - start_time} interval_window_start:{interval_window.start} "

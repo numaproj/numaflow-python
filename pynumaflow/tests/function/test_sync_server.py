@@ -149,7 +149,7 @@ class TestServer(unittest.TestCase):
         metadata, code, details = method.termination()
 
         self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, code)
-        self.assertEqual('Method not implemented!', details)
+        self.assertEqual("Method not implemented!", details)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(

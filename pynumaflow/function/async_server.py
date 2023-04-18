@@ -36,7 +36,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 async def datum_generator(
-        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
+    request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
 ) -> AsyncIterable[Datum]:
     async for d in request_iterator:
         datum = Datum(
@@ -101,13 +101,13 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
 
     def __init__(
-            self,
-            map_handler: UDFMapCallable = None,
-            mapt_handler: UDFMapTCallable = None,
-            reduce_handler: UDFReduceCallable = None,
-            sock_path=FUNCTION_SOCK_PATH,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        map_handler: UDFMapCallable = None,
+        mapt_handler: UDFMapTCallable = None,
+        reduce_handler: UDFReduceCallable = None,
+        sock_path=FUNCTION_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
             raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
@@ -130,7 +130,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         ]
 
     async def MapFn(
-            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
@@ -160,10 +160,10 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return udfunction_pb2.DatumResponseList(elements=res)
 
     async def MapTFn(
-            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
+        context.set_details("Method not implemented!")
         return udfunction_pb2.DatumResponseList(elements=[])
 
     async def __invoke_map(self, keys: List[str], req: Datum):
@@ -181,9 +181,9 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return datums
 
     async def ReduceFn(
-            self,
-            request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
-            context: NumaflowServicerContext,
+        self,
+        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
+        context: NumaflowServicerContext,
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a reduce function to a datum stream.
@@ -269,7 +269,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return tasks
 
     async def __invoke_reduce(
-            self, keys: List[str], request_iterator: AsyncIterable[Datum], md: Metadata
+        self, keys: List[str], request_iterator: AsyncIterable[Datum], md: Metadata
     ):
         try:
             msgs = await self.__reduce_handler(keys, request_iterator, md)
@@ -286,7 +286,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return datum_responses
 
     async def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

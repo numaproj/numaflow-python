@@ -1,4 +1,4 @@
-from typing import Iterator, AsyncIterable
+from typing import AsyncIterable
 
 import aiorun
 

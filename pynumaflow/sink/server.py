@@ -12,9 +12,11 @@ from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
 )
+from pynumaflow.info import info_types, info_server
 from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
+from pynumaflow.info.info_server import ServerInfo, get_sdk_version
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
@@ -124,6 +126,11 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(Sink(self.__sink_handler), server)
         server.add_insecure_port(self.sock_path)
         server.start()
+        serv_info = ServerInfo(protocol=info_types.UDS, language=info_types.Python,
+                               version=info_server.get_sdk_version(),
+                               metadata=info_server.get_metadata(info_types.metadata_envs))
+
+        info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

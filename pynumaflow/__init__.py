@@ -6,6 +6,8 @@ if os.getenv("PYTHONDEBUG"):
     os.environ["PYTHONASYNCIODEBUG"] = "1"
 
 __version__ = "0.4.0"
+
+
 class StdoutFilter(logging.Filter):
     """
     Filter logs with level less than logging.ERROR so they will go to stdout instead

@@ -204,9 +204,12 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
         server.add_insecure_port(self.sock_path)
         server.start()
-        serv_info = ServerInfo(protocol=info_types.UDS, language=info_types.Python,
-                               version=info_server.get_sdk_version(),
-                               metadata=info_server.get_metadata(info_types.metadata_envs))
+        serv_info = ServerInfo(
+            protocol=info_types.UDS,
+            language=info_types.PYTHON,
+            version=info_server.get_sdk_version(),
+            metadata=info_server.get_metadata_env(info_types.metadata_envs),
+        )
 
         err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         if err is not None:

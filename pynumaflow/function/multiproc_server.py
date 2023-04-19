@@ -20,6 +20,8 @@ from pynumaflow.function import Messages, MessageTs, Datum, Metadata
 from pynumaflow.function._dtypes import DatumMetadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
+from pynumaflow.info import info_types, info_server
+from pynumaflow.info.info_types import ServerInfo
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)
@@ -29,7 +31,7 @@ if os.getenv("PYTHONDEBUG"):
 UDFMapCallable = Callable[[List[str], Datum], Messages]
 UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
 UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
-_PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
+_PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", int(os.getenv("NUMAFLOW_CPU_LIMIT", 1))))
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
@@ -78,13 +80,13 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     """
 
     def __init__(
-        self,
-        map_handler: UDFMapCallable = None,
-        mapt_handler: UDFMapTCallable = None,
-        reduce_handler: UDFReduceCallable = None,
-        sock_path=MULTIPROC_FUNCTION_SOCK_PORT,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            map_handler: UDFMapCallable = None,
+            mapt_handler: UDFMapTCallable = None,
+            reduce_handler: UDFReduceCallable = None,
+            sock_path=MULTIPROC_FUNCTION_SOCK_PORT,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
             raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
@@ -111,7 +113,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         self._thread_concurrency = MAX_THREADS
 
     def MapFn(
-        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
@@ -147,7 +149,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return udfunction_pb2.DatumResponseList(elements=datums)
 
     def MapTFn(
-        self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
+            self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:
         """
         Applies a function to each datum element.
@@ -192,7 +194,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return udfunction_pb2.DatumResponseList(elements=datums)
 
     def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> udfunction_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
@@ -212,6 +214,17 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(self, server)
         server.add_insecure_port(bind_address)
         server.start()
+        serv_info = ServerInfo(protocol=info_types.TCP, language=info_types.Python,
+                               version=info_server.get_sdk_version(),
+                               metadata=info_server.get_metadata(info_types.metadata_envs))
+
+        # Overwrite the CPU_LIMIT metadata using user input
+        serv_info.metadata['CPU_LIMIT'] = self._process_count
+
+        err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        if err is not None:
+            _LOGGER.error(f"Could not write Info-Server {err}")
+
         _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()
 

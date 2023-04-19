@@ -22,6 +22,8 @@ from pynumaflow.function._dtypes import ReduceResult, DatumMetadata
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
+from pynumaflow.info import info_types, info_server
+from pynumaflow.info.info_types import ServerInfo
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)
@@ -285,6 +287,13 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.add_insecure_port(self.sock_path)
         _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
         await server.start()
+        serv_info = ServerInfo(protocol=info_types.UDS, language=info_types.Python,
+                               version=info_server.get_sdk_version(),
+                               metadata=info_server.get_metadata(info_types.metadata_envs))
+
+        err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        if err is not None:
+            _LOGGER.error(f"Could not write Info-Server {err}")
 
         async def server_graceful_shutdown():
             """

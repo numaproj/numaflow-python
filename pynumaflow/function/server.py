@@ -206,7 +206,7 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.start()
         serv_info = ServerInfo(protocol=info_types.UDS, language=info_types.Python,
                                version=info_server.get_sdk_version(),
-                               metadata=info_server.get_metadata(info_types.metadupata_envs))
+                               metadata=info_server.get_metadata(info_types.metadata_envs))
 
         f, err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         if err is not None:

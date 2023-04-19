@@ -130,7 +130,12 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
                                version=info_server.get_sdk_version(),
                                metadata=info_server.get_metadata(info_types.metadata_envs))
 
-        info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        f, err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        if err is not None:
+            _LOGGER.error("INFO ERR", err)
+        else:
+            _LOGGER.error("INFO SERV", info_server.read(info_file=info_types.SERVER_INFO_FILE_PATH))
+
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

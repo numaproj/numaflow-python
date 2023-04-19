@@ -206,13 +206,13 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.start()
         serv_info = ServerInfo(protocol=info_types.UDS, language=info_types.Python,
                                version=info_server.get_sdk_version(),
-                               metadata=info_server.get_metadata(info_types.metadata_envs))
+                               metadata=info_server.get_metadata(info_types.metadupata_envs))
 
         f, err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         if err is not None:
-            _LOGGER.error("INFO ERR", err)
+            _LOGGER.error(f"INFO ERR {err}")
         else:
-            _LOGGER.error("INFO SERV", info_server.read(info_file=info_types.SERVER_INFO_FILE_PATH))
+            _LOGGER.error(f"INFO SERV {info_server.read(info_file=info_types.SERVER_INFO_FILE_PATH)}")
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

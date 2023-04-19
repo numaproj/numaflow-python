@@ -219,7 +219,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                                metadata=info_server.get_metadata(info_types.metadata_envs))
 
         # Overwrite the CPU_LIMIT metadata using user input
-        serv_info.metadata['CPU_LIMIT'] = self._process_count
+        serv_info.metadata['CPU_LIMIT'] = str(self._process_count)
 
         err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         if err is not None:

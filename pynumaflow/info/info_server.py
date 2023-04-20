@@ -1,6 +1,5 @@
 import os
-
-from pynumaflow import __version__
+from importlib.metadata import version
 from pynumaflow.info.info_types import ServerInfo, EOF
 import json
 
@@ -9,7 +8,7 @@ def get_sdk_version() -> str:
     """
     Return the pynumaflow SDK version
     """
-    return __version__
+    return version("pynumaflow")
 
 
 def write(serv: ServerInfo, info_file):

@@ -214,6 +214,7 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         if err is not None:
             _LOGGER.error(f"Could not write Info-Server {err}")
+            raise err
 
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads

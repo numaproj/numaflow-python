@@ -227,6 +227,7 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         if err is not None:
             _LOGGER.error(f"Could not write Info-Server {err}")
+            raise err
 
         _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()

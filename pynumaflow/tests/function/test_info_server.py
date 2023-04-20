@@ -42,3 +42,11 @@ class TestInfoServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
             ServerInfo()
+
+    def test_file_new(self):
+        test_file = "/tmp/test_info_server"
+        exists = os.path.isfile(test_file)
+        if exists:
+            os.remove(test_file)
+        ret = info_server.write(self.serv_uds, test_file)
+        self.assertIsNone(ret)

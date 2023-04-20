@@ -5,8 +5,6 @@ import sys
 if os.getenv("PYTHONDEBUG"):
     os.environ["PYTHONASYNCIODEBUG"] = "1"
 
-__version__ = "0.4.0"
-
 
 class StdoutFilter(logging.Filter):
     """

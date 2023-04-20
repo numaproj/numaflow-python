@@ -1,9 +1,6 @@
 import os
 import unittest
 from unittest import mock
-
-from pynumaflow import __version__
-from mock import patch
 from pynumaflow.info import info_server, info_types
 from pynumaflow.info.info_types import ServerInfo
 from pynumaflow.tests.function.testing_utils import read_info_server

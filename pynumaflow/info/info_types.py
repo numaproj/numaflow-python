@@ -31,7 +31,15 @@ class ServerInfo:
         metadata: Any additional information to be provided (env vars)
     """
 
-    def __init__(self, protocol: Protocol, language: Language, version: str, metadata: {} = None):
+    def __init__(
+        self,
+        protocol: Protocol = None,
+        language: Language = None,
+        version: str = None,
+        metadata: {} = None,
+    ):
+        if protocol is None or language is None or version is None:
+            raise ValueError("Need to specify mandatory details in ServerInfo")
         self.protocol = protocol
         self.language = language
         self.version = version

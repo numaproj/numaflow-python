@@ -20,8 +20,8 @@ def write(serv: ServerInfo, info_file):
         serv: The ServerInfo object to be shared
         info_file: the shared file path
     """
-    data = serv.__dict__
     try:
+        data = serv.__dict__
         with open(info_file, "w+") as f:
             json.dump(data, f, ensure_ascii=False)
             f.write(EOF)

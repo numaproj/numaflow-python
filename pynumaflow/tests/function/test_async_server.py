@@ -21,7 +21,7 @@ from pynumaflow.function import (
     Metadata,
 )
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.server_utils import (
+from pynumaflow.tests.function.testing_utils import (
     mock_event_time,
     mock_watermark,
     mock_message,

@@ -16,7 +16,7 @@ from pynumaflow.info import info_types, info_server
 from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow.info.info_server import ServerInfo, get_sdk_version
+from pynumaflow.info.info_server import ServerInfo
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):

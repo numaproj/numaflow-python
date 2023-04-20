@@ -10,7 +10,7 @@ from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.function.multiproc_server import MultiProcServer
 from pynumaflow.function.proto import udfunction_pb2_grpc, udfunction_pb2
-from pynumaflow.tests.function.server_utils import (
+from pynumaflow.tests.function.testing_utils import (
     mapt_handler,
     map_handler,
     err_map_handler,

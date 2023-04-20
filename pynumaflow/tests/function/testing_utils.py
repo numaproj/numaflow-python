@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from typing import Iterator, List
 
@@ -9,6 +10,7 @@ from pynumaflow.function import (
     Datum,
     Metadata,
 )
+from pynumaflow.info.info_types import EOF
 
 
 def map_handler(keys: List[str], datum: Datum) -> Messages:
@@ -83,3 +85,31 @@ def mock_interval_window_start():
 
 def mock_interval_window_end():
     return 1662998460000
+
+
+def read_info_server(info_file):
+    f = open(info_file, "r")
+    retry = 10
+    res = f.read()
+    a, b = info_serv_is_ready(res)
+    while (a is not True) and retry > 0:
+        a, b = info_serv_is_ready(res)
+
+    a, b = info_serv_is_ready(res)
+    if a:
+        res = json.loads(b)
+        return res
+
+    else:
+        return None
+
+
+def info_serv_is_ready(res, eof=EOF):
+    if len(res) < len(eof):
+        return False
+    len_diff = len(res) - len(eof)
+    last_char = res[len_diff:]
+    if last_char == EOF:
+        data = res[:len_diff]
+        return True, data
+    return False, None

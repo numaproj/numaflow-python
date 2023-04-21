@@ -33,7 +33,7 @@ async def err_async_reduce_handler(
     counter = 0
     async for _ in datums:
         counter += 1
-        raise RuntimeError("Got a runtime error from reduce handler.")
+        raise ValueError("Got a runtime error from reduce handler.")
 
     msg = (
         f"counter:{counter} interval_window_start:{interval_window.start} "
@@ -134,9 +134,11 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             count = 0
             for _ in generator_response:
                 count += 1
-        except Exception as err:
-            self.assertTrue("Got a runtime error from reduce handler." in err.__str__())
+        except grpc.RpcError as e:
+            self.assertEqual(e.code(), grpc.StatusCode.UNKNOWN)
+            self.assertEqual(e.details(), "Got a runtime error from reduce handler.")
             return
+
         self.fail("Expected an exception.")
 
     def __stub(self):

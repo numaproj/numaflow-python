@@ -98,7 +98,7 @@ class TestMultiProcMethods(unittest.TestCase):
             timeout=1,
         )
         response, metadata, code, details = method.termination()
-        self.assertEqual(None, response)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_udf_mapt_err(self):
         my_servicer = MultiProcServer(mapt_handler=err_mapt_handler)
@@ -129,7 +129,7 @@ class TestMultiProcMethods(unittest.TestCase):
             timeout=1,
         )
         response, metadata, code, details = method.termination()
-        self.assertEqual(None, response)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(
@@ -239,6 +239,24 @@ class TestMultiProcMethods(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
             MultiProcServer()
+
+    def test_unimplemented_reduce(self):
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "ReduceFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            timeout=1,
+        )
+
+        metadata, code, details = method.termination()
+
+        self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, code)
+        self.assertEqual("Method not implemented!", details)
 
 
 if __name__ == "__main__":

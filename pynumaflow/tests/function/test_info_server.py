@@ -1,6 +1,5 @@
 import os
 import unittest
-import importlib.util
 from unittest import mock
 
 from pynumaflow.info.info_server import get_sdk_version

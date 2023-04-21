@@ -21,8 +21,8 @@ def get_sdk_version() -> str:
     except Exception as e:
         # Adding this to handle the case for local test/CI where pynumaflow
         # will not be installed as a package
-        _LOGGER.error(f"Could not read SDK version {e}")
-        return "Could not read SDK version"
+        _LOGGER.error("Could not read SDK version %r", e, exc_info=True)
+        return ""
 
 
 def write(server_info: ServerInfo, info_file: str):

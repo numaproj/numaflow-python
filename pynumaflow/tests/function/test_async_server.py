@@ -37,7 +37,7 @@ raise_error_from_map = False
 
 
 async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
-    if error_from_map:
+    if raise_error_from_map:
         raise ValueError("Exception thrown from map")
     val = datum.value
     msg = "payload:%s event_time:%s watermark:%s" % (
@@ -260,8 +260,8 @@ class TestAsyncServer(unittest.TestCase):
         grpcException = None
 
         try:
-            global error_from_map
-            error_from_map = True
+            global raise_error_from_map
+            raise_error_from_map = True
             _ = stub.MapFn(request=request, metadata=metadata)
         except grpc.RpcError as e:
             grpcException = e
@@ -269,7 +269,7 @@ class TestAsyncServer(unittest.TestCase):
             print(e.details())
 
         finally:
-            error_from_map = False
+            raise_error_from_map = False
 
         self.assertIsNotNone(grpcException)
 

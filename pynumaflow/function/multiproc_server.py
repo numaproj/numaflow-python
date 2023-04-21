@@ -230,19 +230,14 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.add_insecure_port(bind_address)
         server.start()
         serv_info = ServerInfo(
-            protocol=info_types.TCP,
-            language=info_types.PYTHON,
+            protocol=info_types.Protocol.TCP,
+            language=info_types.Language.PYTHON,
             version=info_server.get_sdk_version(),
-            metadata=info_server.get_metadata_env(info_types.metadata_envs),
+            metadata=info_server.get_metadata_env(envs=info_types.metadata_envs),
         )
-
         # Overwrite the CPU_LIMIT metadata using user input
         serv_info.metadata["CPU_LIMIT"] = str(self._process_count)
-
-        err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
-        if err is not None:
-            _LOGGER.error(f"Could not write Info-Server {err}")
-            raise err
+        info_server.write(server_info=serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
 
         _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()

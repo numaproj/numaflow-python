@@ -1,22 +1,34 @@
-from typing import NewType
-
-Language = NewType("Language", str)
-Protocol = NewType("Protocol", str)
+from enum import Enum
+from typing import Dict
 
 # Constants for using in the info-server
 # Need to keep consistent with all SDKs and client
 SERVER_INFO_FILE_PATH = "/var/run/numaflow/server-info"
-UDS = "uds"
-TCP = "tcp"
-GO = "go"
-PYTHON = "python"
-JAVA = "java"
 EOF = "U+005C__END__"
 
 # Env variables to be passed in the info server metadata.
 # These need to be accessed in the client using the same key.
 # Format - (key, env_var)
 metadata_envs = [("CPU_LIMIT", "NUMAFLOW_CPU_LIMIT")]
+
+
+class Protocol(str, Enum):
+    """
+    Enumerate grpc server connection protocol.
+    """
+
+    UDS = "uds"
+    TCP = "tcp"
+
+
+class Language(str, Enum):
+    """
+    Enumerate Numaflow SDK language.
+    """
+
+    GO = "go"
+    PYTHON = "python"
+    JAVA = "java"
 
 
 class ServerInfo:
@@ -36,7 +48,7 @@ class ServerInfo:
         protocol: Protocol = None,
         language: Language = None,
         version: str = None,
-        metadata: {} = None,
+        metadata: Dict = None,
     ):
         if protocol is None or language is None or version is None:
             raise ValueError("Need to specify mandatory details in ServerInfo")

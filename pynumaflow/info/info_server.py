@@ -1,5 +1,7 @@
 import os
 from importlib.metadata import version
+from typing import List, Tuple
+
 from pynumaflow import setup_logging
 from pynumaflow.info.info_types import ServerInfo, EOF
 import json
@@ -23,7 +25,7 @@ def get_sdk_version() -> str:
         return "Could not read SDK version"
 
 
-def write(serv: ServerInfo, info_file):
+def write(server_info: ServerInfo, info_file: str):
     """
     Write the ServerInfo to a file , shared with the client (numa container).
 
@@ -32,17 +34,17 @@ def write(serv: ServerInfo, info_file):
         info_file: the shared file path
     """
     try:
-        data = serv.__dict__
+        data = server_info.__dict__
         with open(info_file, "w+") as f:
             json.dump(data, f, ensure_ascii=False)
             f.write(EOF)
-        return None
-    except Exception as e:
-        return e
+    except Exception as err:
+        _LOGGER.critical("Could not write data to Info-Server %r", err, exc_info=True)
+        raise err
 
 
 #
-def get_metadata_env(envs):
+def get_metadata_env(envs: List[Tuple[str, str]]):
     """
     Extract the environment var value from the provided list,
     and assign them to the given key in the metadata
@@ -51,8 +53,7 @@ def get_metadata_env(envs):
         envs: List of tuples (key, env_var)
     """
     meta = {}
-    for env in envs:
-        key, val = env
+    for key, val in envs:
         res = os.getenv(val, None)
         if res:
             meta[key] = res

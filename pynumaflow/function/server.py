@@ -222,17 +222,12 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.add_insecure_port(self.sock_path)
         server.start()
         serv_info = ServerInfo(
-            protocol=info_types.UDS,
-            language=info_types.PYTHON,
+            protocol=info_types.Protocol.UDS,
+            language=info_types.Language.PYTHON,
             version=info_server.get_sdk_version(),
-            metadata=info_server.get_metadata_env(info_types.metadata_envs),
+            metadata=info_server.get_metadata_env(envs=info_types.metadata_envs),
         )
-
-        err = info_server.write(serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
-        if err is not None:
-            _LOGGER.error(f"Could not write Info-Server {err}")
-            raise err
-
+        info_server.write(server_info=serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

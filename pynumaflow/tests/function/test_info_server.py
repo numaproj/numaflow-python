@@ -17,20 +17,20 @@ class TestInfoServer(unittest.TestCase):
     @mockenv(NUMAFLOW_CPU_LIMIT="3")
     def setUp(self) -> None:
         self.serv_uds = ServerInfo(
-            protocol=info_types.UDS,
-            language=info_types.PYTHON,
+            protocol=info_types.Protocol.UDS,
+            language=info_types.Language.PYTHON,
             version=get_sdk_version(),
-            metadata=info_server.get_metadata_env(info_types.metadata_envs),
+            metadata=info_server.get_metadata_env(envs=info_types.metadata_envs),
         )
 
     def test_empty_write_info(self):
         test_file = "/tmp/test_info_server"
-        ret = info_server.write(None, test_file)
-        self.assertIsNotNone(ret)
+        with self.assertRaises(Exception):
+            info_server.write(server_info=None, info_file=test_file)
 
     def test_success_write_info(self):
         test_file = "/tmp/test_info_server"
-        ret = info_server.write(self.serv_uds, test_file)
+        ret = info_server.write(server_info=self.serv_uds, info_file=test_file)
         self.assertIsNone(ret)
         file_data = read_info_server(info_file=test_file)
         self.assertEqual(file_data["metadata"]["CPU_LIMIT"], "3")
@@ -39,7 +39,7 @@ class TestInfoServer(unittest.TestCase):
 
     def test_metadata_env(self):
         test_file = "/tmp/test_info_server"
-        ret = info_server.write(self.serv_uds, test_file)
+        ret = info_server.write(server_info=self.serv_uds, info_file=test_file)
         self.assertIsNone(ret)
 
     def test_invalid_input(self):
@@ -48,8 +48,8 @@ class TestInfoServer(unittest.TestCase):
 
     def test_file_new(self):
         test_file = "/tmp/test_info_server"
-        exists = os.path.isfile(test_file)
+        exists = os.path.isfile(path=test_file)
         if exists:
             os.remove(test_file)
-        ret = info_server.write(self.serv_uds, test_file)
+        ret = info_server.write(server_info=self.serv_uds, info_file=test_file)
         self.assertIsNone(ret)

@@ -8,7 +8,10 @@ def get_sdk_version() -> str:
     """
     Return the pynumaflow SDK version
     """
-    return version("pynumaflow")
+    try:
+        return version("pynumaflow")
+    except Exception as e:
+        return "Could not read version"
 
 
 def write(serv: ServerInfo, info_file):

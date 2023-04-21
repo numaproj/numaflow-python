@@ -30,7 +30,7 @@ jobs:
     - name: Install dependencies
       run: |
         poetry env use ${{ matrix.python-version }}
-        poetry install --with dev
+        poetry install --with dev --no-root
 
     - name: Run Coverage
       run: |

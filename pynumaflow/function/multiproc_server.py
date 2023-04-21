@@ -31,8 +31,8 @@ if os.getenv("PYTHONDEBUG"):
 UDFMapCallable = Callable[[List[str], Datum], Messages]
 UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
 UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
-_PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC", int(os.getenv("NUMAFLOW_CPU_LIMIT", 1))))
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+# _PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC") or os.getenv("NUMAFLOW_CPU_LIMIT", 1))
+# MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
@@ -86,7 +86,6 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         reduce_handler: UDFReduceCallable = None,
         sock_path=MULTIPROC_FUNCTION_SOCK_PORT,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
     ):
         if not (map_handler or mapt_handler or reduce_handler):
             raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
@@ -95,7 +94,6 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         self.__mapt_handler: UDFMapTCallable = mapt_handler
         self.__reduce_handler: UDFReduceCallable = reduce_handler
         self._max_message_size = max_message_size
-        self._max_threads = max_threads
         self.cleanup_coroutines = []
         # Collection for storing strong references to all running tasks.
         # Event loop only keeps a weak reference, which can cause it to
@@ -109,8 +107,10 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             ("grpc.so_reuseaddr", 1),
         ]
         self._sock_path = sock_path
-        self._process_count = int(os.getenv("NUM_CPU_MULTIPROC", multiprocessing.cpu_count()))
-        self._thread_concurrency = MAX_THREADS
+        self._process_count = int(
+            os.getenv("NUM_CPU_MULTIPROC") or os.getenv("NUMAFLOW_CPU_LIMIT", 1)
+        )
+        self._thread_concurrency = int(os.getenv("MAX_THREADS", 0)) or (self._process_count * 4)
 
     def MapFn(
         self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext

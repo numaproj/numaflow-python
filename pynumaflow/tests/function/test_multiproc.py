@@ -43,6 +43,14 @@ class TestMultiProcMethods(unittest.TestCase):
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 3)
 
+    @mockenv(NUMAFLOW_CPU_LIMIT="4")
+    def test_multiproc_process_count(self) -> None:
+        server = MultiProcServer(
+            reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
+        )
+        self.assertEqual(server._sock_path, 55551)
+        self.assertEqual(server._process_count, 4)
+
     # To test the reuse property for the grpc servers which allow multiple
     # bindings to the same server
     def test_reuse_port(self):

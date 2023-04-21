@@ -43,7 +43,6 @@ def write(server_info: ServerInfo, info_file: str):
         raise err
 
 
-#
 def get_metadata_env(envs: List[Tuple[str, str]]):
     """
     Extract the environment var value from the provided list,

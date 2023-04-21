@@ -130,7 +130,6 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
             protocol=info_types.Protocol.UDS,
             language=info_types.Language.PYTHON,
             version=info_server.get_sdk_version(),
-            metadata=info_server.get_metadata_env(envs=info_types.metadata_envs),
         )
         info_server.write(server_info=serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
 

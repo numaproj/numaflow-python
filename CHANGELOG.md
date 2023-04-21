@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.4.0 (2023-04-14)
+
+ * [58ff85c](https://github.com/numaproj/numaflow-python/commit/58ff85caad698342aaaf4b71d19720d13251de1c) chore!: remove support for py3.8; add 3.11 (#85)
+ * [405c5cd](https://github.com/numaproj/numaflow-python/commit/405c5cd01023bc71370058bca2ab0734aec6b2e5) doc: explain how to use datum metadata. (#78)
+ * [d252283](https://github.com/numaproj/numaflow-python/commit/d2522835a3db06aea536e90397da4bb8f4740ba8) feat: introducing tags for conditional forwarding (#76)
+ * [786b48e](https://github.com/numaproj/numaflow-python/commit/786b48e06039a238820b29f711f416c9fe0e229a) feat: Add ID and numDelivered fields to Datum in udf (#77)
+ * [1849f10](https://github.com/numaproj/numaflow-python/commit/1849f103c3fe53b8c0dd814e3335784efe0ad344) fix: doc typo fix (#75)
+ * [d142648](https://github.com/numaproj/numaflow-python/commit/d142648f7cbeb3b816d7b30267bf3a0f4d5c4366) feat: add multiprocessing support for Map  (#73)
+ * [acba109](https://github.com/numaproj/numaflow-python/commit/acba1090060a6cffc0071d4d9ff8bb659b225eba) feat: support for multi keys (#72)
+ * [6fa43d6](https://github.com/numaproj/numaflow-python/commit/6fa43d6b620daf3f8661bfd732648a0ccd839a0c) fix: stream to stdout stderr based on log level (#69)
+ * [f6c914e](https://github.com/numaproj/numaflow-python/commit/f6c914e056b2bb4d3f1bd97888ab44b5fe2055c2) fix: store strong references of task objects  (#66)
+ * [3e81304](https://github.com/numaproj/numaflow-python/commit/3e81304e03d15c371e34ff2d188d35d6f0a80bac) refactor: make default constructor private for Message/MessageT (#67)
+ * [cd8eac2](https://github.com/numaproj/numaflow-python/commit/cd8eac2a9f6d79f078c81b34948819cc1414d52b) feat: add mapt sdk support (#64)
+ * [ea78057](https://github.com/numaproj/numaflow-python/commit/ea78057f02872976ba815280aba6d7f3373919c3) feat: bidirectional streaming for reduce (#55)
+
+### Contributors
+
+ * Avik Basu
+ * Keran Yang
+ * San Nguyen
+ * Sidhant Kohli
+ * Vigith Maurice
+ * Yashash H L
+ * xdevxy
+
 ## v0.3.3 (2023-02-14)
 
  * [f13bc5f](https://github.com/numaproj/numaflow-python/commit/f13bc5fd124c7c8141e37d93399e013771af09ea) feat: reduce stream per window using asyncio (#49)

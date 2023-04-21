@@ -32,8 +32,13 @@ from pynumaflow.tests.function.testing_utils import (
 
 LOGGER = setup_logging(__name__)
 
+# if set to true, map handler will raise a `ValueError` exception.
+raise_error_from_map = False
+
 
 async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
+    if raise_error_from_map:
+        raise ValueError("Exception thrown from map")
     val = datum.value
     msg = "payload:%s event_time:%s watermark:%s" % (
         val.decode("utf-8"),
@@ -44,6 +49,10 @@ async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
     messages = Messages()
     messages.append(Message(str.encode(msg), keys=keys))
     return messages
+
+
+async def async_map_error_fn(keys: List[str], datum: Datum) -> Messages:
+    raise ValueError("error invoking map")
 
 
 async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
@@ -110,13 +119,22 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-async def start_server():
-    server = grpc.aio.server()
+def NewAsyncServer(
+    map_handler=async_map_handler,
+    mapt_handler=async_mapt_handler,
+    reduce_handler=async_reduce_handler,
+):
     udfs = AsyncServer(
-        reduce_handler=async_reduce_handler,
-        map_handler=async_map_handler,
-        mapt_handler=async_mapt_handler,
+        reduce_handler=reduce_handler,
+        map_handler=map_handler,
+        mapt_handler=mapt_handler,
     )
+
+    return udfs
+
+
+async def start_server(udfs: AsyncServer):
+    server = grpc.aio.server()
     udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
     listen_addr = "[::]:50051"
     server.add_insecure_port(listen_addr)
@@ -135,7 +153,8 @@ class TestAsyncServer(unittest.TestCase):
         _loop = loop
         _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
         _thread.start()
-        asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
+        udfs = NewAsyncServer()
+        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:
                 with grpc.insecure_channel("localhost:50051") as channel:
@@ -222,6 +241,63 @@ class TestAsyncServer(unittest.TestCase):
             response.elements[0].value,
         )
 
+    def test_map_grpc_error(self) -> None:
+        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            keys=["test"],
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        metadata = (("this_metadata_will_be_skipped", "test_ignore"),)
+
+        grpcException = None
+
+        try:
+            global raise_error_from_map
+            raise_error_from_map = True
+            _ = stub.MapFn(request=request, metadata=metadata)
+        except grpc.RpcError as e:
+            grpcException = e
+            self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+            print(e.details())
+
+        finally:
+            raise_error_from_map = False
+
+        self.assertIsNotNone(grpcException)
+
+    def test_unimplemented_mapt(self) -> None:
+        stub = udfunction_pb2_grpc.UserDefinedFunctionStub(_channel)
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            keys=["test"],
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+
+        metadata = (("this_metadata_will_be_skipped", "test_ignore"),)
+        grpcException = None
+        try:
+            _ = stub.MapTFn(request=request, metadata=metadata)
+        except grpc.RpcError as e:
+            grpcException = e
+            self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, e.code())
+            self.assertEqual("Method not implemented!", e.details())
+
+        self.assertIsNotNone(grpcException)
+
     def test_reduce_invalid_metadata(self) -> None:
         stub = self.__stub()
         request, metadata = start_reduce_streaming_request()
@@ -234,12 +310,16 @@ class TestAsyncServer(unittest.TestCase):
             count = 0
             for _ in generator_response:
                 count += 1
-        except Exception as err:
-            self.assertTrue(
-                "Expected to have all key/window_start_time/window_end_time" in err.__str__()
+        except grpc.RpcError as e:
+            self.assertEqual(grpc.StatusCode.INVALID_ARGUMENT, e.code())
+            self.assertEqual(
+                "Expected to have all key/window_start_time/window_end_time;"
+                " got start: None, end: None.",
+                e.details(),
             )
-            return
-        self.fail("Expected an exception.")
+        except Exception as err:
+            self.fail("Expected an exception.")
+            logging.error(err)
 
     def test_reduce(self) -> None:
         stub = self.__stub()

@@ -129,7 +129,9 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
-            raise err
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(str(err))
+            return udfunction_pb2.DatumResponseList(elements=[])
 
         datums = []
 
@@ -166,7 +168,9 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
-            raise err
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(str(err))
+            return udfunction_pb2.DatumResponseList(elements=[])
 
         datums = []
         for msgt in msgts.items():
@@ -184,6 +188,19 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
                 )
             )
         return udfunction_pb2.DatumResponseList(elements=datums)
+
+    def ReduceFn(
+        self,
+        request_iterator: AsyncIterable[udfunction_pb2.DatumRequest],
+        context: NumaflowServicerContext,
+    ) -> udfunction_pb2.DatumResponseList:
+        """
+        This method is not implemented because we multiplex different keys
+        on to a single stream and reduce requires a persistent connection.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        yield from ()
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

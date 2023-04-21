@@ -32,7 +32,8 @@ from pynumaflow.tests.function.server_utils import (
 
 LOGGER = setup_logging(__name__)
 
-error_from_map = False
+# if set to true, map handler will raise a `ValueError` exception.
+raise_error_from_map = False
 
 
 async def async_map_handler(keys: List[str], datum: Datum) -> Messages:

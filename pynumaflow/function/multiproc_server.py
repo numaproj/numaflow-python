@@ -31,8 +31,6 @@ if os.getenv("PYTHONDEBUG"):
 UDFMapCallable = Callable[[List[str], Datum], Messages]
 UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
 UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
-# _PROCESS_COUNT = int(os.getenv("NUM_CPU_MULTIPROC") or os.getenv("NUMAFLOW_CPU_LIMIT", 1))
-# MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):

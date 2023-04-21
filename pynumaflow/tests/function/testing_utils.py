@@ -113,7 +113,3 @@ def info_serv_is_ready(res, eof=EOF):
         data = res[:len_diff]
         return True, data
     return False, None
-
-
-def mock_sdk_version():
-    return "test-version"

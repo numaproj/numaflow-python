@@ -1,9 +1,13 @@
 import os
 import unittest
+import importlib.util
 from unittest import mock
+
+from pynumaflow.info.info_server import get_sdk_version
+
 from pynumaflow.info import info_server, info_types
 from pynumaflow.info.info_types import ServerInfo
-from pynumaflow.tests.function.testing_utils import read_info_server, mock_sdk_version
+from pynumaflow.tests.function.testing_utils import read_info_server
 
 
 def mockenv(**envvars):
@@ -16,7 +20,7 @@ class TestInfoServer(unittest.TestCase):
         self.serv_uds = ServerInfo(
             protocol=info_types.UDS,
             language=info_types.PYTHON,
-            version=mock_sdk_version(),
+            version=get_sdk_version(),
             metadata=info_server.get_metadata_env(info_types.metadata_envs),
         )
 

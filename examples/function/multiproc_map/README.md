@@ -22,4 +22,4 @@ if __name__ == "__main__":
     grpc_server.start()
 ```
 2) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF container,
-to set the value of the number of processes to be created. 
+to set the value of the number of server instances (one for each subprocess) to be created.

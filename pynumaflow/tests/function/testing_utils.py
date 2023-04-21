@@ -87,15 +87,15 @@ def mock_interval_window_end():
     return 1662998460000
 
 
-def read_info_server(info_file):
+def read_info_server(info_file: str):
     f = open(info_file, "r")
     retry = 10
     res = f.read()
-    a, b = info_serv_is_ready(res)
+    a, b = info_serv_is_ready(info_serv_data=res)
     while (a is not True) and retry > 0:
-        a, b = info_serv_is_ready(res)
+        a, b = info_serv_is_ready(info_serv_data=res)
 
-    a, b = info_serv_is_ready(res)
+    a, b = info_serv_is_ready(info_serv_data=res)
     if a:
         res = json.loads(b)
         return res
@@ -104,12 +104,12 @@ def read_info_server(info_file):
         return None
 
 
-def info_serv_is_ready(res, eof=EOF):
-    if len(res) < len(eof):
+def info_serv_is_ready(info_serv_data: str, eof: str = EOF):
+    if len(info_serv_data) < len(eof):
         return False
-    len_diff = len(res) - len(eof)
-    last_char = res[len_diff:]
+    len_diff = len(info_serv_data) - len(eof)
+    last_char = info_serv_data[len_diff:]
     if last_char == EOF:
-        data = res[:len_diff]
+        data = info_serv_data[:len_diff]
         return True, data
     return False, None

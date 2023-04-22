@@ -7,6 +7,8 @@ from typing import Callable, AsyncIterable, List
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from pynumaflow.info.info_server import get_sdk_version, write as info_server_write
+from pynumaflow.info.info_types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -17,8 +19,6 @@ from pynumaflow.function import Messages, MessageTs, Datum, Metadata
 from pynumaflow.function._dtypes import DatumMetadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
-from pynumaflow.info import info_types, info_server
-from pynumaflow.info.info_types import ServerInfo
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)
@@ -222,11 +222,11 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.add_insecure_port(self.sock_path)
         server.start()
         serv_info = ServerInfo(
-            protocol=info_types.Protocol.UDS,
-            language=info_types.Language.PYTHON,
-            version=info_server.get_sdk_version(),
+            protocol=Protocol.UDS,
+            language=Language.PYTHON,
+            version=get_sdk_version(),
         )
-        info_server.write(server_info=serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
         _LOGGER.info(
             "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
         )

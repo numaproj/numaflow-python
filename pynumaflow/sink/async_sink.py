@@ -11,8 +11,8 @@ from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
 )
-from pynumaflow.info import info_types, info_server
-from pynumaflow.info.info_types import ServerInfo
+from pynumaflow.info.info_server import get_sdk_version, write as info_server_write
+from pynumaflow.info.info_types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext
@@ -131,11 +131,11 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
         _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
         await server.start()
         serv_info = ServerInfo(
-            protocol=info_types.Protocol.UDS,
-            language=info_types.Language.PYTHON,
-            version=info_server.get_sdk_version(),
+            protocol=Protocol.UDS,
+            language=Language.PYTHON,
+            version=get_sdk_version(),
         )
-        info_server.write(server_info=serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
         async def server_graceful_shutdown():
             _LOGGER.info("Starting graceful shutdown...")

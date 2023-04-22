@@ -20,9 +20,19 @@ from pynumaflow.function import Messages, MessageTs, Datum, Metadata
 from pynumaflow.function._dtypes import DatumMetadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
-from pynumaflow.info import info_types, info_server
-from pynumaflow.info.info_types import ServerInfo
 from pynumaflow.types import NumaflowServicerContext
+from pynumaflow.info.info_server import (
+    get_sdk_version,
+    write as info_server_write,
+    get_metadata_env,
+)
+from pynumaflow.info.info_types import (
+    ServerInfo,
+    Protocol,
+    Language,
+    SERVER_INFO_FILE_PATH,
+    METADATA_ENVS,
+)
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
@@ -230,14 +240,14 @@ class MultiProcServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         server.add_insecure_port(bind_address)
         server.start()
         serv_info = ServerInfo(
-            protocol=info_types.Protocol.TCP,
-            language=info_types.Language.PYTHON,
-            version=info_server.get_sdk_version(),
-            metadata=info_server.get_metadata_env(envs=info_types.metadata_envs),
+            protocol=Protocol.TCP,
+            language=Language.PYTHON,
+            version=get_sdk_version(),
+            metadata=get_metadata_env(envs=METADATA_ENVS),
         )
         # Overwrite the CPU_LIMIT metadata using user input
         serv_info.metadata["CPU_LIMIT"] = str(self._process_count)
-        info_server.write(server_info=serv_info, info_file=info_types.SERVER_INFO_FILE_PATH)
+        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
         _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()

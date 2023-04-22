@@ -1,6 +1,6 @@
 import os
 from importlib.metadata import version
-from typing import List, Tuple
+from typing import Any
 
 from pynumaflow import setup_logging
 from pynumaflow.info.info_types import ServerInfo, EOF
@@ -43,7 +43,7 @@ def write(server_info: ServerInfo, info_file: str):
         raise err
 
 
-def get_metadata_env(envs: List[Tuple[str, str]]):
+def get_metadata_env(envs: list[tuple[str, str]]) -> dict[str, Any]:
     """
     Extract the environment var value from the provided list,
     and assign them to the given key in the metadata

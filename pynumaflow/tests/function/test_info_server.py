@@ -2,11 +2,18 @@ import os
 import unittest
 from unittest import mock
 
-from pynumaflow.info.info_server import get_sdk_version
-
-from pynumaflow.info import info_server, info_types
-from pynumaflow.info.info_types import ServerInfo
 from pynumaflow.tests.function.testing_utils import read_info_server
+from pynumaflow.info.info_server import (
+    get_sdk_version,
+    write as info_server_write,
+    get_metadata_env,
+)
+from pynumaflow.info.info_types import (
+    ServerInfo,
+    Protocol,
+    Language,
+    METADATA_ENVS,
+)
 
 
 def mockenv(**envvars):
@@ -17,20 +24,20 @@ class TestInfoServer(unittest.TestCase):
     @mockenv(NUMAFLOW_CPU_LIMIT="3")
     def setUp(self) -> None:
         self.serv_uds = ServerInfo(
-            protocol=info_types.Protocol.UDS,
-            language=info_types.Language.PYTHON,
+            protocol=Protocol.UDS,
+            language=Language.PYTHON,
             version=get_sdk_version(),
-            metadata=info_server.get_metadata_env(envs=info_types.metadata_envs),
+            metadata=get_metadata_env(envs=METADATA_ENVS),
         )
 
     def test_empty_write_info(self):
         test_file = "/tmp/test_info_server"
         with self.assertRaises(Exception):
-            info_server.write(server_info=None, info_file=test_file)
+            info_server_write(server_info=None, info_file=test_file)
 
     def test_success_write_info(self):
         test_file = "/tmp/test_info_server"
-        ret = info_server.write(server_info=self.serv_uds, info_file=test_file)
+        ret = info_server_write(server_info=self.serv_uds, info_file=test_file)
         self.assertIsNone(ret)
         file_data = read_info_server(info_file=test_file)
         self.assertEqual(file_data["metadata"]["CPU_LIMIT"], "3")
@@ -39,7 +46,7 @@ class TestInfoServer(unittest.TestCase):
 
     def test_metadata_env(self):
         test_file = "/tmp/test_info_server"
-        ret = info_server.write(server_info=self.serv_uds, info_file=test_file)
+        ret = info_server_write(server_info=self.serv_uds, info_file=test_file)
         self.assertIsNone(ret)
 
     def test_invalid_input(self):
@@ -51,5 +58,5 @@ class TestInfoServer(unittest.TestCase):
         exists = os.path.isfile(path=test_file)
         if exists:
             os.remove(test_file)
-        ret = info_server.write(server_info=self.serv_uds, info_file=test_file)
+        ret = info_server_write(server_info=self.serv_uds, info_file=test_file)
         self.assertIsNone(ret)

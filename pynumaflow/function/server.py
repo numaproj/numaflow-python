@@ -7,8 +7,8 @@ from typing import Callable, AsyncIterable, List
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-from pynumaflow.info.info_server import get_sdk_version, write as info_server_write
-from pynumaflow.info.info_types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
+from pynumaflow.info.server import get_sdk_version, write as info_server_write
+from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (

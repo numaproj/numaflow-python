@@ -21,12 +21,12 @@ from pynumaflow.function._dtypes import DatumMetadata
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow.info.info_server import (
+from pynumaflow.info.server import (
     get_sdk_version,
     write as info_server_write,
     get_metadata_env,
 )
-from pynumaflow.info.info_types import (
+from pynumaflow.info.types import (
     ServerInfo,
     Protocol,
     Language,

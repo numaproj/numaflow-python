@@ -10,7 +10,7 @@ from pynumaflow.function import (
     Datum,
     Metadata,
 )
-from pynumaflow.info.info_types import EOF
+from pynumaflow.info.types import EOF
 
 
 def map_handler(keys: List[str], datum: Datum) -> Messages:

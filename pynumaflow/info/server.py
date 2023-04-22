@@ -3,7 +3,7 @@ from importlib.metadata import version
 from typing import Any
 
 from pynumaflow import setup_logging
-from pynumaflow.info.info_types import ServerInfo, EOF
+from pynumaflow.info.types import ServerInfo, EOF
 import json
 import logging
 

@@ -12,8 +12,8 @@ from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
 )
-from pynumaflow.info.info_server import get_sdk_version, write as info_server_write
-from pynumaflow.info.info_types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
+from pynumaflow.info.server import get_sdk_version, write as info_server_write
+from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 from pynumaflow.sink import Responses, Datum, Response
 from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
 from pynumaflow.types import NumaflowServicerContext

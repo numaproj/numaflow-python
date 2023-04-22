@@ -23,8 +23,8 @@ from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.proto import udfunction_pb2
 from pynumaflow.function.proto import udfunction_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow.info.info_server import get_sdk_version, write as info_server_write
-from pynumaflow.info.info_types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
+from pynumaflow.info.server import get_sdk_version, write as info_server_write
+from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):

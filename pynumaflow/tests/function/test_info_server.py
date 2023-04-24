@@ -50,7 +50,7 @@ class TestInfoServer(unittest.TestCase):
         self.assertIsNone(ret)
 
     def test_invalid_input(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             ServerInfo()
 
     def test_file_new(self):

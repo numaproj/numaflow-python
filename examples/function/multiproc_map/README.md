@@ -15,13 +15,11 @@ processes to bind to the same port.
 
 To enable multiprocessing mode 
 
-1) Set the env flag `MAP_MULTIPROC="true"` for the numa container
-
-2) Start the multiproc server in the UDF using the following command 
+1) Start the multiproc server in the UDF using the following command 
 ```python
 if __name__ == "__main__":
     grpc_server = MultiProcServer(map_handler=my_handler)
     grpc_server.start()
 ```
-3) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF and numa container,
-to set the value of the number of processes to be created. 
+2) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF container,
+to set the value of the number of server instances (one for each subprocess) to be created.

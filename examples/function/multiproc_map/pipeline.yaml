@@ -32,10 +32,6 @@ spec:
         env:
           - name: NUMAFLOW_DEBUG
             value: "true" # DO NOT forget the double quotes!!!
-          - name: MAP_MULTIPROC
-            value: "true" # DO NOT forget the double quotes!!!
-          - name: NUM_CPU_MULTIPROC
-            value: "2"  # DO NOT forget the double quotes!!!
 
     - name: out
       sink:

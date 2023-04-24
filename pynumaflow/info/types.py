@@ -43,11 +43,7 @@ class ServerInfo:
         metadata: Any additional information to be provided (env vars)
     """
 
-    protocol: Protocol = None
-    language: Language = None
-    version: str = None
+    protocol: Protocol
+    language: Language
+    version: str
     metadata: dict = field(default_factory=dict)
-
-    def __post_init__(self):
-        if self.protocol is None or self.language is None or self.version is None:
-            raise ValueError("Need to specify mandatory details in ServerInfo")

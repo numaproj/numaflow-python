@@ -68,6 +68,17 @@ async def async_mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
     return messagets
 
 
+async def async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIterable[Message]:
+    val = datum.value
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time,
+        datum.watermark,
+    )
+    for i in range(10):
+        yield Message(str.encode(msg), keys=keys)
+
+
 async def async_reduce_handler(
     keys: list[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
@@ -90,7 +101,7 @@ def request_generator(count, request, resetkey: bool = False):
         yield request
 
 
-def start_reduce_streaming_request() -> (Datum, tuple):
+def start_request() -> (Datum, tuple):
     event_time_timestamp = _timestamp_pb2.Timestamp()
     event_time_timestamp.FromDatetime(dt=mock_event_time())
     watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -121,13 +132,15 @@ def startup_callable(loop):
 
 def NewAsyncServer(
     map_handler=async_map_handler,
+    map_stream_handler=async_map_stream_handler,
     mapt_handler=async_mapt_handler,
     reduce_handler=async_reduce_handler,
 ):
     udfs = AsyncServer(
-        reduce_handler=reduce_handler,
-        map_handler=map_handler,
-        mapt_handler=mapt_handler,
+        map_handler=async_map_handler,
+        map_stream_handler=async_map_stream_handler,
+        mapt_handler=async_mapt_handler,
+        reduce_handler=async_reduce_handler,
     )
 
     return udfs
@@ -298,9 +311,33 @@ class TestAsyncServer(unittest.TestCase):
 
         self.assertIsNotNone(grpcException)
 
+    def test_map_stream(self) -> None:
+        stub = self.__stub()
+        request, metadata = start_request()
+        generator_response = None
+        try:
+            generator_response = stub.MapStreamFn(request=request, metadata=metadata)
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        counter = 0
+        # capture the output from the MapStreamFn generator and assert.
+        for r in generator_response:
+            counter += 1
+            self.assertEqual(
+                bytes(
+                    "payload:test_mock_message "
+                    "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+                    encoding="utf-8",
+                ),
+                r.value,
+            )
+        """Assert that the generator was called 10 times in the stream"""
+        self.assertEqual(10, counter)
+
     def test_reduce_invalid_metadata(self) -> None:
         stub = self.__stub()
-        request, metadata = start_reduce_streaming_request()
+        request, metadata = start_request()
         invalid_metadata = {}
         try:
             generator_response = stub.ReduceFn(
@@ -323,7 +360,7 @@ class TestAsyncServer(unittest.TestCase):
 
     def test_reduce(self) -> None:
         stub = self.__stub()
-        request, metadata = start_reduce_streaming_request()
+        request, metadata = start_request()
         generator_response = None
         try:
             generator_response = stub.ReduceFn(
@@ -349,7 +386,7 @@ class TestAsyncServer(unittest.TestCase):
 
     def test_reduce_with_multiple_keys(self) -> None:
         stub = self.__stub()
-        request, metadata = start_reduce_streaming_request()
+        request, metadata = start_request()
         generator_response = None
         try:
             generator_response = stub.ReduceFn(

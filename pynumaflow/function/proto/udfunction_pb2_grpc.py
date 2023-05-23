@@ -20,6 +20,11 @@ class UserDefinedFunctionStub(object):
             request_serializer=udfunction__pb2.DatumRequest.SerializeToString,
             response_deserializer=udfunction__pb2.DatumResponseList.FromString,
         )
+        self.MapStreamFn = channel.unary_stream(
+            "/function.v1.UserDefinedFunction/MapStreamFn",
+            request_serializer=udfunction__pb2.DatumRequest.SerializeToString,
+            response_deserializer=udfunction__pb2.DatumResponse.FromString,
+        )
         self.MapTFn = channel.unary_unary(
             "/function.v1.UserDefinedFunction/MapTFn",
             request_serializer=udfunction__pb2.DatumRequest.SerializeToString,
@@ -41,13 +46,19 @@ class UserDefinedFunctionServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def MapFn(self, request, context):
-        """MapFn applies a function to each datum element."""
+        """MapFn applies a function to each datum request element."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
+    def MapStreamFn(self, request, context):
+        """MapStreamFn applies a function to each datum element and returns a stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
     def MapTFn(self, request, context):
-        """MapTFn applies a function to each datum element.
+        """MapTFn applies a function to each datum request element.
         In addition to map function, MapTFn also supports assigning a new event time to datum.
         MapTFn can be used only at source vertex by source data transformer.
         """
@@ -56,7 +67,7 @@ class UserDefinedFunctionServicer(object):
         raise NotImplementedError("Method not implemented!")
 
     def ReduceFn(self, request_iterator, context):
-        """ReduceFn applies a reduce function to a datum stream."""
+        """ReduceFn applies a reduce function to a datum request stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
@@ -74,6 +85,11 @@ def add_UserDefinedFunctionServicer_to_server(servicer, server):
             servicer.MapFn,
             request_deserializer=udfunction__pb2.DatumRequest.FromString,
             response_serializer=udfunction__pb2.DatumResponseList.SerializeToString,
+        ),
+        "MapStreamFn": grpc.unary_stream_rpc_method_handler(
+            servicer.MapStreamFn,
+            request_deserializer=udfunction__pb2.DatumRequest.FromString,
+            response_serializer=udfunction__pb2.DatumResponse.SerializeToString,
         ),
         "MapTFn": grpc.unary_unary_rpc_method_handler(
             servicer.MapTFn,
@@ -120,6 +136,35 @@ class UserDefinedFunction(object):
             "/function.v1.UserDefinedFunction/MapFn",
             udfunction__pb2.DatumRequest.SerializeToString,
             udfunction__pb2.DatumResponseList.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def MapStreamFn(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            "/function.v1.UserDefinedFunction/MapStreamFn",
+            udfunction__pb2.DatumRequest.SerializeToString,
+            udfunction__pb2.DatumResponse.FromString,
             options,
             channel_credentials,
             insecure,

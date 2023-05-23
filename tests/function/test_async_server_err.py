@@ -25,6 +25,21 @@ from tests.function.testing_utils import (
 LOGGER = setup_logging(__name__)
 
 
+# This handler mimics the scenario where map stream UDF throws a runtime error.
+async def err_async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIterable[Message]:
+    val = datum.value
+    msg = "payload:%s event_time:%s watermark:%s" % (
+        val.decode("utf-8"),
+        datum.event_time,
+        datum.watermark,
+    )
+
+    for i in range(5):
+        yield Message(str.encode(msg), keys=keys)
+
+    raise RuntimeError("Got a runtime error from map stream handler.")
+
+
 # This handler mimics the scenario where reduce UDF throws a runtime error.
 async def err_async_reduce_handler(
     key: str, datums: AsyncIterable[Datum], md: Metadata
@@ -50,7 +65,7 @@ def request_generator(count, request, resetkey: bool = False):
         yield request
 
 
-def start_reduce_streaming_request() -> (Datum, tuple):
+def start_request() -> (Datum, tuple):
     event_time_timestamp = _timestamp_pb2.Timestamp()
     event_time_timestamp.FromDatetime(dt=mock_event_time())
     watermark_timestamp = _timestamp_pb2.Timestamp()
@@ -85,6 +100,7 @@ async def start_server():
         reduce_handler=err_async_reduce_handler,
         map_handler=map_handler,
         mapt_handler=mapt_handler,
+        map_stream_handler=err_async_map_stream_handler,
     )
     udfunction_pb2_grpc.add_UserDefinedFunctionServicer_to_server(udfs, server)
     listen_addr = "[::]:50052"
@@ -126,7 +142,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
 
     def test_reduce_error(self) -> None:
         stub = self.__stub()
-        request, metadata = start_reduce_streaming_request()
+        request, metadata = start_request()
         try:
             generator_response = stub.ReduceFn(
                 request_iterator=request_generator(count=10, request=request), metadata=metadata
@@ -139,6 +155,19 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             self.assertEqual(e.details(), "Got a runtime error from reduce handler.")
             return
 
+        self.fail("Expected an exception.")
+
+    def test_map_stream_error(self) -> None:
+        stub = self.__stub()
+        request, metadata = start_request()
+        try:
+            generator_response = stub.MapStreamFn(request=request, metadata=metadata)
+            counter = 0
+            for _ in generator_response:
+                counter += 1
+        except Exception as err:
+            self.assertTrue("Got a runtime error from map stream handler." in err.__str__())
+            return
         self.fail("Expected an exception.")
 
     def __stub(self):

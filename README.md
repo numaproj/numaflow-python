@@ -1,7 +1,38 @@
 # Python SDK for Numaflow
 
-This SDK provides the interface for writing [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/) 
+This SDK provides the interface for writing [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/)
 and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/) in Python.
+
+## Installation
+
+Install the package using pip.
+```bash
+pip install pynumaflow
+```
+
+### Build locally
+
+This project uses [Poetry](https://python-poetry.org/) for dependency management and packaging.
+To build the package locally, run the following command from the root of the project.
+
+```bash
+make setup
+````
+
+To run unit tests:
+```bash
+make test
+```
+
+To format code style using black and ruff:
+```bash
+make lint
+```
+
+Setup [pre-commit](https://pre-commit.com/) hooks:
+```bash
+pre-commit install
+```
 
 ## Implement a User Defined Function (UDF)
 
@@ -10,15 +41,13 @@ and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/)
 
 ```python
 from pynumaflow.function import Messages, Message, Datum, Server
-from typing import List
 
 
-def my_handler(keys: List[str], datum: Datum) -> Messages:
+def my_handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
-    messages = Messages(Message(value=val, keys=keys))
-    return messages
+    return Messages(Message(value=val, keys=keys))
 
 
 if __name__ == "__main__":
@@ -30,16 +59,15 @@ In addition to the regular Map function, MapT supports assigning a new event tim
 MapT is only supported at source vertex to enable (a) early data filtering and (b) watermark assignment by extracting new event time from the message payload.
 
 ```python
-import datetime
+from datetime import datetime
 from pynumaflow.function import MessageTs, MessageT, Datum, Server
-from typing import List
 
 
-def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
+def mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
     val = datum.value
-    new_event_time = datetime.time()
+    new_event_time = datetime.now()
     _ = datum.watermark
-    message_t_s = MessageTs(MessageT(new_event_time, val, keys))
+    message_t_s = MessageTs(MessageT(val, event_time=new_event_time, keys=keys))
     return message_t_s
 
 
@@ -52,12 +80,13 @@ if __name__ == "__main__":
 
 ```python
 import aiorun
-import asyncio
 from typing import Iterator, List
 from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 
-async def my_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
+async def my_handler(
+    keys: List[str], datums: Iterator[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -75,7 +104,7 @@ if __name__ == "__main__":
 ```
 
 ### Sample Image
-A sample UDF [Dockerfile](examples/function/forward_message/Dockerfile) is provided 
+A sample UDF [Dockerfile](examples/function/forward_message/Dockerfile) is provided
 under [examples](examples/function/forward_message).
 
 ## Implement a User Defined Sink (UDSink)
@@ -100,7 +129,7 @@ if __name__ == "__main__":
 
 ### Sample Image
 
-A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided 
+A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided
 under [examples](examples/sink/log).
 
 ### Datum Metadata
@@ -109,7 +138,9 @@ in metadata: the message ID, the message delivery count to indicate how many tim
 has been delivered. You can use these metadata to implement customized logic. For example,
 ```python
 ...
-def my_handler(keys: List[str], datum: Datum) -> Messages:
+
+
+def my_handler(keys: list[str], datum: Datum) -> Messages:
     num_delivered = datum.metadata.num_delivered
     # Choose to do specific actions, if the message delivery count reaches a certain threshold.
     if num_delivered > 3:

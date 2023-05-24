@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from typing import AsyncIterable, List
+from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -21,7 +21,7 @@ from pynumaflow.function import (
     Metadata,
 )
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.testing_utils import (
+from tests.function.testing_utils import (
     mock_event_time,
     mock_watermark,
     mock_message,
@@ -36,11 +36,11 @@ LOGGER = setup_logging(__name__)
 raise_error_from_map = False
 
 
-async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
+async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
     if raise_error_from_map:
         raise ValueError("Exception thrown from map")
     val = datum.value
-    msg = "payload:%s event_time:%s watermark:%s" % (
+    msg = "payload:{} event_time:{} watermark:{}".format(
         val.decode("utf-8"),
         datum.event_time,
         datum.watermark,
@@ -51,13 +51,13 @@ async def async_map_handler(keys: List[str], datum: Datum) -> Messages:
     return messages
 
 
-async def async_map_error_fn(keys: List[str], datum: Datum) -> Messages:
+async def async_map_error_fn(keys: list[str], datum: Datum) -> Messages:
     raise ValueError("error invoking map")
 
 
-async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
+async def async_mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
     val = datum.value
-    msg = "payload:%s event_time:%s watermark:%s" % (
+    msg = "payload:{} event_time:{} watermark:{}".format(
         val.decode("utf-8"),
         datum.event_time,
         datum.watermark,
@@ -69,7 +69,7 @@ async def async_mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
 
 
 async def async_reduce_handler(
-    keys: List[str], datums: AsyncIterable[Datum], md: Metadata
+    keys: list[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0

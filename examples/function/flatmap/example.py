@@ -1,9 +1,8 @@
-from typing import List
 
 from pynumaflow.function import Messages, Message, Datum, Server
 
 
-def my_handler(keys: List[str], datum: Datum) -> Messages:
+def my_handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark

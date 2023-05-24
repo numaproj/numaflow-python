@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest import mock
 
-from pynumaflow.tests.function.testing_utils import read_info_server
+from tests.function.testing_utils import read_info_server
 from pynumaflow.info.server import (
     get_sdk_version,
     write as info_server_write,

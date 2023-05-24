@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
@@ -12,7 +12,7 @@ from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 from pynumaflow.function.proto import udfunction_pb2, udfunction_pb2_grpc
-from pynumaflow.tests.function.testing_utils import (
+from tests.function.testing_utils import (
     mapt_handler,
     map_handler,
     mock_event_time,

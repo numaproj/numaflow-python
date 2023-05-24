@@ -3,7 +3,8 @@ import logging
 import multiprocessing
 import os
 from datetime import datetime, timezone
-from typing import Callable, AsyncIterable, List
+from typing import Callable
+from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -30,9 +31,9 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-UDFMapCallable = Callable[[List[str], Datum], Messages]
-UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
-UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
+UDFMapCallable = Callable[[list[str], Datum], Messages]
+UDFMapTCallable = Callable[[list[str], Datum], MessageTs]
+UDFReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -168,7 +169,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         context.set_details("Method not implemented!")
         return udfunction_pb2.DatumResponseList(elements=[])
 
-    async def __invoke_map(self, keys: List[str], req: Datum):
+    async def __invoke_map(self, keys: list[str], req: Datum):
         try:
             msgs = await self.__map_handler(keys, req)
         except Exception as err:
@@ -271,7 +272,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         return tasks
 
     async def __invoke_reduce(
-        self, keys: List[str], request_iterator: AsyncIterable[Datum], md: Metadata
+        self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
     ):
         try:
             msgs = await self.__reduce_handler(keys, request_iterator, md)

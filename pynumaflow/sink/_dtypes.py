@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, TypeVar, Type, Optional
+from typing import TypeVar, Optional
 
 R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
@@ -13,11 +13,11 @@ class Response:
     err: Optional[str]
 
     @classmethod
-    def as_success(cls: Type[R], id_: str) -> R:
+    def as_success(cls: type[R], id_: str) -> R:
         return Response(id=id_, success=True, err=None)
 
     @classmethod
-    def as_failure(cls: Type[R], id_: str, err_msg: str) -> R:
+    def as_failure(cls: type[R], id_: str, err_msg: str) -> R:
         return Response(id=id_, success=False, err=err_msg)
 
 
@@ -34,7 +34,7 @@ class Responses:
     def append(self, response: R) -> None:
         return self._responses.append(response)
 
-    def items(self) -> List[R]:
+    def items(self) -> list[R]:
         return self._responses
 
     def dumps(self) -> str:
@@ -62,7 +62,7 @@ class Datum:
 
     def __init__(
         self,
-        keys: List[str],
+        keys: list[str],
         sink_msg_id: str,
         value: bytes,
         event_time: datetime,
@@ -96,7 +96,7 @@ class Datum:
         return self._id
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """Returns the keys of the event."""
         return self._keys
 

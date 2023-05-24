@@ -1,6 +1,5 @@
 import datetime
 import logging
-from typing import List
 
 from pynumaflow.function import MessageTs, MessageT, Datum, Server
 
@@ -17,7 +16,7 @@ january_first_2022 = datetime.datetime.fromtimestamp(1640995200)
 january_first_2023 = datetime.datetime.fromtimestamp(1672531200)
 
 
-def my_handler(keys: List[str], datum: Datum) -> MessageTs:
+def my_handler(keys: list[str], datum: Datum) -> MessageTs:
     val = datum.value
     event_time = datum.event_time
     messages = MessageTs()

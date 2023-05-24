@@ -7,19 +7,24 @@ clean:
 	@find . -type f -name "*.py[co]" -exec rm -rf {} +
 
 format: clean
-	poetry run black .
+	poetry run black pynumaflow/ tests/ examples/
 
 
 lint: format
-	poetry run flake8 .
+	poetry run ruff check --fix .
 
 
 test:
-	poetry run pytest pynumaflow/tests/
+	poetry run pytest tests/
 
 
 requirements:
 	poetry export -f requirements.txt --output requirements.txt --without-hashes
+
+
+setup:
+	poetry install --with dev --no-root
+
 
 proto:
 	python3 -m grpc_tools.protoc -I=pynumaflow/function/proto --python_out=pynumaflow/function/proto --grpc_python_out=pynumaflow/function/proto  pynumaflow/function/proto/*.proto

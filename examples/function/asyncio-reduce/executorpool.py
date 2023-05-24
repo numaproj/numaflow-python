@@ -4,7 +4,7 @@ import concurrent.futures
 import os
 import requests
 import time
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 from pynumaflow import setup_logging
 from pynumaflow.function import (

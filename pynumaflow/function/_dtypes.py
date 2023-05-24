@@ -1,7 +1,7 @@
 from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, List, Type
+from typing import TypeVar
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 
@@ -24,8 +24,8 @@ class Message:
          _tags: []string tags for conditional forwarding (optional)
     """
 
-    _keys: List[str]
-    _tags: List[str]
+    _keys: list[str]
+    _tags: list[str]
     _value: bytes = b""
 
     def __init__(self, value: bytes, keys=None, tags=None):
@@ -38,7 +38,7 @@ class Message:
 
     # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: Type[M]) -> M:
+    def to_drop(cls: type[M]) -> M:
         return cls(b"", None, [DROP])
 
     @property
@@ -46,11 +46,11 @@ class Message:
         return self._value
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         return self._keys
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> list[str]:
         return self._tags
 
 
@@ -76,7 +76,7 @@ class Messages:
     def append(self, message: Message) -> None:
         self._messages.append(message)
 
-    def items(self) -> List[Message]:
+    def items(self) -> list[Message]:
         return self._messages
 
     def dumps(self) -> str:
@@ -98,8 +98,8 @@ class MessageT:
          _tags: []string tags for conditional forwarding (optional)
     """
 
-    _keys: List[str]
-    _tags: List[str]
+    _keys: list[str]
+    _tags: list[str]
     _value: bytes = b""
     # There is no year 0, so setting following as default event time.
     _event_time: datetime = datetime(1, 1, 1, 0, 0)
@@ -114,7 +114,7 @@ class MessageT:
         self._value = value or b""
 
     @classmethod
-    def to_drop(cls: Type[MT]) -> MT:
+    def to_drop(cls: type[MT]) -> MT:
         return cls(b"", datetime(1, 1, 1, 0, 0), None, [DROP])
 
     @property
@@ -122,7 +122,7 @@ class MessageT:
         return self._event_time
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         return self._keys
 
     @property
@@ -130,7 +130,7 @@ class MessageT:
         return self._value
 
     @property
-    def tags(self) -> List[str]:
+    def tags(self) -> list[str]:
         return self._tags
 
 
@@ -156,7 +156,7 @@ class MessageTs:
     def append(self, message_t: MessageT) -> None:
         self._message_ts.append(message_t)
 
-    def items(self) -> List[MessageT]:
+    def items(self) -> list[MessageT]:
         return self._message_ts
 
     def dumps(self) -> str:
@@ -228,7 +228,7 @@ class Datum:
 
     def __init__(
         self,
-        keys: List[str],
+        keys: list[str],
         value: bytes,
         event_time: datetime,
         watermark: datetime,
@@ -257,7 +257,7 @@ class Datum:
     def __repr__(self):
         return str(self)
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """Returns the keys of the event"""
         return self._keys
 
@@ -333,7 +333,7 @@ class ReduceResult:
 
     __slots__ = ("_future", "_iterator", "_key")
 
-    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: List[str]):
+    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: list[str]):
         self._future = future
         self._iterator = iterator
         self._key = keys
@@ -349,6 +349,6 @@ class ReduceResult:
         return self._iterator
 
     @property
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         """Returns the keys of the partition."""
         return self._key

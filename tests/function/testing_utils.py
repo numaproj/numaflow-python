@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from typing import Iterator, List
+from collections.abc import Iterator
 
 from pynumaflow.function import (
     Message,
@@ -13,9 +13,9 @@ from pynumaflow.function import (
 from pynumaflow.info.types import EOF
 
 
-def map_handler(keys: List[str], datum: Datum) -> Messages:
+def map_handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
-    msg = "payload:%s event_time:%s watermark:%s" % (
+    msg = "payload:{} event_time:{} watermark:{}".format(
         val.decode("utf-8"),
         datum.event_time,
         datum.watermark,
@@ -26,9 +26,9 @@ def map_handler(keys: List[str], datum: Datum) -> Messages:
     return messages
 
 
-def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
+def mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
     val = datum.value
-    msg = "payload:%s event_time:%s watermark:%s" % (
+    msg = "payload:{} event_time:{} watermark:{}".format(
         val.decode("utf-8"),
         datum.event_time,
         datum.watermark,
@@ -39,7 +39,7 @@ def mapt_handler(keys: List[str], datum: Datum) -> MessageTs:
     return messagets
 
 
-async def reduce_handler(keys: List[str], datums: Iterator[Datum], md: Metadata) -> Messages:
+async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -88,7 +88,7 @@ def mock_interval_window_end():
 
 
 def read_info_server(info_file: str):
-    f = open(info_file, "r")
+    f = open(info_file)
     retry = 10
     res = f.read()
     a, b = info_serv_is_ready(info_serv_data=res)

@@ -1,7 +1,8 @@
 import logging
 import multiprocessing
 import os
-from typing import Callable, Iterator, AsyncIterable
+from typing import Callable
+from collections.abc import Iterator, AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2

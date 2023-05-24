@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -16,7 +16,7 @@ from pynumaflow.function import (
 from pynumaflow.sink import Responses, Response, AsyncSink
 from pynumaflow.sink.proto import udsink_pb2
 from pynumaflow.sink.proto import udsink_pb2_grpc
-from pynumaflow.tests.sink.test_server import (
+from tests.sink.test_server import (
     mock_event_time,
     mock_watermark,
     mock_message,

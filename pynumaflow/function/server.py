@@ -2,7 +2,8 @@ import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, AsyncIterable, List
+from typing import Callable
+from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -25,9 +26,9 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-UDFMapCallable = Callable[[List[str], Datum], Messages]
-UDFMapTCallable = Callable[[List[str], Datum], MessageTs]
-UDFReduceCallable = Callable[[List[str], AsyncIterable[Datum], Metadata], Messages]
+UDFMapCallable = Callable[[list[str], Datum], Messages]
+UDFMapTCallable = Callable[[list[str], Datum], MessageTs]
+UDFReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 

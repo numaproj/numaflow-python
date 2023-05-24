@@ -1,10 +1,10 @@
 import aiorun
-from typing import AsyncIterable, List
+from collections.abc import AsyncIterable
 
 from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
 
 
-async def reduce_handler(keys: List[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:

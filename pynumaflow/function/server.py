@@ -152,6 +152,19 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
         return udfunction_pb2.DatumResponseList(elements=datums)
 
+    def MapStreamFn(
+        self,
+        request: udfunction_pb2.DatumRequest,
+        context: NumaflowServicerContext,
+    ) -> AsyncIterable[udfunction_pb2.DatumResponse]:
+        """
+        This method is not implemented because we return the messages
+        in a single stream.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        yield from ()
+
     def MapTFn(
         self, request: udfunction_pb2.DatumRequest, context: NumaflowServicerContext
     ) -> udfunction_pb2.DatumResponseList:

@@ -28,7 +28,7 @@ LOGGER = setup_logging(__name__)
 # This handler mimics the scenario where map stream UDF throws a runtime error.
 async def err_async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIterable[Message]:
     val = datum.value
-    msg = "payload:%s event_time:%s watermark:%s" % (
+    msg = "payload:{} event_time:{} watermark:{}".format(
         val.decode("utf-8"),
         datum.event_time,
         datum.watermark,

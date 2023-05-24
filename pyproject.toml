@@ -36,7 +36,6 @@ pytest = "^7.2.1"
 pytest-cov = "^3.0"
 black = "^23.1"
 grpcio-testing = "^1.48.1"
-flake8 = "^4.0.1"
 ruff = "^0.0.264"
 pre-commit = "^3.3.1"
 

@@ -9,7 +9,7 @@ service UserDefinedFunction {
   // MapFn applies a function to each datum request element.
   rpc MapFn(DatumRequest) returns (DatumResponseList);
 
-  // MapStreamFn applies a function to each datum element and returns a stream.
+  // MapStreamFn applies a function to each datum request element and returns a stream.
   rpc MapStreamFn(DatumRequest) returns (stream DatumResponse);
 
   // MapTFn applies a function to each datum request element.

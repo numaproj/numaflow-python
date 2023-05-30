@@ -2,6 +2,7 @@ import asyncio
 import logging
 import multiprocessing
 import os
+
 from datetime import datetime, timezone
 from typing import Callable
 from collections.abc import AsyncIterable
@@ -18,7 +19,7 @@ from pynumaflow._constants import (
     STREAM_EOF,
     DELIMITER,
 )
-from pynumaflow.function import Messages, MessageTs, Datum, IntervalWindow, Metadata
+from pynumaflow.function import Message, Messages, MessageTs, Datum, IntervalWindow, Metadata
 from pynumaflow.function._dtypes import ReduceResult, DatumMetadata
 from pynumaflow.function.asynciter import NonBlockingIterator
 from pynumaflow.function.proto import udfunction_pb2
@@ -32,6 +33,7 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 UDFMapCallable = Callable[[list[str], Datum], Messages]
+UDFMapStreamCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
 UDFMapTCallable = Callable[[list[str], Datum], MessageTs]
 UDFReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Messages]
 _PROCESS_COUNT = multiprocessing.cpu_count()
@@ -62,6 +64,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
     Args:
         map_handler: Function callable following the type signature of UDFMapCallable
+        map_stream_handler: Function callable following the type signature of UDFMapStreamCallable
         mapt_handler: Function callable following the type signature of UDFMapTCallable
         reduce_handler: Function callable following the type signature of UDFReduceCallable
         sock_path: Path to the UNIX Domain Socket
@@ -82,10 +85,17 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
-    ...async def mapT_handler(key: [str], datum: Datum) -> Messages:
+    >>> async def map_stream_handler(key: [str], datums: Datum) -> AsyncIterable[Message]:
+    ...    val = datum.value
+    ...    _ = datum.event_time
+    ...    _ = datum.watermark
+    ...    for i in range(10):
+    ...        yield Message(val, keys=keys)
+    ...
+    ... async def mapT_handler(key: [str], datum: Datum) -> Messages:
     ...         "Not supported"
     ...
-    >>> async def reduce_handler(key: str, datums: Iterator[Datum], md: Metadata) -> Messages:
+    >>> async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     ...   interval_window = md.interval_window
     ...   counter = 0
     ...   async for _ in datums:
@@ -99,6 +109,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
     >>> grpc_server = AsyncServer(
     ...   reduce_handler=reduce_handler,
     ...   map_handler=map_handler,
+    ...   map_stream_handler=map_stream_handler,
     ... )
     >>> aiorun.run(grpc_server.start())
     """
@@ -108,15 +119,19 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
         map_handler: UDFMapCallable = None,
         mapt_handler: UDFMapTCallable = None,
         reduce_handler: UDFReduceCallable = None,
+        map_stream_handler: UDFMapStreamCallable = None,
         sock_path=FUNCTION_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if not (map_handler or mapt_handler or reduce_handler):
-            raise ValueError("Require a valid map/mapt handler and/or a valid reduce handler.")
+        if not (map_handler or mapt_handler or map_stream_handler or reduce_handler):
+            raise ValueError(
+                "Require a valid map/map_stream/mapt handler and/or a valid reduce handler."
+            )
 
         self.__map_handler: UDFMapCallable = map_handler
         self.__mapt_handler: UDFMapTCallable = mapt_handler
+        self.__map_stream_handler: UDFMapStreamCallable = map_stream_handler
         self.__reduce_handler: UDFReduceCallable = reduce_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
@@ -182,6 +197,39 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             )
 
         return datums
+
+    async def MapStreamFn(
+        self,
+        request: udfunction_pb2.DatumRequest,
+        context: NumaflowServicerContext,
+    ) -> AsyncIterable[udfunction_pb2.DatumResponse]:
+        """
+        Applies a map function to a datum stream in streaming mode.
+        The pascal case function name comes from the proto udfunction_pb2_grpc.py file.
+        """
+
+        async for res in self.__invoke_map_stream(
+            list(request.keys),
+            Datum(
+                keys=list(request.keys),
+                value=request.value,
+                event_time=request.event_time.event_time.ToDatetime(),
+                watermark=request.watermark.watermark.ToDatetime(),
+                metadata=DatumMetadata(
+                    msg_id=request.metadata.id,
+                    num_delivered=request.metadata.num_delivered,
+                ),
+            ),
+        ):
+            yield res
+
+    async def __invoke_map_stream(self, keys: list[str], req: Datum):
+        try:
+            async for msg in self.__map_stream_handler(keys, req):
+                yield udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags)
+        except Exception as err:
+            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            raise err
 
     async def ReduceFn(
         self,

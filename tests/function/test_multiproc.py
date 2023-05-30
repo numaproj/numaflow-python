@@ -20,7 +20,8 @@ from tests.function.testing_utils import (
     mock_new_event_time,
     err_mapt_handler,
 )
-from tests.function.test_async_server import async_reduce_handler
+
+from tests.function.test_async_server import async_reduce_handler, async_map_stream_handler
 
 
 def mockenv(**envvars):
@@ -30,7 +31,10 @@ def mockenv(**envvars):
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
         my_servicer = MultiProcServer(
-            map_handler=map_handler, mapt_handler=mapt_handler, reduce_handler=async_reduce_handler
+            map_handler=map_handler,
+            mapt_handler=mapt_handler,
+            reduce_handler=async_reduce_handler,
+            map_stream_handler=async_map_stream_handler,
         )
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
@@ -38,7 +42,10 @@ class TestMultiProcMethods(unittest.TestCase):
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
         server = MultiProcServer(
-            reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
+            reduce_handler=async_reduce_handler,
+            map_handler=map_handler,
+            mapt_handler=mapt_handler,
+            map_stream_handler=async_map_stream_handler,
         )
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 3)
@@ -46,7 +53,10 @@ class TestMultiProcMethods(unittest.TestCase):
     @mockenv(NUMAFLOW_CPU_LIMIT="4")
     def test_multiproc_process_count(self) -> None:
         server = MultiProcServer(
-            reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
+            reduce_handler=async_reduce_handler,
+            map_handler=map_handler,
+            mapt_handler=mapt_handler,
+            map_stream_handler=async_map_stream_handler,
         )
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 4)
@@ -57,7 +67,10 @@ class TestMultiProcMethods(unittest.TestCase):
         serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
 
         server = MultiProcServer(
-            reduce_handler=async_reduce_handler, map_handler=map_handler, mapt_handler=mapt_handler
+            reduce_handler=async_reduce_handler,
+            map_handler=map_handler,
+            mapt_handler=mapt_handler,
+            map_stream_handler=async_map_stream_handler,
         )
 
         with server._reserve_port() as port:
@@ -247,6 +260,36 @@ class TestMultiProcMethods(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(ValueError):
             MultiProcServer()
+
+    def test_unimplemented_map_stream(self):
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            keys=["test"],
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+        method = self.test_server.invoke_unary_stream(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "MapStreamFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+
+        metadata, code, details = method.termination()
+
+        self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, code)
+        self.assertEqual("Method not implemented!", details)
 
     def test_unimplemented_reduce(self):
         method = self.test_server.invoke_stream_stream(

@@ -19,12 +19,18 @@ from tests.function.testing_utils import (
     err_mapt_handler,
     mock_new_event_time,
 )
+from tests.function.test_async_server import (
+    async_map_stream_handler,
+)
 
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
         my_servicer = Server(
-            map_handler=map_handler, mapt_handler=mapt_handler, reduce_handler=reduce_handler
+            map_handler=map_handler,
+            mapt_handler=mapt_handler,
+            reduce_handler=reduce_handler,
+            map_stream_handler=async_map_stream_handler,
         )
         services = {udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
@@ -34,6 +40,7 @@ class TestServer(unittest.TestCase):
             map_handler=map_handler,
             mapt_handler=mapt_handler,
             reduce_handler=reduce_handler,
+            map_stream_handler=async_map_stream_handler,
             sock_path="/tmp/test.sock",
             max_message_size=1024 * 1024 * 5,
         )
@@ -101,6 +108,36 @@ class TestServer(unittest.TestCase):
         )
         response, metadata, code, details = method.termination()
         self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+
+    def test_unimplemented_map_stream(self):
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        request = udfunction_pb2.DatumRequest(
+            keys=["test"],
+            value=mock_message(),
+            event_time=udfunction_pb2.EventTime(event_time=event_time_timestamp),
+            watermark=udfunction_pb2.Watermark(watermark=watermark_timestamp),
+        )
+        method = self.test_server.invoke_unary_stream(
+            method_descriptor=(
+                udfunction_pb2.DESCRIPTOR.services_by_name["UserDefinedFunction"].methods_by_name[
+                    "MapStreamFn"
+                ]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+
+        metadata, code, details = method.termination()
+
+        self.assertEqual(grpc.StatusCode.UNIMPLEMENTED, code)
+        self.assertEqual("Method not implemented!", details)
 
     def test_udf_mapt_err(self):
         my_servicer = Server(mapt_handler=err_mapt_handler)

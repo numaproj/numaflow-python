@@ -81,6 +81,11 @@ class TestMessageTs(unittest.TestCase):
         msgts.append(self.mock_messaget_object())
         self.assertEqual(2, len(msgts))
 
+    def test_err(self):
+        msgts = MessageTs(self.mock_messaget_object(), self.mock_messaget_object())
+        with self.assertRaises(TypeError):
+            msgts[:1]
+
 
 if __name__ == "__main__":
     unittest.main()

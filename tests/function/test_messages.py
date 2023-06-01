@@ -88,6 +88,11 @@ class TestMessages(unittest.TestCase):
         for msg in true_obj:
             print(msg)
 
+    def test_err(self):
+        msgts = Messages(self.mock_message_object(), self.mock_message_object())
+        with self.assertRaises(TypeError):
+            msgts[:1]
+
 
 if __name__ == "__main__":
     unittest.main()

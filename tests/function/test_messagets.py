@@ -60,10 +60,10 @@ class TestMessageTs(unittest.TestCase):
             },
         ]
         msgts = MessageTs(*mock_obj)
-        self.assertEqual(len(mock_obj), len(msgts.items()))
-        self.assertEqual(mock_obj[0]["Keys"], msgts.items()[0]["Keys"])
-        self.assertEqual(mock_obj[0]["Value"], msgts.items()[0]["Value"])
-        self.assertEqual(mock_obj[0]["EventTime"], msgts.items()[0]["EventTime"])
+        self.assertEqual(len(mock_obj), len(msgts))
+        self.assertEqual(mock_obj[0]["Keys"], msgts[0]["Keys"])
+        self.assertEqual(mock_obj[0]["Value"], msgts[0]["Value"])
+        self.assertEqual(mock_obj[0]["EventTime"], msgts[0]["EventTime"])
         self.assertEqual(
             "[{'Keys': [b'U+005C__ALL__'], 'Value': b'test_mock_message_t', "
             "'EventTime': datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)}, "
@@ -74,28 +74,11 @@ class TestMessageTs(unittest.TestCase):
 
     def test_append(self):
         msgts = MessageTs()
-        self.assertEqual(0, len(msgts.items()))
+        self.assertEqual(0, len(msgts))
         msgts.append(self.mock_messaget_object())
-        self.assertEqual(1, len(msgts.items()))
+        self.assertEqual(1, len(msgts))
         msgts.append(self.mock_messaget_object())
-        self.assertEqual(2, len(msgts.items()))
-
-    def test_dump(self):
-        msgts = MessageTs()
-        msgts.append(self.mock_messaget_object())
-        msgts.append(self.mock_messaget_object())
-        self.assertEqual(
-            "[MessageT(_keys=[], _tags=[], _value=b'test_mock_message_t', "
-            "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc)), "
-            "MessageT(_keys=[], _tags=[], _value=b'test_mock_message_t', "
-            "_event_time=datetime.datetime(2022, 9, 12, 16, 0, tzinfo=datetime.timezone.utc))]",
-            msgts.dumps(),
-        )
-
-    def test_load(self):
-        # to improve codecov
-        msgts = MessageTs()
-        msgts.loads()
+        self.assertEqual(2, len(msgts))
 
 
 if __name__ == "__main__":

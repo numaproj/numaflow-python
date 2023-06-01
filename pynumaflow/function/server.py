@@ -145,7 +145,7 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
 
         datums = []
 
-        for msg in msgs.items():
+        for msg in msgs:
             datums.append(
                 udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags)
             )
@@ -196,7 +196,7 @@ class Server(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             return udfunction_pb2.DatumResponseList(elements=[])
 
         datums = []
-        for msgt in msgts.items():
+        for msgt in msgts:
             event_time_timestamp = _timestamp_pb2.Timestamp()
             event_time_timestamp.FromDatetime(dt=msgt.event_time)
             watermark_timestamp = _timestamp_pb2.Timestamp()

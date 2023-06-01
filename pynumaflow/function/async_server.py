@@ -191,7 +191,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
             raise err
         datums = []
-        for msg in msgs.items():
+        for msg in msgs:
             datums.append(
                 udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags)
             )
@@ -329,7 +329,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             raise err
 
         datum_responses = []
-        for msg in msgs.items():
+        for msg in msgs:
             datum_responses.append(
                 udfunction_pb2.DatumResponse(keys=msg.keys, value=msg.value, tags=msg.tags)
             )

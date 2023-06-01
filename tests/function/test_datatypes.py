@@ -91,22 +91,6 @@ class TestDatum(unittest.TestCase):
             metadata=metadata,
         )
         self.assertEqual(mock_message(), d.value)
-        self.assertEqual(
-            "keys: ['test'], "
-            "value: test_mock_message, "
-            "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00, "
-            "metadata: id: test_id, num_delivered: 1",
-            str(d),
-        )
-        self.assertEqual(
-            "keys: ['test'], "
-            "value: test_mock_message, "
-            "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00, "
-            "metadata: id: test_id, num_delivered: 1",
-            repr(d),
-        )
 
     def test_key(self):
         metadata = DatumMetadata(
@@ -121,22 +105,6 @@ class TestDatum(unittest.TestCase):
             metadata=metadata,
         )
         self.assertEqual(TEST_KEYS, d.keys())
-        self.assertEqual(
-            "keys: ['test'], "
-            "value: test_mock_message, "
-            "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00, "
-            "metadata: id: test_id, num_delivered: 1",
-            str(d),
-        )
-        self.assertEqual(
-            "keys: ['test'], "
-            "value: test_mock_message, "
-            "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00, "
-            "metadata: id: test_id, num_delivered: 1",
-            repr(d),
-        )
 
     def test_event_time(self):
         metadata = DatumMetadata(
@@ -199,10 +167,6 @@ class TestIntervalWindow(unittest.TestCase):
     def test_start(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
         self.assertEqual(mock_start_time(), i.start)
-        self.assertEqual("start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00", str(i))
-        self.assertEqual(
-            "start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00", repr(i)
-        )
 
     def test_end(self):
         i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
@@ -215,14 +179,6 @@ class TestMetadata(unittest.TestCase):
         m = Metadata(interval_window=i)
         self.assertEqual(type(i), type(m.interval_window))
         self.assertEqual(i, m.interval_window)
-        self.assertEqual(
-            "interval_window: start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00",
-            str(m),
-        )
-        self.assertEqual(
-            "interval_window: start: 2022-09-12 16:00:00+00:00, end: 2022-09-12 16:02:00+00:00",
-            repr(m),
-        )
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ async def my_handler(keys: list[str], datum: Datum) -> AsyncIterable[Message]:
     _ = datum.event_time
     _ = datum.watermark
     strs = val.decode("utf-8").split(",")
-    messages = Messages()
+    Messages()
     if len(strs) == 0:
         yield Message.to_drop()
         return

@@ -61,6 +61,7 @@ class TestMessageTs(unittest.TestCase):
         ]
         msgts = MessageTs(*mock_obj)
         self.assertEqual(len(mock_obj), len(msgts))
+        self.assertEqual(len(mock_obj), len(msgts.items()))
         self.assertEqual(mock_obj[0]["Keys"], msgts[0]["Keys"])
         self.assertEqual(mock_obj[0]["Value"], msgts[0]["Value"])
         self.assertEqual(mock_obj[0]["EventTime"], msgts[0]["EventTime"])

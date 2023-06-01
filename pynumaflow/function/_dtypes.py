@@ -3,7 +3,6 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar
-from warnings import warn
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 
@@ -92,12 +91,6 @@ class Messages(Sequence[M]):
         self._messages.append(message)
 
     def items(self) -> list[Message]:
-        warn(
-            "Using items is deprecated and will be removed in v0.5. Use an interator instead. "
-            "e.g. for msg in messages: ...",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self._messages
 
 
@@ -188,12 +181,6 @@ class MessageTs(Sequence[MT]):
         self._message_ts.append(message_t)
 
     def items(self) -> list[MessageT]:
-        warn(
-            "Using items is deprecated and will be removed in v0.5. Use an interator instead. "
-            "e.g. for msgt in messagets: ...",
-            DeprecationWarning,
-            stacklevel=2,
-        )
         return self._message_ts
 
 

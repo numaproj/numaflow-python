@@ -10,13 +10,13 @@ def mock_message():
 
 class TestMessage(unittest.TestCase):
     def test_key(self):
-        mock_obj = {"Keys": "test-key", "Value": mock_message()}
+        mock_obj = {"Keys": ["test-key"], "Value": mock_message()}
         msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"])
         print(msg)
         self.assertEqual(mock_obj["Keys"], msg.keys)
 
     def test_value(self):
-        mock_obj = {"Keys": "test-key", "Value": mock_message()}
+        mock_obj = {"Keys": ["test-key"], "Value": mock_message()}
         msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"])
         self.assertEqual(mock_obj["Value"], msg.value)
 
@@ -58,6 +58,7 @@ class TestMessages(unittest.TestCase):
         ]
         msgs = Messages(*mock_obj)
         self.assertEqual(len(mock_obj), len(msgs))
+        self.assertEqual(len(mock_obj), len(msgs.items()))
         self.assertEqual(mock_obj[0]["Keys"], msgs[0]["Keys"])
         self.assertEqual(mock_obj[0]["Value"], msgs[0]["Value"])
         self.assertEqual(

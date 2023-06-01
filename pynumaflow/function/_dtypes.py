@@ -1,7 +1,9 @@
 from asyncio import Task
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar
+from warnings import warn
 
 from pynumaflow.function.asynciter import NonBlockingIterator
 
@@ -13,22 +15,24 @@ MT = TypeVar("MT", bound="MessageT")
 MTs = TypeVar("MTs", bound="MessageTs")
 
 
-@dataclass
+@dataclass(init=False)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        _value: data in bytes
-         _keys: []string keys for vertex (optional)
-         _tags: []string tags for conditional forwarding (optional)
+        value: data in bytes
+        keys: []string keys for vertex (optional)
+        tags: []string tags for conditional forwarding (optional)
     """
 
+    __slots__ = ("_value", "_keys", "_tags")
+
+    _value: bytes
     _keys: list[str]
     _tags: list[str]
-    _value: bytes = b""
 
-    def __init__(self, value: bytes, keys=None, tags=None):
+    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -54,7 +58,7 @@ class Message:
         return self._tags
 
 
-class Messages:
+class Messages(Sequence[M]):
     """
     Class to define a list of Message objects.
 
@@ -67,49 +71,65 @@ class Messages:
     def __init__(self, *messages: M):
         self._messages = list(messages) or []
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._messages)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
+
+    def __len__(self) -> int:
+        return len(self._messages)
+
+    def __iter__(self) -> Iterator[M]:
+        return iter(self._messages)
+
+    def __getitem__(self, index: int) -> M:
+        if isinstance(index, slice):
+            raise TypeError("Slicing is not supported for Messages")
+        return self._messages[index]
 
     def append(self, message: Message) -> None:
         self._messages.append(message)
 
     def items(self) -> list[Message]:
+        warn(
+            "Using items is deprecated and will be removed in v0.5. "
+            "Iterate or index the Messages object instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._messages
 
-    def dumps(self) -> str:
-        return str(self)
 
-    def loads(self) -> Ms:
-        pass
-
-
-@dataclass
+@dataclass(init=False)
 class MessageT:
     """
     Basic datatype for data passing to the next vertex/vertices.
 
     Args:
-        _value: data in bytes
-        _event_time: event time of the message, usually extracted from the payload.
-         _keys: []string keys for vertex (optional)
-         _tags: []string tags for conditional forwarding (optional)
+        value: data in bytes
+        event_time: event time of the message, usually extracted from the payload.
+        keys: []string keys for vertex (optional)
+        tags: []string tags for conditional forwarding (optional)
     """
+
+    __slots__ = ("_value", "_keys", "_tags", "_event_time")
 
     _keys: list[str]
     _tags: list[str]
-    _value: bytes = b""
-    # There is no year 0, so setting following as default event time.
-    _event_time: datetime = datetime(1, 1, 1, 0, 0)
+    _value: bytes
+    _event_time: datetime
 
-    def __init__(self, value: bytes, event_time: datetime, keys=None, tags=None):
+    def __init__(
+        self, value: bytes, event_time: datetime, keys: list[str] = None, tags: list[str] = None
+    ):
         """
         Creates a MessageT object to send value to a vertex.
         """
         self._tags = tags or []
         self._keys = keys or []
+
+        # There is no year 0, so setting following as default event time.
         self._event_time = event_time or datetime(1, 1, 1, 0, 0)
         self._value = value or b""
 
@@ -134,7 +154,7 @@ class MessageT:
         return self._tags
 
 
-class MessageTs:
+class MessageTs(Sequence[MT]):
     """
     Class to define a list of MessageT objects.
 
@@ -153,31 +173,46 @@ class MessageTs:
     def __repr__(self):
         return str(self)
 
+    def __len__(self) -> int:
+        return len(self._message_ts)
+
+    def __iter__(self) -> Iterator[M]:
+        return iter(self._message_ts)
+
+    def __getitem__(self, index: int) -> M:
+        if isinstance(index, slice):
+            raise TypeError("Slicing is not supported for MessageTs")
+        return self._message_ts[index]
+
     def append(self, message_t: MessageT) -> None:
         self._message_ts.append(message_t)
 
     def items(self) -> list[MessageT]:
+        warn(
+            "Using items is deprecated and will be removed in v0.5. "
+            "Iterate or index the Messages object instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._message_ts
 
-    def dumps(self) -> str:
-        return str(self)
 
-    def loads(self) -> Ms:
-        pass
-
-
+@dataclass(init=False)
 class DatumMetadata:
     """
     Class to define the metadata information for the event.
     Args:
-        msg_id: the id of the event.
-        num_delivered: the number the event has been delivered.
+        msg_id: the id of the event. (default: "")
+        num_delivered: the number the event has been delivered. (default: 0)
     >>> # Example usage
     >>> from pynumaflow.function import DatumMetadata
-    >>> msg_id = "id"
-    >>> num_delivered = 1
-    >>> d = Datum(id=msg_id, num_delivered=num_delivered)
+    >>> d = Datum(id="id", num_delivered=1)
     """
+
+    __slots__ = ("_id", "_num_delivered")
+
+    _id: str
+    _num_delivered: int
 
     def __init__(
         self,
@@ -186,12 +221,6 @@ class DatumMetadata:
     ):
         self._id = msg_id or ""
         self._num_delivered = num_delivered or 0
-
-    def __str__(self):
-        return f"id: {self._id}, " f"num_delivered: {str(self._num_delivered)}"
-
-    def __repr__(self):
-        return str(self)
 
     @property
     def id(self) -> str:
@@ -204,6 +233,7 @@ class DatumMetadata:
         return self._num_delivered
 
 
+@dataclass(init=False)
 class Datum:
     """
     Class to define the important information for the event.
@@ -216,15 +246,26 @@ class Datum:
     >>> # Example usage
     >>> from pynumaflow.function import Datum
     >>> from datetime import datetime, timezone
-    >>> keys = ["test_key"]
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
     >>> metadata = DatumMetadata(msg_id="test_id", num_delivered=1)
-    >>> d = Datum(keys=keys, value=payload, event_time=t1, watermark=t2, metadata=metadata
+    >>> d = Datum(
+    ...       keys=["test_key"],
+    ...       value=payload,
+    ...       event_time=t1,
+    ...       watermark=t2,
+    ...       metadata=DatumMetadata(msg_id="test_id", num_delivered=1)
+    ...    )
     """
 
     __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_metadata")
+
+    _keys: list[str]
+    _value: bytes
+    _event_time: datetime
+    _watermark: datetime
+    _metadata: DatumMetadata
 
     def __init__(
         self,
@@ -243,19 +284,6 @@ class Datum:
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
         self._metadata = metadata
-
-    def __str__(self):
-        value_string = self._value.decode("utf-8")
-        return (
-            f"keys: {self._keys}, "
-            f"value: {value_string}, "
-            f"event_time: {str(self._event_time)}, "
-            f"watermark: {str(self._watermark)}, "
-            f"metadata: {str(self._metadata)}"
-        )
-
-    def __repr__(self):
-        return str(self)
 
     def keys(self) -> list[str]:
         """Returns the keys of the event"""
@@ -282,20 +310,18 @@ class Datum:
         return self._metadata
 
 
+@dataclass(init=False)
 class IntervalWindow:
     """Defines the start and end of the interval window for the event."""
 
     __slots__ = ("_start", "_end")
 
+    _start: datetime
+    _end: datetime
+
     def __init__(self, start: datetime, end: datetime):
         self._start = start
         self._end = end
-
-    def __str__(self):
-        return f"start: {self._start}, end: {self._end}"
-
-    def __repr__(self):
-        return str(self)
 
     @property
     def start(self):
@@ -308,19 +334,16 @@ class IntervalWindow:
         return self._end
 
 
+@dataclass(init=False)
 class Metadata:
     """Defines the metadata for the event."""
 
     __slots__ = ("_interval_window",)
 
+    _interval_window: IntervalWindow
+
     def __init__(self, interval_window: IntervalWindow):
         self._interval_window = interval_window
-
-    def __str__(self):
-        return f"interval_window: {self._interval_window}"
-
-    def __repr__(self):
-        return str(self)
 
     @property
     def interval_window(self):
@@ -328,15 +351,15 @@ class Metadata:
         return self._interval_window
 
 
+@dataclass
 class ReduceResult:
     """Defines the object to hold the result of reduce computation."""
 
     __slots__ = ("_future", "_iterator", "_key")
 
-    def __init__(self, future: Task, iterator: NonBlockingIterator, keys: list[str]):
-        self._future = future
-        self._iterator = iterator
-        self._key = keys
+    _future: Task
+    _iterator: NonBlockingIterator
+    _key: list[str]
 
     @property
     def future(self):

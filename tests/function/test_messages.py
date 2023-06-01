@@ -10,13 +10,13 @@ def mock_message():
 
 class TestMessage(unittest.TestCase):
     def test_key(self):
-        mock_obj = {"Keys": "test-key", "Value": mock_message()}
+        mock_obj = {"Keys": ["test-key"], "Value": mock_message()}
         msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"])
         print(msg)
         self.assertEqual(mock_obj["Keys"], msg.keys)
 
     def test_value(self):
-        mock_obj = {"Keys": "test-key", "Value": mock_message()}
+        mock_obj = {"Keys": ["test-key"], "Value": mock_message()}
         msg = Message(value=mock_obj["Value"], keys=mock_obj["Keys"])
         self.assertEqual(mock_obj["Value"], msg.value)
 
@@ -57,9 +57,10 @@ class TestMessages(unittest.TestCase):
             {"Keys": ["test_key"], "Value": mock_message()},
         ]
         msgs = Messages(*mock_obj)
+        self.assertEqual(len(mock_obj), len(msgs))
         self.assertEqual(len(mock_obj), len(msgs.items()))
-        self.assertEqual(mock_obj[0]["Keys"], msgs.items()[0]["Keys"])
-        self.assertEqual(mock_obj[0]["Value"], msgs.items()[0]["Value"])
+        self.assertEqual(mock_obj[0]["Keys"], msgs[0]["Keys"])
+        self.assertEqual(mock_obj[0]["Value"], msgs[0]["Value"])
         self.assertEqual(
             "[{'Keys': ['test_key'], 'Value': b'test_mock_message'}, "
             "{'Keys': ['test_key'], 'Value': b'test_mock_message'}]",
@@ -68,37 +69,29 @@ class TestMessages(unittest.TestCase):
 
     def test_append(self):
         msgs = Messages()
-        self.assertEqual(0, len(msgs.items()))
+        self.assertEqual(0, len(msgs))
         msgs.append(self.mock_message_object())
-        self.assertEqual(1, len(msgs.items()))
+        self.assertEqual(1, len(msgs))
         msgs.append(self.mock_message_object())
-        self.assertEqual(2, len(msgs.items()))
+        self.assertEqual(2, len(msgs))
 
     def test_message_forward_to_drop(self):
         mock_obj = Messages()
         mock_obj.append(Message(b"").to_drop())
         true_obj = Messages()
-        true_obj.append(mock_obj.items()[0])
+        true_obj.append(mock_obj[0])
         self.assertEqual(type(mock_obj), type(true_obj))
-        for i in range(len(true_obj.items())):
-            self.assertEqual(type(mock_obj.items()[i]), type(true_obj.items()[i]))
-            self.assertEqual(mock_obj.items()[i].keys, true_obj.items()[i].keys)
-            self.assertEqual(mock_obj.items()[i].value, true_obj.items()[i].value)
+        for i in range(len(true_obj)):
+            self.assertEqual(type(mock_obj[i]), type(true_obj[i]))
+            self.assertEqual(mock_obj[i].keys, true_obj[i].keys)
+            self.assertEqual(mock_obj[i].value, true_obj[i].value)
+        for msg in true_obj:
+            print(msg)
 
-    def test_dump(self):
-        msgs = Messages()
-        msgs.append(self.mock_message_object())
-        msgs.append(self.mock_message_object())
-        self.assertEqual(
-            "[Message(_keys=[], _tags=[], _value=b'test_mock_message'), "
-            "Message(_keys=[], _tags=[], _value=b'test_mock_message')]",
-            msgs.dumps(),
-        )
-
-    def test_load(self):
-        # to improve codecov
-        msgs = Messages()
-        msgs.loads()
+    def test_err(self):
+        msgts = Messages(self.mock_message_object(), self.mock_message_object())
+        with self.assertRaises(TypeError):
+            msgts[:1]
 
 
 if __name__ == "__main__":

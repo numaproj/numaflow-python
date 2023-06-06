@@ -29,14 +29,6 @@ class TestResponses(unittest.TestCase):
             repr(self.resps),
         )
 
-    def test_dumps(self):
-        dump_str = self.resps.dumps()
-        self.assertEqual(
-            "[Response(id='2', success=True, err=None), "
-            "Response(id='3', success=False, err='RuntimeError encountered!')]",
-            dump_str,
-        )
-
 
 if __name__ == "__main__":
     unittest.main()

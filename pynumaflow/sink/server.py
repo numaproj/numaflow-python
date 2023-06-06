@@ -101,7 +101,7 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
                 rspns.append(Response.as_failure(_datum.id, err_msg))
 
         responses = []
-        for rspn in rspns.items():
+        for rspn in rspns:
             responses.append(
                 udsink_pb2.Response(id=rspn.id, success=rspn.success, err_msg=rspn.err)
             )

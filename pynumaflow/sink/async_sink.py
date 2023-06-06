@@ -1,8 +1,8 @@
 import logging
 import multiprocessing
 import os
+from collections.abc import AsyncIterable, Awaitable
 from typing import Callable
-from collections.abc import Iterator, AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -22,7 +22,7 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-UDSinkCallable = Callable[[Iterator[Datum]], Responses]
+UDSinkCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
@@ -54,7 +54,7 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
                      defaults to number of processors x 4
 
     Example invocation:
-    >>> from typing import List
+    >>> import aiorun
     >>> from pynumaflow.sink import Datum, Responses, Response, Sink
     >>> async def my_handler(datums: AsyncIterable[Datum]) -> Responses:
     ...   responses = Responses()
@@ -109,7 +109,7 @@ class AsyncSink(udsink_pb2_grpc.UserDefinedSinkServicer):
             async for _datum in datum_iterator:
                 rspns.append(Response.as_failure(_datum.id, err_msg))
         responses = []
-        for rspn in rspns.items():
+        for rspn in rspns:
             responses.append(
                 udsink_pb2.Response(id=rspn.id, success=rspn.success, err_msg=rspn.err)
             )

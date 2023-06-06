@@ -5,6 +5,10 @@ from pynumaflow.function import Message, Datum, AsyncServer
 
 
 async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Message]:
+    """
+    A handler that splits the input datum value into multiple strings by `,` separator and
+    emits them as a stream.
+    """
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark

@@ -1,16 +1,29 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Optional
+from collections.abc import Sequence, Iterator
+from warnings import warn
 
 R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
 
 
-@dataclass(frozen=True)
+@dataclass
 class Response:
+    """
+    Basic datatype for UDSink response.
+
+    Args:
+        id: the id of the event.
+        success: boolean indicating whether the event was successfully processed.
+        err: error message if the event was not successfully processed.
+    """
+
     id: str
     success: bool
     err: Optional[str]
+
+    __slots__ = ("id", "success", "err")
 
     @classmethod
     def as_success(cls: type[R], id_: str) -> R:
@@ -21,26 +34,50 @@ class Response:
         return Response(id=id_, success=False, err=err_msg)
 
 
-class Responses:
+class Responses(Sequence[R]):
+    """
+    Container to hold a list of Response instances.
+
+    Args:
+        responses: list of Response instances.
+    """
+
+    __slots__ = ("_responses",)
+
     def __init__(self, *responses: R):
         self._responses = list(responses) or []
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._responses)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
+
+    def __len__(self) -> int:
+        return len(self._responses)
+
+    def __iter__(self) -> Iterator[R]:
+        return iter(self._responses)
+
+    def __getitem__(self, index: int) -> R:
+        if isinstance(index, slice):
+            raise TypeError("Slicing is not supported for Responses")
+        return self._responses[index]
 
     def append(self, response: R) -> None:
-        return self._responses.append(response)
+        self._responses.append(response)
 
     def items(self) -> list[R]:
+        warn(
+            "Using items is deprecated and will be removed in v0.5. "
+            "Iterate or index the Responses object instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return self._responses
 
-    def dumps(self) -> str:
-        return str(self)
 
-
+@dataclass(init=False, repr=False)
 class Datum:
     """
     Class to define the important information for the event.
@@ -59,6 +96,14 @@ class Datum:
     >>> output_keys = ["test_key"]
     >>> d = Datum(keys=output_keys, sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
     """
+
+    __slots__ = ("_keys", "_id", "_value", "_event_time", "_watermark")
+
+    _keys: list[str]
+    _id: str
+    _value: bytes
+    _event_time: datetime
+    _watermark: datetime
 
     def __init__(
         self,

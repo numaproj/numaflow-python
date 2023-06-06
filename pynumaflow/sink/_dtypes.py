@@ -10,6 +10,15 @@ Rs = TypeVar("Rs", bound="Responses")
 
 @dataclass
 class Response:
+    """
+    Basic datatype for UDSink response.
+
+    Args:
+        id: the id of the event.
+        success: boolean indicating whether the event was successfully processed.
+        err: error message if the event was not successfully processed.
+    """
+
     id: str
     success: bool
     err: Optional[str]
@@ -26,6 +35,13 @@ class Response:
 
 
 class Responses(Sequence[R]):
+    """
+    Container to hold a list of Response instances.
+
+    Args:
+        responses: list of Response instances.
+    """
+
     __slots__ = ("_responses",)
 
     def __init__(self, *responses: R):

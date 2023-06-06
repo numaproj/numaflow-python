@@ -350,6 +350,7 @@ class AsyncServer(udfunction_pb2_grpc.UserDefinedFunctionServicer):
             AsyncServer(
                 map_handler=self.__map_handler,
                 mapt_handler=self.__mapt_handler,
+                map_stream_handler=self.__map_stream_handler,
                 reduce_handler=self.__reduce_handler,
             ),
             server,

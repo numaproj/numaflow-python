@@ -21,7 +21,16 @@ class TestResponses(unittest.TestCase):
 
     def test_responses(self):
         self.resps.append(Response.as_success("4"))
+        self.assertEqual(3, len(self.resps))
         self.assertEqual(3, len(self.resps.items()))
+
+        for resp in self.resps:
+            self.assertIsInstance(resp, Response)
+
+        self.assertEqual(self.resps[0].id, "2")
+        self.assertEqual(self.resps[1].id, "3")
+        self.assertEqual(self.resps[2].id, "4")
+
         self.assertEqual(
             "[Response(id='2', success=True, err=None), "
             "Response(id='3', success=False, err='RuntimeError encountered!'), "

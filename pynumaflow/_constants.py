@@ -7,7 +7,7 @@ SINK_SOCK_PATH = "/var/run/numaflow/udsink.sock"
 # https://github.com/numaproj/numaflow-go/blob/main/pkg/function/configs.go#L6
 WIN_START_TIME = "x-numaflow-win-start-time"
 WIN_END_TIME = "x-numaflow-win-end-time"
-MAX_MESSAGE_SIZE = 1024 * 1024 * 4
+MAX_MESSAGE_SIZE = 1024 * 1024 * 64
 # TODO: None instead of "EOF" ?
 STREAM_EOF = "EOF"
 DELIMITER = ":"

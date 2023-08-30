@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from pynumaflow.sink import Datum, Responses, Response, Sink
+from pynumaflow.sink import Datum, Responses, Response, Sinker
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:
@@ -12,5 +12,5 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = Sink(sink_handler=udsink_handler)
+    grpc_server = Sinker(sink_handler=udsink_handler)
     grpc_server.start()

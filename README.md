@@ -69,7 +69,7 @@ from datetime import datetime
 from pynumaflow.function import MessageTs, MessageT, Datum, Server
 
 
-def mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
+def transform_handler(keys: list[str], datum: Datum) -> MessageTs:
     val = datum.value
     new_event_time = datetime.now()
     _ = datum.watermark
@@ -78,7 +78,7 @@ def mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
 
 
 if __name__ == "__main__":
-    grpc_server = Server(mapt_handler=mapt_handler)
+    grpc_server = Server(transform_handler=transform_handler)
     grpc_server.start()
 ```
 
@@ -110,14 +110,14 @@ if __name__ == "__main__":
 ```
 
 ### Sample Image
-A sample UDF [Dockerfile](examples/function/forward_message/Dockerfile) is provided
-under [examples](examples/function/forward_message).
+A sample UDF [Dockerfile](examples/map/forward_message/Dockerfile) is provided
+under [examples](examples/map/forward_message).
 
 ## Implement a User Defined Sink (UDSink)
 
 ```python
 from typing import Iterator
-from pynumaflow.sink import Datum, Responses, Response, Sink
+from pynumaflow.sink import Datum, Responses, Response, Sinker
 
 
 def my_handler(datums: Iterator[Datum]) -> Responses:
@@ -129,7 +129,7 @@ def my_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = Sink(my_handler)
+    grpc_server = Sinker(my_handler)
     grpc_server.start()
 ```
 

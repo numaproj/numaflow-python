@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Optional
+from typing import TypeVar, Optional, Callable
 from collections.abc import Sequence, Iterator
 from warnings import warn
 
@@ -87,7 +87,7 @@ class Datum:
         event_time: the event time of the event.
         watermark: the watermark of the event.
     >>> # Example usage
-    >>> from pynumaflow.function import Datum
+    >>> from pynumaflow.sink import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
@@ -159,3 +159,6 @@ class Datum:
     def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark
+
+
+SinkCallable = Callable[[Iterator[Datum]], Responses]

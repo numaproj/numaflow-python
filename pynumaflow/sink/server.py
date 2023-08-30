@@ -2,7 +2,6 @@ import logging
 import multiprocessing
 import os
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
 from collections.abc import Iterator, Iterable
 
 import grpc
@@ -16,37 +15,38 @@ from pynumaflow._constants import (
 from pynumaflow.info.server import get_sdk_version, write as info_server_write
 from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 from pynumaflow.sink import Responses, Datum, Response
-from pynumaflow.sink.proto import udsink_pb2_grpc, udsink_pb2
+from pynumaflow.sink._dtypes import SinkCallable
+from pynumaflow.sink.proto import sink_pb2_grpc, sink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-UDSinkCallable = Callable[[Iterator[Datum]], Responses]
+
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-def datum_generator(request_iterator: Iterable[udsink_pb2.DatumRequest]) -> Iterable[Datum]:
+def datum_generator(request_iterator: Iterable[sink_pb2.SinkRequest]) -> Iterable[Datum]:
     for d in request_iterator:
         datum = Datum(
             keys=list(d.keys),
             sink_msg_id=d.id,
             value=d.value,
-            event_time=d.event_time.event_time.ToDatetime(),
-            watermark=d.watermark.watermark.ToDatetime(),
+            event_time=d.event_time.ToDatetime(),
+            watermark=d.watermark.ToDatetime(),
         )
         yield datum
 
 
-class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
+class Sinker(sink_pb2_grpc.SinkServicer):
     """
-    Provides an interface to write a User Defined Sink (UDSink)
+    Provides an interface to write a Sinker
     which will be exposed over gRPC.
 
     Args:
-        sink_handler: Function callable following the type signature of UDSinkCallable
+        sink_handler: Function callable following the type signature of SinkCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -54,28 +54,27 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
 
     Example invocation:
     >>> from typing import List
-    >>> from pynumaflow.sink import Datum, Responses, Response, Sink
+    >>> from pynumaflow.sink import Datum, Responses, Response, Sinker
     >>> def my_handler(datums: Iterator[Datum]) -> Responses:
     ...   responses = Responses()
     ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
     ...   return responses
-    >>> grpc_server = Sink(my_handler)
+    >>> grpc_server = Sinker(my_handler)
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        sink_handler: UDSinkCallable,
+        sink_handler: SinkCallable,
         sock_path=SINK_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__sink_handler: UDSinkCallable = sink_handler
+        self.__sink_handler: SinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
-        self.cleanup_coroutines = []
 
         self._server_options = [
             ("grpc.max_send_message_length", self._max_message_size),
@@ -83,11 +82,11 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         ]
 
     def SinkFn(
-        self, request_iterator: Iterator[udsink_pb2.DatumRequest], context: NumaflowServicerContext
-    ) -> udsink_pb2.ResponseList:
+        self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
+    ) -> sink_pb2.SinkResponse:
         """
         Applies a sink function to a list of datum elements.
-        The pascal case function name comes from the proto udsink_pb2_grpc.py file.
+        The pascal case function name comes from the proto sink_pb2_grpc.py file.
         """
         # if there is an exception, we will mark all the responses as a failure
         datum_iterator = datum_generator(request_iterator)
@@ -103,19 +102,19 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         responses = []
         for rspn in rspns:
             responses.append(
-                udsink_pb2.Response(id=rspn.id, success=rspn.success, err_msg=rspn.err)
+                sink_pb2.SinkResponse.Result(id=rspn.id, success=rspn.success, err_msg=rspn.err)
             )
 
-        return udsink_pb2.ResponseList(responses=responses)
+        return sink_pb2.SinkResponse(results=responses)
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> udsink_pb2.ReadyResponse:
+    ) -> sink_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto udsink_pb2_grpc.py file.
+        The pascal case function name comes from the proto sink_pb2_grpc.py file.
         """
-        return udsink_pb2.ReadyResponse(ready=True)
+        return sink_pb2.ReadyResponse(ready=True)
 
     def start(self) -> None:
         """
@@ -124,7 +123,7 @@ class Sink(udsink_pb2_grpc.UserDefinedSinkServicer):
         server = grpc.server(
             ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
         )
-        udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(Sink(self.__sink_handler), server)
+        sink_pb2_grpc.add_SinkServicer_to_server(Sinker(self.__sink_handler), server)
         server.add_insecure_port(self.sock_path)
         server.start()
         serv_info = ServerInfo(

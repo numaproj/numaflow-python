@@ -46,7 +46,7 @@ pre-commit install
 ### Map
 
 ```python
-from pynumaflow.function import Messages, Message, Datum, Server
+from pynumaflow.map import Messages, Message, Datum, Mapper
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
@@ -57,7 +57,7 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = Server(map_handler=my_handler)
+    grpc_server = Mapper(map_handler=my_handler)
     grpc_server.start()
 ```
 ### MapT - Map with event time assignment capability
@@ -66,19 +66,19 @@ MapT is only supported at source vertex to enable (a) early data filtering and (
 
 ```python
 from datetime import datetime
-from pynumaflow.function import MessageTs, MessageT, Datum, Server
+from pynumaflow.sourcetransform import Messages, Message, Datum, SourceTransformer
 
 
-def transform_handler(keys: list[str], datum: Datum) -> MessageTs:
+def transform_handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
     new_event_time = datetime.now()
     _ = datum.watermark
-    message_t_s = MessageTs(MessageT(val, event_time=new_event_time, keys=keys))
+    message_t_s = Messages(Message(val, event_time=new_event_time, keys=keys))
     return message_t_s
 
 
 if __name__ == "__main__":
-    grpc_server = Server(transform_handler=transform_handler)
+    grpc_server = SourceTransformer(transform_handler=transform_handler)
     grpc_server.start()
 ```
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
 ```python
 import aiorun
 from typing import Iterator, List
-from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
+from pynumaflow.reduce import Messages, Message, Datum, Metadata, AsyncReducer
 
 
 async def my_handler(
@@ -105,7 +105,7 @@ async def my_handler(
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncServer(reduce_handler=my_handler)
+    grpc_server = AsyncReducer(reduce_handler=my_handler)
     aiorun.run(grpc_server.start())
 ```
 
@@ -137,18 +137,3 @@ if __name__ == "__main__":
 
 A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided
 under [examples](examples/sink/log).
-
-### Datum Metadata
-The Datum object contains the message payload and metadata. Currently, there are two fields
-in metadata: the message ID, the message delivery count to indicate how many times the message
-has been delivered. You can use these metadata to implement customized logic. For example,
-```python
-...
-
-
-def my_handler(keys: list[str], datum: Datum) -> Messages:
-    num_delivered = datum.metadata.num_delivered
-    # Choose to do specific actions, if the message delivery count reaches a certain threshold.
-    if num_delivered > 3:
-        ...
-```

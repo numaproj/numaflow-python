@@ -7,12 +7,12 @@ import time
 from collections.abc import AsyncIterable
 
 from pynumaflow import setup_logging
-from pynumaflow.function import (
+from pynumaflow.reduce import (
     Messages,
     Message,
     Datum,
     Metadata,
-    AsyncServer,
+    AsyncReducer,
 )
 
 _LOGGER = setup_logging(__name__)
@@ -23,7 +23,7 @@ class ReduceHandler:
         self.exec_pool = exec_pool
 
     async def reduce_handler(
-        self, key: str, datums: AsyncIterable[Datum], md: Metadata
+        self, key: list[str], datums: AsyncIterable[Datum], md: Metadata
     ) -> Messages:
         """
         handler function for executing operations on the messages received by the reduce vertex
@@ -44,7 +44,7 @@ class ReduceHandler:
             f"batch_time:{end_time - start_time} interval_window_start:{interval_window.start} "
             f"interval_window_end:{interval_window.end}"
         )
-        return Messages(Message.to_vtx(key, str.encode(msg)))
+        return Messages(Message(keys=key, value=str.encode(msg)))
 
 
 class ExecutorPool:
@@ -136,5 +136,5 @@ if __name__ == "__main__":
     threadPool = ExecutorPool(exec_type=e_type, max_workers=mx_workers)
     handler = ReduceHandler(exec_pool=threadPool)
 
-    grpc_server = AsyncServer(reduce_handler=handler.reduce_handler)
+    grpc_server = AsyncReducer(reduce_handler=handler.reduce_handler)
     aiorun.run(grpc_server.start())

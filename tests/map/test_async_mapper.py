@@ -9,13 +9,13 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.map import (
+from pynumaflow.mapper import (
     AsyncMapper,
     Datum,
     Messages,
     Message,
 )
-from pynumaflow.map.proto import map_pb2_grpc, map_pb2
+from pynumaflow.mapper.proto import map_pb2_grpc, map_pb2
 from tests.testing_utils import (
     mock_event_time,
     mock_watermark,

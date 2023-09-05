@@ -1,7 +1,7 @@
 import aiorun
 from collections.abc import AsyncIterable
 
-from pynumaflow.mapstream import Message, Datum, AsyncMapStreamer
+from pynumaflow.mapstreamer import Message, Datum, AsyncMapStreamer
 
 
 async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Message]:

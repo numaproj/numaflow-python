@@ -1,4 +1,4 @@
-from pynumaflow.sourcetransform import Datum, Messages, Message
+from pynumaflow.sourcetransformer import Datum, Messages, Message
 from tests.testing_utils import mock_new_event_time
 
 

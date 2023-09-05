@@ -9,12 +9,12 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.sink import (
+from pynumaflow.sinker import (
     Datum,
 )
-from pynumaflow.sink import Responses, Response, AsyncSinker
-from pynumaflow.sink.proto import sink_pb2
-from pynumaflow.sink.proto import sink_pb2_grpc
+from pynumaflow.sinker import Responses, Response, AsyncSinker
+from pynumaflow.sinker.proto import sink_pb2
+from pynumaflow.sinker.proto import sink_pb2_grpc
 from tests.sink.test_server import (
     mock_message,
     mock_err_message,

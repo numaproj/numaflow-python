@@ -1,6 +1,6 @@
 from collections.abc import Iterator
 
-from pynumaflow.sink import Datum, Responses, Response, Sinker
+from pynumaflow.sinker import Datum, Responses, Response, Sinker
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:

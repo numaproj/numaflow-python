@@ -6,8 +6,8 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow.map import Mapper
-from pynumaflow.map.proto import map_pb2
+from pynumaflow.mapper import Mapper
+from pynumaflow.mapper.proto import map_pb2
 from tests.map.utils import map_handler, err_map_handler
 from tests.testing_utils import (
     mock_event_time,

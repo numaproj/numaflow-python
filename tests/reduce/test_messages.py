@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.mapper import Messages, Message, DROP
+from pynumaflow.reducer import Messages, Message, DROP
 from tests.testing_utils import mock_message
 
 

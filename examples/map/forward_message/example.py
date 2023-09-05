@@ -1,4 +1,4 @@
-from pynumaflow.map import Messages, Message, Datum, Mapper
+from pynumaflow.mapper import Messages, Message, Datum, Mapper
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:

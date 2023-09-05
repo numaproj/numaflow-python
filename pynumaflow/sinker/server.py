@@ -1,7 +1,8 @@
 import logging
 import multiprocessing
 import os
-from collections.abc import AsyncIterable
+from concurrent.futures import ThreadPoolExecutor
+from collections.abc import Iterator, Iterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -13,23 +14,22 @@ from pynumaflow._constants import (
 )
 from pynumaflow.info.server import get_sdk_version, write as info_server_write
 from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
-from pynumaflow.sink import Responses, Datum, Response
-from pynumaflow.sink._dtypes import SinkCallable
-from pynumaflow.sink.proto import sink_pb2_grpc, sink_pb2
+from pynumaflow.sinker import Responses, Datum, Response
+from pynumaflow.sinker._dtypes import SinkCallable
+from pynumaflow.sinker.proto import sink_pb2_grpc, sink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
+
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-async def datum_generator(
-    request_iterator: AsyncIterable[sink_pb2.SinkRequest],
-) -> AsyncIterable[Datum]:
-    async for d in request_iterator:
+def datum_generator(request_iterator: Iterable[sink_pb2.SinkRequest]) -> Iterable[Datum]:
+    for d in request_iterator:
         datum = Datum(
             keys=list(d.keys),
             sink_msg_id=d.id,
@@ -40,10 +40,10 @@ async def datum_generator(
         yield datum
 
 
-class AsyncSinker(sink_pb2_grpc.SinkServicer):
+class Sinker(sink_pb2_grpc.SinkServicer):
     """
-    Provides an interface to write an Async Sinker
-    which will be exposed over an Asyncronous gRPC server.
+    Provides an interface to write a Sinker
+    which will be exposed over gRPC.
 
     Args:
         sink_handler: Function callable following the type signature of SinkCallable
@@ -53,15 +53,15 @@ class AsyncSinker(sink_pb2_grpc.SinkServicer):
                      defaults to number of processors x 4
 
     Example invocation:
-    >>> import aiorun
-    >>> from pynumaflow.sink import Datum, Responses, Response, Sinker
-    >>> async def my_handler(datums: AsyncIterable[Datum]) -> Responses:
+    >>> from typing import List
+    >>> from pynumaflow.sinker import Datum, Responses, Response, Sinker
+    >>> def my_handler(datums: Iterator[Datum]) -> Responses:
     ...   responses = Responses()
-    ...   async for msg in datums:
+    ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
     ...   return responses
-    >>> grpc_server = AsyncSinker(my_handler)
-    >>> aiorun.run(grpc_server.start())
+    >>> grpc_server = Sinker(my_handler)
+    >>> grpc_server.start()
     """
 
     def __init__(
@@ -71,50 +71,43 @@ class AsyncSinker(sink_pb2_grpc.SinkServicer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.background_tasks = set()
         self.__sink_handler: SinkCallable = sink_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
-        self.cleanup_coroutines = []
 
         self._server_options = [
             ("grpc.max_send_message_length", self._max_message_size),
             ("grpc.max_receive_message_length", self._max_message_size),
         ]
 
-    async def SinkFn(
-        self,
-        request_iterator: AsyncIterable[sink_pb2.SinkRequest],
-        context: NumaflowServicerContext,
+    def SinkFn(
+        self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
     ) -> sink_pb2.SinkResponse:
         """
         Applies a sink function to a list of datum elements.
         The pascal case function name comes from the proto sink_pb2_grpc.py file.
         """
         # if there is an exception, we will mark all the responses as a failure
-        datum_iterator = datum_generator(request_iterator=request_iterator)
-        results = await self.__invoke_sink(datum_iterator)
-
-        return sink_pb2.SinkResponse(results=results)
-
-    async def __invoke_sink(self, datum_iterator: AsyncIterable[Datum]):
+        datum_iterator = datum_generator(request_iterator)
         try:
-            rspns = await self.__sink_handler(datum_iterator)
+            rspns = self.__sink_handler(datum_iterator)
         except Exception as err:
             err_msg = "UDSinkError: %r" % err
             _LOGGER.critical(err_msg, exc_info=True)
             rspns = Responses()
-            async for _datum in datum_iterator:
+            for _datum in datum_iterator:
                 rspns.append(Response.as_failure(_datum.id, err_msg))
+
         responses = []
         for rspn in rspns:
             responses.append(
                 sink_pb2.SinkResponse.Result(id=rspn.id, success=rspn.success, err_msg=rspn.err)
             )
-        return responses
 
-    async def IsReady(
+        return sink_pb2.SinkResponse(results=responses)
+
+    def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> sink_pb2.ReadyResponse:
         """
@@ -123,11 +116,16 @@ class AsyncSinker(sink_pb2_grpc.SinkServicer):
         """
         return sink_pb2.ReadyResponse(ready=True)
 
-    async def __serve_async(self, server) -> None:
-        sink_pb2_grpc.add_SinkServicer_to_server(AsyncSinker(self.__sink_handler), server)
+    def start(self) -> None:
+        """
+        Starts the gRPC server on the given UNIX socket with given max threads.
+        """
+        server = grpc.server(
+            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
+        )
+        sink_pb2_grpc.add_SinkServicer_to_server(Sinker(self.__sink_handler), server)
         server.add_insecure_port(self.sock_path)
-        _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
-        await server.start()
+        server.start()
         serv_info = ServerInfo(
             protocol=Protocol.UDS,
             language=Language.PYTHON,
@@ -135,19 +133,7 @@ class AsyncSinker(sink_pb2_grpc.SinkServicer):
         )
         info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
-        async def server_graceful_shutdown():
-            _LOGGER.info("Starting graceful shutdown...")
-            """
-            Shuts down the server with 5 seconds of grace period. During the
-            grace period, the server won't accept new connections and allow
-            existing RPCs to continue within the grace period.
-            await server.stop(5)
-            """
-
-        self.cleanup_coroutines.append(server_graceful_shutdown())
-        await server.wait_for_termination()
-
-    async def start(self) -> None:
-        """Starts the Async gRPC server on the given UNIX socket."""
-        server = grpc.aio.server(options=self._server_options)
-        await self.__serve_async(server)
+        _LOGGER.info(
+            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
+        )
+        server.wait_for_termination()

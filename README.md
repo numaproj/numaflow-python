@@ -46,7 +46,7 @@ pre-commit install
 ### Map
 
 ```python
-from pynumaflow.map import Messages, Message, Datum, Mapper
+from pynumaflow.mapper import Messages, Message, Datum, Mapper
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
@@ -66,7 +66,7 @@ SourceTransformer is only supported at source vertex to enable (a) early data fi
 
 ```python
 from datetime import datetime
-from pynumaflow.sourcetransform import Messages, Message, Datum, SourceTransformer
+from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformer
 
 
 def transform_handler(keys: list[str], datum: Datum) -> Messages:
@@ -87,11 +87,11 @@ if __name__ == "__main__":
 ```python
 import aiorun
 from typing import Iterator, List
-from pynumaflow.reduce import Messages, Message, Datum, Metadata, AsyncReducer
+from pynumaflow.reducer import Messages, Message, Datum, Metadata, AsyncReducer
 
 
 async def my_handler(
-    keys: List[str], datums: Iterator[Datum], md: Metadata
+        keys: List[str], datums: Iterator[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0
@@ -117,7 +117,7 @@ under [examples](examples/map/forward_message).
 
 ```python
 from typing import Iterator
-from pynumaflow.sink import Datum, Responses, Response, Sinker
+from pynumaflow.sinker import Datum, Responses, Response, Sinker
 
 
 def my_handler(datums: Iterator[Datum]) -> Responses:

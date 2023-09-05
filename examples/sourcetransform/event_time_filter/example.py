@@ -1,7 +1,7 @@
 import datetime
 import logging
 
-from pynumaflow.sourcetransform import Messages, Message, Datum, SourceTransformer
+from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformer
 
 """
 This is a simple User Defined Function example which receives a message, applies the following

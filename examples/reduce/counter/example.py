@@ -1,7 +1,7 @@
 import aiorun
 from collections.abc import AsyncIterable
 
-from pynumaflow.reduce import Messages, Message, Datum, Metadata, AsyncReducer
+from pynumaflow.reducer import Messages, Message, Datum, Metadata, AsyncReducer
 
 
 async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:

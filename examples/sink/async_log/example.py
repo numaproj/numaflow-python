@@ -2,7 +2,7 @@ from collections.abc import AsyncIterable
 
 import aiorun
 
-from pynumaflow.sink import Datum, Responses, Response, AsyncSinker
+from pynumaflow.sinker import Datum, Responses, Response, AsyncSinker
 
 
 async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:

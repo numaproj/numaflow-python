@@ -9,12 +9,12 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.mapstream import (
+from pynumaflow.mapstreamer import (
     Message,
     Datum,
     AsyncMapStreamer,
 )
-from pynumaflow.mapstream.proto import mapstream_pb2_grpc
+from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
 from tests.testing_utils import (
     start_request_map_stream,
 )

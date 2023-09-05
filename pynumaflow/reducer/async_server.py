@@ -18,11 +18,11 @@ from pynumaflow._constants import (
     DELIMITER,
     REDUCE_SOCK_PATH,
 )
-from pynumaflow.reduce import Datum, IntervalWindow, Metadata
-from pynumaflow.reduce._dtypes import ReduceResult, ReduceCallable
-from pynumaflow.reduce.asynciter import NonBlockingIterator
-from pynumaflow.reduce.proto import reduce_pb2
-from pynumaflow.reduce.proto import reduce_pb2_grpc
+from pynumaflow.reducer import Datum, IntervalWindow, Metadata
+from pynumaflow.reducer._dtypes import ReduceResult, ReduceCallable
+from pynumaflow.reducer.asynciter import NonBlockingIterator
+from pynumaflow.reducer.proto import reduce_pb2
+from pynumaflow.reducer.proto import reduce_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow.info.server import get_sdk_version, write as info_server_write
 from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
@@ -62,7 +62,7 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.reduce import Messages, Message\
+    >>> from pynumaflow.reducer import Messages, Message\
     ...     Datum, Metadata, AsyncReducer
     ... import aiorun
     ...

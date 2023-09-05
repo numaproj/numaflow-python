@@ -6,7 +6,7 @@ from typing import TypeVar, Callable
 from collections.abc import AsyncIterable
 from warnings import warn
 
-from pynumaflow.reduce.asynciter import NonBlockingIterator
+from pynumaflow.reducer.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
@@ -109,7 +109,7 @@ class Datum:
         event_time: the event time of the event.
         watermark: the watermark of the event.
     >>> # Example usage
-    >>> from pynumaflow.reduce import Datum
+    >>> from pynumaflow.reducer import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)

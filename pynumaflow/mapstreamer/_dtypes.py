@@ -2,6 +2,7 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable
+from collections.abc import AsyncIterable
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -17,46 +18,36 @@ class Message:
 
     Args:
         value: data in bytes
-        event_time: event time of the message, usually extracted from the payload.
         keys: []string keys for vertex (optional)
         tags: []string tags for conditional forwarding (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags", "_event_time")
+    __slots__ = ("_value", "_keys", "_tags")
 
+    _value: bytes
     _keys: list[str]
     _tags: list[str]
-    _value: bytes
-    _event_time: datetime
 
-    def __init__(
-        self, value: bytes, event_time: datetime, keys: list[str] = None, tags: list[str] = None
-    ):
+    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
         """
-        Creates a MessageT object to send value to a vertex.
+        Creates a Message object to send value to a vertex.
         """
-        self._tags = tags or []
         self._keys = keys or []
-
-        # There is no year 0, so setting following as default event time.
-        self._event_time = event_time or datetime(1, 1, 1, 0, 0)
+        self._tags = tags or []
         self._value = value or b""
 
+    # returns the Message Object which will be dropped
     @classmethod
     def to_drop(cls: type[M]) -> M:
-        return cls(b"", datetime(1, 1, 1, 0, 0), None, [DROP])
-
-    @property
-    def event_time(self) -> datetime:
-        return self._event_time
-
-    @property
-    def keys(self) -> list[str]:
-        return self._keys
+        return cls(b"", None, [DROP])
 
     @property
     def value(self) -> bytes:
         return self._value
+
+    @property
+    def keys(self) -> list[str]:
+        return self._keys
 
     @property
     def tags(self) -> list[str]:
@@ -65,36 +56,36 @@ class Message:
 
 class Messages(Sequence[M]):
     """
-    Class to define a list of MessageT objects.
+    Class to define a list of Message objects.
 
     Args:
-        message_ts: list of MessageT objects.
+        messages: list of Message objects.
     """
 
-    __slots__ = ("_message_ts",)
+    __slots__ = ("_messages",)
 
-    def __init__(self, *message_ts: M):
-        self._message_ts = list(message_ts) or []
+    def __init__(self, *messages: M):
+        self._messages = list(messages) or []
 
-    def __str__(self):
-        return str(self._message_ts)
+    def __str__(self) -> str:
+        return str(self._messages)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self)
 
     def __len__(self) -> int:
-        return len(self._message_ts)
+        return len(self._messages)
 
     def __iter__(self) -> Iterator[M]:
-        return iter(self._message_ts)
+        return iter(self._messages)
 
     def __getitem__(self, index: int) -> M:
         if isinstance(index, slice):
             raise TypeError("Slicing is not supported for Messages")
-        return self._message_ts[index]
+        return self._messages[index]
 
-    def append(self, message_t: Message) -> None:
-        self._message_ts.append(message_t)
+    def append(self, message: Message) -> None:
+        self._messages.append(message)
 
     def items(self) -> list[Message]:
         warn(
@@ -103,7 +94,7 @@ class Messages(Sequence[M]):
             DeprecationWarning,
             stacklevel=2,
         )
-        return self._message_ts
+        return self._messages
 
 
 @dataclass(init=False)
@@ -115,13 +106,12 @@ class Datum:
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
-        metadata: the metadata of the event.
     >>> # Example usage
-    >>> from pynumaflow.sourcetransform import Datum
+    >>> from pynumaflow.mapstreamer import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
-    >>> t1 = datetime.froMimestamp(1662998400, timezone.utc)
-    >>> t2 = datetime.froMimestamp(1662998460, timezone.utc)
+    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
+    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
     >>> d = Datum(
     ...       keys=["test_key"],
     ...       value=payload,
@@ -173,4 +163,4 @@ class Datum:
         return self._watermark
 
 
-SourceTransformCallable = Callable[[list[str], Datum], Messages]
+MapStreamCallable = Callable[[list[str], Datum], AsyncIterable[Message]]

@@ -14,10 +14,10 @@ from pynumaflow._constants import (
 )
 from pynumaflow.info.server import get_sdk_version, write as info_server_write
 from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
-from pynumaflow.sourcetransform import Datum
-from pynumaflow.sourcetransform._dtypes import SourceTransformCallable
-from pynumaflow.sourcetransform.proto import transform_pb2
-from pynumaflow.sourcetransform.proto import transform_pb2_grpc
+from pynumaflow.sourcetransformer import Datum
+from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
+from pynumaflow.sourcetransformer.proto import transform_pb2
+from pynumaflow.sourcetransformer.proto import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)
@@ -42,7 +42,7 @@ class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.sourcetransform import Messages, Message \
+    >>> from pynumaflow.sourcetransformer import Messages, Message \
     ...     Datum, SourceTransformer
 
     >>> def transform_handler(key: [str], datum: Datum) -> Messages:

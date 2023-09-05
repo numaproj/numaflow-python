@@ -1,6 +1,6 @@
 import math
 
-from pynumaflow.map import Messages, Message, Datum, MultiProcMapper
+from pynumaflow.mapper import Messages, Message, Datum, MultiProcMapper
 
 
 def is_prime(n):

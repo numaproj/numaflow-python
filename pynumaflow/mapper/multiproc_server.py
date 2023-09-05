@@ -14,10 +14,10 @@ from pynumaflow._constants import (
 )
 from pynumaflow._constants import MULTIPROC_MAP_SOCK_PORT, MULTIPROC_MAP_SOCK_ADDR
 from pynumaflow.exceptions import SocketError
-from pynumaflow.map import Datum
-from pynumaflow.map._dtypes import MapCallable
-from pynumaflow.map.proto import map_pb2
-from pynumaflow.map.proto import map_pb2_grpc
+from pynumaflow.mapper import Datum
+from pynumaflow.mapper._dtypes import MapCallable
+from pynumaflow.mapper.proto import map_pb2
+from pynumaflow.mapper.proto import map_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow.info.server import (
     get_sdk_version,
@@ -51,7 +51,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.map import Messages, Message \
+    >>> from pynumaflow.mapper import Messages, Message \
     ...     Datum, MultiProcMapper
     ...
     >>> def map_handler(key: [str], datum: Datum) -> Messages:

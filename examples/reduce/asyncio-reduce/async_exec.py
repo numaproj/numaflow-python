@@ -6,7 +6,7 @@ import time
 from collections.abc import AsyncIterable
 
 from pynumaflow import setup_logging
-from pynumaflow.reduce import (
+from pynumaflow.reducer import (
     Messages,
     Message,
     Datum,

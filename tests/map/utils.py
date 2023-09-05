@@ -1,4 +1,4 @@
-from pynumaflow.map import Datum, Messages, Message
+from pynumaflow.mapper import Datum, Messages, Message
 
 
 async def async_map_error_fn(keys: list[str], datum: Datum) -> Messages:

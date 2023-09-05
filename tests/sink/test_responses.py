@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.sink import Response, Responses
+from pynumaflow.sinker import Response, Responses
 
 
 class TestResponse(unittest.TestCase):

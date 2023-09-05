@@ -7,8 +7,8 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow.sink import Responses, Datum, Response, Sinker
-from pynumaflow.sink.proto import sink_pb2
+from pynumaflow.sinker import Responses, Datum, Response, Sinker
+from pynumaflow.sinker.proto import sink_pb2
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:

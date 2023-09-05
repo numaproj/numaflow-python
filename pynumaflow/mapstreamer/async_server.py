@@ -12,10 +12,10 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     MAP_STREAM_SOCK_PATH,
 )
-from pynumaflow.mapstream import Datum
-from pynumaflow.mapstream._dtypes import MapStreamCallable
-from pynumaflow.mapstream.proto import mapstream_pb2
-from pynumaflow.mapstream.proto import mapstream_pb2_grpc
+from pynumaflow.mapstreamer import Datum
+from pynumaflow.mapstreamer._dtypes import MapStreamCallable
+from pynumaflow.mapstreamer.proto import mapstream_pb2
+from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow.info.server import get_sdk_version, write as info_server_write
 from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
@@ -42,7 +42,7 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.mapstream import Messages, Message \
+    >>> from pynumaflow.mapstreamer import Messages, Message \
     ...     Datum, AsyncMapStreamer
     ... import aiorun
 

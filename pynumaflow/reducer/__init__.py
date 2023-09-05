@@ -1,4 +1,4 @@
-from pynumaflow.reduce._dtypes import (
+from pynumaflow.reducer._dtypes import (
     Message,
     Messages,
     Datum,
@@ -6,7 +6,7 @@ from pynumaflow.reduce._dtypes import (
     Metadata,
     DROP,
 )
-from pynumaflow.reduce.async_server import AsyncReducer
+from pynumaflow.reducer.async_server import AsyncReducer
 
 __all__ = [
     "Message",

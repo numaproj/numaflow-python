@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from pynumaflow.sourcetransform import Messages, Message, DROP
+from pynumaflow.sourcetransformer import Messages, Message, DROP
 
 
 def mock_message_t():

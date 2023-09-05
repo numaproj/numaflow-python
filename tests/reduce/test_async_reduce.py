@@ -11,14 +11,14 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.reduce import (
+from pynumaflow.reducer import (
     Messages,
     Message,
     Datum,
     AsyncReducer,
     Metadata,
 )
-from pynumaflow.reduce.proto import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.reducer.proto import reduce_pb2, reduce_pb2_grpc
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,

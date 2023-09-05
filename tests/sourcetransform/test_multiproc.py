@@ -8,8 +8,8 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow.sourcetransform.multiproc_server import MultiProcSourceTransformer
-from pynumaflow.sourcetransform.proto import transform_pb2_grpc, transform_pb2
+from pynumaflow.sourcetransformer.multiproc_server import MultiProcSourceTransformer
+from pynumaflow.sourcetransformer.proto import transform_pb2_grpc, transform_pb2
 from tests.sourcetransform.utils import transform_handler, err_transform_handler
 from tests.testing_utils import (
     mock_event_time,

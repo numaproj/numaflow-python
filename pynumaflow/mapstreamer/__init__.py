@@ -1,10 +1,10 @@
-from pynumaflow.mapstream._dtypes import (
+from pynumaflow.mapstreamer._dtypes import (
     Message,
     Messages,
     Datum,
     DROP,
 )
-from pynumaflow.mapstream.async_server import AsyncMapStreamer
+from pynumaflow.mapstreamer.async_server import AsyncMapStreamer
 
 __all__ = [
     "Message",

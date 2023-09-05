@@ -106,7 +106,7 @@ class Datum:
         event_time: the event time of the event.
         watermark: the watermark of the event.
     >>> # Example usage
-    >>> from pynumaflow.map import Datum
+    >>> from pynumaflow.mapper import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)

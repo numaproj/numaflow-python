@@ -1,11 +1,11 @@
 import json
 from datetime import datetime, timezone
 
-from pynumaflow.map import (
+from pynumaflow.mapper import (
     Datum,
 )
 from pynumaflow.info.types import EOF
-from pynumaflow.mapstream.proto import mapstream_pb2
+from pynumaflow.mapstreamer.proto import mapstream_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 

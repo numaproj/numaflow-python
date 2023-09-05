@@ -200,7 +200,7 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
         try:
             msgs = await self.__reduce_handler(keys, request_iterator, md)
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err
 
         datum_responses = []

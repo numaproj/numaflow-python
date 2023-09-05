@@ -108,7 +108,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
                 ),
             )
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(str(err))
             return map_pb2.MapResponse(results=[])

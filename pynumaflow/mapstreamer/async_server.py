@@ -109,7 +109,7 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
                     keys=msg.keys, value=msg.value, tags=msg.tags
                 )
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err
 
     async def IsReady(

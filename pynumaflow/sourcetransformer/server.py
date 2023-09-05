@@ -96,7 +96,7 @@ class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
                 ),
             )
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(str(err))
             return transform_pb2.SourceTransformResponse(results=[])

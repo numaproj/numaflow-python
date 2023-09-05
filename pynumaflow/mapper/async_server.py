@@ -113,7 +113,7 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
         try:
             msgs = await self.__map_handler(keys, req)
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error: %r", err, exc_info=True)
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err
         datums = []
         for msg in msgs:

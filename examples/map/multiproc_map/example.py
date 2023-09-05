@@ -1,6 +1,6 @@
 import math
 
-from pynumaflow.function import Messages, Message, Datum, MultiProcServer
+from pynumaflow.map import Messages, Message, Datum, MultiProcMapper
 
 
 def is_prime(n):
@@ -29,5 +29,5 @@ if __name__ == "__main__":
         MAP_MULTIPROC="true"
     in the pipeline config for the numa container.
     """
-    grpc_server = MultiProcServer(map_handler=my_handler)
+    grpc_server = MultiProcMapper(map_handler=my_handler)
     grpc_server.start()

@@ -1,4 +1,4 @@
-from pynumaflow.function import Messages, Message, Datum, Server
+from pynumaflow.map import Messages, Message, Datum, Mapper
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
@@ -6,10 +6,10 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
     _ = datum.event_time
     _ = datum.watermark
     messages = Messages()
-    messages.append(Message(val, keys=keys))
+    messages.append(Message(value=val, keys=keys))
     return messages
 
 
 if __name__ == "__main__":
-    grpc_server = Server(map_handler=my_handler)
+    grpc_server = Mapper(map_handler=my_handler)
     grpc_server.start()

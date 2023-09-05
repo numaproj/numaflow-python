@@ -63,9 +63,7 @@ def startup_callable(loop):
 def NewAsyncMapper(
     map_handler=async_map_handler,
 ):
-    udfs = AsyncMapper(
-        map_handler=async_map_handler,
-    )
+    udfs = AsyncMapper(handler=async_map_handler)
 
     return udfs
 

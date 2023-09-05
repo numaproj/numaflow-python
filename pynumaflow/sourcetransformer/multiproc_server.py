@@ -45,7 +45,7 @@ class MultiProcSourceTransformer(transform_pb2_grpc.SourceTransformServicer):
 
     Args:
 
-        transform_handler: Function callable following the type signature of SourceTransformCallable
+        handler: Function callable following the type signature of SourceTransformCallable
         sock_path: Path to the TCP Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -55,7 +55,6 @@ class MultiProcSourceTransformer(transform_pb2_grpc.SourceTransformServicer):
     >>> from typing import Iterator
     >>> from pynumaflow.sourcetransformer import Messages, Message \
     ...     Datum, MultiProcSourceTransformer
-
     >>> def transform_handler(key: [str], datum: Datum) -> Messages:
     ...   val = datum.value
     ...   new_event_time = datetime.time()
@@ -64,19 +63,17 @@ class MultiProcSourceTransformer(transform_pb2_grpc.SourceTransformServicer):
     ...   return message_t_s
     ...
     ...
-    >>> grpc_server = MultiProcSourceTransformer(
-    ...   transform_handler=transform_handler,
-    ... )
+    >>> grpc_server = MultiProcSourceTransformer(handler=transform_handler)
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        transform_handler: SourceTransformCallable,
+        handler: SourceTransformCallable,
         sock_path=MULTIPROC_MAP_SOCK_PORT,
         max_message_size=MAX_MESSAGE_SIZE,
     ):
-        self.__transform_handler: SourceTransformCallable = transform_handler
+        self.__transform_handler: SourceTransformCallable = handler
         self._max_message_size = max_message_size
 
         self._server_options = [

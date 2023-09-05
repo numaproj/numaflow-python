@@ -57,7 +57,7 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = Mapper(map_handler=my_handler)
+    grpc_server = Mapper(handler=my_handler)
     grpc_server.start()
 ```
 ### SourceTransformer - Map with event time assignment capability
@@ -78,7 +78,7 @@ def transform_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SourceTransformer(transform_handler=transform_handler)
+    grpc_server = SourceTransformer(handler=transform_handler)
     grpc_server.start()
 ```
 
@@ -105,7 +105,7 @@ async def my_handler(
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncReducer(reduce_handler=my_handler)
+    grpc_server = AsyncReducer(handler=my_handler)
     aiorun.run(grpc_server.start())
 ```
 

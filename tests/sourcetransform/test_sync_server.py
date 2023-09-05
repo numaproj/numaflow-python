@@ -19,23 +19,19 @@ from tests.testing_utils import (
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = SourceTransformer(
-            transform_handler=transform_handler,
-        )
+        my_servicer = SourceTransformer(handler=transform_handler)
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
         my_servicer = SourceTransformer(
-            transform_handler=transform_handler,
-            sock_path="/tmp/test.sock",
-            max_message_size=1024 * 1024 * 5,
+            handler=transform_handler, sock_path="/tmp/test.sock", max_message_size=1024 * 1024 * 5
         )
         self.assertEqual(my_servicer.sock_path, "unix:///tmp/test.sock")
         self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
 
     def test_udf_mapt_err(self):
-        my_servicer = SourceTransformer(transform_handler=err_transform_handler)
+        my_servicer = SourceTransformer(handler=err_transform_handler)
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

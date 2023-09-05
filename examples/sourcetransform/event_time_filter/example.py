@@ -42,5 +42,5 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SourceTransformer(transform_handler=my_handler)
+    grpc_server = SourceTransformer(handler=my_handler)
     grpc_server.start()

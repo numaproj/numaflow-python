@@ -136,5 +136,5 @@ if __name__ == "__main__":
     threadPool = ExecutorPool(exec_type=e_type, max_workers=mx_workers)
     handler = ReduceHandler(exec_pool=threadPool)
 
-    grpc_server = AsyncReducer(reduce_handler=handler.reduce_handler)
+    grpc_server = AsyncReducer(handler=handler.reduce_handler)
     aiorun.run(grpc_server.start())

@@ -24,25 +24,19 @@ def mockenv(**envvars):
 
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = MultiProcMapper(
-            map_handler=map_handler,
-        )
+        my_servicer = MultiProcMapper(handler=map_handler)
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        server = MultiProcMapper(
-            map_handler=map_handler,
-        )
+        server = MultiProcMapper(handler=map_handler)
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 3)
 
     @mockenv(NUMAFLOW_CPU_LIMIT="4")
     def test_multiproc_process_count(self) -> None:
-        server = MultiProcMapper(
-            map_handler=map_handler,
-        )
+        server = MultiProcMapper(handler=map_handler)
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 4)
 
@@ -51,9 +45,7 @@ class TestMultiProcMethods(unittest.TestCase):
     def test_reuse_port(self):
         serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
 
-        server = MultiProcMapper(
-            map_handler=map_handler,
-        )
+        server = MultiProcMapper(handler=map_handler)
 
         with server._reserve_port() as port:
             print(port)
@@ -73,7 +65,7 @@ class TestMultiProcMethods(unittest.TestCase):
             server3.add_insecure_port(bind_address)
 
     def test_udf_map_err(self):
-        my_servicer = MultiProcMapper(map_handler=err_map_handler)
+        my_servicer = MultiProcMapper(handler=err_map_handler)
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

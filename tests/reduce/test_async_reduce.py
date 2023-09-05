@@ -94,9 +94,7 @@ async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata)
 def NewAsyncReducer(
     reduce_handler=async_reduce_handler,
 ):
-    udfs = AsyncReducer(
-        reduce_handler=async_reduce_handler,
-    )
+    udfs = AsyncReducer(handler=async_reduce_handler)
 
     return udfs
 

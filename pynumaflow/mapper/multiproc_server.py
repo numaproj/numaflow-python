@@ -43,7 +43,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     which will be exposed over gRPC.
 
     Args:
-        map_handler: Function callable following the type signature of MapCallable
+        handler: Function callable following the type signature of MapCallable
         sock_path: Path to the TCP port to bind to
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -61,19 +61,17 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
-    >>> grpc_server = MultiProcMapper(
-    ...   map_handler=map_handler,
-    ... )
+    >>> grpc_server = MultiProcMapper(handler=map_handler)
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        map_handler: MapCallable,
+        handler: MapCallable,
         sock_path=MULTIPROC_MAP_SOCK_PORT,
         max_message_size=MAX_MESSAGE_SIZE,
     ):
-        self.__map_handler: MapCallable = map_handler
+        self.__map_handler: MapCallable = handler
         self._max_message_size = max_message_size
 
         self._server_options = [

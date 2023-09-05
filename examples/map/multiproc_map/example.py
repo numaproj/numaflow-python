@@ -29,5 +29,5 @@ if __name__ == "__main__":
         MAP_MULTIPROC="true"
     in the pipeline config for the numa container.
     """
-    grpc_server = MultiProcMapper(map_handler=my_handler)
+    grpc_server = MultiProcMapper(handler=my_handler)
     grpc_server.start()

@@ -69,7 +69,7 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    uds = AsyncSinker(sink_handler=udsink_handler)
+    uds = AsyncSinker(handler=udsink_handler)
     sink_pb2_grpc.add_SinkServicer_to_server(uds, server)
     listen_addr = "[::]:50055"
     server.add_insecure_port(listen_addr)

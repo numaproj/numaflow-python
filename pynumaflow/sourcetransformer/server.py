@@ -34,7 +34,7 @@ class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
     which will be exposed over a Synchronous gRPC server.
 
     Args:
-        transform_handler: Function callable following the type signature of SourceTransformCallable
+        handler: Function callable following the type signature of SourceTransformCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -44,7 +44,6 @@ class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
     >>> from typing import Iterator
     >>> from pynumaflow.sourcetransformer import Messages, Message \
     ...     Datum, SourceTransformer
-
     >>> def transform_handler(key: [str], datum: Datum) -> Messages:
     ...   val = datum.value
     ...   new_event_time = datetime.time()
@@ -52,20 +51,18 @@ class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
     ...   message_t_s = Messages(Message(val, event_time=new_event_time, keys=key))
     ...   return message_t_s
     ...
-    >>> grpc_server = SourceTransformer(
-    ...   transform_handler=transform_handler,
-    ... )
+    >>> grpc_server = SourceTransformer(handler=transform_handler)
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        transform_handler: SourceTransformCallable,
+        handler: SourceTransformCallable,
         sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__transform_handler: SourceTransformCallable = transform_handler
+        self.__transform_handler: SourceTransformCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads

@@ -12,7 +12,7 @@ spec:
         generator:
           rpu: 10
           duration: 1s
-    - name: mult
+    - name: flatmap
       udf:
         container:
           image: "quay.io/numaio/numaflow-python/map-flatmap:v0.5.0"
@@ -36,6 +36,6 @@ spec:
         log: {}
   edges:
     - from: in
-      to: mult
-    - from: mult
+      to: flatmap
+    - from: flatmap
       to: out

@@ -54,7 +54,7 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
     which will be exposed over gRPC.
 
     Args:
-        reduce_handler: Function callable following the type signature of ReduceCallable
+        handler: Function callable following the type signature of ReduceCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -78,20 +78,18 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
     ...   )
     ...   return Messages(Message(value=str.encode(msg), keys=keys))
     ...
-    >>> grpc_server = AsyncReducer(
-    ...   reduce_handler=reduce_handler,
-    ... )
+    >>> grpc_server = AsyncReducer(handler=reduce_handler)
     >>> aiorun.run(grpc_server.start())
     """
 
     def __init__(
         self,
-        reduce_handler: ReduceCallable,
+        handler: ReduceCallable,
         sock_path=REDUCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__reduce_handler: ReduceCallable = reduce_handler
+        self.__reduce_handler: ReduceCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -222,9 +220,7 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
 
     async def __serve_async(self, server) -> None:
         reduce_pb2_grpc.add_ReduceServicer_to_server(
-            AsyncReducer(
-                reduce_handler=self.__reduce_handler,
-            ),
+            AsyncReducer(handler=self.__reduce_handler),
             server,
         )
         server.add_insecure_port(self.sock_path)

@@ -49,9 +49,7 @@ def startup_callable(loop):
 def NewAsyncMapStreamer(
     map_stream_handler=async_map_stream_handler,
 ):
-    udfs = AsyncMapStreamer(
-        map_stream_handler=async_map_stream_handler,
-    )
+    udfs = AsyncMapStreamer(handler=async_map_stream_handler)
 
     return udfs
 

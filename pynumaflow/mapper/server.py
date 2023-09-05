@@ -34,7 +34,7 @@ class Mapper(map_pb2_grpc.MapServicer):
     which will be exposed over a Synchronous gRPC server.
 
     Args:
-        map_handler: Function callable following the type signature of MapCallable
+        handler: Function callable following the type signature of MapCallable
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
                      defaults to number of processors x4
@@ -51,20 +51,18 @@ class Mapper(map_pb2_grpc.MapServicer):
     ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
-    >>> grpc_server = Mapper(
-    ...   map_handler=map_handler,
-    ... )
+    >>> grpc_server = Mapper(handler=map_handler)
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        map_handler: MapCallable,
+        handler: MapCallable,
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__map_handler: MapCallable = map_handler
+        self.__map_handler: MapCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads

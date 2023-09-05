@@ -34,7 +34,7 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
     which will be exposed over gRPC.
 
     Args:
-        map_stream_handler: Function callable following the type signature of MapStreamCallable
+        handler: Function callable following the type signature of MapStreamCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -45,7 +45,6 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
     >>> from pynumaflow.mapstreamer import Messages, Message \
     ...     Datum, AsyncMapStreamer
     ... import aiorun
-
     >>> async def map_stream_handler(key: [str], datums: Datum) -> AsyncIterable[Message]:
     ...    val = datum.value
     ...    _ = datum.event_time
@@ -53,20 +52,18 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
     ...    for i in range(10):
     ...        yield Message(val, keys=keys)
     ...
-    >>> grpc_server = AsyncMapStreamer(
-    ...   map_stream_handler=map_stream_handler,
-    ... )
+    >>> grpc_server = AsyncMapStreamer(handler=map_stream_handler)
     >>> aiorun.run(grpc_server.start())
     """
 
     def __init__(
         self,
-        map_stream_handler: MapStreamCallable,
+        handler: MapStreamCallable,
         sock_path=MAP_STREAM_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__map_stream_handler: MapStreamCallable = map_stream_handler
+        self.__map_stream_handler: MapStreamCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -123,9 +120,7 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
 
     async def __serve_async(self, server) -> None:
         mapstream_pb2_grpc.add_MapStreamServicer_to_server(
-            AsyncMapStreamer(
-                map_stream_handler=self.__map_stream_handler,
-            ),
+            AsyncMapStreamer(handler=self.__map_stream_handler),
             server,
         )
         server.add_insecure_port(self.sock_path)

@@ -46,7 +46,7 @@ class Sinker(sink_pb2_grpc.SinkServicer):
     which will be exposed over gRPC.
 
     Args:
-        sink_handler: Function callable following the type signature of SinkCallable
+        handler: Function callable following the type signature of SinkCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -60,18 +60,18 @@ class Sinker(sink_pb2_grpc.SinkServicer):
     ...   for msg in datums:
     ...     responses.append(Response.as_success(msg.id))
     ...   return responses
-    >>> grpc_server = Sinker(my_handler)
+    >>> grpc_server = Sinker(handler=my_handler)
     >>> grpc_server.start()
     """
 
     def __init__(
         self,
-        sink_handler: SinkCallable,
+        handler: SinkCallable,
         sock_path=SINK_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__sink_handler: SinkCallable = sink_handler
+        self.__sink_handler: SinkCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads

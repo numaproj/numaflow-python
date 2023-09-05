@@ -18,23 +18,19 @@ from tests.testing_utils import (
 
 class TestSyncMapper(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = Mapper(
-            map_handler=map_handler,
-        )
+        my_servicer = Mapper(handler=map_handler)
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
         my_servicer = Mapper(
-            map_handler=map_handler,
-            sock_path="/tmp/test.sock",
-            max_message_size=1024 * 1024 * 5,
+            handler=map_handler, sock_path="/tmp/test.sock", max_message_size=1024 * 1024 * 5
         )
         self.assertEqual(my_servicer.sock_path, "unix:///tmp/test.sock")
         self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
 
     def test_udf_map_err(self):
-        my_servicer = Mapper(map_handler=err_map_handler)
+        my_servicer = Mapper(handler=err_map_handler)
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -61,7 +57,7 @@ class TestSyncMapper(unittest.TestCase):
         self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_udf_map_error_response(self):
-        my_servicer = Mapper(map_handler=err_map_handler)
+        my_servicer = Mapper(handler=err_map_handler)
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

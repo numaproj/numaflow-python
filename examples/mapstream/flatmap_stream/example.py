@@ -22,5 +22,5 @@ async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Messag
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncMapStreamer(map_stream_handler=map_stream_handler)
+    grpc_server = AsyncMapStreamer(handler=map_stream_handler)
     aiorun.run(grpc_server.start())

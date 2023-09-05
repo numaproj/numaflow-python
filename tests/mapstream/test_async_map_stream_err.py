@@ -45,9 +45,7 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = AsyncMapStreamer(
-        map_stream_handler=err_async_map_stream_handler,
-    )
+    udfs = AsyncMapStreamer(handler=err_async_map_stream_handler)
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
     listen_addr = "[::]:50052"
     server.add_insecure_port(listen_addr)

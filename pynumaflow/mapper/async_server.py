@@ -33,7 +33,7 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
     which will be exposed over gRPC.
 
     Args:
-        map_handler: Function callable following the type signature of MapCallable
+        handler: Function callable following the type signature of MapCallable
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -52,20 +52,18 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
     ...   messages = Messages(Message(val, keys=keys))
     ...   return messages
     ...
-    >>> grpc_server = AsyncMapper(
-    ...   map_handler=map_handler,
-    ... )
+    >>> grpc_server = AsyncMapper(handler=map_handler)
     >>> aiorun.run(grpc_server.start())
     """
 
     def __init__(
         self,
-        map_handler: MapCallable,
+        handler: MapCallable,
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__map_handler: MapCallable = map_handler
+        self.__map_handler: MapCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -132,9 +130,7 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
 
     async def __serve_async(self, server) -> None:
         map_pb2_grpc.add_MapServicer_to_server(
-            AsyncMapper(
-                map_handler=self.__map_handler,
-            ),
+            AsyncMapper(handler=self.__map_handler),
             server,
         )
         server.add_insecure_port(self.sock_path)

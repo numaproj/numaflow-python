@@ -26,25 +26,19 @@ def mockenv(**envvars):
 
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = MultiProcSourceTransformer(
-            transform_handler=transform_handler,
-        )
+        my_servicer = MultiProcSourceTransformer(handler=transform_handler)
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        server = MultiProcSourceTransformer(
-            transform_handler=transform_handler,
-        )
+        server = MultiProcSourceTransformer(handler=transform_handler)
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 3)
 
     @mockenv(NUMAFLOW_CPU_LIMIT="4")
     def test_multiproc_process_count(self) -> None:
-        server = MultiProcSourceTransformer(
-            transform_handler=transform_handler,
-        )
+        server = MultiProcSourceTransformer(handler=transform_handler)
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 4)
 
@@ -53,9 +47,7 @@ class TestMultiProcMethods(unittest.TestCase):
     def test_reuse_port(self):
         serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
 
-        server = MultiProcSourceTransformer(
-            transform_handler=transform_handler,
-        )
+        server = MultiProcSourceTransformer(handler=transform_handler)
 
         with server._reserve_port() as port:
             print(port)
@@ -75,7 +67,7 @@ class TestMultiProcMethods(unittest.TestCase):
             server3.add_insecure_port(bind_address)
 
     def test_udf_mapt_err(self):
-        my_servicer = MultiProcSourceTransformer(transform_handler=err_transform_handler)
+        my_servicer = MultiProcSourceTransformer(handler=err_transform_handler)
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

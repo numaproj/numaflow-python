@@ -14,5 +14,5 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncSinker(sink_handler=udsink_handler)
+    grpc_server = AsyncSinker(handler=udsink_handler)
     aiorun.run(grpc_server.start())

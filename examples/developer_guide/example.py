@@ -25,5 +25,5 @@ async def my_handler(keys: list[str], datums: Iterator[Datum], md: Metadata) -> 
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncReducer(reduce_handler=my_handler)
+    grpc_server = AsyncReducer(handler=my_handler)
     aiorun.run(grpc_server.start())

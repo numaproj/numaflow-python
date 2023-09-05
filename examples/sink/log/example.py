@@ -12,5 +12,5 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = Sinker(sink_handler=udsink_handler)
+    grpc_server = Sinker(handler=udsink_handler)
     grpc_server.start()

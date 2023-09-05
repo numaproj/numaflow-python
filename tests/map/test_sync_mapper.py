@@ -138,7 +138,7 @@ class TestSyncMapper(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_input(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             Mapper()
 
 

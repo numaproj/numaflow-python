@@ -69,13 +69,10 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
 
     def __init__(
         self,
-        map_handler: MapCallable = None,
+        map_handler: MapCallable,
         sock_path=MULTIPROC_MAP_SOCK_PORT,
         max_message_size=MAX_MESSAGE_SIZE,
     ):
-        if not map_handler:
-            raise ValueError("Require a valid map handler.")
-
         self.__map_handler: MapCallable = map_handler
         self._max_message_size = max_message_size
 

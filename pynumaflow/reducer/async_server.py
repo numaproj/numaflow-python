@@ -86,14 +86,11 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
 
     def __init__(
         self,
-        reduce_handler: ReduceCallable = None,
+        reduce_handler: ReduceCallable,
         sock_path=REDUCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if not reduce_handler:
-            raise ValueError("Require a valid reduce handler.")
-
         self.__reduce_handler: ReduceCallable = reduce_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size

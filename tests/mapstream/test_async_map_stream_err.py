@@ -103,7 +103,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         return mapstream_pb2_grpc.MapStreamStub(_channel)
 
     def test_invalid_input(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             AsyncMapStreamer()
 
 

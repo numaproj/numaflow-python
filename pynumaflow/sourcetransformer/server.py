@@ -60,14 +60,11 @@ class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
 
     def __init__(
         self,
-        transform_handler: SourceTransformCallable = None,
+        transform_handler: SourceTransformCallable,
         sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if not transform_handler:
-            raise ValueError("Require a source transform handler")
-
         self.__transform_handler: SourceTransformCallable = transform_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size

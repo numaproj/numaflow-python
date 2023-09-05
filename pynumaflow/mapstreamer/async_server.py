@@ -61,13 +61,11 @@ class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
 
     def __init__(
         self,
-        map_stream_handler: MapStreamCallable = None,
+        map_stream_handler: MapStreamCallable,
         sock_path=MAP_STREAM_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if not map_stream_handler:
-            raise ValueError("Require a map_stream handler")
         self.__map_stream_handler: MapStreamCallable = map_stream_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size

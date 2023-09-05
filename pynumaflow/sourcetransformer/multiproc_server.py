@@ -72,13 +72,10 @@ class MultiProcSourceTransformer(transform_pb2_grpc.SourceTransformServicer):
 
     def __init__(
         self,
-        transform_handler: SourceTransformCallable = None,
+        transform_handler: SourceTransformCallable,
         sock_path=MULTIPROC_MAP_SOCK_PORT,
         max_message_size=MAX_MESSAGE_SIZE,
     ):
-        if not transform_handler:
-            raise ValueError("Require a source transform handler.")
-
         self.__transform_handler: SourceTransformCallable = transform_handler
         self._max_message_size = max_message_size
 

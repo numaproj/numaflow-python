@@ -60,14 +60,11 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
 
     def __init__(
         self,
-        map_handler: MapCallable = None,
+        map_handler: MapCallable,
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if not map_handler:
-            raise ValueError("Require a valid map handler.")
-
         self.__map_handler: MapCallable = map_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size

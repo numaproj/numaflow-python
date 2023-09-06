@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.5.0 (2023-09-05)
+
+ * [0be0b48](https://github.com/numaproj/numaflow-python/commit/0be0b486cec372f1577bde31d7ec031c45a321e8) Update flatmap stream sdk version dependency (#99)
+
+### Contributors
+
+ * xdevxy
+
+## v0.4.2 (2023-06-07)
+
+ * [15a6723](https://github.com/numaproj/numaflow-python/commit/15a6723a71070cf9bab583fe2ef0ddb5a800b097) feat!: support len, iter and indexing on udf datatypes (#96)
+ * [c441ebe](https://github.com/numaproj/numaflow-python/commit/c441ebedfdd3880619cb6a2cef0889b3b92e6473) feat: introduce `MapStreamFn` for streaming map udf in async sever (#93)
+ * [97d7f4e](https://github.com/numaproj/numaflow-python/commit/97d7f4efdcc0ae759df2a3d28b7c22253b4f33b8) fix: update event time filter transformer to use tag (#92)
+
+### Contributors
+
+ * Avik Basu
+ * Keran Yang
+ * xdevxy
+
+## v0.4.1 (2023-04-24)
+
+ * [ee753f5](https://github.com/numaproj/numaflow-python/commit/ee753f5074d135fd596b8957402f25f68f788bc6) feat: introduce handshake to client and gRPC server (#89)
+
+### Contributors
+
+ * Sidhant Kohli
+
 ## v0.4.0 (2023-04-14)
 
  * [58ff85c](https://github.com/numaproj/numaflow-python/commit/58ff85caad698342aaaf4b71d19720d13251de1c) chore!: remove support for py3.8; add 3.11 (#85)

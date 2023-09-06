@@ -2,7 +2,7 @@ from collections.abc import AsyncIterable
 
 import aiorun
 
-from pynumaflow.sink import Datum, Responses, Response, AsyncSink
+from pynumaflow.sinker import Datum, Responses, Response, AsyncSinker
 
 
 async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
@@ -14,5 +14,5 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncSink(sink_handler=udsink_handler)
+    grpc_server = AsyncSinker(handler=udsink_handler)
     aiorun.run(grpc_server.start())

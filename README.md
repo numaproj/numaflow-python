@@ -46,7 +46,7 @@ pre-commit install
 ### Map
 
 ```python
-from pynumaflow.function import Messages, Message, Datum, Server
+from pynumaflow.mapper import Messages, Message, Datum, Mapper
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
@@ -57,28 +57,28 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = Server(map_handler=my_handler)
+    grpc_server = Mapper(handler=my_handler)
     grpc_server.start()
 ```
-### MapT - Map with event time assignment capability
-In addition to the regular Map function, MapT supports assigning a new event time to the message.
-MapT is only supported at source vertex to enable (a) early data filtering and (b) watermark assignment by extracting new event time from the message payload.
+### SourceTransformer - Map with event time assignment capability
+In addition to the regular Map function, SourceTransformer supports assigning a new event time to the message.
+SourceTransformer is only supported at source vertex to enable (a) early data filtering and (b) watermark assignment by extracting new event time from the message payload.
 
 ```python
 from datetime import datetime
-from pynumaflow.function import MessageTs, MessageT, Datum, Server
+from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformer
 
 
-def mapt_handler(keys: list[str], datum: Datum) -> MessageTs:
+def transform_handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
     new_event_time = datetime.now()
     _ = datum.watermark
-    message_t_s = MessageTs(MessageT(val, event_time=new_event_time, keys=keys))
+    message_t_s = Messages(Message(val, event_time=new_event_time, keys=keys))
     return message_t_s
 
 
 if __name__ == "__main__":
-    grpc_server = Server(mapt_handler=mapt_handler)
+    grpc_server = SourceTransformer(handler=transform_handler)
     grpc_server.start()
 ```
 
@@ -87,11 +87,11 @@ if __name__ == "__main__":
 ```python
 import aiorun
 from typing import Iterator, List
-from pynumaflow.function import Messages, Message, Datum, Metadata, AsyncServer
+from pynumaflow.reducer import Messages, Message, Datum, Metadata, AsyncReducer
 
 
 async def my_handler(
-    keys: List[str], datums: Iterator[Datum], md: Metadata
+        keys: List[str], datums: Iterator[Datum], md: Metadata
 ) -> Messages:
     interval_window = md.interval_window
     counter = 0
@@ -105,19 +105,19 @@ async def my_handler(
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncServer(reduce_handler=my_handler)
+    grpc_server = AsyncReducer(handler=my_handler)
     aiorun.run(grpc_server.start())
 ```
 
 ### Sample Image
-A sample UDF [Dockerfile](examples/function/forward_message/Dockerfile) is provided
-under [examples](examples/function/forward_message).
+A sample UDF [Dockerfile](examples/map/forward_message/Dockerfile) is provided
+under [examples](examples/map/forward_message).
 
 ## Implement a User Defined Sink (UDSink)
 
 ```python
 from typing import Iterator
-from pynumaflow.sink import Datum, Responses, Response, Sink
+from pynumaflow.sinker import Datum, Responses, Response, Sinker
 
 
 def my_handler(datums: Iterator[Datum]) -> Responses:
@@ -129,7 +129,7 @@ def my_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = Sink(my_handler)
+    grpc_server = Sinker(my_handler)
     grpc_server.start()
 ```
 
@@ -137,18 +137,3 @@ if __name__ == "__main__":
 
 A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided
 under [examples](examples/sink/log).
-
-### Datum Metadata
-The Datum object contains the message payload and metadata. Currently, there are two fields
-in metadata: the message ID, the message delivery count to indicate how many times the message
-has been delivered. You can use these metadata to implement customized logic. For example,
-```python
-...
-
-
-def my_handler(keys: list[str], datum: Datum) -> Messages:
-    num_delivered = datum.metadata.num_delivered
-    # Choose to do specific actions, if the message delivery count reaches a certain threshold.
-    if num_delivered > 3:
-        ...
-```

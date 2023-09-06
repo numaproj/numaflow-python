@@ -6,22 +6,20 @@ from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.function import (
+from pynumaflow.sinker import (
     Datum,
 )
-from pynumaflow.sink import Responses, Response, AsyncSink
-from pynumaflow.sink.proto import udsink_pb2
-from pynumaflow.sink.proto import udsink_pb2_grpc
+from pynumaflow.sinker import Responses, Response, AsyncSinker
+from pynumaflow.sinker.proto import sink_pb2
+from pynumaflow.sinker.proto import sink_pb2_grpc
 from tests.sink.test_server import (
-    mock_event_time,
-    mock_watermark,
     mock_message,
     mock_err_message,
 )
+from tests.testing_utils import get_time_args
 
 LOGGER = setup_logging(__name__)
 
@@ -46,18 +44,15 @@ def request_generator(count, request):
 #
 #
 def start_sink_streaming_request(err=False) -> (Datum, tuple):
-    event_time_timestamp = _timestamp_pb2.Timestamp()
-    event_time_timestamp.FromDatetime(dt=mock_event_time())
-    watermark_timestamp = _timestamp_pb2.Timestamp()
-    watermark_timestamp.FromDatetime(dt=mock_watermark())
+    event_time_timestamp, watermark_timestamp = get_time_args()
     value = mock_message()
     if err:
         value = mock_err_message()
 
-    request = udsink_pb2.DatumRequest(
+    request = sink_pb2.SinkRequest(
         value=value,
-        event_time=udsink_pb2.EventTime(event_time=event_time_timestamp),
-        watermark=udsink_pb2.Watermark(watermark=watermark_timestamp),
+        event_time=event_time_timestamp,
+        watermark=watermark_timestamp,
     )
     return request
 
@@ -74,8 +69,8 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    uds = AsyncSink(sink_handler=udsink_handler)
-    udsink_pb2_grpc.add_UserDefinedSinkServicer_to_server(uds, server)
+    uds = AsyncSinker(handler=udsink_handler)
+    sink_pb2_grpc.add_SinkServicer_to_server(uds, server)
     listen_addr = "[::]:50055"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
@@ -116,7 +111,7 @@ class TestAsyncSink(unittest.TestCase):
     #
     def test_run_server(self) -> None:
         with grpc.insecure_channel("localhost:50055") as channel:
-            stub = udsink_pb2_grpc.UserDefinedSinkStub(channel)
+            stub = sink_pb2_grpc.SinkStub(channel)
 
             request = _empty_pb2.Empty()
             response = None
@@ -140,8 +135,8 @@ class TestAsyncSink(unittest.TestCase):
             logging.error(e)
 
         # capture the output from the ReduceFn generator and assert.
-        self.assertEqual(10, len(generator_response.responses))
-        for x in generator_response.responses:
+        self.assertEqual(10, len(generator_response.results))
+        for x in generator_response.results:
             self.assertTrue(x.success)
 
     def test_sink_err(self) -> None:
@@ -157,13 +152,13 @@ class TestAsyncSink(unittest.TestCase):
             logging.error(e)
 
         # capture the output from the ReduceFn generator and assert.
-        for x in generator_response.responses:
+        for x in generator_response.results:
             self.assertFalse(x.success)
 
         # since there is only one key, the output count is 1
 
     def __stub(self):
-        return udsink_pb2_grpc.UserDefinedSinkStub(_channel)
+        return sink_pb2_grpc.SinkStub(_channel)
 
 
 if __name__ == "__main__":

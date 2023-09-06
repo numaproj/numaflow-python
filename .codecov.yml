@@ -11,7 +11,10 @@ coverage:
 
 ignore:
   - "examples/"
-  - "pynumaflow/function/proto/*"
-  - "pynumaflow/sink/proto/*"
-  - "pynumaflow/function/_udfunction_pb2.pyi"
+  - "pynumaflow/mapper/proto/*"
+  - "pynumaflow/sinker/proto/*"
+  - "pynumaflow/mapstreamer/proto/*"
+  - "pynumaflow/reducer/proto/*"
+  - "pynumaflow/sourcetransformer/proto/*"
+  - "pynumaflow/map/_udfunction_pb2.pyi"
   - "pynumaflow/sink/_udsink_pb2.pyi"

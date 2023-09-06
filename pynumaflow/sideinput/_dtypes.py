@@ -21,13 +21,6 @@ class Response:
     value: bytes
     no_broadcast: bool
 
-    def __str__(self):
-        value_string = self.value.decode("utf-8")
-        return f"value: {value_string}"
-
-    def __repr__(self):
-        return str(self)
-
     @classmethod
     def broadcast_message(cls: type[R], value: bytes) -> R:
         """

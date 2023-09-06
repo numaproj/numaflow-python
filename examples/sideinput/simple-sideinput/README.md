@@ -23,10 +23,10 @@ message to other side input vertices or drop the message. The side input message
 For each side input there will be a file with the given path and after any update to the side input value the file will 
 be updated.
 
-The directory is fixed and can be accessed through sideinput constants `SideInput.side_input_dir_path`.
+The directory is fixed and can be accessed through sideinput constants `SideInput.SIDE_INPUT_DIR_PATH`.
 The file name is the name of the side input.
 ```python
-SideInput.side_input_dir_path -> "/var/numaflow/side-inputs"
+SideInput.SIDE_INPUT_DIR_PATH -> "/var/numaflow/side-inputs"
 sideInputFileName -> "/var/numaflow/side-inputs/sideInputName"
 ```
 

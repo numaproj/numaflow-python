@@ -29,12 +29,19 @@ def mock_message():
 
 
 class TestServer(unittest.TestCase):
+    """
+    Test the SideInput grpc server
+    """
+
     def setUp(self) -> None:
         my_service = SideInput(handler=retrieve_side_input_handler)
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
+        """
+        Test the initialization of the SideInput class,
+        """
         my_servicer = SideInput(
             handler=retrieve_side_input_handler,
             sock_path="/tmp/test_side_input.sock",
@@ -44,6 +51,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
 
     def test_side_input_err(self):
+        """
+        Test the error case for the RetrieveSideInput method,
+        """
         my_servicer = SideInput(handler=err_retrieve_handler)
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
@@ -79,6 +89,11 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_side_input_message(self):
+        """
+        Test the broadcast_message method,
+        where we expect the no_broadcast flag to be False and
+        the message value to be the mock_message.
+        """
         method = self.test_server.invoke_unary_unary(
             method_descriptor=(
                 sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name[
@@ -96,6 +111,10 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_side_input_no_broadcast(self):
+        """
+        Test the no_broadcast_message method,
+        where we expect the no_broadcast flag to be True.
+        """
         my_servicer = SideInput(handler=retrieve_no_broadcast_handler)
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())

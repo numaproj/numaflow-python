@@ -43,10 +43,9 @@ Side input spec:
 ```yaml
 spec:
   sideInputs:
-    - name: myticker
-      container:
-        image: "quay.io/numaio/numaflow-python/sideinput-example:v0.5.0"
-        imagePullPolicy: Always
-      trigger:
-        schedule: "*/2 * * * *"
-
+    - name: vertex
+      udf:
+        container:
+          ....
+      sideInputs:
+        - myticker

@@ -50,4 +50,3 @@ spec:
       trigger:
         schedule: "*/2 * * * *"
 
-```

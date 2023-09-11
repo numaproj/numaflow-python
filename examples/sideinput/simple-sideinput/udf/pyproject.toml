@@ -7,6 +7,8 @@ authors = ["Numaflow developers"]
 [tool.poetry.dependencies]
 python = "~3.10"
 pynumaflow = "~0.5.1"
+watchfiles = "~0.20.0"
+watchdog = "~0.8.2"
 
 [tool.poetry.dev-dependencies]
 

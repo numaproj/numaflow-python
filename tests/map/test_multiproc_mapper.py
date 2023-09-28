@@ -1,6 +1,7 @@
 import os
 import unittest
 from unittest import mock
+from unittest.mock import patch, Mock
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -34,7 +35,7 @@ class TestMultiProcMethods(unittest.TestCase):
         self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 3)
 
-    @mockenv(NUMAFLOW_CPU_LIMIT="4")
+    @patch("os.cpu_count", Mock(return_value=4))
     def test_multiproc_process_count(self) -> None:
         server = MultiProcMapper(handler=map_handler)
         self.assertEqual(server._sock_path, 55551)

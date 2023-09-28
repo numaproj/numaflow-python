@@ -46,15 +46,13 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         handler: Function callable following the type signature of MapCallable
         sock_path: Path to the TCP port to bind to
         max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
 
     Example invocation:
     >>> from typing import Iterator
     >>> from pynumaflow.mapper import Messages, Message \
     ...     Datum, MultiProcMapper
     ...
-    >>> def map_handler(key: [str], datum: Datum) -> Messages:
+    >>> def map_handler(keys: list[str], datum: Datum) -> Messages:
     ...   val = datum.value
     ...   _ = datum.event_time
     ...   _ = datum.watermark
@@ -64,6 +62,15 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     >>> grpc_server = MultiProcMapper(handler=map_handler)
     >>> grpc_server.start()
     """
+
+    __slots__ = (
+        "__map_handler",
+        "_max_message_size",
+        "_server_options",
+        "_sock_path",
+        "_process_count",
+        "_threads_per_proc",
+    )
 
     def __init__(
         self,
@@ -81,10 +88,8 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
             ("grpc.so_reuseaddr", 1),
         ]
         self._sock_path = sock_path
-        self._process_count = int(
-            os.getenv("NUM_CPU_MULTIPROC") or os.getenv("NUMAFLOW_CPU_LIMIT", 1)
-        )
-        self._thread_concurrency = int(os.getenv("MAX_THREADS", 0)) or (self._process_count * 4)
+        self._process_count = int(os.getenv("NUM_CPU_MULTIPROC") or os.cpu_count())
+        self._threads_per_proc = int(os.getenv("MAX_THREADS", "4"))
 
     def MapFn(
         self, request: map_pb2.MapRequest, context: NumaflowServicerContext
@@ -127,12 +132,16 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         """
         return map_pb2.ReadyResponse(ready=True)
 
-    def _run_server(self, bind_address):
+    def _run_server(self, bind_address: str) -> None:
         """Start a server in a subprocess."""
-        _LOGGER.info("Starting new server.")
+        _LOGGER.info(
+            "Starting new server with num_procs: %s, num_threads/proc: %s",
+            self._process_count,
+            self._threads_per_proc,
+        )
         server = grpc.server(
             futures.ThreadPoolExecutor(
-                max_workers=self._thread_concurrency,
+                max_workers=self._threads_per_proc,
             ),
             options=self._server_options,
         )

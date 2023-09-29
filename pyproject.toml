@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pynumaflow"
-version = "0.5.1"
+version = "0.5.2"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = ["NumaFlow Developers"]
 readme = "README.md"
@@ -26,7 +26,7 @@ grpcio-tools = "^1.48.1"
 google-cloud = "^0.34.0"
 google-api-core = "^2.11.0"
 protobuf = ">=3.20,<5.0"
-aiorun = "^2022.11.1"
+aiorun = "^2023.7"
 
 [tool.poetry.group.dev]
 optional = true

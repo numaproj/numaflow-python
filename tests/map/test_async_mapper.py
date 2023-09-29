@@ -60,11 +60,8 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-def NewAsyncMapper(
-    map_handler=async_map_handler,
-):
+def new_async_mapper():
     udfs = AsyncMapper(handler=async_map_handler)
-
     return udfs
 
 
@@ -88,7 +85,7 @@ class TestAsyncMapper(unittest.TestCase):
         _loop = loop
         _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
         _thread.start()
-        udfs = NewAsyncMapper()
+        udfs = new_async_mapper()
         asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:

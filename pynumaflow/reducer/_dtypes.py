@@ -1,5 +1,5 @@
 from asyncio import Task
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable
@@ -232,4 +232,4 @@ class ReduceResult:
         return self._key
 
 
-ReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Messages]
+ReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]

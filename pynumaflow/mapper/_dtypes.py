@@ -1,4 +1,4 @@
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable
@@ -163,3 +163,4 @@ class Datum:
 
 
 MapCallable = Callable[[list[str], Datum], Messages]
+MapAsyncCallable = Callable[[list[str], Datum], Awaitable[Messages]]

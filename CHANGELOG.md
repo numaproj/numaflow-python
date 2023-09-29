@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.2 (2023-09-29)
+
+ * [c04a279](https://github.com/numaproj/numaflow-python/commit/c04a279b7930f79b1b9492ca81df24648b4dd511) fix: multiproc mapper max threads and default numprocess (#112)
+
+### Contributors
+
+ * Avik Basu
+
+## v0.5.1 (2023-09-08)
+
+ * [c5a4695](https://github.com/numaproj/numaflow-python/commit/c5a4695c0cdd571c683e4b6fcdac785300a16952) feat: add side input grpc service  (#107)
+
+### Contributors
+
+ * Sidhant Kohli
+
 ## v0.5.0 (2023-09-05)
 
  * [0be0b48](https://github.com/numaproj/numaflow-python/commit/0be0b486cec372f1577bde31d7ec031c45a321e8) Update flatmap stream sdk version dependency (#99)

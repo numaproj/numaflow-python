@@ -20,6 +20,7 @@ from tests.testing_utils import (
     mock_event_time,
     mock_watermark,
     mock_message,
+    get_time_args,
 )
 
 LOGGER = setup_logging(__name__)
@@ -171,10 +172,7 @@ class TestAsyncMapper(unittest.TestCase):
 
     def test_map_grpc_error(self) -> None:
         stub = map_pb2_grpc.MapStub(_channel)
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
+        event_time_timestamp, watermark_timestamp = get_time_args()
 
         request = map_pb2.MapRequest(
             keys=["test"],

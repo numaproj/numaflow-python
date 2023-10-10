@@ -6,6 +6,7 @@ SINK_SOCK_PATH = "/var/run/numaflow/sink.sock"
 MULTIPROC_MAP_SOCK_PORT = 55551
 MULTIPROC_MAP_SOCK_ADDR = "0.0.0.0"
 SIDE_INPUT_SOCK_PATH = "/var/run/numaflow/sideinput.sock"
+SOURCE_SOCK_PATH = "/var/run/numaflow/source.sock"
 
 # TODO: need to make sure the DATUM_KEY value is the same as
 # https://github.com/numaproj/numaflow-go/blob/main/pkg/function/configs.go#L6

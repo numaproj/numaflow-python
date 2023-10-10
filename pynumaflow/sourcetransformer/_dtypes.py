@@ -65,16 +65,16 @@ class Message:
 
 class Messages(Sequence[M]):
     """
-    Class to define a list of MessageT objects.
+    Class to define a list of Message objects.
 
     Args:
-        message_ts: list of MessageT objects.
+        messages: list of Message objects.
     """
 
     __slots__ = ("_message_ts",)
 
-    def __init__(self, *message_ts: M):
-        self._message_ts = list(message_ts) or []
+    def __init__(self, *messages: M):
+        self._message_ts = list(messages) or []
 
     def __str__(self):
         return str(self._message_ts)

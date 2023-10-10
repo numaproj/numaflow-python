@@ -144,7 +144,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         Invokes the Source Ack Function.
         """
         try:
-            print("ack_req", ack_req, "HEE", type(AckRequest(offset=ack_req)))
+            _LOGGER.info("ack_req", ack_req, "HEE", type(AckRequest(offset=ack_req)))
             self.__source_ack_handler(AckRequest(offset=ack_req))
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)

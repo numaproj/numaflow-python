@@ -1,60 +1,21 @@
 apiVersion: numaflow.numaproj.io/v1alpha1
 kind: Pipeline
 metadata:
-  name: local-kafka
+  name: simple-source
 spec:
   vertices:
-  - name: input
-    source:
-      kafka:
-        brokers:
-        - kafka-broker:9092
-        topic: input-topic
-        consumerGroup: test
-  - name: even-or-odd
-    udf:
-      container:
-        args:
-        - python
-        - example.py
-        image: "quay.io/numaio/numaflow-python/even-odd:v0.5.0"
-  - name: even-sink
-    scale:
-      min: 1
-    sink:
-      # A simple log printing sink
-      log: {}
-  - name: odd-sink
-    scale:
-      min: 1
-    sink:
-      log: {}
-  - name: number-sink
-    scale:
-      min: 1
-    sink:
-      log: {}
+    - name: in
+      source:
+        udsource:
+          container:
+            # A simple user-defined source for e2e testing
+            image: quay.io/numaio/numaflow-python/simple-source:v0.5.5
+            imagePullPolicy: Always
+      limits:
+        readBatchSize: 2
+    - name: out
+      sink:
+        log: {}
   edges:
-    - from: input
-      to: even-or-odd
-    - from: even-or-odd
-      to: even-sink
-      conditions:
-        tags:
-          values:
-            - even-tag
-    - from: even-or-odd
-      to: odd-sink
-      conditions:
-        tags:
-          operator: or
-          values:
-            - odd-tag
-    - from: even-or-odd
-      to: number-sink
-      conditions:
-        tags:
-          operator: or
-          values:
-            - even-tag
-            - odd-tag
+    - from: in
+      to: out

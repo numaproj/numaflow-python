@@ -21,8 +21,8 @@ def read_handler(datum: Datum) -> Messages:
 
     for x in range(datum.num_records):
         yield Message(
-            payload=bytes(str(read_idx)),
-            offset=Offset(offset=bytes(str(read_idx)), partition_id="0"),
+            payload=bytes(str(read_idx), 'utf-8'),
+            offset=Offset(offset=bytes(str(read_idx), 'utf-8'), partition_id="0"),
             event_time=datetime.now(),
         )
         to_ack_set.add(read_idx)
@@ -30,8 +30,10 @@ def read_handler(datum: Datum) -> Messages:
 
 
 def ack_handler(ack_request: AckRequest):
-    for offset in ack_request.offset:
-        to_ack_set.remove(offset.offset)
+    print("ack_handler", type(ack_request))
+    for offset in ack_request:
+        print("ack_handler", offset.offset)
+        # to_ack_set.remove(offset.offset)
 
 
 def pending_handler() -> PendingResponse:

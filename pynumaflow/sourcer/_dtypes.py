@@ -197,6 +197,7 @@ class AckRequest:
     def __init__(self, offset: list[Offset]):
         self._offset = offset
 
+    @property
     def offset(self) -> list[Offset]:
         """Returns the offset of the event"""
         return self._offset

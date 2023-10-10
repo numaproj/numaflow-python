@@ -31,7 +31,8 @@ def read_handler(datum: Datum) -> Messages:
 
 def ack_handler(ack_request: AckRequest):
     print("ack_handler", type(ack_request))
-    for offset in ack_request:
+    print("ack_handler_2", ack_request)
+    for offset in ack_request.offset:
         print("ack_handler", offset.offset)
         # to_ack_set.remove(offset.offset)
 

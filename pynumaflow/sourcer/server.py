@@ -131,7 +131,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         for offset in request.request.offsets:
             offsets.append(Offset(offset.offset, offset.partition_id))
         try:
-            self.__invoke_ack(ack_req=request)
+            self.__invoke_ack(ack_req=offsets)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(str(e))
@@ -139,12 +139,12 @@ class Sourcer(source_pb2_grpc.SourceServicer):
 
         return source_pb2.AckResponse()
 
-    def __invoke_ack(self, ack_req: AckRequest):
+    def __invoke_ack(self, ack_req: list[Offset]):
         """
         Invokes the Source Ack Function.
         """
         try:
-            self.__source_ack_handler(ack_req)
+            self.__source_ack_handler(AckRequest(offset=ack_req))
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err

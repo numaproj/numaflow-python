@@ -225,4 +225,4 @@ class PendingResponse:
 
 SourceReadCallable = Callable[[Datum], Iterable[Message]]
 AsyncSourceReadCallable = Callable[[Datum], AsyncIterable[Message]]
-# SourceAckCallable = Callable[[AckRequest], None]
+SourceAckCallable = Callable[[AckRequest], None]

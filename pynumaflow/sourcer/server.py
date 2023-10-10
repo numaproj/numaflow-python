@@ -15,7 +15,7 @@ from pynumaflow._constants import (
     SOURCE_SOCK_PATH,
 )
 from pynumaflow.sourcer import Datum
-from pynumaflow.sourcer._dtypes import SourceReadCallable, Offset, AckRequest
+from pynumaflow.sourcer._dtypes import SourceReadCallable, Offset, AckRequest, SourceAckCallable
 from pynumaflow.sourcer.proto import source_pb2
 from pynumaflow.sourcer.proto import source_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -61,7 +61,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
     def __init__(
         self,
         read_handler: SourceReadCallable,
-        ack_handler,
+        ack_handler: SourceAckCallable,
         pending_handler,
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
@@ -70,7 +70,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         if read_handler is None or ack_handler is None or pending_handler is None:
             raise ValueError("read_handler, ack_handler and pending_handler are required")
         self.__source_read_handler: SourceReadCallable = read_handler
-        self.__source_ack_handler = ack_handler
+        self.__source_ack_handler: SourceAckCallable = ack_handler
         self.__source_pending_handler = pending_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
@@ -144,6 +144,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         Invokes the Source Ack Function.
         """
         try:
+            print("ack_req", ack_req, "HEE", type(AckRequest(offset=ack_req)))
             self.__source_ack_handler(AckRequest(offset=ack_req))
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)

@@ -70,8 +70,27 @@ async def err_async_source_read_handler(datum: Datum) -> AsyncIterable[Message]:
 
 
 async def err_async_source_ack_handler(ack_request: AckRequest):
-    raise RuntimeError("Got a runtime error from read handler.")
+    raise RuntimeError("Got a runtime error from ack handler.")
 
 
 async def err_async_source_pending_handler() -> PendingResponse:
+    raise RuntimeError("Got a runtime error from pending handler.")
+
+
+def err_sync_source_read_handler(datum: Datum) -> Iterable[Message]:
     raise RuntimeError("Got a runtime error from read handler.")
+    # payload = b"payload:test_mock_message"
+    # keys = ["test_key"]
+    # offset = mock_offset()
+    # event_time = mock_event_time()
+    # for i in range(10):
+    #     yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+    #     raise RuntimeError("Got a runtime error from read handler.")
+
+
+def err_sync_source_ack_handler(ack_request: AckRequest):
+    raise RuntimeError("Got a runtime error from ack handler.")
+
+
+def err_sync_source_pending_handler() -> PendingResponse:
+    raise RuntimeError("Got a runtime error from pending handler.")

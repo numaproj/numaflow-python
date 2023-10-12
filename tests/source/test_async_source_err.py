@@ -10,11 +10,13 @@ from grpc.aio._server import Server
 from pynumaflow import setup_logging
 from pynumaflow.sourcer import AsyncSourcer
 from pynumaflow.sourcer.proto import source_pb2_grpc, source_pb2
+from google.protobuf import empty_pb2 as _empty_pb2
 from tests.source.utils import (
     err_async_source_read_handler,
     err_async_source_ack_handler,
     err_async_source_pending_handler,
     read_req_source_fn,
+    ack_req_source_fn,
 )
 
 LOGGER = setup_logging(__name__)
@@ -78,7 +80,6 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
     def test_read_error(self) -> None:
         with grpc.insecure_channel(server_port) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
-
             request = read_req_source_fn()
             generator_response = None
             try:
@@ -87,6 +88,28 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                     pass
             except Exception as e:
                 self.assertTrue("Got a runtime error from read handler." in e.__str__())
+                return
+        self.fail("Expected an exception.")
+
+    def test_ack_error(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = ack_req_source_fn()
+            try:
+                stub.AckFn(request=source_pb2.AckRequest(request=request))
+            except Exception as e:
+                self.assertTrue("Got a runtime error from ack handler." in e.__str__())
+                return
+        self.fail("Expected an exception.")
+
+    def test_pending_error(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = _empty_pb2.Empty()
+            try:
+                stub.PendingFn(request=request)
+            except Exception as e:
+                self.assertTrue("Got a runtime error from pending handler." in e.__str__())
                 return
         self.fail("Expected an exception.")
 

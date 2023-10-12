@@ -154,7 +154,6 @@ class TestAsyncSourcer(unittest.TestCase):
     def test_pending(self) -> None:
         with grpc.insecure_channel(server_port) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
-
             request = _empty_pb2.Empty()
             response = None
             try:

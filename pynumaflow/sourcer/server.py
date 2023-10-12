@@ -51,7 +51,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Messages, Message \
+    >>> from pynumaflow.sourcer import Message \
     ...     Datum, Sourcer
     ... import aiorun
     ... def read_handler(datum: Datum) -> Iterable[Message]:

@@ -118,7 +118,7 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
                 yield source_pb2.ReadResponse.Result(
                     payload=msg.payload,
                     keys=msg.keys,
-                    offset=msg.offset.dict,
+                    offset=msg.offset.as_dict,
                     event_time=event_time_timestamp,
                 )
         except Exception as err:

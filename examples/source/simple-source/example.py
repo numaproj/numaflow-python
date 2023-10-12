@@ -10,28 +10,28 @@ from pynumaflow.sourcer import (
     Offset,
 )
 
-to_ack_set = set()
-read_idx = 0
+TO_ACK_SET: set[str] = set()
+READ_IDX = 0
 
 
 def read_handler(datum: Datum) -> Iterable[Message]:
-    global read_idx
-    if len(to_ack_set) > 0:
+    global READ_IDX
+    if TO_ACK_SET:
         return
 
     for x in range(datum.num_records):
         yield Message(
-            payload=bytes(str(read_idx), "utf-8"),
-            offset=Offset(offset=bytes(str(read_idx), "utf-8"), partition_id="0"),
+            payload=str(READ_IDX).encode(),
+            offset=Offset(offset=str(READ_IDX).encode(), partition_id="0"),
             event_time=datetime.now(),
         )
-        to_ack_set.add(str(read_idx))
-        read_idx = read_idx + 1
+        TO_ACK_SET.add(str(READ_IDX))
+        READ_IDX = READ_IDX + 1
 
 
 def ack_handler(ack_request: AckRequest):
     for offset in ack_request.offset:
-        to_ack_set.remove(str(offset.offset, "utf-8"))
+        TO_ACK_SET.remove(str(offset.offset, "utf-8"))
 
 
 def pending_handler() -> PendingResponse:

@@ -23,7 +23,7 @@ class Offset:
         self._partition_id = partition_id
 
     @property
-    def dict(self):
+    def as_dict(self):
         return {"offset": self._offset, "partition_id": self._partition_id}
 
     @property
@@ -129,16 +129,16 @@ class AckRequest:
     Class to define the ack information for the event.
     """
 
-    __slots__ = "_offset"
-    _offset: list[Offset]
+    __slots__ = ("_offsets",)
+    _offsets: list[Offset]
 
-    def __init__(self, offset: list[Offset]):
-        self._offset = offset
+    def __init__(self, offsets: list[Offset]):
+        self._offsets = offsets
 
     @property
     def offset(self) -> list[Offset]:
         """Returns the offset of the event"""
-        return self._offset
+        return self._offsets
 
 
 @dataclass(init=False)
@@ -147,7 +147,7 @@ class PendingResponse:
     Class to define the ack information for the event.
     """
 
-    __slots__ = "_count"
+    __slots__ = ("_count",)
     _count: int
 
     def __init__(self, count: int):

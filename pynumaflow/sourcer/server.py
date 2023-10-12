@@ -125,7 +125,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
                 yield source_pb2.ReadResponse.Result(
                     payload=msg.payload,
                     keys=msg.keys,
-                    offset=msg.offset.dict,
+                    offset=msg.offset.as_dict,
                     event_time=event_time_timestamp,
                 )
         except Exception as err:
@@ -157,7 +157,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         Invokes the Source Ack Function.
         """
         try:
-            self.__source_ack_handler(AckRequest(offset=ack_req))
+            self.__source_ack_handler(AckRequest(offsets=ack_req))
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err

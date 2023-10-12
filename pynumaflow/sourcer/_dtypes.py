@@ -1,14 +1,8 @@
-from collections.abc import Iterator, Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable
+from typing import Callable
 from collections.abc import AsyncIterable
-from warnings import warn
-
-from pynumaflow._constants import DROP
-
-M = TypeVar("M", bound="Message")
-Ms = TypeVar("Ms", bound="Messages")
 
 
 @dataclass(init=False)
@@ -71,19 +65,6 @@ class Message:
         self._event_time = event_time
         self._keys = keys or []
 
-    def dict(self):
-        return {
-            "payload": self._payload,
-            "offset": self._offset.dict,
-            "event_time": self._event_time,
-            "keys": self._keys,
-        }
-
-    # returns the Message Object which will be dropped
-    @classmethod
-    def to_drop(cls: type[M]) -> M:
-        return cls(b"", None, [DROP])
-
     @property
     def payload(self) -> bytes:
         return self._payload
@@ -99,49 +80,6 @@ class Message:
     @property
     def event_time(self) -> datetime:
         return self._event_time
-
-
-class Messages(Iterable[M]):
-    """
-    Class to define a list of Message objects.
-
-    Args:
-        messages: list of Message objects.
-    """
-
-    __slots__ = ("_messages",)
-
-    def __init__(self, *messages: M):
-        self._messages = list(messages) or []
-
-    def __str__(self) -> str:
-        return str(self._messages)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def __len__(self) -> int:
-        return len(self._messages)
-
-    def __iter__(self) -> Iterator[M]:
-        return iter(self._messages)
-
-    def __getitem__(self, index: int) -> M:
-        if isinstance(index, slice):
-            raise TypeError("Slicing is not supported for Messages")
-        return self._messages[index]
-
-    def append(self, message: Message) -> None:
-        self._messages.append(message)
-
-    def items(self) -> list[Message]:
-        warn(
-            "Using items is deprecated and will be removed in v0.5. "
-            "Iterate or index the Messages object instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._messages
 
 
 @dataclass(init=False)

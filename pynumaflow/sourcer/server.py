@@ -15,7 +15,12 @@ from pynumaflow._constants import (
     SOURCE_SOCK_PATH,
 )
 from pynumaflow.sourcer import Datum
-from pynumaflow.sourcer._dtypes import SourceReadCallable, Offset, AckRequest, SourceAckCallable
+from pynumaflow.sourcer._dtypes import (
+    SourceReadCallable,
+    Offset,
+    AckRequest,
+    SourceAckCallable,
+)
 from pynumaflow.sourcer.proto import source_pb2
 from pynumaflow.sourcer.proto import source_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -36,7 +41,9 @@ class Sourcer(source_pb2_grpc.SourceServicer):
     which will be exposed over gRPC.
 
     Args:
-        read_handler: Function callable following the type signature of sourceCallable
+        read_handler: Function callable following the type signature of SyncSourceReadCallable
+        ack_handler: Function handler for AckFn
+        pending_handler: Function handler for PendingFn
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -47,14 +54,20 @@ class Sourcer(source_pb2_grpc.SourceServicer):
     >>> from pynumaflow.sourcer import Messages, Message \
     ...     Datum, Sourcer
     ... import aiorun
-    >>> def map_stream_handler(key: [str], datums: Datum) -> Iterable[Message]:
-    ...    val = datum.value
-    ...    _ = datum.event_time
-    ...    _ = datum.watermark
-    ...    for i in range(10):
-    ...        yield Message(val, keys=keys)
-    ...
-    >>> grpc_server = Sourcer(read_handler=map_stream_handler)
+    ... def read_handler(datum: Datum) -> Iterable[Message]:
+    ...     payload = b"payload:test_mock_message"
+    ...     keys = ["test_key"]
+    ...     offset = mock_offset()
+    ...     event_time = mock_event_time()
+    ...     for i in range(10):
+    ...         yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+    ... def ack_handler(ack_request: AckRequest):
+    ...     return
+    ... def pending_handler() -> PendingResponse:
+    ...     PendingResponse(count=10)
+    >>> grpc_server = Sourcer(read_handler=read_handler,
+    ...                     ack_handler=ack_handler,
+    ...                     pending_handler=pending_handler)
     >>> aiorun.run(grpc_server.start())
     """
 
@@ -92,7 +105,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         context: NumaflowServicerContext,
     ) -> Iterable[source_pb2.ReadResponse]:
         """
-        Applies a map function to a datum stream in streaming mode.
+        Applies a Read function to a datum stream in streaming mode.
         The pascal case function name comes from the proto source_pb2_grpc.py file.
         """
 
@@ -162,6 +175,10 @@ class Sourcer(source_pb2_grpc.SourceServicer):
     def PendingFn(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> source_pb2.PendingResponse:
+        """
+        PendingFn returns the number of pending records
+        at the user defined source.
+        """
         try:
             count = self.__source_pending_handler()
         except Exception as err:

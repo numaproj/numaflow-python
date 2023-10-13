@@ -91,8 +91,7 @@ class ReadRequest:
         timeout_in_ms: the request timeout in milliseconds.
     >>> # Example usage
     >>> from pynumaflow.sourcer import ReadRequest
-    >>> from datetime import datetime, timezone
-    >>> datum = ReadRequest(num_records=10, timeout_in_ms=1000)
+    >>> read_request = ReadRequest(num_records=10, timeout_in_ms=1000)
     """
 
     __slots__ = ("_num_records", "_timeout_in_ms")
@@ -106,10 +105,10 @@ class ReadRequest:
         timeout_in_ms: int,
     ):
         if not isinstance(num_records, int):
-            raise TypeError(f"Wrong data type: {type(num_records)} for Datum.num_records")
+            raise TypeError(f"Wrong data type: {type(num_records)} for ReadRequest.num_records")
         self._num_records = num_records
         if not isinstance(timeout_in_ms, int):
-            raise TypeError(f"Wrong data type: {type(timeout_in_ms)} for Datum.timeout_in_ms")
+            raise TypeError(f"Wrong data type: {type(timeout_in_ms)} for ReadRequest.timeout_in_ms")
         self._timeout_in_ms = timeout_in_ms
 
     @property
@@ -132,7 +131,6 @@ class AckRequest:
         offsets: the offsets to be acknowledged.
     >>> # Example usage
     >>> from pynumaflow.sourcer import AckRequest, Offset
-    >>> from datetime import datetime, timezone
     >>> offset = Offset(offset=b"123", partition_id="0")
     >>> ack_request = AckRequest(offsets=[offset, offset])
     """
@@ -169,7 +167,7 @@ class PendingResponse:
 
     @property
     def count(self) -> int:
-        """Returns the count of the event"""
+        """Returns the count of pending records"""
         return self._count
 
 

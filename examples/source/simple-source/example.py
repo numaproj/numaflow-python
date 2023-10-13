@@ -42,6 +42,6 @@ if __name__ == "__main__":
     grpc_server = Sourcer(
         read_handler=ud_source.read_handler,
         ack_handler=ud_source.ack_handler,
-        pending_handler=ud_source.pending_handler
+        pending_handler=ud_source.pending_handler,
     )
     grpc_server.start()

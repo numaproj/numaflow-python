@@ -12,38 +12,36 @@ from pynumaflow.sourcer import (
 
 
 class UDSource:
-    TO_ACK_SET: set[str] = set()
-    READ_IDX = 0
+    def __init__(self):
+        self.to_ack_set = set()
+        self.read_idx = 0
 
-    @classmethod
-    def read_handler(cls, datum: ReadRequest) -> Iterable[Message]:
-        if cls.TO_ACK_SET:
+    def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
+        if self.to_ack_set:
             return
 
         for x in range(datum.num_records):
             yield Message(
-                payload=str(cls.READ_IDX).encode(),
-                offset=Offset(offset=str(cls.READ_IDX).encode(), partition_id="0"),
+                payload=str(self.read_idx).encode(),
+                offset=Offset(offset=str(self.read_idx).encode(), partition_id="0"),
                 event_time=datetime.now(),
             )
-            cls.TO_ACK_SET.add(str(cls.READ_IDX))
-            cls.READ_IDX = cls.READ_IDX + 1
+            self.to_ack_set.add(str(self.read_idx))
+            self.read_idx = self.read_idx + 1
 
-    @classmethod
-    def ack_handler(cls, ack_request: AckRequest):
+    def ack_handler(self, ack_request: AckRequest):
         for offset in ack_request.offset:
-            cls.TO_ACK_SET.remove(str(offset.offset, "utf-8"))
+            self.to_ack_set.remove(str(offset.offset, "utf-8"))
 
-    @classmethod
-    def pending_handler(cls) -> PendingResponse:
+    def pending_handler(self) -> PendingResponse:
         return PendingResponse(count=0)
 
 
 if __name__ == "__main__":
-    uds = UDSource()
+    ud_source = UDSource()
     grpc_server = Sourcer(
-        read_handler=uds.read_handler,
-        ack_handler=uds.ack_handler,
-        pending_handler=uds.pending_handler,
+        read_handler=ud_source.read_handler,
+        ack_handler=ud_source.ack_handler,
+        pending_handler=ud_source.pending_handler
     )
     grpc_server.start()

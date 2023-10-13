@@ -33,6 +33,7 @@ proto:
 	python3 -m grpc_tools.protoc -I=pynumaflow/reducer/proto --python_out=pynumaflow/reducer/proto --grpc_python_out=pynumaflow/reducer/proto  pynumaflow/reducer/proto/*.proto
 	python3 -m grpc_tools.protoc -I=pynumaflow/sourcetransformer/proto --python_out=pynumaflow/sourcetransformer/proto --grpc_python_out=pynumaflow/sourcetransformer/proto  pynumaflow/sourcetransformer/proto/*.proto
 	python3 -m grpc_tools.protoc -I=pynumaflow/sideinput/proto --python_out=pynumaflow/sideinput/proto --grpc_python_out=pynumaflow/sideinput/proto  pynumaflow/sideinput/proto/*.proto
+	python3 -m grpc_tools.protoc -I=pynumaflow/sourcer/proto --python_out=pynumaflow/sourcer/proto --grpc_python_out=pynumaflow/sourcer/proto  pynumaflow/sourcer/proto/*.proto
 
 
 	sed -i '' 's/^\(import.*_pb2\)/from . \1/' pynumaflow/*/proto/*.py

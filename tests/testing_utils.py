@@ -1,11 +1,6 @@
 import json
 from datetime import datetime, timezone
-
-from pynumaflow.mapper import (
-    Datum,
-)
 from pynumaflow.info.types import EOF
-from pynumaflow.mapstreamer.proto import mapstream_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 
@@ -81,14 +76,3 @@ def info_serv_is_ready(info_serv_data: str, eof: str = EOF):
         data = info_serv_data[:len_diff]
         return True, data
     return False, None
-
-
-def start_request_map_stream() -> (Datum, tuple):
-    event_time_timestamp, watermark_timestamp = get_time_args()
-    request = mapstream_pb2.MapStreamRequest(
-        value=mock_message(),
-        event_time=event_time_timestamp,
-        watermark=watermark_timestamp,
-    )
-
-    return request

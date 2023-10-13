@@ -33,7 +33,7 @@ class Message:
         self, value: bytes, event_time: datetime, keys: list[str] = None, tags: list[str] = None
     ):
         """
-        Creates a MessageT object to send value to a vertex.
+        Creates a Message object to send value to a vertex.
         """
         self._tags = tags or []
         self._keys = keys or []
@@ -65,36 +65,36 @@ class Message:
 
 class Messages(Sequence[M]):
     """
-    Class to define a list of MessageT objects.
+    Class to define a list of Message objects.
 
     Args:
-        message_ts: list of MessageT objects.
+        messages: list of Message objects.
     """
 
-    __slots__ = ("_message_ts",)
+    __slots__ = ("_messages",)
 
-    def __init__(self, *message_ts: M):
-        self._message_ts = list(message_ts) or []
+    def __init__(self, *messages: M):
+        self._messages = list(messages) or []
 
     def __str__(self):
-        return str(self._message_ts)
+        return str(self._messages)
 
     def __repr__(self):
         return str(self)
 
     def __len__(self) -> int:
-        return len(self._message_ts)
+        return len(self._messages)
 
     def __iter__(self) -> Iterator[M]:
-        return iter(self._message_ts)
+        return iter(self._messages)
 
     def __getitem__(self, index: int) -> M:
         if isinstance(index, slice):
             raise TypeError("Slicing is not supported for Messages")
-        return self._message_ts[index]
+        return self._messages[index]
 
-    def append(self, message_t: Message) -> None:
-        self._message_ts.append(message_t)
+    def append(self, message: Message) -> None:
+        self._messages.append(message)
 
     def items(self) -> list[Message]:
         warn(
@@ -103,7 +103,7 @@ class Messages(Sequence[M]):
             DeprecationWarning,
             stacklevel=2,
         )
-        return self._message_ts
+        return self._messages
 
 
 @dataclass(init=False)
@@ -119,8 +119,8 @@ class Datum:
     >>> from pynumaflow.sourcetransformer import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
-    >>> t1 = datetime.froMimestamp(1662998400, timezone.utc)
-    >>> t2 = datetime.froMimestamp(1662998460, timezone.utc)
+    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
+    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
     >>> d = Datum(
     ...       keys=["test_key"],
     ...       value=payload,

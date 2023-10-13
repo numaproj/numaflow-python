@@ -1,10 +1,10 @@
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TypeVar, Callable
 from warnings import warn
 
-from pynumaflow._constants import DROP
+from pynumaflow._constants import DROP, EVENT_TIME_TO_DROP
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -12,15 +12,6 @@ Ms = TypeVar("Ms", bound="Messages")
 
 @dataclass(init=False)
 class Message:
-    """
-    event_time_to_drop 1969-12-31 00:00:00 +0000 UTC is set to be slightly
-    earlier than Unix epoch -1 (1969-12-31 23:59:59.999 +0000 UTC)
-    As -1 is used on Numaflow to indicate watermark is not available, event_time_to_drop is
-    used to indicate that the message is dropped hence, excluded from watermark calculation
-    """
-
-    event_time_to_drop = datetime(1969, 12, 31, 0, 0, 0, tzinfo=timezone.utc)
-
     """
     Basic datatype for data passing to the next vertex/vertices.
 
@@ -53,7 +44,7 @@ class Message:
 
     @classmethod
     def to_drop(cls: type[M]) -> M:
-        return cls(b"", Message.event_time_to_drop, None, [DROP])
+        return cls(b"", EVENT_TIME_TO_DROP, None, [DROP])
 
     @property
     def event_time(self) -> datetime:

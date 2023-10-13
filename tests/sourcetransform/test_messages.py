@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from pynumaflow.sourcetransformer import Messages, Message, DROP
+from pynumaflow.sourcetransformer import Messages, Message, DROP, EVENT_TIME_TO_DROP
 
 
 def mock_message_t():
@@ -35,14 +35,14 @@ class TestMessage(unittest.TestCase):
             "Keys": [],
             "Value": b"",
             "Tags": [DROP],
-            "EventTime": Message.event_time_to_drop,
+            "EventTime": EVENT_TIME_TO_DROP,
         }
         msgt = Message(b"", mock_event_time()).to_drop()
         self.assertEqual(Message, type(msgt))
         self.assertEqual(mock_obj["Keys"], msgt.keys)
         self.assertEqual(mock_obj["Value"], msgt.value)
         self.assertEqual(mock_obj["Tags"], msgt.tags)
-        self.assertEqual(mock_obj["EventTime"], msgt.event_time_to_drop)
+        self.assertEqual(mock_obj["EventTime"], msgt.event_time)
 
 
 class TestMessages(unittest.TestCase):

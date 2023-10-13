@@ -83,16 +83,16 @@ class Message:
 
 
 @dataclass(init=False)
-class Datum:
+class ReadRequest:
     """
-    Class to define the important information for the event.
+    Class to define the request for reading datum stream from user defined source.
     Args:
         num_records: the number of records to read.
         timeout_in_ms: the request timeout in milliseconds.
     >>> # Example usage
-    >>> from pynumaflow.sourcer import Datum
+    >>> from pynumaflow.sourcer import ReadRequest
     >>> from datetime import datetime, timezone
-    >>> datum = Datum(num_records=10, timeout_in_ms=1000)
+    >>> datum = ReadRequest(num_records=10, timeout_in_ms=1000)
     """
 
     __slots__ = ("_num_records", "_timeout_in_ms")
@@ -114,19 +114,27 @@ class Datum:
 
     @property
     def num_records(self) -> int:
-        """Returns the num_records of the event"""
+        """Returns the num_records of the request"""
         return self._num_records
 
     @property
     def timeout_in_ms(self) -> int:
-        """Returns the timeout_in_ms of the event."""
+        """Returns the timeout_in_ms of the request."""
         return self._timeout_in_ms
 
 
 @dataclass(init=False)
 class AckRequest:
     """
-    Class to define the ack information for the event.
+    Class for defining the request for acknowledging datum.
+    It takes a list of offsets that need to be acknowledged.
+    Args:
+        offsets: the offsets to be acknowledged.
+    >>> # Example usage
+    >>> from pynumaflow.sourcer import AckRequest, Offset
+    >>> from datetime import datetime, timezone
+    >>> offset = Offset(offset=b"123", partition_id="0")
+    >>> ack_request = AckRequest(offsets=[offset, offset])
     """
 
     __slots__ = ("_offsets",)
@@ -137,14 +145,18 @@ class AckRequest:
 
     @property
     def offset(self) -> list[Offset]:
-        """Returns the offset of the event"""
+        """Returns the offsets to be acknowledged."""
         return self._offsets
 
 
 @dataclass(init=False)
 class PendingResponse:
     """
-    Class to define the ack information for the event.
+    PendingResponse is the response for the pending request.
+    It indicates the number of pending records at the user defined source.
+    A negative count indicates that the pending information is not available.
+    Args:
+        count: the number of pending records.
     """
 
     __slots__ = ("_count",)
@@ -161,6 +173,6 @@ class PendingResponse:
         return self._count
 
 
-SourceReadCallable = Callable[[Datum], Iterable[Message]]
-AsyncSourceReadCallable = Callable[[Datum], AsyncIterable[Message]]
+SourceReadCallable = Callable[[ReadRequest], Iterable[Message]]
+AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterable[Message]]
 SourceAckCallable = Callable[[AckRequest], None]

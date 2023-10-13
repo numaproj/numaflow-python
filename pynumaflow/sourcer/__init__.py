@@ -1,6 +1,6 @@
 from pynumaflow.sourcer._dtypes import (
     Message,
-    Datum,
+    ReadRequest,
     PendingResponse,
     AckRequest,
     Offset,
@@ -10,7 +10,7 @@ from pynumaflow.sourcer.server import Sourcer
 
 __all__ = [
     "Message",
-    "Datum",
+    "ReadRequest",
     "PendingResponse",
     "AckRequest",
     "Offset",

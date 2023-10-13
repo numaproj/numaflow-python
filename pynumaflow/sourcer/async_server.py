@@ -12,7 +12,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     SOURCE_SOCK_PATH,
 )
-from pynumaflow.sourcer import Datum
+from pynumaflow.sourcer import ReadRequest
 from pynumaflow.sourcer._dtypes import AsyncSourceReadCallable, Offset, AckRequest
 from pynumaflow.sourcer.proto import source_pb2
 from pynumaflow.sourcer.proto import source_pb2_grpc
@@ -25,7 +25,7 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 _PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
 
 
 class AsyncSourcer(source_pb2_grpc.SourceServicer):
@@ -44,10 +44,10 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Messages, Message \
-    ...     Datum, AsyncSourcer
+    >>> from pynumaflow.sourcer import Message \
+    ...     ReadRequest, AsyncSourcer
     ... import aiorun
-    ... async def read_handler(datum: Datum) -> AsyncIterable[Message]:
+    ... async def read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
     ...     payload = b"payload:test_mock_message"
     ...     keys = ["test_key"]
     ...     offset = mock_offset()
@@ -103,14 +103,14 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         """
 
         async for res in self.__invoke_source_read_stream(
-            Datum(
+            ReadRequest(
                 num_records=request.request.num_records,
                 timeout_in_ms=request.request.timeout_in_ms,
             )
         ):
             yield source_pb2.ReadResponse(result=res)
 
-    async def __invoke_source_read_stream(self, req: Datum):
+    async def __invoke_source_read_stream(self, req: ReadRequest):
         try:
             async for msg in self.__source_read_handler(req):
                 event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -122,7 +122,7 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
                     event_time=event_time_timestamp,
                 )
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
             raise err
 
     async def AckFn(

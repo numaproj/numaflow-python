@@ -1,16 +1,6 @@
-# Example Python User Defined Function using Kafka sink
-
-1. Install Kafka in the Kubernetes cluster
-   ```shell
-   kubectl apply -f https://raw.githubusercontent.com/numaproj/numaflow/main/config/apps/kafka/kafka-minimal.yaml
-   ```
-
-2. Build the docker image and import into k3d
-   ```shell
-   docker build -t test-python-udf:v1 . && k3d image import docker.io/library/test-python-udf:v1
-   ```
-
-3. Apply the pipeline
-   ```shell
-   kubectl apply -f pipeline-numaflow.yaml
-   ```
+# Example Python User Defined Source
+A simple example of a user-defined source. The source maintains an array of messages and implements the Read, 
+Ack, and Pending methods.
+The Read(x) method returns the next x number of messages in the array. 
+The Ack() method acknowledges the last batch of messages returned by Read(). 
+The Pending() method returns 0 to indicate that the simple source always has 0 pending messages.

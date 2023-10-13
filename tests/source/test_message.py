@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.sourcer import Message, Offset, Datum
+from pynumaflow.sourcer import Message, Offset, ReadRequest
 from tests.source.utils import mock_offset
 from tests.testing_utils import mock_event_time
 
@@ -27,13 +27,13 @@ class TestOffset(unittest.TestCase):
 
 class TestDatum(unittest.TestCase):
     def test_datum_creation(self):
-        msg = Datum(num_records=1, timeout_in_ms=1000)
+        msg = ReadRequest(num_records=1, timeout_in_ms=1000)
         self.assertEqual(msg.num_records, 1)
         self.assertEqual(msg.timeout_in_ms, 1000)
 
     def test_err_num_record(self):
         try:
-            Datum(num_records="HEKKO", timeout_in_ms=1000)
+            ReadRequest(num_records="HEKKO", timeout_in_ms=1000)
         except TypeError as e:
             self.assertTrue("Wrong data type" in e.__str__())
             return
@@ -41,7 +41,7 @@ class TestDatum(unittest.TestCase):
 
     def test_err_timeout(self):
         try:
-            Datum(num_records=1, timeout_in_ms="1000")
+            ReadRequest(num_records=1, timeout_in_ms="1000")
         except TypeError as e:
             self.assertTrue("Wrong data type" in e.__str__())
             return

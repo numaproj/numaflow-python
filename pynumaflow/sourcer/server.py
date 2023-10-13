@@ -14,7 +14,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     SOURCE_SOCK_PATH,
 )
-from pynumaflow.sourcer import Datum
+from pynumaflow.sourcer import ReadRequest
 from pynumaflow.sourcer._dtypes import (
     SourceReadCallable,
     Offset,
@@ -32,7 +32,7 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 _PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
 
 
 class Sourcer(source_pb2_grpc.SourceServicer):
@@ -52,9 +52,9 @@ class Sourcer(source_pb2_grpc.SourceServicer):
     Example invocation:
     >>> from typing import Iterator
     >>> from pynumaflow.sourcer import Message \
-    ...     Datum, Sourcer
+    ...     ReadRequest, Sourcer
     ... import aiorun
-    ... def read_handler(datum: Datum) -> Iterable[Message]:
+    ... def read_handler(datum: ReadRequest) -> Iterable[Message]:
     ...     payload = b"payload:test_mock_message"
     ...     keys = ["test_key"]
     ...     offset = mock_offset()
@@ -110,14 +110,14 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         """
 
         for res in self.__invoke_source_read_stream(
-            Datum(
+            ReadRequest(
                 num_records=request.request.num_records,
                 timeout_in_ms=request.request.timeout_in_ms,
             )
         ):
             yield source_pb2.ReadResponse(result=res)
 
-    def __invoke_source_read_stream(self, req: Datum):
+    def __invoke_source_read_stream(self, req: ReadRequest):
         try:
             for msg in self.__source_read_handler(req):
                 event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -129,7 +129,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
                     event_time=event_time_timestamp,
                 )
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
             raise err
 
     def AckFn(

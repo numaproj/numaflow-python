@@ -31,12 +31,18 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(mock_obj["Tags"], msgt.tags)
 
     def test_message_to_drop(self):
-        mock_obj = {"Keys": [], "Value": b"", "Tags": [DROP]}
+        mock_obj = {
+            "Keys": [],
+            "Value": b"",
+            "Tags": [DROP],
+            "EventTime": Message.event_time_to_drop,
+        }
         msgt = Message(b"", mock_event_time()).to_drop()
         self.assertEqual(Message, type(msgt))
         self.assertEqual(mock_obj["Keys"], msgt.keys)
         self.assertEqual(mock_obj["Value"], msgt.value)
         self.assertEqual(mock_obj["Tags"], msgt.tags)
+        self.assertEqual(mock_obj["EventTime"], msgt.event_time_to_drop)
 
 
 class TestMessages(unittest.TestCase):

@@ -13,8 +13,9 @@ Ms = TypeVar("Ms", bound="Messages")
 @dataclass(init=False)
 class Message:
     """
-    event_time_to_drop 1969-12-31 00:00:00 +0000 UTC is set to be slightly earlier than Unix epoch -1 (1969-12-31
-    23:59:59.999 +0000 UTC) As -1 is used on Numaflow to indicate watermark is not available, event_time_to_drop is
+    event_time_to_drop 1969-12-31 00:00:00 +0000 UTC is set to be slightly
+    earlier than Unix epoch -1 (1969-12-31 23:59:59.999 +0000 UTC)
+    As -1 is used on Numaflow to indicate watermark is not available, event_time_to_drop is
     used to indicate that the message is dropped hence, excluded from watermark calculation
     """
 

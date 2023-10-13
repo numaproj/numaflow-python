@@ -11,7 +11,7 @@ from pynumaflow.sourcer import (
 )
 
 
-class UDSource:
+class SimpleSource:
     def __init__(self):
         self.to_ack_set = set()
         self.read_idx = 0
@@ -38,7 +38,7 @@ class UDSource:
 
 
 if __name__ == "__main__":
-    ud_source = UDSource()
+    ud_source = SimpleSource()
     grpc_server = Sourcer(
         read_handler=ud_source.read_handler,
         ack_handler=ud_source.ack_handler,

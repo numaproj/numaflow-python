@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.3 (2023-10-13)
+
+ * [71c2b52](https://github.com/numaproj/numaflow-python/commit/71c2b52495a994929ad6c950e61b74f4fd622f40) feat: Add User Defined Source support (#114)
+
+### Contributors
+
+ * Sidhant Kohli
+
 ## v0.5.2 (2023-09-29)
 
  * [c04a279](https://github.com/numaproj/numaflow-python/commit/c04a279b7930f79b1b9492ca81df24648b4dd511) fix: multiproc mapper max threads and default numprocess (#112)

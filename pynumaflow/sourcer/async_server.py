@@ -181,8 +181,10 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         return source_pb2.PendingResponse(result=resp)
 
     async def __serve_async(self, server) -> None:
-        source_pb2_grpc.add_sourceServicer_to_server(
-            AsyncSourcer(read_handler=self.__source_read_handler),
+        source_pb2_grpc.add_SourceServicer_to_server(
+            AsyncSourcer(read_handler=self.__source_read_handler,
+                         ack_handler=self.__source_ack_handler,
+                         pending_handler=self.__source_pending_handler),
             server,
         )
         server.add_insecure_port(self.sock_path)

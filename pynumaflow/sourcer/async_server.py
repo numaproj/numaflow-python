@@ -137,7 +137,7 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         for offset in request.request.offsets:
             offsets.append(Offset(offset.offset, offset.partition_id))
         try:
-            await self.__invoke_ack(ack_req=request)
+            await self.__invoke_ack(ack_req=offsets)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(str(e))

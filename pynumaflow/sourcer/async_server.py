@@ -137,7 +137,7 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         for offset in request.request.offsets:
             offsets.append(Offset(offset.offset, offset.partition_id))
         try:
-            await self.__invoke_ack(ack_req=request)
+            await self.__invoke_ack(ack_req=offsets)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(str(e))
@@ -145,12 +145,12 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
 
         return source_pb2.AckResponse()
 
-    async def __invoke_ack(self, ack_req: AckRequest):
+    async def __invoke_ack(self, ack_req: list[Offset]):
         """
         Invokes the Source Ack Function.
         """
         try:
-            await self.__source_ack_handler(ack_req)
+            await self.__source_ack_handler(AckRequest(offsets=ack_req))
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err
@@ -182,7 +182,11 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
 
     async def __serve_async(self, server) -> None:
         source_pb2_grpc.add_SourceServicer_to_server(
-            AsyncSourcer(read_handler=self.__source_read_handler),
+            AsyncSourcer(
+                read_handler=self.__source_read_handler,
+                ack_handler=self.__source_ack_handler,
+                pending_handler=self.__source_pending_handler,
+            ),
             server,
         )
         server.add_insecure_port(self.sock_path)

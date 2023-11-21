@@ -145,12 +145,12 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
 
         return source_pb2.AckResponse()
 
-    async def __invoke_ack(self, ack_req: AckRequest):
+    async def __invoke_ack(self, ack_req: list[Offset]):
         """
         Invokes the Source Ack Function.
         """
         try:
-            await self.__source_ack_handler(ack_req)
+            await self.__source_ack_handler(AckRequest(offsets=ack_req))
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             raise err

@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.4 (2023-11-21)
+
+ * [2f0d4c4](https://github.com/numaproj/numaflow-python/commit/2f0d4c40a229bfdb4325de968c95768c1ca69827) fix: async source init  (#120)
+ * [b24f87d](https://github.com/numaproj/numaflow-python/commit/b24f87d6946379747eaaf182c194be55bf063c7d) fix: typo in async_server.py (#118)
+
+### Contributors
+
+ * Aaron Tolman
+ * Sidhant Kohli
+
 ## v0.5.3 (2023-10-13)
 
  * [71c2b52](https://github.com/numaproj/numaflow-python/commit/71c2b52495a994929ad6c950e61b74f4fd622f40) feat: Add User Defined Source support (#114)

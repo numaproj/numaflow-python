@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TypeVar, Callable
 from warnings import warn
 
-from pynumaflow._constants import DROP, EVENT_TIME_FOR_DROP
+from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -43,8 +43,8 @@ class Message:
         self._value = value or b""
 
     @classmethod
-    def to_drop(cls: type[M]) -> M:
-        return cls(b"", EVENT_TIME_FOR_DROP, None, [DROP])
+    def to_drop(cls: type[M], event_time: datetime) -> M:
+        return cls(b"", event_time, None, [DROP])
 
     @property
     def event_time(self) -> datetime:

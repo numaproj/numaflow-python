@@ -16,9 +16,11 @@ from tests.source.utils import (
     async_source_read_handler,
     async_source_ack_handler,
     async_source_pending_handler,
+    async_source_partition_handler,
     mock_offset,
     read_req_source_fn,
     ack_req_source_fn,
+    mock_partitions,
 )
 
 LOGGER = setup_logging(__name__)
@@ -43,11 +45,13 @@ def NewAsyncSourcer(
     handler=async_source_read_handler,
     ack_handler=async_source_ack_handler,
     pending_handler=async_source_pending_handler,
+    partitions_handler=async_source_partition_handler,
 ):
     udfs = AsyncSourcer(
         read_handler=async_source_read_handler,
         ack_handler=async_source_ack_handler,
         pending_handler=async_source_pending_handler,
+        partitions_handler=async_source_partition_handler,
     )
     return udfs
 
@@ -162,6 +166,18 @@ class TestAsyncSourcer(unittest.TestCase):
                 logging.error(e)
 
             self.assertEqual(response.result.count, 10)
+
+    def test_partitions(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = _empty_pb2.Empty()
+            response = None
+            try:
+                response = stub.PartitionsFn(request=request)
+            except grpc.RpcError as e:
+                logging.error(e)
+
+            self.assertEqual(response.result.partitions, mock_partitions())
 
     def __stub(self):
         return source_pb2_grpc.SourceStub(_channel)

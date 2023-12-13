@@ -44,6 +44,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         read_handler: Function callable following the type signature of SyncSourceReadCallable
         ack_handler: Function handler for AckFn
         pending_handler: Function handler for PendingFn
+        partitions_handler: Function handler for PartitionsFn
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -51,9 +52,8 @@ class Sourcer(source_pb2_grpc.SourceServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Message \
-    ...     ReadRequest, Sourcer
-    ... import aiorun
+    >>> from pynumaflow.sourcer import Message, get_default_partitions, PartitionsResponse \
+    ...     ReadRequest, Sourcer, AckRequest,
     ... def read_handler(datum: ReadRequest) -> Iterable[Message]:
     ...     payload = b"payload:test_mock_message"
     ...     keys = ["test_key"]
@@ -65,10 +65,13 @@ class Sourcer(source_pb2_grpc.SourceServicer):
     ...     return
     ... def pending_handler() -> PendingResponse:
     ...     PendingResponse(count=10)
+    ... def partitions_handler() -> PartitionsResponse:
+    ...     return PartitionsResponse(partitions=get_default_partitions())
     >>> grpc_server = Sourcer(read_handler=read_handler,
     ...                     ack_handler=ack_handler,
-    ...                     pending_handler=pending_handler)
-    >>> aiorun.run(grpc_server.start())
+    ...                     pending_handler=pending_handler,
+    ...                     partitions_handler=partition_handler,)
+    >>> grpc_server.start()
     """
 
     def __init__(
@@ -76,15 +79,24 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         read_handler: SourceReadCallable,
         ack_handler: SourceAckCallable,
         pending_handler,
+        partitions_handler,
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if read_handler is None or ack_handler is None or pending_handler is None:
-            raise ValueError("read_handler, ack_handler and pending_handler are required")
+        if (
+            read_handler is None
+            or ack_handler is None
+            or pending_handler is None
+            or partitions_handler is None
+        ):
+            raise ValueError(
+                "read_handler, ack_handler, pending_handler and partition_handler are required"
+            )
         self.__source_read_handler: SourceReadCallable = read_handler
         self.__source_ack_handler: SourceAckCallable = ack_handler
         self.__source_pending_handler = pending_handler
+        self.__source_partitions_handler = partitions_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -186,6 +198,25 @@ class Sourcer(source_pb2_grpc.SourceServicer):
             raise err
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
+
+    def PartitionsFn(
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+    ) -> source_pb2.PartitionsResponse:
+        """
+        Partitions returns the partitions associated with the source, will be used by
+        the platform to determine the partitions to which the watermark should be published.
+        If the source doesn't have partitions, get_default_partitions() can be used to
+        return the default partitions. In most cases, the get_default_partitions()
+        should be enough; the cases where we need to implement custom partitions_handler()
+        is in a case like Kafka, where a reader can read from multiple Kafka partitions.
+        """
+        try:
+            partitions = self.__source_partitions_handler()
+        except Exception as err:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            raise err
+        resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
+        return source_pb2.PartitionsResponse(result=resp)
 
     def start(self) -> None:
         """

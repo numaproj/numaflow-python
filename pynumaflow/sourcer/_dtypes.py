@@ -1,3 +1,4 @@
+import os
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
@@ -16,11 +17,18 @@ class Offset:
     __slots__ = ("_offset", "_partition_id")
 
     _offset: bytes
-    _partition_id: str
+    _partition_id: int
 
-    def __init__(self, offset: bytes, partition_id: str):
+    def __init__(self, offset: bytes, partition_id: int):
         self._offset = offset
         self._partition_id = partition_id
+
+    @classmethod
+    def offset_with_default_partition_id(cls, offset: bytes):
+        """
+        Returns an Offset object with the given offset and default partition id.
+        """
+        return Offset(offset=offset, partition_id=get_default_partitions()[0])
 
     @property
     def as_dict(self):
@@ -31,7 +39,7 @@ class Offset:
         return self._offset
 
     @property
-    def partition_id(self) -> str:
+    def partition_id(self) -> int:
         return self._partition_id
 
 
@@ -171,6 +179,41 @@ class PendingResponse:
         return self._count
 
 
+@dataclass(init=False)
+class PartitionsResponse:
+    """
+    PartitionsResponse is the response for the partition request.
+    It indicates the number of partitions at the user defined source.
+    A negative count indicates that the partition information is not available.
+    Args:
+        count: the number of partitions.
+    """
+
+    __slots__ = ("_partitions",)
+    _partitions: list[int]
+
+    def __init__(self, partitions: list[int]):
+        if not isinstance(partitions, list):
+            raise TypeError(f"Wrong data type: {type(partitions)} for Partition.partitions")
+        self._partitions = partitions
+
+    @property
+    def partitions(self) -> list[int]:
+        """Returns the list of partitions"""
+        return self._partitions
+
+
+# // create default partition id from the environment variable "NUMAFLOW_REPLICA"
+# var defaultPartitionId, _ = strconv.Atoi(os.Getenv("NUMAFLOW_REPLICA"))
+
+DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", 0))
 SourceReadCallable = Callable[[ReadRequest], Iterable[Message]]
 AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterable[Message]]
 SourceAckCallable = Callable[[AckRequest], None]
+
+
+def get_default_partitions() -> list[int]:
+    """
+    Returns the default partition ids.
+    """
+    return [DefaultPartitionId]

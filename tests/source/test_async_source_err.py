@@ -17,6 +17,7 @@ from tests.source.utils import (
     err_async_source_pending_handler,
     read_req_source_fn,
     ack_req_source_fn,
+    err_async_source_partition_handler,
 )
 
 LOGGER = setup_logging(__name__)
@@ -38,6 +39,7 @@ async def start_server():
         read_handler=err_async_source_read_handler,
         ack_handler=err_async_source_ack_handler,
         pending_handler=err_async_source_pending_handler,
+        partitions_handler=err_async_source_partition_handler,
     )
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
     listen_addr = "[::]:50062"

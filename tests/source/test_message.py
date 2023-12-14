@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.sourcer import Message, Offset, ReadRequest
+from pynumaflow.sourcer import Message, Offset, ReadRequest, PartitionsResponse
 from tests.source.utils import mock_offset
 from tests.testing_utils import mock_event_time
 
@@ -24,6 +24,11 @@ class TestOffset(unittest.TestCase):
         self.assertEqual(msg.offset, mock_offset().offset)
         self.assertEqual(msg.partition_id, mock_offset().partition_id)
 
+    def test_default_offset_creation(self):
+        msg = Offset.offset_with_default_partition_id(mock_offset().offset)
+        self.assertEqual(msg.offset, mock_offset().offset)
+        self.assertEqual(msg.partition_id, 0)
+
 
 class TestDatum(unittest.TestCase):
     def test_datum_creation(self):
@@ -42,6 +47,20 @@ class TestDatum(unittest.TestCase):
     def test_err_timeout(self):
         try:
             ReadRequest(num_records=1, timeout_in_ms="1000")
+        except TypeError as e:
+            self.assertTrue("Wrong data type" in e.__str__())
+            return
+        self.fail("Expected TypeError")
+
+
+class TestPartition(unittest.TestCase):
+    def test_partition_response(self):
+        msg = PartitionsResponse(partitions=[1, 2, 3])
+        self.assertEqual(msg.partitions, [1, 2, 3])
+
+    def test_err_partition(self):
+        try:
+            PartitionsResponse(partitions="HEKKO")
         except TypeError as e:
             self.assertTrue("Wrong data type" in e.__str__())
             return

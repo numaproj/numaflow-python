@@ -84,15 +84,6 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if (
-            read_handler is None
-            or ack_handler is None
-            or pending_handler is None
-            or partitions_handler is None
-        ):
-            raise ValueError(
-                "read_handler, ack_handler, pending_handler and partition_handler are required"
-            )
         self.__source_read_handler: SourceReadCallable = read_handler
         self.__source_ack_handler: SourceAckCallable = ack_handler
         self.__source_pending_handler = pending_handler

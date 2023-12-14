@@ -115,6 +115,17 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 return
         self.fail("Expected an exception.")
 
+    def test_partition_error(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = _empty_pb2.Empty()
+            try:
+                stub.PartitionsFn(request=request)
+            except Exception as e:
+                self.assertTrue("Got a runtime error from partition handler." in e.__str__())
+                return
+        self.fail("Expected an exception.")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

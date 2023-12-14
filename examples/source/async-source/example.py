@@ -9,7 +9,9 @@ from pynumaflow.sourcer import (
     AckRequest,
     PendingResponse,
     Offset,
-    AsyncSourcer, PartitionsResponse, get_default_partitions,
+    AsyncSourcer,
+    PartitionsResponse,
+    get_default_partitions,
 )
 
 

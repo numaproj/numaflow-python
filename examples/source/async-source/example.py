@@ -34,7 +34,7 @@ class AsyncSource:
         for each read request we process num_records and increment the read_idx to indicate that
         the message has been read and the same is added to the ack set
         """
-        if self.to_ack_set:
+        if len(self.to_ack_set) > 0:
             return
 
         for x in range(datum.num_records):

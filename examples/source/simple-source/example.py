@@ -1,6 +1,9 @@
+import logging
+import os
 from collections.abc import Iterable
 from datetime import datetime
 
+from pynumaflow import setup_logging
 from pynumaflow.sourcer import (
     ReadRequest,
     Message,
@@ -12,6 +15,9 @@ from pynumaflow.sourcer import (
     get_default_partitions,
 )
 
+_LOGGER = setup_logging(__name__)
+if os.getenv("PYTHONDEBUG"):
+    _LOGGER.setLevel(logging.DEBUG)
 
 class SimpleSource:
     """
@@ -32,7 +38,7 @@ class SimpleSource:
         for each read request we process num_records and increment the read_idx to indicate that
         the message has been read and the same is added to the ack set
         """
-        if self.to_ack_set:
+        if len(self.to_ack_set) > 0:
             return
 
         for x in range(datum.num_records):
@@ -62,6 +68,7 @@ class SimpleSource:
         """
         The simple source always returns zero to indicate there is no pending record.
         """
+        _LOGGER.info("Returning default partitions")
         return PartitionsResponse(partitions=get_default_partitions())
 
 

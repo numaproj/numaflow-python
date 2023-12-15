@@ -162,7 +162,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         try:
             self.__source_ack_handler(AckRequest(offsets=ack_req))
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("AckFn Error", exc_info=True)
             raise err
         return source_pb2.AckResponse.Result()
 
@@ -185,7 +185,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         try:
             count = self.__source_pending_handler()
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("PendingFn error", exc_info=True)
             raise err
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
@@ -204,7 +204,7 @@ class Sourcer(source_pb2_grpc.SourceServicer):
         try:
             partitions = self.__source_partitions_handler()
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("PartitionFn error", exc_info=True)
             raise err
         resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
         return source_pb2.PartitionsResponse(result=resp)

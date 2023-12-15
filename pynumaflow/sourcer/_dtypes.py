@@ -203,10 +203,8 @@ class PartitionsResponse:
         return self._partitions
 
 
-# // create default partition id from the environment variable "NUMAFLOW_REPLICA"
-# var defaultPartitionId, _ = strconv.Atoi(os.Getenv("NUMAFLOW_REPLICA"))
-
-DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", 0))
+# Create default partition id from the environment variable "NUMAFLOW_REPLICA"
+DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", "0"))
 SourceReadCallable = Callable[[ReadRequest], Iterable[Message]]
 AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterable[Message]]
 SourceAckCallable = Callable[[AckRequest], None]

@@ -1,9 +1,6 @@
-import logging
-import os
 from collections.abc import Iterable
 from datetime import datetime
 
-from pynumaflow import setup_logging
 from pynumaflow.sourcer import (
     ReadRequest,
     Message,
@@ -15,9 +12,6 @@ from pynumaflow.sourcer import (
     get_default_partitions,
 )
 
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
 
 class SimpleSource:
     """
@@ -68,7 +62,6 @@ class SimpleSource:
         """
         The simple source always returns zero to indicate there is no pending record.
         """
-        _LOGGER.info("Returning default partitions")
         return PartitionsResponse(partitions=get_default_partitions())
 
 

@@ -1,13 +1,17 @@
 from collections.abc import AsyncIterable, Iterable
 
 from pynumaflow.sourcer import ReadRequest, Message
-from pynumaflow.sourcer._dtypes import AckRequest, PendingResponse, Offset
+from pynumaflow.sourcer._dtypes import AckRequest, PendingResponse, Offset, PartitionsResponse
 from pynumaflow.sourcer.proto import source_pb2
 from tests.testing_utils import mock_event_time
 
 
 def mock_offset() -> Offset:
-    return Offset(b"offset_mock", "10")
+    return Offset(b"offset_mock", 10)
+
+
+def mock_partitions() -> list[int]:
+    return [1, 2, 3]
 
 
 async def async_source_read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
@@ -27,6 +31,10 @@ async def async_source_pending_handler() -> PendingResponse:
     return PendingResponse(count=10)
 
 
+async def async_source_partition_handler() -> PartitionsResponse:
+    return PartitionsResponse(partitions=mock_partitions())
+
+
 def sync_source_read_handler(datum: ReadRequest) -> Iterable[Message]:
     payload = b"payload:test_mock_message"
     keys = ["test_key"]
@@ -42,6 +50,10 @@ def sync_source_ack_handler(ack_request: AckRequest):
 
 def sync_source_pending_handler() -> PendingResponse:
     return PendingResponse(count=10)
+
+
+def sync_source_partition_handler() -> PartitionsResponse:
+    return PartitionsResponse(partitions=mock_partitions())
 
 
 def read_req_source_fn() -> ReadRequest:
@@ -77,6 +89,10 @@ async def err_async_source_pending_handler() -> PendingResponse:
     raise RuntimeError("Got a runtime error from pending handler.")
 
 
+async def err_async_source_partition_handler() -> PartitionsResponse:
+    raise RuntimeError("Got a runtime error from partition handler.")
+
+
 def err_sync_source_read_handler(datum: ReadRequest) -> Iterable[Message]:
     raise RuntimeError("Got a runtime error from read handler.")
 
@@ -87,3 +103,7 @@ def err_sync_source_ack_handler(ack_request: AckRequest):
 
 def err_sync_source_pending_handler() -> PendingResponse:
     raise RuntimeError("Got a runtime error from pending handler.")
+
+
+def err_sync_source_partition_handler() -> PartitionsResponse:
+    raise RuntimeError("Got a runtime error from partition handler.")

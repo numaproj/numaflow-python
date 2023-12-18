@@ -4,6 +4,8 @@ from pynumaflow.sourcer._dtypes import (
     PendingResponse,
     AckRequest,
     Offset,
+    PartitionsResponse,
+    get_default_partitions,
 )
 from pynumaflow.sourcer.async_server import AsyncSourcer
 from pynumaflow.sourcer.server import Sourcer
@@ -16,4 +18,6 @@ __all__ = [
     "Offset",
     "AsyncSourcer",
     "Sourcer",
+    "PartitionsResponse",
+    "get_default_partitions",
 ]

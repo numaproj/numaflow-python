@@ -17,6 +17,7 @@ from tests.source.utils import (
     err_async_source_pending_handler,
     read_req_source_fn,
     ack_req_source_fn,
+    err_async_source_partition_handler,
 )
 
 LOGGER = setup_logging(__name__)
@@ -38,6 +39,7 @@ async def start_server():
         read_handler=err_async_source_read_handler,
         ack_handler=err_async_source_ack_handler,
         pending_handler=err_async_source_pending_handler,
+        partitions_handler=err_async_source_partition_handler,
     )
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
     listen_addr = "[::]:50062"
@@ -110,6 +112,17 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 stub.PendingFn(request=request)
             except Exception as e:
                 self.assertTrue("Got a runtime error from pending handler." in e.__str__())
+                return
+        self.fail("Expected an exception.")
+
+    def test_partition_error(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = _empty_pb2.Empty()
+            try:
+                stub.PartitionsFn(request=request)
+            except Exception as e:
+                self.assertTrue("Got a runtime error from partition handler." in e.__str__())
                 return
         self.fail("Expected an exception.")
 

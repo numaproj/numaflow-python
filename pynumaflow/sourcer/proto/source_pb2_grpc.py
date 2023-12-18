@@ -30,6 +30,11 @@ class SourceStub(object):
             request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             response_deserializer=source__pb2.PendingResponse.FromString,
         )
+        self.PartitionsFn = channel.unary_unary(
+            "/source.v1.Source/PartitionsFn",
+            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            response_deserializer=source__pb2.PartitionsResponse.FromString,
+        )
         self.IsReady = channel.unary_unary(
             "/source.v1.Source/IsReady",
             request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -66,6 +71,12 @@ class SourceServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
+    def PartitionsFn(self, request, context):
+        """PartitionsFn returns the list of partitions for the user defined source."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
     def IsReady(self, request, context):
         """IsReady is the heartbeat endpoint for user defined source gRPC."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -89,6 +100,11 @@ def add_SourceServicer_to_server(servicer, server):
             servicer.PendingFn,
             request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
             response_serializer=source__pb2.PendingResponse.SerializeToString,
+        ),
+        "PartitionsFn": grpc.unary_unary_rpc_method_handler(
+            servicer.PartitionsFn,
+            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            response_serializer=source__pb2.PartitionsResponse.SerializeToString,
         ),
         "IsReady": grpc.unary_unary_rpc_method_handler(
             servicer.IsReady,
@@ -181,6 +197,35 @@ class Source(object):
             "/source.v1.Source/PendingFn",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             source__pb2.PendingResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def PartitionsFn(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/source.v1.Source/PartitionsFn",
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            source__pb2.PartitionsResponse.FromString,
             options,
             channel_credentials,
             insecure,

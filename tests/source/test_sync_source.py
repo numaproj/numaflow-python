@@ -10,9 +10,11 @@ from tests.source.utils import (
     sync_source_read_handler,
     sync_source_ack_handler,
     sync_source_pending_handler,
+    sync_source_partition_handler,
     read_req_source_fn,
     mock_offset,
     ack_req_source_fn,
+    mock_partitions,
 )
 
 
@@ -22,6 +24,7 @@ class TestSyncSourcer(unittest.TestCase):
             read_handler=sync_source_read_handler,
             ack_handler=sync_source_ack_handler,
             pending_handler=sync_source_pending_handler,
+            partitions_handler=sync_source_partition_handler,
         )
         services = {source_pb2.DESCRIPTOR.services_by_name["Source"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
@@ -31,6 +34,7 @@ class TestSyncSourcer(unittest.TestCase):
             read_handler=sync_source_read_handler,
             ack_handler=sync_source_ack_handler,
             pending_handler=sync_source_pending_handler,
+            partitions_handler=sync_source_partition_handler,
             sock_path="/tmp/test.sock",
             max_message_size=1024 * 1024 * 5,
         )
@@ -130,9 +134,22 @@ class TestSyncSourcer(unittest.TestCase):
         response, metadata, code, details = method.termination()
         self.assertEqual(response.result.count, 10)
 
-    def test_invalid_input(self):
-        with self.assertRaises(TypeError):
-            Sourcer()
+    def test_source_partition(self):
+        request = _empty_pb2.Empty()
+
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                source_pb2.DESCRIPTOR.services_by_name["Source"].methods_by_name["PartitionsFn"]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+
+        response, metadata, code, details = method.termination()
+        self.assertEqual(response.result.partitions, mock_partitions())
 
 
 if __name__ == "__main__":

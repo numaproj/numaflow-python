@@ -8,6 +8,8 @@ from pynumaflow.sourcer import (
     AckRequest,
     PendingResponse,
     Offset,
+    PartitionsResponse,
+    get_default_partitions,
 )
 
 
@@ -36,7 +38,7 @@ class SimpleSource:
         for x in range(datum.num_records):
             yield Message(
                 payload=str(self.read_idx).encode(),
-                offset=Offset(offset=str(self.read_idx).encode(), partition_id="0"),
+                offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
                 event_time=datetime.now(),
             )
             self.to_ack_set.add(str(self.read_idx))
@@ -56,6 +58,12 @@ class SimpleSource:
         """
         return PendingResponse(count=0)
 
+    def partitions_handler(self) -> PartitionsResponse:
+        """
+        The simple source always returns zero to indicate there is no pending record.
+        """
+        return PartitionsResponse(partitions=get_default_partitions())
+
 
 if __name__ == "__main__":
     ud_source = SimpleSource()
@@ -63,5 +71,6 @@ if __name__ == "__main__":
         read_handler=ud_source.read_handler,
         ack_handler=ud_source.ack_handler,
         pending_handler=ud_source.pending_handler,
+        partitions_handler=ud_source.partitions_handler,
     )
     grpc_server.start()

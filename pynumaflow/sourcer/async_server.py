@@ -37,6 +37,8 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         read_handler: Function callable following the type signature of AsyncSourceReadCallable
         ack_handler: Function handler for AckFn
         pending_handler: Function handler for PendingFn
+        partitions_handler: Function handler for PartitionsFn
+
         sock_path: Path to the UNIX Domain Socket
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -44,8 +46,8 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
 
     Example invocation:
     >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Message \
-    ...     ReadRequest, AsyncSourcer
+    >>> from pynumaflow.sourcer import Message, get_default_partitions \
+    ...     ReadRequest, AsyncSourcer,
     ... import aiorun
     ... async def read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
     ...     payload = b"payload:test_mock_message"
@@ -58,9 +60,12 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
     ...     return
     ... async def pending_handler() -> PendingResponse:
     ...     PendingResponse(count=10)
+    ... async def partitions_handler() -> PartitionsResponse:
+    ...     return PartitionsResponse(partitions=get_default_partitions())
     >>> grpc_server = AsyncSourcer(read_handler=read_handler,
     ...                     ack_handler=ack_handler,
-    ...                     pending_handler=pending_handler)
+    ...                     pending_handler=pending_handler,
+    ...                     partitions_handler=partitions_handler)
     >>> aiorun.run(grpc_server.start())
     """
 
@@ -69,15 +74,15 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         read_handler: AsyncSourceReadCallable,
         ack_handler,
         pending_handler,
+        partitions_handler,
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        if read_handler is None or ack_handler is None or pending_handler is None:
-            raise ValueError("read_handler, ack_handler and pending_handler are required")
         self.__source_read_handler: AsyncSourceReadCallable = read_handler
         self.__source_ack_handler = ack_handler
         self.__source_pending_handler = pending_handler
+        self.__source_partitions_handler = partitions_handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads
@@ -152,7 +157,7 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         try:
             await self.__source_ack_handler(AckRequest(offsets=ack_req))
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("AckFn Error", exc_info=True)
             raise err
         return source_pb2.AckResponse.Result()
 
@@ -175,10 +180,24 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
         try:
             count = await self.__source_pending_handler()
         except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("PendingFn Error", exc_info=True)
             raise err
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
+
+    async def PartitionsFn(
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+    ) -> source_pb2.PartitionsResponse:
+        """
+        PartitionsFn returns the partitions of the user defined source.
+        """
+        try:
+            partitions = await self.__source_partitions_handler()
+        except Exception as err:
+            _LOGGER.critical("PartitionsFn Error", exc_info=True)
+            raise err
+        resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
+        return source_pb2.PartitionsResponse(result=resp)
 
     async def __serve_async(self, server) -> None:
         source_pb2_grpc.add_SourceServicer_to_server(
@@ -186,6 +205,7 @@ class AsyncSourcer(source_pb2_grpc.SourceServicer):
                 read_handler=self.__source_read_handler,
                 ack_handler=self.__source_ack_handler,
                 pending_handler=self.__source_pending_handler,
+                partitions_handler=self.__source_partitions_handler,
             ),
             server,
         )

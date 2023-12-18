@@ -32,7 +32,7 @@ class SimpleSource:
         for each read request we process num_records and increment the read_idx to indicate that
         the message has been read and the same is added to the ack set
         """
-        if len(self.to_ack_set) > 0:
+        if self.to_ack_set:
             return
 
         for x in range(datum.num_records):

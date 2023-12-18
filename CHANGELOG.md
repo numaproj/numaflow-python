@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6.0 (2023-12-18)
+
+ * [e6e1261](https://github.com/numaproj/numaflow-python/commit/e6e1261881104ddb5b4aac5868745f68c6d2763d) feat: adding partitions for user defined source (#124)
+ * [3e3b25f](https://github.com/numaproj/numaflow-python/commit/3e3b25f4096ae0aca5744da0354615eb63e972e6) fix: require event time when dropping messages (#123)
+
+### Contributors
+
+ * Keran Yang
+ * Sidhant Kohli
+
 ## v0.5.4 (2023-11-21)
 
  * [2f0d4c4](https://github.com/numaproj/numaflow-python/commit/2f0d4c40a229bfdb4325de968c95768c1ca69827) fix: async source init  (#120)

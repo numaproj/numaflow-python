@@ -73,10 +73,10 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     )
 
     def __init__(
-        self,
-        handler: MapCallable,
-        sock_path=MULTIPROC_MAP_SOCK_PORT,
-        max_message_size=MAX_MESSAGE_SIZE,
+            self,
+            handler: MapCallable,
+            sock_path=MULTIPROC_MAP_SOCK_PORT,
+            max_message_size=MAX_MESSAGE_SIZE,
     ):
         self.__map_handler: MapCallable = handler
         self._max_message_size = max_message_size
@@ -92,7 +92,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         self._threads_per_proc = int(os.getenv("MAX_THREADS", "4"))
 
     def MapFn(
-        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
+            self, request: map_pb2.MapRequest, context: NumaflowServicerContext
     ) -> map_pb2.MapResponse:
         """
         Applies a function to each datum element.
@@ -124,7 +124,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         return map_pb2.MapResponse(results=datums)
 
     def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
@@ -162,7 +162,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         server.wait_for_termination()
 
     @contextlib.contextmanager
-    def _reserve_port(self) -> int:
+    def _reserve_port(self, port_num: int) -> int:
         """Find and reserve a port for all subprocesses to use."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
@@ -171,7 +171,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
             raise SocketError("Failed to set SO_REUSEADDR.")
         if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT) == 0:
             raise SocketError("Failed to set SO_REUSEPORT.")
-        sock.bind(("", self._sock_path))
+        sock.bind(("", port_num))
         try:
             yield sock.getsockname()[1]
         finally:
@@ -179,15 +179,15 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
 
     def start(self) -> None:
         """Start N grpc servers in different processes where N = CPU Count"""
-        with self._reserve_port() as port:
+        workers = []
+        for i in range(self._process_count):
+            port = self._reserve_port(self._sock_path + i)
             bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
-            workers = []
-            for _ in range(self._process_count):
-                # NOTE: It is imperative that the worker subprocesses be forked before
-                # any gRPC servers start up. See
-                # https://github.com/grpc/grpc/issues/16001 for more details.
-                worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
-                worker.start()
-                workers.append(worker)
-            for worker in workers:
-                worker.join()
+            # NOTE: It is imperative that the worker subprocesses be forked before
+            # any gRPC servers start up. See
+            # https://github.com/grpc/grpc/issues/16001 for more details.
+            worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
+            worker.start()
+            workers.append(worker)
+        for worker in workers:
+            worker.join()

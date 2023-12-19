@@ -181,14 +181,15 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         """Start N grpc servers in different processes where N = CPU Count"""
         workers = []
         for i in range(self._process_count):
-            port = int(self._reserve_port(self._sock_path + i))
-            _LOGGER.info("Starting server on port: %s", port)
-            bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
-            # NOTE: It is imperative that the worker subprocesses be forked before
-            # any gRPC servers start up. See
-            # https://github.com/grpc/grpc/issues/16001 for more details.
-            worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
-            worker.start()
-            workers.append(worker)
+            with self._reserve_port(self._sock_path + i) as port:
+                bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
+                _LOGGER.info("Starting server on port: %s", port)
+                # NOTE: It is imperative that the worker subprocesses be forked before
+                # any gRPC servers start up. See
+                # https://github.com/grpc/grpc/issues/16001 for more details.
+                worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
+                worker.start()
+                workers.append(worker)
+
         for worker in workers:
             worker.join()

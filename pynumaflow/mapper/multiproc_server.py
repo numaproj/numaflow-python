@@ -148,16 +148,6 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         map_pb2_grpc.add_MapServicer_to_server(self, server)
         server.add_insecure_port(bind_address)
         server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.TCP,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-            metadata=get_metadata_env(envs=METADATA_ENVS),
-        )
-        # Overwrite the CPU_LIMIT metadata using user input
-        serv_info.metadata["CPU_LIMIT"] = str(self._process_count)
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
-
         _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
         server.wait_for_termination()
 
@@ -180,8 +170,10 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     def start(self) -> None:
         """Start N grpc servers in different processes where N = CPU Count"""
         workers = []
+        server_ports = []
+
         for i in range(self._process_count):
-            with self._reserve_port(self._sock_path + i) as port:
+            with self._reserve_port(0) as port:
                 bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
                 _LOGGER.info("Starting server on port: %s", port)
                 # NOTE: It is imperative that the worker subprocesses be forked before
@@ -190,6 +182,23 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
                 worker = multiprocessing.Process(target=self._run_server, args=(bind_address,))
                 worker.start()
                 workers.append(worker)
+                server_ports.append(port)
+
+        # Convert the available ports to a comma separated string
+        ports = ",".join([str(p) for p in server_ports])
+
+        _LOGGER.info("Writing Info Server file", port)
+        serv_info = ServerInfo(
+            protocol=Protocol.TCP,
+            language=Language.PYTHON,
+            version=get_sdk_version(),
+            metadata=get_metadata_env(envs=METADATA_ENVS),
+        )
+        # Add the PORTS metadata using the available ports
+        serv_info.metadata["SERV_PORTS"] = ports
+        # Overwrite the CPU_LIMIT metadata using user input
+        serv_info.metadata["CPU_LIMIT"] = str(self._process_count)
+        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
         for worker in workers:
             worker.join()

@@ -87,7 +87,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         ]
         self._process_count = int(os.getenv("NUM_CPU_MULTIPROC") or os.cpu_count())
         # Setting the max process count to 2 * CPU count
-        self._process_count = max(self._process_count, 2 * os.cpu_count())
+        self._process_count = min(self._process_count, 2 * os.cpu_count())
         self._threads_per_proc = int(os.getenv("MAX_THREADS", "4"))
 
     def MapFn(
@@ -154,8 +154,11 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     def _reserve_port(self, port_num: int) -> int:
         """Find and reserve a port for all subprocesses to use."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(("", port_num))
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR) == 0:
+            raise SocketError("Failed to set SO_REUSEADDR.")
         try:
+            sock.bind(("", port_num))
             yield sock.getsockname()[1]
         finally:
             sock.close()
@@ -182,14 +185,13 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         # Convert the available ports to a comma separated string
         ports = ",".join([str(p) for p in server_ports])
 
-        # Write the server info file
         serv_info = ServerInfo(
             protocol=Protocol.TCP,
             language=Language.PYTHON,
             version=get_sdk_version(),
             metadata=get_metadata_env(envs=METADATA_ENVS),
         )
-        # Add the SERV_PORTS metadata using the available ports
+        # Add the PORTS metadata using the available ports
         serv_info.metadata["SERV_PORTS"] = ports
         # Overwrite the CPU_LIMIT metadata using user input
         serv_info.metadata["CPU_LIMIT"] = str(self._process_count)

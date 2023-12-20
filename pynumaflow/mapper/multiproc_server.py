@@ -44,7 +44,6 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
 
     Args:
         handler: Function callable following the type signature of MapCallable
-        sock_path: Path to the TCP port to bind to
         max_message_size: The max message size in bytes the server can receive and send
 
     Example invocation:
@@ -75,7 +74,6 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     def __init__(
             self,
             handler: MapCallable,
-            sock_path=MULTIPROC_MAP_SOCK_PORT,
             max_message_size=MAX_MESSAGE_SIZE,
     ):
         self.__map_handler: MapCallable = handler
@@ -87,8 +85,9 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
             ("grpc.so_reuseport", 1),
             ("grpc.so_reuseaddr", 1),
         ]
-        self._sock_path = sock_path
         self._process_count = int(os.getenv("NUM_CPU_MULTIPROC") or os.cpu_count())
+        # Setting the max process count to 2 * CPU count
+        self._process_count = max(self._process_count, 2 * os.cpu_count())
         self._threads_per_proc = int(os.getenv("MAX_THREADS", "4"))
 
     def MapFn(
@@ -155,12 +154,6 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     def _reserve_port(self, port_num: int) -> int:
         """Find and reserve a port for all subprocesses to use."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR) == 0:
-            raise SocketError("Failed to set SO_REUSEADDR.")
-        if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT) == 0:
-            raise SocketError("Failed to set SO_REUSEPORT.")
         sock.bind(("", port_num))
         try:
             yield sock.getsockname()[1]
@@ -173,6 +166,8 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         server_ports = []
 
         for i in range(self._process_count):
+            # Find a port to bind to for each server, thus sending the port number = 0
+            # to the _reserve_port function so that kernel can find and return a free port
             with self._reserve_port(0) as port:
                 bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
                 _LOGGER.info("Starting server on port: %s", port)
@@ -187,14 +182,14 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         # Convert the available ports to a comma separated string
         ports = ",".join([str(p) for p in server_ports])
 
-        _LOGGER.info("Writing Info Server file", port)
+        # Write the server info file
         serv_info = ServerInfo(
             protocol=Protocol.TCP,
             language=Language.PYTHON,
             version=get_sdk_version(),
             metadata=get_metadata_env(envs=METADATA_ENVS),
         )
-        # Add the PORTS metadata using the available ports
+        # Add the SERV_PORTS metadata using the available ports
         serv_info.metadata["SERV_PORTS"] = ports
         # Overwrite the CPU_LIMIT metadata using user input
         serv_info.metadata["CPU_LIMIT"] = str(self._process_count)

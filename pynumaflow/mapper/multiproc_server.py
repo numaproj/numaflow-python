@@ -12,7 +12,7 @@ from pynumaflow import setup_logging
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
 )
-from pynumaflow._constants import MULTIPROC_MAP_SOCK_PORT, MULTIPROC_MAP_SOCK_ADDR
+from pynumaflow._constants import MULTIPROC_MAP_SOCK_ADDR
 from pynumaflow.exceptions import SocketError
 from pynumaflow.mapper import Datum
 from pynumaflow.mapper._dtypes import MapCallable
@@ -72,9 +72,9 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
     )
 
     def __init__(
-            self,
-            handler: MapCallable,
-            max_message_size=MAX_MESSAGE_SIZE,
+        self,
+        handler: MapCallable,
+        max_message_size=MAX_MESSAGE_SIZE,
     ):
         self.__map_handler: MapCallable = handler
         self._max_message_size = max_message_size
@@ -91,7 +91,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         self._threads_per_proc = int(os.getenv("MAX_THREADS", "4"))
 
     def MapFn(
-            self, request: map_pb2.MapRequest, context: NumaflowServicerContext
+        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
     ) -> map_pb2.MapResponse:
         """
         Applies a function to each datum element.
@@ -123,7 +123,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         return map_pb2.MapResponse(results=datums)
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

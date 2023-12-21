@@ -165,10 +165,10 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
 
     def start(self) -> None:
         """
-            Start N grpc servers in different processes where N = CPU Count
-            Each server will be bound to a different port, and we will create equal number of
-            workers to handle each server.
-            On the client side there will be same number of connections as the number of servers.
+        Start N grpc servers in different processes where N = CPU Count
+        Each server will be bound to a different port, and we will create equal number of
+        workers to handle each server.
+        On the client side there will be same number of connections as the number of servers.
         """
         workers = []
         server_ports = []

@@ -197,8 +197,6 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         )
         # Add the PORTS metadata using the available ports
         serv_info.metadata["SERV_PORTS"] = ports
-        # Overwrite the CPU_LIMIT metadata using user input
-        serv_info.metadata["CPU_LIMIT"] = str(self._process_count)
         info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
         for worker in workers:

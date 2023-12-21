@@ -4,6 +4,7 @@ import multiprocessing
 import os
 import socket
 from concurrent import futures
+from collections.abc import Iterator
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -66,7 +67,6 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         "__map_handler",
         "_max_message_size",
         "_server_options",
-        "_sock_path",
         "_process_count",
         "_threads_per_proc",
     )
@@ -85,9 +85,12 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
             ("grpc.so_reuseport", 1),
             ("grpc.so_reuseaddr", 1),
         ]
-        self._process_count = int(os.getenv("NUM_CPU_MULTIPROC") or os.cpu_count())
-        # Setting the max process count to 2 * CPU count
-        self._process_count = min(self._process_count, 2 * os.cpu_count())
+        # Set the number of processes to be spawned to the number of CPUs or
+        # the value of the env var NUM_CPU_MULTIPROC defined by the user
+        # Setting the max value to 2 * CPU count
+        self._process_count = min(
+            int(os.getenv("NUM_CPU_MULTIPROC", str(os.cpu_count()))), 2 * os.cpu_count()
+        )
         self._threads_per_proc = int(os.getenv("MAX_THREADS", "4"))
 
     def MapFn(
@@ -151,7 +154,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
         server.wait_for_termination()
 
     @contextlib.contextmanager
-    def _reserve_port(self, port_num: int) -> int:
+    def _reserve_port(self, port_num: int) -> Iterator[int]:
         """Find and reserve a port for all subprocesses to use."""
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -165,14 +168,16 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
 
     def start(self) -> None:
         """
-        Start N grpc servers in different processes where N = CPU Count
+        Start N grpc servers in different processes where N = The number of CPUs or the
+        value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
+        is set to 2 * CPU count.
         Each server will be bound to a different port, and we will create equal number of
         workers to handle each server.
         On the client side there will be same number of connections as the number of servers.
         """
         workers = []
         server_ports = []
-        for i in range(self._process_count):
+        for _ in range(self._process_count):
             # Find a port to bind to for each server, thus sending the port number = 0
             # to the _reserve_port function so that kernel can find and return a free port
             with self._reserve_port(0) as port:
@@ -187,7 +192,7 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
                 server_ports.append(port)
 
         # Convert the available ports to a comma separated string
-        ports = ",".join([str(p) for p in server_ports])
+        ports = ",".join(map(str, server_ports))
 
         serv_info = ServerInfo(
             protocol=Protocol.TCP,

@@ -164,10 +164,14 @@ class MultiProcMapper(map_pb2_grpc.MapServicer):
             sock.close()
 
     def start(self) -> None:
-        """Start N grpc servers in different processes where N = CPU Count"""
+        """
+            Start N grpc servers in different processes where N = CPU Count
+            Each server will be bound to a different port, and we will create equal number of
+            workers to handle each server.
+            On the client side there will be same number of connections as the number of servers.
+        """
         workers = []
         server_ports = []
-
         for i in range(self._process_count):
             # Find a port to bind to for each server, thus sending the port number = 0
             # to the _reserve_port function so that kernel can find and return a free port

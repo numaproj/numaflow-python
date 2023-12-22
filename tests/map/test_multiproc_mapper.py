@@ -32,23 +32,27 @@ class TestMultiProcMethods(unittest.TestCase):
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
         server = MultiProcMapper(handler=map_handler)
-        self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 3)
 
     @patch("os.cpu_count", Mock(return_value=4))
     def test_multiproc_process_count(self) -> None:
         server = MultiProcMapper(handler=map_handler)
-        self.assertEqual(server._sock_path, 55551)
         self.assertEqual(server._process_count, 4)
+
+    @patch("os.cpu_count", Mock(return_value=4))
+    @mockenv(NUM_CPU_MULTIPROC="10")
+    def test_max_process_count(self) -> None:
+        server = MultiProcMapper(handler=map_handler)
+        self.assertEqual(server._process_count, 8)
 
     # To test the reuse property for the grpc servers which allow multiple
     # bindings to the same server
     def test_reuse_port(self):
-        serv_options = [("grpc.so_reuseport", 1), ("grpc.so_reuseaddr", 1)]
+        serv_options = [("grpc.so_reuseaddr", 1)]
 
         server = MultiProcMapper(handler=map_handler)
 
-        with server._reserve_port() as port:
+        with server._reserve_port(0) as port:
             print(port)
             bind_address = f"localhost:{port}"
             server1 = grpc.server(thread_pool=None, options=serv_options)

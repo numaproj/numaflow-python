@@ -64,7 +64,8 @@ class MapServer(NumaflowServer):
         """
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
-        await self.server.start()
+        aiorun.run(self.server.start())
+        # await self.server.start()
         write_info_file(Protocol.UDS)
         _LOGGER.info(
             "Async GRPC Server listening on: %s with max threads: %s",

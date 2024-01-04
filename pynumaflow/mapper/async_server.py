@@ -12,7 +12,7 @@ from pynumaflow._constants import (
     MAP_SOCK_PATH,
 )
 from pynumaflow.mapper import Datum
-from pynumaflow.mapper._dtypes import MapAsyncCallable
+from pynumaflow.mapper._dtypes import MapAsyncCallable, MapCallable
 from pynumaflow.mapper.proto import map_pb2
 from pynumaflow.mapper.proto import map_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -61,7 +61,7 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__map_handler: MapAsyncCallable = handler
+        self.__map_handler: MapCallable = handler
         self.sock_path = f"unix://{sock_path}"
         self._max_message_size = max_message_size
         self._max_threads = max_threads

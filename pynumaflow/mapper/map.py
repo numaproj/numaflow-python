@@ -1,3 +1,5 @@
+import asyncio
+
 import aiorun
 
 from pynumaflow.info.types import Protocol
@@ -34,6 +36,7 @@ class MapServer(NumaflowServer):
         self.max_threads = max_threads
         self.max_message_size = max_message_size
         self.server_type = server_type
+        self.background_tasks = set()
         self.server = self.get_server(server_type=server_type, mapper_instance=mapper_instance)
 
     def start(self) -> None:
@@ -43,7 +46,7 @@ class MapServer(NumaflowServer):
         if self.server_type == ServerType.Sync:
             self.exec()
         elif self.server_type == ServerType.Async:
-            await self.aexec()
+            aiorun.run(self.aexec())
         else:
             raise NotImplementedError
 
@@ -64,8 +67,18 @@ class MapServer(NumaflowServer):
         """
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
-        aiorun.run(self.server.start())
-        # await self.server.start()
+        # aiorun.run(self.server.start())
+        response_task = asyncio.create_task(
+            self.server.start(),
+        )
+
+        # Save a reference to the result of this function, to avoid a
+        # task disappearing mid-execution.
+        self.background_tasks.add(response_task)
+        response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
+
+        await response_task
+
         write_info_file(Protocol.UDS)
         _LOGGER.info(
             "Async GRPC Server listening on: %s with max threads: %s",

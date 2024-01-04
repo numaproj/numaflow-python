@@ -1,12 +1,8 @@
 import logging
-import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -53,11 +49,11 @@ class Mapper(map_pb2_grpc.MapServicer):
     """
 
     def __init__(
-            self,
-            handler: MapCallable,
-            sock_path=MAP_SOCK_PATH,
-            max_message_size=MAX_MESSAGE_SIZE,
-            max_threads=MAX_THREADS,
+        self,
+        handler: MapCallable,
+        sock_path=MAP_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
         self.__map_handler: MapCallable = handler
         self.sock_path = f"unix://{sock_path}"
@@ -71,7 +67,7 @@ class Mapper(map_pb2_grpc.MapServicer):
         ]
 
     def MapFn(
-            self, request: map_pb2.MapRequest, context: NumaflowServicerContext
+        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
     ) -> map_pb2.MapResponse:
         """
         Applies a function to each datum element.
@@ -103,7 +99,7 @@ class Mapper(map_pb2_grpc.MapServicer):
         return map_pb2.MapResponse(results=datums)
 
     def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

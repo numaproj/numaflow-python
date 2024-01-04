@@ -127,11 +127,11 @@ class Datum:
     _watermark: datetime
 
     def __init__(
-            self,
-            keys: list[str],
-            value: bytes,
-            event_time: datetime,
-            watermark: datetime,
+        self,
+        keys: list[str],
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -177,7 +177,7 @@ class MapperClass:
 
     def __call__(self, *args, **kwargs):
         """
-            Allow to call handler function directly if class instance is sent
+        Allow to call handler function directly if class instance is sent
         """
         return self.handler(*args, **kwargs)
 
@@ -189,4 +189,3 @@ class MapperClass:
 
 
 MapCallable = Union[MapperClass, MapSyncCallable, MapAsyncCallable]
-

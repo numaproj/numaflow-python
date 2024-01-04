@@ -13,19 +13,22 @@ class MapServer(NumaflowServer):
     Create a new grpc Server instance.
     """
 
-    def __init__(self, mapper_instance: MapCallable,
-                 sock_path=MAP_SOCK_PATH,
-                 max_message_size=MAX_MESSAGE_SIZE,
-                 max_threads=MAX_THREADS,
-                 server_type=ServerType.Sync):
+    def __init__(
+        self,
+        mapper_instance: MapCallable,
+        sock_path=MAP_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
+        server_type=ServerType.Sync,
+    ):
         """
-            Create a new grpc Server instance.
-            A new servicer instance is created and attached to the server.
-            The server instance is returned.
+        Create a new grpc Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
 
-            max_message_size: The max message size in bytes the server can receive and send
-            max_threads: The max number of threads to be spawned;
-                         defaults to number of processors x4
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+                     defaults to number of processors x4
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = max_threads
@@ -51,7 +54,9 @@ class MapServer(NumaflowServer):
         self.server.start()
         write_info_file(Protocol.UDS)
         _LOGGER.info(
-            "Sync GRPC Server listening on: %s with max threads: %s", self.sock_path, self.max_threads
+            "Sync GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
         )
         self.server.wait_for_termination()
 
@@ -62,7 +67,9 @@ class MapServer(NumaflowServer):
         await self.server.start()
         write_info_file(Protocol.UDS)
         _LOGGER.info(
-            "Async GRPC Server listening on: %s with max threads: %s", self.sock_path, self.max_threads
+            "Async GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
         )
 
         async def server_graceful_shutdown():
@@ -85,8 +92,10 @@ class MapServer(NumaflowServer):
         else:
             raise NotImplementedError
 
-        server = prepare_server(sock_path=self.sock_path,
-                                max_threads=self.max_threads,
-                                max_message_size=self.max_message_size)
+        server = prepare_server(
+            sock_path=self.sock_path,
+            max_threads=self.max_threads,
+            max_message_size=self.max_message_size,
+        )
         map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
         return server

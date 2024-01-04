@@ -11,6 +11,7 @@ class ExampleMapperClass(MapperClass):
     """
     Provides an interface to write a Mapper
     """
+
     def handler(self, keys: [str], datum: Datum) -> Messages:
         """
         Write a handler function which implements the MapCallable interface.

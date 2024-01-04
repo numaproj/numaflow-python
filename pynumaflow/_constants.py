@@ -37,5 +37,6 @@ class ServerType(str, Enum):
     """
     Enumerate grpc server connection protocol.
     """
+
     Sync = "sync"
     Async = "async"

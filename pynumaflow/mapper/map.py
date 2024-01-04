@@ -43,7 +43,7 @@ class MapServer(NumaflowServer):
         if self.server_type == ServerType.Sync:
             self.exec()
         elif self.server_type == ServerType.Async:
-            aiorun.run(self.aexec())
+            await self.aexec()
         else:
             raise NotImplementedError
 

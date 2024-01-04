@@ -1,10 +1,10 @@
 """
 Write a class which implements the MapperClass interface.
 """
-from refactor.mapper import ServerType
-from refactor.mapper import Datum, Messages, Message
-from refactor.mapper.map import MapServer
-from refactor.mapper._dtypes import MapperClass
+from pynumaflow.mapper import ServerType
+from pynumaflow.mapper import Datum, Messages, Message
+from pynumaflow.mapper.map import MapServer
+from pynumaflow.mapper._dtypes import MapperClass
 
 
 class ExampleMapperClass(MapperClass):

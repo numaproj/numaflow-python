@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 import grpc
-from refactor._constants import MAX_MESSAGE_SIZE, MAX_THREADS, ServerType, _LOGGER
+from pynumaflow._constants import MAX_MESSAGE_SIZE, MAX_THREADS, ServerType, _LOGGER
 from pynumaflow.info.server import get_sdk_version, write as info_server_write
 from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 

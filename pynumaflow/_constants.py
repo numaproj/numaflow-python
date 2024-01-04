@@ -1,3 +1,10 @@
+import logging
+import multiprocessing
+import os
+from enum import Enum
+
+from pynumaflow import setup_logging
+
 MAP_SOCK_PATH = "/var/run/numaflow/map.sock"
 MAP_STREAM_SOCK_PATH = "/var/run/numaflow/mapstream.sock"
 REDUCE_SOCK_PATH = "/var/run/numaflow/reduce.sock"
@@ -17,3 +24,18 @@ MAX_MESSAGE_SIZE = 1024 * 1024 * 64
 STREAM_EOF = "EOF"
 DELIMITER = ":"
 DROP = "U+005C__DROP__"
+
+_PROCESS_COUNT = multiprocessing.cpu_count()
+MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+
+_LOGGER = setup_logging(__name__)
+if os.getenv("PYTHONDEBUG"):
+    _LOGGER.setLevel(logging.DEBUG)
+
+
+class ServerType(str, Enum):
+    """
+    Enumerate grpc server connection protocol.
+    """
+    Sync = "sync"
+    Async = "async"

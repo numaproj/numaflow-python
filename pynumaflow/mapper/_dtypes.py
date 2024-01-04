@@ -1,7 +1,7 @@
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Union
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -127,11 +127,11 @@ class Datum:
     _watermark: datetime
 
     def __init__(
-        self,
-        keys: list[str],
-        value: bytes,
-        event_time: datetime,
-        watermark: datetime,
+            self,
+            keys: list[str],
+            value: bytes,
+            event_time: datetime,
+            watermark: datetime,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -162,5 +162,31 @@ class Datum:
         return self._watermark
 
 
-MapCallable = Callable[[list[str], Datum], Messages]
+MapSyncCallable = Callable[[list[str], Datum], Messages]
 MapAsyncCallable = Callable[[list[str], Datum], Awaitable[Messages]]
+
+
+class MapperClass:
+    """
+    Provides an interface to write a Mapper
+    which will be exposed over a Synchronous gRPC server.
+
+    Args:
+
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+            Allow to call handler function directly if class instance is sent
+        """
+        return self.handler(*args, **kwargs)
+
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
+        """
+        Write a handler function which implements the MapCallable interface.
+        """
+        raise NotImplementedError
+
+
+MapCallable = Union[MapperClass, MapSyncCallable, MapAsyncCallable]
+

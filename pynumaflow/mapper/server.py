@@ -18,14 +18,11 @@ from pynumaflow.mapper._dtypes import MapCallable
 from pynumaflow.mapper.proto import map_pb2
 from pynumaflow.mapper.proto import map_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
+from pynumaflow._constants import MAX_THREADS
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
-
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
 class Mapper(map_pb2_grpc.MapServicer):
@@ -56,11 +53,11 @@ class Mapper(map_pb2_grpc.MapServicer):
     """
 
     def __init__(
-        self,
-        handler: MapCallable,
-        sock_path=MAP_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+            self,
+            handler: MapCallable,
+            sock_path=MAP_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
     ):
         self.__map_handler: MapCallable = handler
         self.sock_path = f"unix://{sock_path}"
@@ -74,7 +71,7 @@ class Mapper(map_pb2_grpc.MapServicer):
         ]
 
     def MapFn(
-        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
+            self, request: map_pb2.MapRequest, context: NumaflowServicerContext
     ) -> map_pb2.MapResponse:
         """
         Applies a function to each datum element.
@@ -106,31 +103,10 @@ class Mapper(map_pb2_grpc.MapServicer):
         return map_pb2.MapResponse(results=datums)
 
     def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
         The pascal case function name comes from the proto map_pb2_grpc.py file.
         """
         return map_pb2.ReadyResponse(ready=True)
-
-    def start(self) -> None:
-        """
-        Starts the gRPC server on the given UNIX socket with given max threads.
-        """
-        server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
-        map_pb2_grpc.add_MapServicer_to_server(self, server)
-        server.add_insecure_port(self.sock_path)
-        server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-        )
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
-        _LOGGER.info(
-            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
-        )
-        server.wait_for_termination()

@@ -1,11 +1,11 @@
 import aiorun
 
 from pynumaflow.info.types import Protocol
-from refactor._constants import MAX_THREADS, MAX_MESSAGE_SIZE, _LOGGER, MAP_SOCK_PATH, ServerType
-from refactor.mapper import Mapper, AsyncMapper
-from refactor.mapper._dtypes import MapCallable
-from refactor.mapper.proto import map_pb2_grpc
-from refactor.shared.server import prepare_server, write_info_file, NumaflowServer
+from pynumaflow._constants import MAX_THREADS, MAX_MESSAGE_SIZE, _LOGGER, MAP_SOCK_PATH, ServerType
+from pynumaflow.mapper import Mapper, AsyncMapper
+from pynumaflow.mapper._dtypes import MapCallable
+from pynumaflow.mapper.proto import map_pb2_grpc
+from pynumaflow.shared.server import prepare_server, write_info_file, NumaflowServer
 
 
 class MapServer(NumaflowServer):

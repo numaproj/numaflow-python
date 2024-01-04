@@ -127,3 +127,35 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
         The pascal case function name comes from the proto map_pb2_grpc.py file.
         """
         return map_pb2.ReadyResponse(ready=True)
+
+    async def __serve_async(self, server) -> None:
+        map_pb2_grpc.add_MapServicer_to_server(
+            AsyncMapper(handler=self.__map_handler),
+            server,
+        )
+        server.add_insecure_port(self.sock_path)
+        _LOGGER.info("gRPC Async Map Server listening on: %s", self.sock_path)
+        await server.start()
+        serv_info = ServerInfo(
+            protocol=Protocol.UDS,
+            language=Language.PYTHON,
+            version=get_sdk_version(),
+        )
+        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+
+        async def server_graceful_shutdown():
+            """
+            Shuts down the server with 5 seconds of grace period. During the
+            grace period, the server won't accept new connections and allow
+            existing RPCs to continue within the grace period.
+            """
+            _LOGGER.info("Starting graceful shutdown...")
+            await server.stop(5)
+
+        self.cleanup_coroutines.append(server_graceful_shutdown())
+        await server.wait_for_termination()
+
+    async def start(self) -> None:
+        """Starts the Async gRPC mapper on the given UNIX socket."""
+        server = grpc.aio.server(options=self._server_options)
+        await self.__serve_async(server)

@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import events
 
 import aiorun
 
@@ -46,7 +47,12 @@ class MapServer(NumaflowServer):
         if self.server_type == ServerType.Sync:
             self.exec()
         elif self.server_type == ServerType.Async:
-            aiorun.run(self.aexec())
+            try:
+                loop = events.get_running_loop()
+            except RuntimeError:
+                loop = None
+            _LOGGER.info("Starting Async GRPC Server...", loop)
+            aiorun.run(self.aexec(), loop=loop)
         else:
             raise NotImplementedError
 
@@ -68,6 +74,11 @@ class MapServer(NumaflowServer):
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
         # aiorun.run(self.server.start())
+        try:
+            loop = events.get_running_loop()
+        except RuntimeError:
+            loop = None
+        _LOGGER.info("Loopsie...", loop)
         response_task = asyncio.create_task(
             self.server.start(),
         )

@@ -96,6 +96,7 @@ class MapServer(NumaflowServer):
             sock_path=self.sock_path,
             max_threads=self.max_threads,
             max_message_size=self.max_message_size,
+            server_type=server_type,
         )
         map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
         return server

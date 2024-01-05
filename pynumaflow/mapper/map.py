@@ -2,6 +2,7 @@ import asyncio
 from asyncio import events
 
 import aiorun
+import grpc
 
 from pynumaflow.info.types import Protocol
 from pynumaflow._constants import MAX_THREADS, MAX_MESSAGE_SIZE, _LOGGER, MAP_SOCK_PATH, ServerType
@@ -38,6 +39,7 @@ class MapServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = max_threads
         self.max_message_size = max_message_size
+        self.mapper_instance = mapper_instance
         self.server_type = server_type
         self.background_tasks = set()
         self.cleanup_coroutines = []
@@ -54,9 +56,9 @@ class MapServer(NumaflowServer):
                 loop = events.get_running_loop()
             except RuntimeError:
                 loop = asyncio.new_event_loop()
-            global _loop
-            _loop = loop
-            aiorun.run(self.aexec(), loop=_loop)
+            # global _loop
+            # _loop = loop
+            aiorun.run(self.aexec())
         else:
             raise NotImplementedError
 
@@ -73,10 +75,15 @@ class MapServer(NumaflowServer):
         )
         self.server.wait_for_termination()
 
-    async def aexec(self):
+    async def aexec(self) -> None:
         """
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
+        server = grpc.aio.server()
+        server.add_insecure_port(self.sock_path)
+        map_servicer = AsyncMapper(handler=self.mapper_instance)
+        map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
+
         # aiorun.run(self.server.start())
         # global _loop
         # asyncio.run_coroutine_threadsafe(self.server.start(), _loop)
@@ -94,7 +101,7 @@ class MapServer(NumaflowServer):
 
         write_info_file(Protocol.UDS)
         _LOGGER.info(
-            "Async Map GRPC Server listening on: %s with max threads: %s",
+            "Async Map New GRPC Server listening on: %s with max threads: %s",
             self.sock_path,
             self.max_threads,
         )

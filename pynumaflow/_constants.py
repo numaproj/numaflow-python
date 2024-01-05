@@ -26,7 +26,7 @@ DELIMITER = ":"
 DROP = "U+005C__DROP__"
 
 _PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
@@ -40,3 +40,4 @@ class ServerType(str, Enum):
 
     Sync = "sync"
     Async = "async"
+    Multiproc = "multiproc"

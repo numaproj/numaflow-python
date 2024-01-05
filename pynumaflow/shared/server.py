@@ -1,9 +1,26 @@
+import contextlib
+import multiprocessing
+import socket
 from abc import abstractmethod
-from concurrent.futures import ThreadPoolExecutor
+from concurrent import futures
+from collections.abc import Iterator
+
 import grpc
-from pynumaflow._constants import MAX_MESSAGE_SIZE, MAX_THREADS, ServerType, _LOGGER
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
+from pynumaflow._constants import (
+    MAX_THREADS,
+    ServerType,
+    _LOGGER,
+    MULTIPROC_MAP_SOCK_ADDR,
+)
+from pynumaflow.exceptions import SocketError
+from pynumaflow.info.server import get_sdk_version, write as info_server_write, get_metadata_env
+from pynumaflow.info.types import (
+    ServerInfo,
+    Protocol,
+    Language,
+    SERVER_INFO_FILE_PATH,
+    METADATA_ENVS,
+)
 
 
 class NumaflowServer:
@@ -29,8 +46,9 @@ class NumaflowServer:
 def prepare_server(
     sock_path: str,
     server_type: ServerType,
-    max_message_size=MAX_MESSAGE_SIZE,
     max_threads=MAX_THREADS,
+    server_options=None,
+    process_count=1,
 ):
     """
     Create a new grpc Server instance.
@@ -38,15 +56,18 @@ def prepare_server(
     The server instance is returned.
 
     """
-    _server_options = [
-        ("grpc.max_send_message_length", max_message_size),
-        ("grpc.max_receive_message_length", max_message_size),
-    ]
-    server = grpc.server(ThreadPoolExecutor(max_workers=max_threads), options=_server_options)
-    if server_type == ServerType.Async:
-        server = grpc.aio.server(options=_server_options)
-    server.add_insecure_port(sock_path)
-    return server
+    if server_type == ServerType.Sync:
+        server = _get_sync_server(
+            bind_address=sock_path, threads_per_proc=max_threads, server_options=server_options
+        )
+        return server
+    elif server_type == ServerType.Multiproc:
+        servers, server_ports = get_multiproc_servers(
+            max_threads=max_threads,
+            server_options=server_options,
+            process_count=process_count,
+        )
+        return servers, server_ports
 
 
 def write_info_file(protocol: Protocol) -> None:
@@ -61,7 +82,84 @@ def write_info_file(protocol: Protocol) -> None:
     info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
 
-async def __serve_async(self, server) -> None:
+def start_sync_server(server: grpc.Server):
+    """
+    Starts the Synchronous server instance on the given UNIX socket with given max threads.
+    Write information about the server to the server info file.
+    Wait for the server to terminate.
+    """
+    # Start the server
+    server.start()
+    # Add the server information to the server info file,
+    # here we just write the protocol and language information
+    write_info_file(Protocol.UDS)
+    # Wait for the server to terminate
+    server.wait_for_termination()
+
+
+def start_multiproc_server(servers: list, server_ports: list, max_threads: int):
+    """
+    Start N grpc servers in different processes where N = The number of CPUs or the
+    value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
+    is set to 2 * CPU count.
+    Each server will be bound to a different port, and we will create equal number of
+    workers to handle each server.
+    On the client side there will be same number of connections as the number of servers.
+    """
+    workers = []
+    _LOGGER.info(
+        "Starting new Multiproc server with num_procs: %s, num_threads/proc: %s",
+        len(servers),
+        max_threads,
+    )
+    for server in servers:
+        # NOTE: It is imperative that the worker subprocesses be forked before
+        # any gRPC servers start up. See
+        # https://github.com/grpc/grpc/issues/16001 for more details.
+        worker = multiprocessing.Process(target=start_sync_server, args=(server,))
+        worker.start()
+        workers.append(worker)
+
+    for port in server_ports:
+        _LOGGER.info("Starting server on port: %s", port)
+
+    # Convert the available ports to a comma separated string
+    ports = ",".join(map(str, server_ports))
+
+    serv_info = ServerInfo(
+        protocol=Protocol.TCP,
+        language=Language.PYTHON,
+        version=get_sdk_version(),
+        metadata=get_metadata_env(envs=METADATA_ENVS),
+    )
+    # Add the PORTS metadata using the available ports
+    serv_info.metadata["SERV_PORTS"] = ports
+    info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+    for worker in workers:
+        worker.join()
+
+
+async def start_async_server(
+    server_async: grpc.aio.Server, sock_path: str, max_threads: int, cleanup_coroutines: list
+):
+    """
+    Starts the Async server instance on the given UNIX socket with given max threads.
+    Add the server graceful shutdown coroutine to the cleanup_coroutines list.
+    Wait for the server to terminate.
+    """
+    await server_async.start()
+
+    # Add the server information to the server info file
+    # Here we just write the protocol and language information
+    write_info_file(Protocol.UDS)
+
+    # Log the server start
+    _LOGGER.info(
+        "New Async GRPC Server listening on: %s with max threads: %s",
+        sock_path,
+        max_threads,
+    )
+
     async def server_graceful_shutdown():
         """
         Shuts down the server with 5 seconds of grace period. During the
@@ -69,13 +167,78 @@ async def __serve_async(self, server) -> None:
         existing RPCs to continue within the grace period.
         """
         _LOGGER.info("Starting graceful shutdown...")
-        await server.stop(5)
+        await server_async.stop(5)
 
-    self.cleanup_coroutines.append(server_graceful_shutdown())
-    await server.wait_for_termination()
+    cleanup_coroutines.append(server_graceful_shutdown())
+    await server_async.wait_for_termination()
 
 
-async def start(self) -> None:
-    """Starts the Async gRPC mapper on the given UNIX socket."""
-    server = grpc.aio.server(options=self._server_options)
-    await self.__serve_async(server)
+# async def __serve_async(self, server) -> None:
+#     async def server_graceful_shutdown():
+#         """
+#         Shuts down the server with 5 seconds of grace period. During the
+#         grace period, the server won't accept new connections and allow
+#         existing RPCs to continue within the grace period.
+#         """
+#         _LOGGER.info("Starting graceful shutdown...")
+#         await server.stop(5)
+#
+#     self.cleanup_coroutines.append(server_graceful_shutdown())
+#     await server.wait_for_termination()
+#
+#
+# async def start(self) -> None:
+#     """Starts the Async gRPC mapper on the given UNIX socket."""
+#     server = grpc.aio.server(options=self._server_options)
+#     await self.__serve_async(server)
+
+
+def _get_sync_server(bind_address: str, threads_per_proc: int, server_options: list) -> grpc.Server:
+    """Get a new sync grpc server instance."""
+
+    server = grpc.server(
+        futures.ThreadPoolExecutor(
+            max_workers=threads_per_proc,
+        ),
+        options=server_options,
+    )
+    server.add_insecure_port(bind_address)
+    return server
+    # server.start()
+    # _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
+    # server.wait_for_termination()
+
+
+@contextlib.contextmanager
+def _reserve_port(port_num: int) -> Iterator[int]:
+    """Find and reserve a port for all subprocesses to use."""
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    if sock.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR) == 0:
+        raise SocketError("Failed to set SO_REUSEADDR.")
+    try:
+        sock.bind(("", port_num))
+        yield sock.getsockname()[1]
+    finally:
+        sock.close()
+
+
+def get_multiproc_servers(process_count: int, max_threads=MAX_THREADS, server_options=None):
+    # workers = []
+    server_ports = []
+    servers = []
+    for _ in range(process_count):
+        # Find a port to bind to for each server, thus sending the port number = 0
+        # to the _reserve_port function so that kernel can find and return a free port
+        with _reserve_port(port_num=0) as port:
+            bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
+            server = _get_sync_server(
+                bind_address=bind_address,
+                threads_per_proc=max_threads,
+                server_options=server_options,
+            )
+
+            servers.append(server)
+            server_ports.append(port)
+
+    return servers, server_ports

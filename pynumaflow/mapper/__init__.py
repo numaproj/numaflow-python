@@ -1,11 +1,4 @@
-from pynumaflow.mapper._dtypes import (
-    Message,
-    Messages,
-    Datum,
-    DROP,
-    MapperClass
-
-)
+from pynumaflow.mapper._dtypes import Message, Messages, Datum, DROP, MapperClass
 from pynumaflow.mapper.async_server import AsyncMapper
 
 # from pynumaflow.mapper.multiproc_server import MultiProcMapper

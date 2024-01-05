@@ -109,7 +109,7 @@ class MapServer(NumaflowServer):
             await self.server.stop(5)
 
         self.cleanup_coroutines.append(server_graceful_shutdown())
-        await self.server.wait_for_termination()
+        asyncio.run_coroutine_threadsafe(self.server.wait_for_termination(), _loop)
 
     def get_server(self, server_type, mapper_instance: MapCallable):
         if server_type == ServerType.Sync:

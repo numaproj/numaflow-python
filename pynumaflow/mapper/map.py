@@ -78,8 +78,8 @@ class MapServer(NumaflowServer):
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
         # aiorun.run(self.server.start())
-        global _loop
-        asyncio.run_coroutine_threadsafe(self.server.start(), _loop)
+        # global _loop
+        # asyncio.run_coroutine_threadsafe(self.server.start(), _loop)
         # response_task = asyncio.create_task(
         #     self.server.start(),
         # )
@@ -90,11 +90,11 @@ class MapServer(NumaflowServer):
         # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
         #
         # await response_task
-        # await self.server.start()
+        await self.server.start()
 
         write_info_file(Protocol.UDS)
         _LOGGER.info(
-            "Async GRPC Server listening on: %s with max threads: %s",
+            "Async Map GRPC Server listening on: %s with max threads: %s",
             self.sock_path,
             self.max_threads,
         )
@@ -109,7 +109,8 @@ class MapServer(NumaflowServer):
             await self.server.stop(5)
 
         self.cleanup_coroutines.append(server_graceful_shutdown())
-        asyncio.run_coroutine_threadsafe(self.server.wait_for_termination(), _loop)
+        # asyncio.run_coroutine_threadsafe(self.server.wait_for_termination(), _loop)
+        await self.server.wait_for_termination()
 
     def get_server(self, server_type, mapper_instance: MapCallable):
         if server_type == ServerType.Sync:

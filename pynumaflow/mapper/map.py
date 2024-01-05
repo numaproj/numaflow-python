@@ -39,6 +39,10 @@ class MapServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = max_threads
         self.max_message_size = max_message_size
+        self._server_options = [
+            ("grpc.max_send_message_length", max_message_size),
+            ("grpc.max_receive_message_length", max_message_size),
+        ]
         self.mapper_instance = mapper_instance
         self.server_type = server_type
         self.background_tasks = set()
@@ -56,8 +60,7 @@ class MapServer(NumaflowServer):
                 loop = events.get_running_loop()
             except RuntimeError:
                 loop = asyncio.new_event_loop()
-            # global _loop
-            # _loop = loop
+            _LOGGER.info("Starting Async Map Server with aiorun...")
             aiorun.run(self.aexec())
         else:
             raise NotImplementedError

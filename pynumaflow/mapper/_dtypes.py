@@ -1,3 +1,4 @@
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
@@ -166,7 +167,7 @@ MapSyncCallable = Callable[[list[str], Datum], Messages]
 MapAsyncCallable = Callable[[list[str], Datum], Awaitable[Messages]]
 
 
-class MapperClass:
+class MapperClass(metaclass=ABCMeta):
     """
     Provides an interface to write a Mapper
     which will be exposed over a Synchronous gRPC server.
@@ -181,11 +182,12 @@ class MapperClass:
         """
         return self.handler(*args, **kwargs)
 
+    @abstractmethod
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         """
         Write a handler function which implements the MapCallable interface.
         """
-        raise NotImplementedError
+        pass
 
 
 MapCallable = Union[MapperClass, MapSyncCallable, MapAsyncCallable]

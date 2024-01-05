@@ -12,18 +12,19 @@ from pynumaflow.shared.server import prepare_server, write_info_file, NumaflowSe
 
 _loop = None
 
+
 class MapServer(NumaflowServer):
     """
     Create a new grpc Server instance.
     """
 
     def __init__(
-        self,
-        mapper_instance: MapCallable,
-        sock_path=MAP_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
-        server_type=ServerType.Sync,
+            self,
+            mapper_instance: MapCallable,
+            sock_path=MAP_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
+            server_type=ServerType.Sync,
     ):
         """
         Create a new grpc Server instance.
@@ -39,6 +40,7 @@ class MapServer(NumaflowServer):
         self.max_message_size = max_message_size
         self.server_type = server_type
         self.background_tasks = set()
+        self.cleanup_coroutines = []
         self.server = self.get_server(server_type=server_type, mapper_instance=mapper_instance)
 
     def start(self) -> None:
@@ -88,6 +90,7 @@ class MapServer(NumaflowServer):
         # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
         #
         # await response_task
+        # await self.server.start()
 
         write_info_file(Protocol.UDS)
         _LOGGER.info(
@@ -105,7 +108,7 @@ class MapServer(NumaflowServer):
             _LOGGER.info("Starting graceful shutdown...")
             await self.server.stop(5)
 
-        self.server.cleanup_coroutines.append(server_graceful_shutdown())
+        self.cleanup_coroutines.append(server_graceful_shutdown())
         await self.server.wait_for_termination()
 
     def get_server(self, server_type, mapper_instance: MapCallable):

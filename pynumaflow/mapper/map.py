@@ -10,6 +10,7 @@ from pynumaflow.mapper._dtypes import MapCallable
 from pynumaflow.mapper.proto import map_pb2_grpc
 from pynumaflow.shared.server import prepare_server, write_info_file, NumaflowServer
 
+_loop = None
 
 class MapServer(NumaflowServer):
     """
@@ -50,9 +51,10 @@ class MapServer(NumaflowServer):
             try:
                 loop = events.get_running_loop()
             except RuntimeError:
-                loop = None
-            _LOGGER.info("Starting Async GRPC Server...", loop)
-            aiorun.run(self.aexec(), loop=loop)
+                loop = asyncio.new_event_loop()
+            global _loop
+            _loop = loop
+            aiorun.run(self.aexec(), loop=_loop)
         else:
             raise NotImplementedError
 
@@ -74,21 +76,18 @@ class MapServer(NumaflowServer):
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
         # aiorun.run(self.server.start())
-        try:
-            loop = events.get_running_loop()
-        except RuntimeError:
-            loop = None
-        _LOGGER.info("Loopsie...", loop)
-        response_task = asyncio.create_task(
-            self.server.start(),
-        )
-
-        # Save a reference to the result of this function, to avoid a
-        # task disappearing mid-execution.
-        self.background_tasks.add(response_task)
-        response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
-
-        await response_task
+        global _loop
+        asyncio.run_coroutine_threadsafe(self.server.start(), _loop)
+        # response_task = asyncio.create_task(
+        #     self.server.start(),
+        # )
+        #
+        # # Save a reference to the result of this function, to avoid a
+        # # task disappearing mid-execution.
+        # self.background_tasks.add(response_task)
+        # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
+        #
+        # await response_task
 
         write_info_file(Protocol.UDS)
         _LOGGER.info(

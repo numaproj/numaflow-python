@@ -87,19 +87,6 @@ class MapServer(NumaflowServer):
         map_servicer = AsyncMapper(handler=self.mapper_instance)
         map_pb2_grpc.add_MapServicer_to_server(map_servicer, server_new)
 
-        # aiorun.run(self.server.start())
-        # global _loop
-        # asyncio.run_coroutine_threadsafe(self.server.start(), _loop)
-        # response_task = asyncio.create_task(
-        #     self.server.start(),
-        # )
-        #
-        # # Save a reference to the result of this function, to avoid a
-        # # task disappearing mid-execution.
-        # self.background_tasks.add(response_task)
-        # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
-        #
-        # await response_task
         await server_new.start()
 
         write_info_file(Protocol.UDS)

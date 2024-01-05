@@ -3,6 +3,8 @@ from pynumaflow.mapper._dtypes import (
     Messages,
     Datum,
     DROP,
+    MapperClass
+
 )
 from pynumaflow.mapper.async_server import AsyncMapper
 
@@ -18,5 +20,6 @@ __all__ = [
     "Mapper",
     "AsyncMapper",
     "ServerType",
+    "MapperClass",
     # "MultiProcMapper",
 ]

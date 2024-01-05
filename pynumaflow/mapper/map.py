@@ -79,10 +79,10 @@ class MapServer(NumaflowServer):
         """
         Starts the gRPC server on the given UNIX socket with given max threads.s
         """
-        server = grpc.aio.server()
-        server.add_insecure_port(self.sock_path)
+        server_new = grpc.aio.server()
+        server_new.add_insecure_port(self.sock_path)
         map_servicer = AsyncMapper(handler=self.mapper_instance)
-        map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
+        map_pb2_grpc.add_MapServicer_to_server(map_servicer, server_new)
 
         # aiorun.run(self.server.start())
         # global _loop
@@ -97,7 +97,7 @@ class MapServer(NumaflowServer):
         # response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
         #
         # await response_task
-        await self.server.start()
+        await server_new.start()
 
         write_info_file(Protocol.UDS)
         _LOGGER.info(
@@ -113,11 +113,11 @@ class MapServer(NumaflowServer):
             existing RPCs to continue within the grace period.
             """
             _LOGGER.info("Starting graceful shutdown...")
-            await self.server.stop(5)
+            await server_new.stop(5)
 
         self.cleanup_coroutines.append(server_graceful_shutdown())
         # asyncio.run_coroutine_threadsafe(self.server.wait_for_termination(), _loop)
-        await self.server.wait_for_termination()
+        await server_new.wait_for_termination()
 
     def get_server(self, server_type, mapper_instance: MapCallable):
         if server_type == ServerType.Sync:

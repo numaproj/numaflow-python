@@ -11,8 +11,8 @@ from pynumaflow.shared.server import (
     prepare_server,
     NumaflowServer,
     start_async_server,
-    start_sync_server,
     start_multiproc_server,
+    sync_server_start,
 )
 
 
@@ -50,9 +50,11 @@ class MapServer(NumaflowServer):
         self._server_options = [
             ("grpc.max_send_message_length", self.max_message_size),
             ("grpc.max_receive_message_length", self.max_message_size),
-            ("grpc.so_reuseport", 1),
-            ("grpc.so_reuseaddr", 1),
         ]
+        if server_type == ServerType.Multiproc:
+            self._server_options.append(("grpc.so_reuseport", 1))
+            self._server_options.append(("grpc.so_reuseaddr", 1))
+
         # Set the number of processes to be spawned to the number of CPUs or
         # the value of the env var NUM_CPU_MULTIPROC defined by the user
         # Setting the max value to 2 * CPU count
@@ -88,7 +90,8 @@ class MapServer(NumaflowServer):
         map_servicer = self.get_servicer(
             mapper_instance=self.mapper_instance, server_type=self.server_type
         )
-        map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
+        _LOGGER.info("Starting Sync Map Server...")
+        map_pb2_grpc.add_MapServicer_to_server(servicer=map_servicer, server=server)
         # server.start()
         # write_info_file(Protocol.UDS)
         # _LOGGER.info(
@@ -103,7 +106,7 @@ class MapServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
-        start_sync_server(server=server)
+        sync_server_start(server=server)
 
     def exec_multiproc(self):
         """

@@ -5,7 +5,6 @@ from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
-    MAX_MESSAGE_SIZE,
     MAP_SOCK_PATH,
 )
 from pynumaflow.mapper._dtypes import MapCallable
@@ -13,7 +12,6 @@ from pynumaflow.mapper.proto import map_pb2
 from pynumaflow.mapper.proto import map_pb2_grpc
 from pynumaflow.mapper.utils import _map_fn_util
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import MAX_THREADS
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):

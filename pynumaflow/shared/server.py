@@ -2,8 +2,8 @@ import contextlib
 import multiprocessing
 import socket
 from abc import abstractmethod
-from concurrent import futures
 from collections.abc import Iterator
+from concurrent.futures import ThreadPoolExecutor
 
 import grpc
 from pynumaflow._constants import (
@@ -82,17 +82,24 @@ def write_info_file(protocol: Protocol) -> None:
     info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
 
-def start_sync_server(server: grpc.Server):
+def sync_server_start(server: grpc.Server):
     """
     Starts the Synchronous server instance on the given UNIX socket with given max threads.
-    Write information about the server to the server info file.
+    Wait for the server to terminate.
+    """
+    start_sync_server_util(server=server)
+    # Add the server information to the server info file,
+    # here we just write the protocol and language information
+    write_info_file(Protocol.UDS)
+
+
+def start_sync_server_util(server: grpc.Server):
+    """
+    Starts the Synchronous server instance on the given UNIX socket with given max threads.
     Wait for the server to terminate.
     """
     # Start the server
     server.start()
-    # Add the server information to the server info file,
-    # here we just write the protocol and language information
-    write_info_file(Protocol.UDS)
     # Wait for the server to terminate
     server.wait_for_termination()
 
@@ -116,7 +123,7 @@ def start_multiproc_server(servers: list, server_ports: list, max_threads: int):
         # NOTE: It is imperative that the worker subprocesses be forked before
         # any gRPC servers start up. See
         # https://github.com/grpc/grpc/issues/16001 for more details.
-        worker = multiprocessing.Process(target=start_sync_server, args=(server,))
+        worker = multiprocessing.Process(target=start_sync_server_util, args=(server,))
         worker.start()
         workers.append(worker)
 
@@ -193,16 +200,19 @@ async def start_async_server(
 #     await self.__serve_async(server)
 
 
-def _get_sync_server(bind_address: str, threads_per_proc: int, server_options: list) -> grpc.Server:
+def _get_sync_server(bind_address: str, threads_per_proc: int, server_options: list):
     """Get a new sync grpc server instance."""
-
-    server = grpc.server(
-        futures.ThreadPoolExecutor(
-            max_workers=threads_per_proc,
-        ),
-        options=server_options,
-    )
-    server.add_insecure_port(bind_address)
+    try:
+        server = grpc.server(
+            ThreadPoolExecutor(
+                max_workers=threads_per_proc,
+            ),
+            options=server_options,
+        )
+        server.add_insecure_port(bind_address)
+    except Exception as err:
+        _LOGGER.critical("Failed to start server: %s", err, exc_info=True)
+        raise err
     return server
     # server.start()
     # _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())

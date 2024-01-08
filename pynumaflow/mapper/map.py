@@ -23,12 +23,12 @@ class MapServer(NumaflowServer):
     """
 
     def __init__(
-        self,
-        mapper_instance: MapCallable,
-        sock_path=MAP_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
-        server_type=ServerType.Sync,
+            self,
+            mapper_instance: MapCallable,
+            sock_path=MAP_SOCK_PATH,
+            max_message_size=MAX_MESSAGE_SIZE,
+            max_threads=MAX_THREADS,
+            server_type=ServerType.Sync,
     ):
         """
         Create a new grpc Server instance.
@@ -86,20 +86,20 @@ class MapServer(NumaflowServer):
         """
         Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
-        server = prepare_server(sock_path=self.sock_path, server_type=self.server_type,
-                                max_threads=self.max_threads, server_options=self._server_options)
+        # server = prepare_server(sock_path=self.sock_path, server_type=self.server_type,
+        #                         max_threads=self.max_threads, server_options=self._server_options)
         map_servicer = self.get_servicer(
             mapper_instance=self.mapper_instance, server_type=self.server_type
         )
-        # server = grpc.server(
-        #     ThreadPoolExecutor(
-        #         max_workers=self.max_threads,
-        #     ),
-        #     options=self._server_options,
-        # )
-        # self.server.add_insecure_port(self.sock_path)
-        _LOGGER.info("Starting Sync Map Server...")
-        map_pb2_grpc.add_MapServicer_to_server(servicer=map_servicer, server=server)
+        # # server = grpc.server(
+        # #     ThreadPoolExecutor(
+        # #         max_workers=self.max_threads,
+        # #     ),
+        # #     options=self._server_options,
+        # # )
+        # # self.server.add_insecure_port(self.sock_path)
+        # _LOGGER.info("Starting Sync Map Server...")
+        # map_pb2_grpc.add_MapServicer_to_server(servicer=map_servicer, server=server)
 
         # server.start()
         # write_info_file(Protocol.UDS)
@@ -115,7 +115,12 @@ class MapServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
-        sync_server_start(server=server)
+        # sync_server_start(server=server)
+        sync_server_start(servicer=map_servicer,
+                          bind_address=self.sock_path,
+                          max_threads=self.max_threads,
+                          server_options=self._server_options,
+                          udf_type="Map")
 
     def exec_multiproc(self):
         """
@@ -137,7 +142,7 @@ class MapServer(NumaflowServer):
 
         start_multiproc_server(max_threads=self.max_threads, servicer=map_servicer,
                                process_count=self._process_count,
-                               server_options=self._server_options)
+                               server_options=self._server_options, udf_type="Map")
         # server.start()
         # write_info_file(Protocol.UDS)
         # _LOGGER.info(

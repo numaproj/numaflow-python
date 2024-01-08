@@ -121,23 +121,23 @@ class MapServer(NumaflowServer):
         """
         Starts the gRPC server on the given UNIX socket with given max threads.
         """
-        servers, server_ports = prepare_server(
-            server_type=self.server_type,
-            max_threads=self.max_threads,
-            server_options=self._server_options,
-            process_count=self._process_count,
-            sock_path=self.sock_path,
-        )
+        # servers, server_ports = prepare_server(
+        #     server_type=self.server_type,
+        #     max_threads=self.max_threads,
+        #     server_options=self._server_options,
+        #     process_count=self._process_count,
+        #     sock_path=self.sock_path,
+        # )
 
         map_servicer = self.get_servicer(
             mapper_instance=self.mapper_instance, server_type=self.server_type
         )
-        for server in servers:
-            map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
+        # for server in servers:
+        #     map_pb2_grpc.add_MapServicer_to_server(map_servicer, server)
 
-        start_multiproc_server(
-            servers=servers, server_ports=server_ports, max_threads=self.max_threads
-        )
+        start_multiproc_server(max_threads=self.max_threads, servicer=map_servicer,
+                               process_count=self._process_count,
+                               server_options=self._server_options)
         # server.start()
         # write_info_file(Protocol.UDS)
         # _LOGGER.info(

@@ -1,5 +1,6 @@
 import contextlib
 import multiprocessing
+import os
 import socket
 from abc import abstractmethod
 from collections.abc import Iterator
@@ -21,6 +22,7 @@ from pynumaflow.info.types import (
     SERVER_INFO_FILE_PATH,
     METADATA_ENVS,
 )
+from pynumaflow.mapper.proto import map_pb2_grpc
 
 
 class NumaflowServer:
@@ -61,13 +63,13 @@ def prepare_server(
             bind_address=sock_path, threads_per_proc=max_threads, server_options=server_options
         )
         return server
-    elif server_type == ServerType.Multiproc:
-        servers, server_ports = get_multiproc_servers(
-            max_threads=max_threads,
-            server_options=server_options,
-            process_count=process_count,
-        )
-        return servers, server_ports
+    # elif server_type == ServerType.Multiproc:
+    #     servers, server_ports = get_multiproc_servers(
+    #         max_threads=max_threads,
+    #         server_options=server_options,
+    #         process_count=process_count,
+    #     )
+    #     return servers, server_ports
 
 
 def write_info_file(protocol: Protocol) -> None:
@@ -96,6 +98,7 @@ def sync_server_start(server: grpc.Server):
     # Wait for the server to terminate
     server.wait_for_termination()
 
+
 def start_sync_server_util(server: grpc.Server):
     """
     Starts the Synchronous server instance on the given UNIX socket with given max threads.
@@ -107,7 +110,23 @@ def start_sync_server_util(server: grpc.Server):
     server.wait_for_termination()
 
 
-def start_multiproc_server(servers: list, server_ports: list, max_threads: int):
+def _run_server(servicer, bind_address: str, threads_per_proc, server_options) -> None:
+    """Start a server in a subprocess."""
+    server = grpc.server(
+        ThreadPoolExecutor(
+            max_workers=threads_per_proc,
+        ),
+        options=server_options,
+    )
+    map_pb2_grpc.add_MapServicer_to_server(servicer, server)
+    server.add_insecure_port(bind_address)
+    server.start()
+    _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
+    server.wait_for_termination()
+
+
+def start_multiproc_server(max_threads: int, servicer,
+                           process_count: int, server_options=None):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
     value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
@@ -116,22 +135,28 @@ def start_multiproc_server(servers: list, server_ports: list, max_threads: int):
     workers to handle each server.
     On the client side there will be same number of connections as the number of servers.
     """
-    workers = []
+
     _LOGGER.info(
-        "Starting new Multiproc server with num_procs: %s, num_threads/proc: %s",
-        len(servers),
+        "Starting new Multiproc server with num_procs: %s, num_threads per proc: %s",
+        process_count,
         max_threads,
     )
-    for server in servers:
-        # NOTE: It is imperative that the worker subprocesses be forked before
-        # any gRPC servers start up. See
-        # https://github.com/grpc/grpc/issues/16001 for more details.
-        worker = multiprocessing.Process(target=start_sync_server_util, args=(server,))
-        worker.start()
-        workers.append(worker)
-
-    for port in server_ports:
-        _LOGGER.info("Starting server on port: %s", port)
+    workers = []
+    server_ports = []
+    for _ in range(process_count):
+        # Find a port to bind to for each server, thus sending the port number = 0
+        # to the _reserve_port function so that kernel can find and return a free port
+        with _reserve_port(port_num=0) as port:
+            bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
+            _LOGGER.info("Starting server on port: %s", port)
+            # NOTE: It is imperative that the worker subprocesses be forked before
+            # any gRPC servers start up. See
+            # https://github.com/grpc/grpc/issues/16001 for more details.
+            worker = multiprocessing.Process(target=_run_server, args=(servicer, bind_address,
+                                                                       max_threads, server_options))
+            worker.start()
+            workers.append(worker)
+            server_ports.append(port)
 
     # Convert the available ports to a comma separated string
     ports = ",".join(map(str, server_ports))
@@ -239,21 +264,21 @@ def _reserve_port(port_num: int) -> Iterator[int]:
         sock.close()
 
 
-def get_multiproc_servers(process_count: int, max_threads=MAX_THREADS, server_options=None):
-    # workers = []
-    server_ports = []
-    servers = []
-    for _ in range(process_count):
-        # Find a port to bind to for each server, thus sending the port number = 0
-        # to the _reserve_port function so that kernel can find and return a free port
-        with _reserve_port(port_num=0) as port:
-            bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
-            server = _get_sync_server(
-                bind_address=bind_address,
-                threads_per_proc=max_threads,
-                server_options=server_options,
-            )
-            servers.append(server)
-            server_ports.append(port)
-
-    return servers, server_ports
+# def get_multiproc_servers(process_count: int, max_threads=MAX_THREADS, server_options=None):
+#     # workers = []
+#     server_ports = []
+#     servers = []
+#     for _ in range(process_count):
+#         # Find a port to bind to for each server, thus sending the port number = 0
+#         # to the _reserve_port function so that kernel can find and return a free port
+#         with _reserve_port(port_num=0) as port:
+#             bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
+#             server = _get_sync_server(
+#                 bind_address=bind_address,
+#                 threads_per_proc=max_threads,
+#                 server_options=server_options,
+#             )
+#             servers.append(server)
+#             server_ports.append(port)
+#
+#     return servers, server_ports

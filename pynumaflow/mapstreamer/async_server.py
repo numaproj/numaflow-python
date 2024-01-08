@@ -7,10 +7,6 @@ from collections.abc import AsyncIterable
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import (
-    MAX_MESSAGE_SIZE,
-    MAP_STREAM_SOCK_PATH,
-)
 from pynumaflow.mapstreamer import Datum
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable
 from pynumaflow.mapstreamer.proto import mapstream_pb2

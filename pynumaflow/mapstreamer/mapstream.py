@@ -3,7 +3,7 @@ import os
 import aiorun
 import grpc
 
-from pynumaflow.mapstreamer import AsyncMapStreamer
+from pynumaflow.mapstreamer.async_server import AsyncMapStreamer
 from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
 
 from pynumaflow._constants import (

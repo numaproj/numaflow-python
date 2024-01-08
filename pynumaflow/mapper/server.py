@@ -4,9 +4,6 @@ import os
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import (
-    MAP_SOCK_PATH,
-)
 from pynumaflow.mapper._dtypes import MapCallable
 from pynumaflow.mapper.proto import map_pb2
 from pynumaflow.mapper.proto import map_pb2_grpc
@@ -48,10 +45,8 @@ class Mapper(map_pb2_grpc.MapServicer):
     def __init__(
         self,
         handler: MapCallable,
-        sock_path=MAP_SOCK_PATH,
     ):
         self.__map_handler: MapCallable = handler
-        self.sock_path = f"unix://{sock_path}"
 
     def MapFn(
         self, request: map_pb2.MapRequest, context: NumaflowServicerContext

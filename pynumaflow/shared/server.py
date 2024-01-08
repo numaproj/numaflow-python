@@ -8,8 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import grpc
 from pynumaflow._constants import (
-    MAX_THREADS,
-    ServerType,
     _LOGGER,
     MULTIPROC_MAP_SOCK_ADDR,
 )
@@ -45,31 +43,31 @@ class NumaflowServer:
         raise NotImplementedError
 
 
-def prepare_server(
-        sock_path: str,
-        server_type: ServerType,
-        max_threads=MAX_THREADS,
-        server_options=None,
-        process_count=1,
-):
-    """
-    Create a new grpc Server instance.
-    A new servicer instance is created and attached to the server.
-    The server instance is returned.
-
-    """
-    if server_type == ServerType.Sync:
-        server = _get_sync_server(
-            bind_address=sock_path, threads_per_proc=max_threads, server_options=server_options
-        )
-        return server
-    # elif server_type == ServerType.Multiproc:
-    #     servers, server_ports = get_multiproc_servers(
-    #         max_threads=max_threads,
-    #         server_options=server_options,
-    #         process_count=process_count,
-    #     )
-    #     return servers, server_ports
+# def prepare_server(
+#         sock_path: str,
+#         server_type: ServerType,
+#         max_threads=MAX_THREADS,
+#         server_options=None,
+#         process_count=1,
+# ):
+#     """
+#     Create a new grpc Server instance.
+#     A new servicer instance is created and attached to the server.
+#     The server instance is returned.
+#
+#     """
+#     if server_type == ServerType.Sync:
+#         server = _get_sync_server(
+#             bind_address=sock_path, threads_per_proc=max_threads, server_options=server_options
+#         )
+#         return server
+#     # elif server_type == ServerType.Multiproc:
+#     #     servers, server_ports = get_multiproc_servers(
+#     #         max_threads=max_threads,
+#     #         server_options=server_options,
+#     #         process_count=process_count,
+#     #     )
+#     #     return servers, server_ports
 
 
 def write_info_file(protocol: Protocol) -> None:
@@ -84,43 +82,38 @@ def write_info_file(protocol: Protocol) -> None:
     info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
 
-def sync_server_start(servicer, bind_address: str, max_threads: int,
-                      server_options=None, udf_type: str = "Map"):
+def sync_server_start(
+    servicer, bind_address: str, max_threads: int, server_options=None, udf_type: str = "Map"
+):
     """
     Starts the Synchronous server instance on the given UNIX socket with given max threads.
     Wait for the server to terminate.
     """
-    # # start_sync_server_util(server=server)
-    # # Start the server
-    # server.start()
-    # # Add the server information to the server info file,
-    # # here we just write the protocol and language information
-    # write_info_file(Protocol.UDS)
-    # # Wait for the server to terminate
-    # server.wait_for_termination()
+    # Add the server information to the server info file,
+    # here we just write the protocol and language information
     server_info = ServerInfo(
         protocol=Protocol.UDS,
         language=Language.PYTHON,
         version=get_sdk_version(),
     )
-    _run_server(servicer=servicer, bind_address=bind_address, threads_per_proc=max_threads,
-                server_options=server_options, udf_type=udf_type, server_info=server_info)
+    # Run a sync server instances
+    _run_server(
+        servicer=servicer,
+        bind_address=bind_address,
+        threads_per_proc=max_threads,
+        server_options=server_options,
+        udf_type=udf_type,
+        server_info=server_info,
+    )
 
 
-def start_sync_server_util(server: grpc.Server):
+def _run_server(
+    servicer, bind_address: str, threads_per_proc, server_options, udf_type: str, server_info=None
+) -> None:
     """
-    Starts the Synchronous server instance on the given UNIX socket with given max threads.
-    Wait for the server to terminate.
+    Starts the Synchronous server instance on the given UNIX socket
+    with given max threads. Wait for the server to terminate.
     """
-    # Start the server
-    server.start()
-    # Wait for the server to terminate
-    server.wait_for_termination()
-
-
-def _run_server(servicer, bind_address: str, threads_per_proc, server_options,
-                udf_type: str, server_info=None) -> None:
-    """Start a server in a subprocess."""
     server = grpc.server(
         ThreadPoolExecutor(
             max_workers=threads_per_proc,
@@ -139,9 +132,9 @@ def _run_server(servicer, bind_address: str, threads_per_proc, server_options,
     server.wait_for_termination()
 
 
-def start_multiproc_server(max_threads: int, servicer,
-                           process_count: int, server_options=None,
-                           udf_type: str = "Map"):
+def start_multiproc_server(
+    max_threads: int, servicer, process_count: int, server_options=None, udf_type: str = "Map"
+):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
     value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
@@ -167,8 +160,10 @@ def start_multiproc_server(max_threads: int, servicer,
             # NOTE: It is imperative that the worker subprocesses be forked before
             # any gRPC servers start up. See
             # https://github.com/grpc/grpc/issues/16001 for more details.
-            worker = multiprocessing.Process(target=_run_server, args=(servicer, bind_address,
-                                                                       max_threads, server_options, udf_type))
+            worker = multiprocessing.Process(
+                target=_run_server,
+                args=(servicer, bind_address, max_threads, server_options, udf_type),
+            )
             worker.start()
             workers.append(worker)
             server_ports.append(port)
@@ -191,7 +186,7 @@ def start_multiproc_server(max_threads: int, servicer,
 
 
 async def start_async_server(
-        server_async: grpc.aio.Server, sock_path: str, max_threads: int, cleanup_coroutines: list
+    server_async: grpc.aio.Server, sock_path: str, max_threads: int, cleanup_coroutines: list
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.
@@ -260,9 +255,6 @@ def _get_sync_server(bind_address: str, threads_per_proc: int, server_options: l
         _LOGGER.critical("Failed to start server: %s", err, exc_info=True)
         raise err
     return server
-    # server.start()
-    # _LOGGER.info("GRPC Multi-Processor Server listening on: %s %d", bind_address, os.getpid())
-    # server.wait_for_termination()
 
 
 @contextlib.contextmanager
@@ -277,22 +269,3 @@ def _reserve_port(port_num: int) -> Iterator[int]:
         yield sock.getsockname()[1]
     finally:
         sock.close()
-
-# def get_multiproc_servers(process_count: int, max_threads=MAX_THREADS, server_options=None):
-#     # workers = []
-#     server_ports = []
-#     servers = []
-#     for _ in range(process_count):
-#         # Find a port to bind to for each server, thus sending the port number = 0
-#         # to the _reserve_port function so that kernel can find and return a free port
-#         with _reserve_port(port_num=0) as port:
-#             bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
-#             server = _get_sync_server(
-#                 bind_address=bind_address,
-#                 threads_per_proc=max_threads,
-#                 server_options=server_options,
-#             )
-#             servers.append(server)
-#             server_ports.append(port)
-#
-#     return servers, server_ports

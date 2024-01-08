@@ -7,10 +7,6 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import (
-    MAX_MESSAGE_SIZE,
-    MAP_SOCK_PATH,
-)
 from pynumaflow.mapper import Datum
 from pynumaflow.mapper._dtypes import MapAsyncCallable, MapCallable
 from pynumaflow.mapper.proto import map_pb2
@@ -57,24 +53,8 @@ class AsyncMapper(map_pb2_grpc.MapServicer):
     def __init__(
         self,
         handler: MapAsyncCallable,
-        sock_path=MAP_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
     ):
         self.__map_handler: MapCallable = handler
-        self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
-        self.cleanup_coroutines = []
-        # Collection for storing strong references to all running tasks.
-        # Event loop only keeps a weak reference, which can cause it to
-        # get lost during execution.
-        self.background_tasks = set()
-
-        self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
-        ]
 
     async def MapFn(
         self, request: map_pb2.MapRequest, context: NumaflowServicerContext

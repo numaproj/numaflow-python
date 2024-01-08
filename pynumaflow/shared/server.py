@@ -44,11 +44,11 @@ class NumaflowServer:
 
 
 def prepare_server(
-    sock_path: str,
-    server_type: ServerType,
-    max_threads=MAX_THREADS,
-    server_options=None,
-    process_count=1,
+        sock_path: str,
+        server_type: ServerType,
+        max_threads=MAX_THREADS,
+        server_options=None,
+        process_count=1,
 ):
     """
     Create a new grpc Server instance.
@@ -142,12 +142,13 @@ def start_multiproc_server(servers: list, server_ports: list, max_threads: int):
     # Add the PORTS metadata using the available ports
     serv_info.metadata["SERV_PORTS"] = ports
     info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+
     for worker in workers:
         worker.join()
 
 
 async def start_async_server(
-    server_async: grpc.aio.Server, sock_path: str, max_threads: int, cleanup_coroutines: list
+        server_async: grpc.aio.Server, sock_path: str, max_threads: int, cleanup_coroutines: list
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.
@@ -210,6 +211,8 @@ def _get_sync_server(bind_address: str, threads_per_proc: int, server_options: l
             options=server_options,
         )
         server.add_insecure_port(bind_address)
+        print("bind_address", bind_address)
+        _LOGGER.info("Starting new server with bind_address: %s", bind_address)
     except Exception as err:
         _LOGGER.critical("Failed to start server: %s", err, exc_info=True)
         raise err

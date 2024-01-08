@@ -1,4 +1,5 @@
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import aiorun
 import grpc
@@ -65,6 +66,7 @@ class MapServer(NumaflowServer):
 
         # Get the server instance based on the server type and assign it to self.server
         # self.server = self.get_server(server_type=server_type, mapper_instance=mapper_instance)
+        # self.server = prepare_server(self.sock_path, self.max_threads, self._server_options)
 
     def start(self) -> None:
         """
@@ -77,8 +79,6 @@ class MapServer(NumaflowServer):
             aiorun.run(self.aexec())
         elif self.server_type == ServerType.Multiproc:
             self.exec_multiproc()
-            raise NotImplementedError
-
         else:
             raise NotImplementedError
 
@@ -86,12 +86,21 @@ class MapServer(NumaflowServer):
         """
         Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
-        server = prepare_server(self.sock_path, self.max_threads, self._server_options)
+        server = prepare_server(sock_path=self.sock_path, server_type=self.server_type,
+                                max_threads=self.max_threads, server_options=self._server_options)
         map_servicer = self.get_servicer(
             mapper_instance=self.mapper_instance, server_type=self.server_type
         )
+        # server = grpc.server(
+        #     ThreadPoolExecutor(
+        #         max_workers=self.max_threads,
+        #     ),
+        #     options=self._server_options,
+        # )
+        # self.server.add_insecure_port(self.sock_path)
         _LOGGER.info("Starting Sync Map Server...")
         map_pb2_grpc.add_MapServicer_to_server(servicer=map_servicer, server=server)
+
         # server.start()
         # write_info_file(Protocol.UDS)
         # _LOGGER.info(

@@ -87,11 +87,14 @@ def sync_server_start(server: grpc.Server):
     Starts the Synchronous server instance on the given UNIX socket with given max threads.
     Wait for the server to terminate.
     """
-    start_sync_server_util(server=server)
+    # start_sync_server_util(server=server)
+    # Start the server
+    server.start()
     # Add the server information to the server info file,
     # here we just write the protocol and language information
     write_info_file(Protocol.UDS)
-
+    # Wait for the server to terminate
+    server.wait_for_termination()
 
 def start_sync_server_util(server: grpc.Server):
     """
@@ -250,7 +253,6 @@ def get_multiproc_servers(process_count: int, max_threads=MAX_THREADS, server_op
                 threads_per_proc=max_threads,
                 server_options=server_options,
             )
-
             servers.append(server)
             server_ports.append(port)
 

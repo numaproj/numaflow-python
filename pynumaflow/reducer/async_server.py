@@ -19,8 +19,7 @@ from pynumaflow._constants import (
 from pynumaflow.reducer._dtypes import Datum, IntervalWindow, Metadata
 from pynumaflow.reducer._dtypes import ReduceResult, ReduceCallable
 from pynumaflow.reducer.asynciter import NonBlockingIterator
-from pynumaflow.reducer.proto import reduce_pb2
-from pynumaflow.reducer.proto import reduce_pb2_grpc
+from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)

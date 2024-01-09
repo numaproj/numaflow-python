@@ -1,39 +1,30 @@
 import os
 
-import aiorun
-import grpc
-from pynumaflow.mapper.async_server import AsyncMapper
+from pynumaflow.sourcetransformer.server import SourceTransformer
 
-from pynumaflow.mapper.server import Mapper
+from pynumaflow.shared.server import sync_server_start, start_multiproc_server
 
 from pynumaflow._constants import (
-    MAX_THREADS,
     MAX_MESSAGE_SIZE,
-    _LOGGER,
-    MAP_SOCK_PATH,
+    SOURCE_TRANSFORMER_SOCK_PATH,
+    MAX_THREADS,
     ServerType,
+    _LOGGER,
     UDFType,
 )
 
-from pynumaflow.mapper._dtypes import MapCallable
-from pynumaflow.proto.mapper import map_pb2_grpc
-from pynumaflow.shared.server import (
-    NumaflowServer,
-    start_async_server,
-    start_multiproc_server,
-    sync_server_start,
-)
+from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
+
+from pynumaflow.shared import NumaflowServer
 
 
-class MapServer(NumaflowServer):
-    """
-    Create a new grpc Server instance.
-    """
+class SourceTransformServer(NumaflowServer):
+    """ """
 
     def __init__(
         self,
-        mapper_instance: MapCallable,
-        sock_path=MAP_SOCK_PATH,
+        source_transform_instance: SourceTransformCallable,
+        sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
         server_type=ServerType.Sync,
@@ -51,7 +42,7 @@ class MapServer(NumaflowServer):
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
 
-        self.mapper_instance = mapper_instance
+        self.source_transform_instance = source_transform_instance
         self.server_type = server_type
 
         self._server_options = [
@@ -70,14 +61,12 @@ class MapServer(NumaflowServer):
             int(os.getenv("NUM_CPU_MULTIPROC", str(os.cpu_count()))), 2 * os.cpu_count()
         )
 
-    def start(self) -> None:
+    def start(self):
         """
         Starts the gRPC server on the given UNIX socket with given max threads.
         """
         if self.server_type == ServerType.Sync:
             self.exec()
-        elif self.server_type == ServerType.Async:
-            aiorun.run(self.aexec())
         elif self.server_type == ServerType.Multiproc:
             self.exec_multiproc()
         else:
@@ -88,58 +77,45 @@ class MapServer(NumaflowServer):
         """
         Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
-        map_servicer = self.get_servicer(
-            mapper_instance=self.mapper_instance, server_type=self.server_type
+        transform_servicer = self.get_servicer(
+            source_transform_instance=self.source_transform_instance, server_type=self.server_type
         )
         _LOGGER.info(
             "Sync GRPC Server listening on: %s with max threads: %s",
             self.sock_path,
             self.max_threads,
         )
-        # sync_server_start(server=server)
+
         sync_server_start(
-            servicer=map_servicer,
+            servicer=transform_servicer,
             bind_address=self.sock_path,
             max_threads=self.max_threads,
             server_options=self._server_options,
-            udf_type=UDFType.Map,
+            udf_type=UDFType.SourceTransformer,
         )
 
     def exec_multiproc(self):
         """
-        Starts the gRPC server on the given UNIX socket with given max threads.
+        Starts the Multiproc gRPC server on the given UNIX socket with given max threads.
         """
-        map_servicer = self.get_servicer(
-            mapper_instance=self.mapper_instance, server_type=self.server_type
+        transform_servicer = self.get_servicer(
+            source_transform_instance=self.source_transform_instance, server_type=self.server_type
         )
         start_multiproc_server(
             max_threads=self.max_threads,
-            servicer=map_servicer,
+            servicer=transform_servicer,
             process_count=self._process_count,
             server_options=self._server_options,
             udf_type=UDFType.Map,
         )
 
-    async def aexec(self) -> None:
-        """
-        Starts the Async gRPC server on the given UNIX socket with given max threads.s
-        """
-        server_new = grpc.aio.server()
-        server_new.add_insecure_port(self.sock_path)
-        map_servicer = self.get_servicer(
-            mapper_instance=self.mapper_instance, server_type=self.server_type
-        )
-        map_pb2_grpc.add_MapServicer_to_server(map_servicer, server_new)
-
-        await start_async_server(server_new, self.sock_path, self.max_threads, self._server_options)
-
-    def get_servicer(self, mapper_instance: MapCallable, server_type: ServerType):
+    def get_servicer(
+        self, source_transform_instance: SourceTransformCallable, server_type: ServerType
+    ):
         if server_type == ServerType.Sync:
-            map_servicer = Mapper(handler=mapper_instance)
-        elif server_type == ServerType.Async:
-            map_servicer = AsyncMapper(handler=mapper_instance)
+            transform_servicer = SourceTransformer(handler=source_transform_instance)
         elif server_type == ServerType.Multiproc:
-            map_servicer = Mapper(handler=mapper_instance)
+            transform_servicer = SourceTransformer(handler=source_transform_instance)
         else:
             raise NotImplementedError
-        return map_servicer
+        return transform_servicer

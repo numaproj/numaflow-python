@@ -23,6 +23,7 @@ from pynumaflow.info.types import (
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.proto.sinker import sink_pb2_grpc
+from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 
 
 class NumaflowServer:
@@ -126,6 +127,8 @@ def _run_server(
         map_pb2_grpc.add_MapServicer_to_server(servicer, server)
     elif udf_type == UDFType.Sink:
         sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
+    elif udf_type == UDFType.SourceTransformer:
+        transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
 
     server.add_insecure_port(bind_address)
     server.start()

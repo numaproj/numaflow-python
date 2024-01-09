@@ -4,7 +4,7 @@ import aiorun
 import grpc
 
 from pynumaflow.mapstreamer.async_server import AsyncMapStreamer
-from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
+from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 
 from pynumaflow._constants import (
     MAP_STREAM_SOCK_PATH,

@@ -1,7 +1,7 @@
 import aiorun
 import grpc
 
-from pynumaflow.reducer.proto import reduce_pb2_grpc
+from pynumaflow.proto.reducer import reduce_pb2_grpc
 
 from pynumaflow.reducer.async_server import AsyncReducer
 

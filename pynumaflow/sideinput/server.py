@@ -13,7 +13,7 @@ from pynumaflow._constants import (
     SIDE_INPUT_SOCK_PATH,
 )
 from pynumaflow.sideinput import Response
-from pynumaflow.sideinput.proto import sideinput_pb2, sideinput_pb2_grpc
+from pynumaflow.proto.sideinput import sideinput_pb2_grpc, sideinput_pb2
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)

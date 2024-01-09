@@ -3,10 +3,10 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import mapstream_pb2 as mapstream__pb2
+from pynumaflow.proto.reducer import reduce_pb2 as reduce__pb2
 
 
-class MapStreamStub(object):
+class ReduceStub(object):
     """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
@@ -15,23 +15,23 @@ class MapStreamStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.MapStreamFn = channel.unary_stream(
-            "/mapstream.v1.MapStream/MapStreamFn",
-            request_serializer=mapstream__pb2.MapStreamRequest.SerializeToString,
-            response_deserializer=mapstream__pb2.MapStreamResponse.FromString,
+        self.ReduceFn = channel.stream_stream(
+            "/reduce.v1.Reduce/ReduceFn",
+            request_serializer=reduce__pb2.ReduceRequest.SerializeToString,
+            response_deserializer=reduce__pb2.ReduceResponse.FromString,
         )
         self.IsReady = channel.unary_unary(
-            "/mapstream.v1.MapStream/IsReady",
+            "/reduce.v1.Reduce/IsReady",
             request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            response_deserializer=mapstream__pb2.ReadyResponse.FromString,
+            response_deserializer=reduce__pb2.ReadyResponse.FromString,
         )
 
 
-class MapStreamServicer(object):
+class ReduceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def MapStreamFn(self, request, context):
-        """MapStreamFn applies a function to each request element and returns a stream."""
+    def ReduceFn(self, request_iterator, context):
+        """ReduceFn applies a reduce function to a request stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
@@ -43,32 +43,30 @@ class MapStreamServicer(object):
         raise NotImplementedError("Method not implemented!")
 
 
-def add_MapStreamServicer_to_server(servicer, server):
+def add_ReduceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "MapStreamFn": grpc.unary_stream_rpc_method_handler(
-            servicer.MapStreamFn,
-            request_deserializer=mapstream__pb2.MapStreamRequest.FromString,
-            response_serializer=mapstream__pb2.MapStreamResponse.SerializeToString,
+        "ReduceFn": grpc.stream_stream_rpc_method_handler(
+            servicer.ReduceFn,
+            request_deserializer=reduce__pb2.ReduceRequest.FromString,
+            response_serializer=reduce__pb2.ReduceResponse.SerializeToString,
         ),
         "IsReady": grpc.unary_unary_rpc_method_handler(
             servicer.IsReady,
             request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            response_serializer=mapstream__pb2.ReadyResponse.SerializeToString,
+            response_serializer=reduce__pb2.ReadyResponse.SerializeToString,
         ),
     }
-    generic_handler = grpc.method_handlers_generic_handler(
-        "mapstream.v1.MapStream", rpc_method_handlers
-    )
+    generic_handler = grpc.method_handlers_generic_handler("reduce.v1.Reduce", rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
 # This class is part of an EXPERIMENTAL API.
-class MapStream(object):
+class Reduce(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def MapStreamFn(
-        request,
+    def ReduceFn(
+        request_iterator,
         target,
         options=(),
         channel_credentials=None,
@@ -79,12 +77,12 @@ class MapStream(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.unary_stream(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
-            "/mapstream.v1.MapStream/MapStreamFn",
-            mapstream__pb2.MapStreamRequest.SerializeToString,
-            mapstream__pb2.MapStreamResponse.FromString,
+            "/reduce.v1.Reduce/ReduceFn",
+            reduce__pb2.ReduceRequest.SerializeToString,
+            reduce__pb2.ReduceResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -111,9 +109,9 @@ class MapStream(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/mapstream.v1.MapStream/IsReady",
+            "/reduce.v1.Reduce/IsReady",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            mapstream__pb2.ReadyResponse.FromString,
+            reduce__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -9,10 +9,9 @@ from pynumaflow.sourcer._dtypes import (
     AckRequest,
     Offset,
     PartitionsResponse,
-    get_default_partitions, SourcerClass,
+    get_default_partitions,
+    SourcerClass,
 )
-from pynumaflow.sourcer.async_server import AsyncSourcer
-from pynumaflow.sourcer.server import Sourcer
 
 __all__ = [
     "Message",

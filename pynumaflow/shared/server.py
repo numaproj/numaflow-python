@@ -132,7 +132,7 @@ def _run_server(
         sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
     elif udf_type == UDFType.SourceTransformer:
         transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
-    elif udf_type == UDFType.Sink:
+    elif udf_type == UDFType.Source:
         source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
 
     # bind the server to the UDS/TCP socket

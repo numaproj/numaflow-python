@@ -1,5 +1,8 @@
-from pynumaflow.sinker._dtypes import Response, Responses, Datum
-from pynumaflow.sinker.async_sink import AsyncSinker
-from pynumaflow.sinker.server import Sinker
+from pynumaflow._constants import ServerType
 
-__all__ = ["Response", "Responses", "Datum", "Sinker", "AsyncSinker"]
+from pynumaflow.sinker.sink import SinkServer
+
+from pynumaflow.sinker._dtypes import Response, Responses, Datum, SinkerClass
+
+__all__ = ["Response", "Responses", "Datum", "SinkerClass", "SinkServer", "ServerType"]
+

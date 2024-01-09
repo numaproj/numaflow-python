@@ -86,6 +86,7 @@ class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
         # Event loop only keeps a weak reference, which can cause it to
         # get lost during execution.
         self.background_tasks = set()
+        self.__reduce_handler: ReduceCallable = handler
 
     async def ReduceFn(
         self,

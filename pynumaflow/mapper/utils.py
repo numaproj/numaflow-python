@@ -2,7 +2,7 @@ import grpc
 from pynumaflow.mapper._dtypes import MapCallable
 
 from pynumaflow.mapper._dtypes import Datum
-from pynumaflow.mapper.proto import map_pb2
+from pynumaflow.proto.mapper import map_pb2
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 

@@ -4,7 +4,7 @@ import aiorun
 import grpc
 
 from pynumaflow.sinker.async_sink import AsyncSinker
-from pynumaflow.sinker.proto import sink_pb2_grpc
+from pynumaflow.proto.sinker import sink_pb2_grpc
 
 from pynumaflow.sinker.server import Sinker
 

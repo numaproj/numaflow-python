@@ -16,7 +16,7 @@ from pynumaflow._constants import (
 )
 
 from pynumaflow.mapper._dtypes import MapCallable
-from pynumaflow.mapper.proto import map_pb2_grpc
+from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.shared.server import (
     NumaflowServer,
     start_async_server,

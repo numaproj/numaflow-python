@@ -9,8 +9,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow import setup_logging
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.mapper._dtypes import MapAsyncCallable, MapCallable
-from pynumaflow.mapper.proto import map_pb2
-from pynumaflow.mapper.proto import map_pb2_grpc
+from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)

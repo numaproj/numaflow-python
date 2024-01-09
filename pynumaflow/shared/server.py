@@ -21,8 +21,8 @@ from pynumaflow.info.types import (
     SERVER_INFO_FILE_PATH,
     METADATA_ENVS,
 )
-from pynumaflow.mapper.proto import map_pb2_grpc
-from pynumaflow.sinker.proto import sink_pb2_grpc
+from pynumaflow.proto.mapper import map_pb2_grpc
+from pynumaflow.proto.sinker import sink_pb2_grpc
 
 
 class NumaflowServer:

@@ -8,7 +8,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow import setup_logging
 from pynumaflow.sinker._dtypes import Responses, Datum, Response
 from pynumaflow.sinker._dtypes import SinkCallable
-from pynumaflow.sinker.proto import sink_pb2_grpc, sink_pb2
+from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.types import NumaflowServicerContext
 
 _LOGGER = setup_logging(__name__)

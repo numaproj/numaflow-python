@@ -3,7 +3,7 @@
 import grpc
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import sink_pb2 as sink__pb2
+from pynumaflow.proto.sinker import sink_pb2 as sink__pb2
 
 
 class SinkStub(object):

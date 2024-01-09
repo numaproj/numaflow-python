@@ -8,7 +8,7 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
-from pynumaflow.sourcer import ReadRequest
+from pynumaflow.sourcer._dtypes import ReadRequest
 from pynumaflow.sourcer._dtypes import (
     SourceReadCallable,
     Offset,

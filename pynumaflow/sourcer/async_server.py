@@ -7,7 +7,7 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
-from pynumaflow.sourcer import ReadRequest
+from pynumaflow.sourcer._dtypes import ReadRequest
 from pynumaflow.sourcer._dtypes import Offset, AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc

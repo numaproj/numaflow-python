@@ -3,7 +3,6 @@ import os
 import aiorun
 import grpc
 from pynumaflow.sourcer.async_server import AsyncSourcer
-
 from pynumaflow.sourcer.server import Sourcer
 
 from pynumaflow._constants import (
@@ -80,7 +79,7 @@ class SourceServer(NumaflowServer):
             bind_address=self.sock_path,
             max_threads=self.max_threads,
             server_options=self._server_options,
-            udf_type=UDFType.Sink,
+            udf_type=UDFType.Source,
         )
 
     async def aexec(self):

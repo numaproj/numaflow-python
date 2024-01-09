@@ -2,6 +2,9 @@ import os
 
 import aiorun
 import grpc
+from pynumaflow.mapper.async_server import AsyncMapper
+
+from pynumaflow.mapper.server import Mapper
 
 from pynumaflow._constants import (
     MAX_THREADS,
@@ -11,7 +14,7 @@ from pynumaflow._constants import (
     ServerType,
     UDFType,
 )
-from pynumaflow.mapper import Mapper, AsyncMapper
+
 from pynumaflow.mapper._dtypes import MapCallable
 from pynumaflow.mapper.proto import map_pb2_grpc
 from pynumaflow.shared.server import (

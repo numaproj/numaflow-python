@@ -83,7 +83,7 @@ class SourceServer(NumaflowServer):
             udf_type=UDFType.Sink,
         )
 
-    def aexec(self):
+    async def aexec(self):
         """
         Starts the Async gRPC server on the given UNIX socket with given max threads
         """

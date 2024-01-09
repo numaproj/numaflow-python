@@ -23,6 +23,7 @@ from pynumaflow.info.types import (
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.proto.sinker import sink_pb2_grpc
+from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 
 
@@ -123,14 +124,20 @@ def _run_server(
         ),
         options=server_options,
     )
+
+    # add the correct servicer to the server based on the UDF type
     if udf_type == UDFType.Map:
         map_pb2_grpc.add_MapServicer_to_server(servicer, server)
     elif udf_type == UDFType.Sink:
         sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
     elif udf_type == UDFType.SourceTransformer:
         transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
+    elif udf_type == UDFType.Sink:
+        source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
 
+    # bind the server to the UDS/TCP socket
     server.add_insecure_port(bind_address)
+    # start the gRPC server
     server.start()
 
     # Add the server information to the server info file if provided

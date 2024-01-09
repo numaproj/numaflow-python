@@ -3,7 +3,14 @@ import os
 import aiorun
 import grpc
 
-from pynumaflow._constants import MAX_THREADS, MAX_MESSAGE_SIZE, _LOGGER, MAP_SOCK_PATH, ServerType
+from pynumaflow._constants import (
+    MAX_THREADS,
+    MAX_MESSAGE_SIZE,
+    _LOGGER,
+    MAP_SOCK_PATH,
+    ServerType,
+    UDFType,
+)
 from pynumaflow.mapper import Mapper, AsyncMapper
 from pynumaflow.mapper._dtypes import MapCallable
 from pynumaflow.mapper.proto import map_pb2_grpc
@@ -91,7 +98,7 @@ class MapServer(NumaflowServer):
             bind_address=self.sock_path,
             max_threads=self.max_threads,
             server_options=self._server_options,
-            udf_type="Map",
+            udf_type=UDFType.Map,
         )
 
     def exec_multiproc(self):
@@ -106,7 +113,7 @@ class MapServer(NumaflowServer):
             servicer=map_servicer,
             process_count=self._process_count,
             server_options=self._server_options,
-            udf_type="Map",
+            udf_type=UDFType.Map,
         )
 
     async def aexec(self) -> None:

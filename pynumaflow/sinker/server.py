@@ -1,19 +1,11 @@
 import logging
 import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Iterator, Iterable
 
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import (
-    SINK_SOCK_PATH,
-    MAX_MESSAGE_SIZE,
-)
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 from pynumaflow.sinker import Responses, Datum, Response
 from pynumaflow.sinker._dtypes import SinkCallable
 from pynumaflow.sinker.proto import sink_pb2_grpc, sink_pb2
@@ -67,19 +59,8 @@ class Sinker(sink_pb2_grpc.SinkServicer):
     def __init__(
         self,
         handler: SinkCallable,
-        sock_path=SINK_SOCK_PATH,
-        max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
     ):
         self.__sink_handler: SinkCallable = handler
-        self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
-
-        self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
-        ]
 
     def SinkFn(
         self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
@@ -115,25 +96,3 @@ class Sinker(sink_pb2_grpc.SinkServicer):
         The pascal case function name comes from the proto sink_pb2_grpc.py file.
         """
         return sink_pb2.ReadyResponse(ready=True)
-
-    def start(self) -> None:
-        """
-        Starts the gRPC server on the given UNIX socket with given max threads.
-        """
-        server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
-        sink_pb2_grpc.add_SinkServicer_to_server(Sinker(self.__sink_handler), server)
-        server.add_insecure_port(self.sock_path)
-        server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-        )
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
-
-        _LOGGER.info(
-            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
-        )
-        server.wait_for_termination()

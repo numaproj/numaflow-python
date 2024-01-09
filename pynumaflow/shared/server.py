@@ -10,6 +10,7 @@ import grpc
 from pynumaflow._constants import (
     _LOGGER,
     MULTIPROC_MAP_SOCK_ADDR,
+    UDFType,
 )
 from pynumaflow.exceptions import SocketError
 from pynumaflow.info.server import get_sdk_version, write as info_server_write, get_metadata_env
@@ -21,6 +22,7 @@ from pynumaflow.info.types import (
     METADATA_ENVS,
 )
 from pynumaflow.mapper.proto import map_pb2_grpc
+from pynumaflow.sinker.proto import sink_pb2_grpc
 
 
 class NumaflowServer:
@@ -83,7 +85,7 @@ def write_info_file(protocol: Protocol) -> None:
 
 
 def sync_server_start(
-    servicer, bind_address: str, max_threads: int, server_options=None, udf_type: str = "Map"
+    servicer, bind_address: str, max_threads: int, server_options=None, udf_type: str = UDFType.Map
 ):
     """
     Starts the Synchronous server instance on the given UNIX socket with given max threads.
@@ -120,11 +122,15 @@ def _run_server(
         ),
         options=server_options,
     )
-    if udf_type == "Map":
+    if udf_type == UDFType.Map:
         map_pb2_grpc.add_MapServicer_to_server(servicer, server)
+    elif udf_type == UDFType.Sink:
+        sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
+
     server.add_insecure_port(bind_address)
     server.start()
 
+    # Add the server information to the server info file if provided
     if server_info:
         info_server_write(server_info=server_info, info_file=SERVER_INFO_FILE_PATH)
 
@@ -133,7 +139,7 @@ def _run_server(
 
 
 def start_multiproc_server(
-    max_threads: int, servicer, process_count: int, server_options=None, udf_type: str = "Map"
+    max_threads: int, servicer, process_count: int, server_options=None, udf_type: str = UDFType.Map
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the

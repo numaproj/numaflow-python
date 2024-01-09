@@ -1,6 +1,7 @@
+from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Optional, Callable
+from typing import TypeVar, Optional, Callable, Union
 from collections.abc import Sequence, Iterator
 from warnings import warn
 
@@ -161,4 +162,28 @@ class Datum:
         return self._watermark
 
 
-SinkCallable = Callable[[Iterator[Datum]], Responses]
+class SinkerClass(metaclass=ABCMeta):
+    """
+    Provides an interface to write a Sinker
+    which will be exposed over a gRPC server.
+
+    Args:
+
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        Allow to call handler function directly if class instance is sent
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    def handler(self, datums: Iterator[Datum]) -> Responses:
+        """
+        Write a handler function which implements the MapCallable interface.
+        """
+        pass
+
+
+SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
+SinkCallable = Union[SinkerClass, SinkHandlerCallable]

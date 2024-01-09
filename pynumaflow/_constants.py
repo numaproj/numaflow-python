@@ -41,3 +41,16 @@ class ServerType(str, Enum):
     Sync = "sync"
     Async = "async"
     Multiproc = "multiproc"
+
+
+class UDFType(str, Enum):
+    """
+    Enumerate the type of UDF.
+    """
+
+    Map = "map"
+    Reduce = "reduce"
+    Sink = "sink"
+    Source = "source"
+    SideInput = "sideinput"
+    SourceTransformer = "sourcetransformer"

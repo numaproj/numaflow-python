@@ -24,15 +24,15 @@ class SideInputStub(object):
             channel: A grpc.Channel.
         """
         self.RetrieveSideInput = channel.unary_unary(
-                '/sideinput.v1.SideInput/RetrieveSideInput',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=sideinput__pb2.SideInputResponse.FromString,
-                )
+            "/sideinput.v1.SideInput/RetrieveSideInput",
+            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            response_deserializer=sideinput__pb2.SideInputResponse.FromString,
+        )
         self.IsReady = channel.unary_unary(
-                '/sideinput.v1.SideInput/IsReady',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=sideinput__pb2.ReadyResponse.FromString,
-                )
+            "/sideinput.v1.SideInput/IsReady",
+            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            response_deserializer=sideinput__pb2.ReadyResponse.FromString,
+        )
 
 
 class SideInputServicer(object):
@@ -47,39 +47,38 @@ class SideInputServicer(object):
     """
 
     def RetrieveSideInput(self, request, context):
-        """RetrieveSideInput is the endpoint to retrieve the latest value of a given Side Input.
-        """
+        """RetrieveSideInput is the endpoint to retrieve the latest value of a given Side Input."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def IsReady(self, request, context):
-        """IsReady is the health check endpoint to indicate whether the service is ready to be used.
-        """
+        """IsReady is the health check endpoint to indicate whether the service is ready to be used."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_SideInputServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'RetrieveSideInput': grpc.unary_unary_rpc_method_handler(
-                    servicer.RetrieveSideInput,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=sideinput__pb2.SideInputResponse.SerializeToString,
-            ),
-            'IsReady': grpc.unary_unary_rpc_method_handler(
-                    servicer.IsReady,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=sideinput__pb2.ReadyResponse.SerializeToString,
-            ),
+        "RetrieveSideInput": grpc.unary_unary_rpc_method_handler(
+            servicer.RetrieveSideInput,
+            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            response_serializer=sideinput__pb2.SideInputResponse.SerializeToString,
+        ),
+        "IsReady": grpc.unary_unary_rpc_method_handler(
+            servicer.IsReady,
+            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            response_serializer=sideinput__pb2.ReadyResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'sideinput.v1.SideInput', rpc_method_handlers)
+        "sideinput.v1.SideInput", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class SideInput(object):
     """SideInput is the gRPC service for user-defined Side Inputs.
     It is used to propagate changes in the values of the provided Side Inputs
@@ -92,35 +91,59 @@ class SideInput(object):
     """
 
     @staticmethod
-    def RetrieveSideInput(request,
+    def RetrieveSideInput(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/sideinput.v1.SideInput/RetrieveSideInput',
+            "/sideinput.v1.SideInput/RetrieveSideInput",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             sideinput__pb2.SideInputResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def IsReady(request,
+    def IsReady(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/sideinput.v1.SideInput/IsReady',
+            "/sideinput.v1.SideInput/IsReady",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             sideinput__pb2.ReadyResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

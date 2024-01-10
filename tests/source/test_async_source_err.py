@@ -21,7 +21,7 @@ from tests.source.utils import (
 LOGGER = setup_logging(__name__)
 
 _s: Server = None
-server_port = "unix:///tmp/async_source_err.sock"
+server_port = "localhost:50062"
 _channel = grpc.insecure_channel(server_port)
 _loop = None
 
@@ -35,11 +35,17 @@ async def start_server():
     server = grpc.aio.server()
     class_instance = AsyncSourceError()
     server_instance = SourceServer(sourcer_instance=class_instance, server_type=ServerType.Async)
-    udfs = server.get_servicer(
-        sourcer_instance=server_instance.sourcer_instance, server_type=server_instance.server_type
+    udfs = server_instance.get_servicer(
+        sourcer_instance=server_instance.sourcer_instance, server_type=ServerType.Async
     )
+    # udfs = AsyncSourcer(
+    #     read_handler=err_async_source_read_handler,
+    #     ack_handler=err_async_source_ack_handler,
+    #     pending_handler=err_async_source_pending_handler,
+    #     partitions_handler=err_async_source_partition_handler,
+    # )
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/async_source_err.sock"
+    listen_addr = "[::]:50062"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -59,7 +65,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("unix:///tmp/async_source_err.sock") as channel:
+                with grpc.insecure_channel("localhost:50062") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -71,7 +77,6 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         try:
-            _s.stop()
             _loop.stop()
             LOGGER.info("stopped the event loop")
         except Exception as e:

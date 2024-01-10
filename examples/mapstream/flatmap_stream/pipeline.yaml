@@ -20,17 +20,13 @@ spec:
         readBatchSize: 1
       udf:
         container:
-          image: "quay.io/kohlisid/numaflow-python/mapstream:v3"
+          image: "quay.io/numaio/numaflow-python/map-flatmap-stream:v0.6.1"
           imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG
               value: "true"
-            - name: SERVER_TYPE
-              value: "async"
             - name : INVOKE
               value: "handler"
-#            - name: NUM_CPU_MULTIPROC
-#              value: "2"  # DO NOT forgekt the double quotes!!!
       containerTemplate:
         resources:
           limits:

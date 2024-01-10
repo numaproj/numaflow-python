@@ -18,13 +18,11 @@ spec:
       udf:
         container:
           # compute the sum
-          image: quay.io/kohlisid/numaflow-python/reduce:v3
+          image: quay.io/numaio/numaflow-python/reduce-counter:v0.6.1
           imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG
               value: "true"
-            - name: SERVER_TYPE
-              value: "async"
             - name: INVOKE
               value: "class"
         groupBy:

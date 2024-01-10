@@ -21,13 +21,11 @@ spec:
             args:
             - python
             - example.py
-            image: quay.io/kohlisid/numaflow-python/sink:v5
+            image: quay.io/numaio/numaflow-python/async-sink-log:v0.6.1
             imagePullPolicy: Always
             env:
               - name: PYTHONDEBUG
                 value: "true"
-              - name: SERVER_TYPE
-                value: "async"
               - name: INVOKE
                 value: "handler"
     - name: log-output

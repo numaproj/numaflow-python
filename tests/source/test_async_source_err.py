@@ -6,18 +6,16 @@ import unittest
 import grpc
 
 from grpc.aio._server import Server
+from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
-from pynumaflow.sourcer import AsyncSourcer
-from pynumaflow.sourcer.proto import source_pb2_grpc, source_pb2
+from pynumaflow.sourcer import SourceServer
+from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from tests.source.utils import (
-    err_async_source_read_handler,
-    err_async_source_ack_handler,
-    err_async_source_pending_handler,
     read_req_source_fn,
     ack_req_source_fn,
-    err_async_source_partition_handler,
+    AsyncSourceError,
 )
 
 LOGGER = setup_logging(__name__)
@@ -35,11 +33,10 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = AsyncSourcer(
-        read_handler=err_async_source_read_handler,
-        ack_handler=err_async_source_ack_handler,
-        pending_handler=err_async_source_pending_handler,
-        partitions_handler=err_async_source_partition_handler,
+    class_instance = AsyncSourceError()
+    server_instance = SourceServer(sourcer_instance=class_instance, server_type=ServerType.Async)
+    udfs = server.get_servicer(
+        sourcer_instance=server_instance.sourcer_instance, server_type=server_instance.server_type
     )
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
     listen_addr = "[::]:50062"

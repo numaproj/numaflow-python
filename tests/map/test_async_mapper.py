@@ -7,15 +7,16 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
+from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
 from pynumaflow.mapper import (
-    AsyncMapper,
     Datum,
     Messages,
     Message,
+    MapServer,
 )
-from pynumaflow.mapper.proto import map_pb2_grpc, map_pb2
+from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from tests.testing_utils import (
     mock_event_time,
     mock_watermark,
@@ -62,11 +63,12 @@ def startup_callable(loop):
 
 
 def new_async_mapper():
-    udfs = AsyncMapper(handler=async_map_handler)
+    server = MapServer(mapper_instance=async_map_handler, server_type=ServerType.Async)
+    udfs = server.get_servicer(mapper_instance=async_map_handler, server_type=ServerType.Async)
     return udfs
 
 
-async def start_server(udfs: AsyncMapper):
+async def start_server(udfs):
     server = grpc.aio.server()
     map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     listen_addr = "[::]:50056"

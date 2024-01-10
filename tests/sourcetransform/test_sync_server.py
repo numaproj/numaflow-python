@@ -5,9 +5,10 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
+from pynumaflow._constants import ServerType
 
-from pynumaflow.sourcetransformer import SourceTransformer
-from pynumaflow.sourcetransformer.proto import transform_pb2
+from pynumaflow.sourcetransformer import SourceTransformServer
+from pynumaflow.proto.sourcetransformer import transform_pb2
 from tests.sourcetransform.utils import transform_handler, err_transform_handler
 from tests.testing_utils import (
     mock_event_time,
@@ -19,19 +20,34 @@ from tests.testing_utils import (
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = SourceTransformer(handler=transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=transform_handler, server_type=ServerType.Sync
+        )
+        my_servicer = server.get_servicer(
+            source_transform_instance=server.source_transform_instance,
+            server_type=server.server_type,
+        )
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
-        my_servicer = SourceTransformer(
-            handler=transform_handler, sock_path="/tmp/test.sock", max_message_size=1024 * 1024 * 5
+        server = SourceTransformServer(
+            source_transform_instance=transform_handler,
+            sock_path="/tmp/test.sock",
+            max_message_size=1024 * 1024 * 5,
+            server_type=ServerType.Sync,
         )
-        self.assertEqual(my_servicer.sock_path, "unix:///tmp/test.sock")
-        self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
+        self.assertEqual(server.sock_path, "unix:///tmp/test.sock")
+        self.assertEqual(server.max_message_size, 1024 * 1024 * 5)
 
     def test_udf_mapt_err(self):
-        my_servicer = SourceTransformer(handler=err_transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=err_transform_handler, server_type=ServerType.Sync
+        )
+        my_servicer = server.get_servicer(
+            source_transform_instance=server.source_transform_instance,
+            server_type=server.server_type,
+        )
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -128,7 +144,7 @@ class TestServer(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            SourceTransformer()
+            SourceTransformServer()
 
 
 if __name__ == "__main__":

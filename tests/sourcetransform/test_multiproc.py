@@ -8,9 +8,10 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
+from pynumaflow._constants import ServerType
 
-from pynumaflow.sourcetransformer.multiproc_server import MultiProcSourceTransformer
-from pynumaflow.sourcetransformer.proto import transform_pb2_grpc, transform_pb2
+from pynumaflow.proto.sourcetransformer import transform_pb2
+from pynumaflow.sourcetransformer import SourceTransformServer
 from tests.sourcetransform.utils import transform_handler, err_transform_handler
 from tests.testing_utils import (
     mock_event_time,
@@ -27,52 +28,46 @@ def mockenv(**envvars):
 
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = MultiProcSourceTransformer(handler=transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=transform_handler, server_type=ServerType.Multiproc
+        )
+        my_servicer = server.get_servicer(
+            source_transform_instance=server.source_transform_instance,
+            server_type=server.server_type,
+        )
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        server = MultiProcSourceTransformer(handler=transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=transform_handler, server_type=ServerType.Multiproc
+        )
         self.assertEqual(server._process_count, 3)
 
     @patch("os.cpu_count", Mock(return_value=4))
     def test_multiproc_process_count(self) -> None:
-        server = MultiProcSourceTransformer(handler=transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=transform_handler, server_type=ServerType.Multiproc
+        )
         self.assertEqual(server._process_count, 4)
 
     @patch("os.cpu_count", Mock(return_value=4))
     @mockenv(NUM_CPU_MULTIPROC="10")
     def test_max_process_count(self) -> None:
-        server = MultiProcSourceTransformer(handler=transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=transform_handler, server_type=ServerType.Multiproc
+        )
         self.assertEqual(server._process_count, 8)
 
-    # To test the reuse property for the grpc servers which allow multiple
-    # bindings to the same server
-    def test_reuse_port(self):
-        serv_options = [("grpc.so_reuseaddr", 1)]
-
-        server = MultiProcSourceTransformer(handler=transform_handler)
-
-        with server._reserve_port(0) as port:
-            print(port)
-            bind_address = f"localhost:{port}"
-            server1 = grpc.server(thread_pool=None, options=serv_options)
-            transform_pb2_grpc.add_SourceTransformServicer_to_server(server, server1)
-            server1.add_insecure_port(bind_address)
-
-            # so_reuseport=0 -> the bind should raise an error
-            server2 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 0),))
-            transform_pb2_grpc.add_SourceTransformServicer_to_server(server, server2)
-            self.assertRaises(RuntimeError, server2.add_insecure_port, bind_address)
-
-            # so_reuseport=1 -> should allow server to bind to port again
-            server3 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 1),))
-            transform_pb2_grpc.add_SourceTransformServicer_to_server(server, server3)
-            server3.add_insecure_port(bind_address)
-
     def test_udf_mapt_err(self):
-        my_servicer = MultiProcSourceTransformer(handler=err_transform_handler)
+        server = SourceTransformServer(
+            source_transform_instance=err_transform_handler, server_type=ServerType.Multiproc
+        )
+        my_servicer = server.get_servicer(
+            source_transform_instance=server.source_transform_instance,
+            server_type=server.server_type,
+        )
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -166,7 +161,7 @@ class TestMultiProcMethods(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            MultiProcSourceTransformer()
+            SourceTransformServer(server_type=ServerType.Multiproc)
 
 
 if __name__ == "__main__":

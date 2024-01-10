@@ -6,28 +6,25 @@ import unittest
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
+from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
 from pynumaflow.sourcer import (
-    AsyncSourcer,
+    SourceServer,
 )
-from pynumaflow.sourcer.proto import source_pb2_grpc, source_pb2
+from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from tests.source.utils import (
-    async_source_read_handler,
-    async_source_ack_handler,
-    async_source_pending_handler,
-    async_source_partition_handler,
     mock_offset,
     read_req_source_fn,
     ack_req_source_fn,
     mock_partitions,
+    AsyncSource,
 )
 
 LOGGER = setup_logging(__name__)
 
 # if set to true, map handler will raise a `ValueError` exception.
 raise_error_from_map = False
-
 
 server_port = "localhost:50058"
 
@@ -41,22 +38,17 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-def NewAsyncSourcer(
-    handler=async_source_read_handler,
-    ack_handler=async_source_ack_handler,
-    pending_handler=async_source_pending_handler,
-    partitions_handler=async_source_partition_handler,
-):
-    udfs = AsyncSourcer(
-        read_handler=async_source_read_handler,
-        ack_handler=async_source_ack_handler,
-        pending_handler=async_source_pending_handler,
-        partitions_handler=async_source_partition_handler,
+def NewAsyncSourcer():
+    class_instance = AsyncSource()
+    server = SourceServer(sourcer_instance=class_instance, server_type=ServerType.Async)
+
+    udfs = server.get_servicer(
+        sourcer_instance=server.sourcer_instance, server_type=server.server_type
     )
     return udfs
 
 
-async def start_server(udfs: AsyncSourcer):
+async def start_server(udfs):
     server = grpc.aio.server()
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
     listen_addr = "[::]:50058"

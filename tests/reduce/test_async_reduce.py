@@ -10,15 +10,14 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
+from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME, ServerType
 from pynumaflow.reducer import (
     Messages,
     Message,
     Datum,
-    AsyncReducer,
-    Metadata,
+    Metadata, ReduceServer,
 )
-from pynumaflow.reducer.proto import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
@@ -94,12 +93,15 @@ async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata)
 def NewAsyncReducer(
     reduce_handler=async_reduce_handler,
 ):
-    udfs = AsyncReducer(handler=async_reduce_handler)
+    server_instance = ReduceServer(reducer_instance=async_reduce_handler,
+                                   server_type=ServerType.Async)
+    udfs = server_instance.get_servicer(reducer_instance=server_instance.reducer_instance,
+                                        server_type=server_instance.server_type)
 
     return udfs
 
 
-async def start_server(udfs: AsyncReducer):
+async def start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
     listen_addr = "[::]:50057"

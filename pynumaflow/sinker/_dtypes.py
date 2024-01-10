@@ -2,6 +2,7 @@ from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Optional, Callable, Union
+from collections.abc import AsyncIterable, Awaitable
 from collections.abc import Sequence, Iterator
 from warnings import warn
 
@@ -186,4 +187,5 @@ class SinkerClass(metaclass=ABCMeta):
 
 
 SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
-SinkCallable = Union[SinkerClass, SinkHandlerCallable]
+AsyncSinkCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
+SinkCallable = Union[SinkerClass, SinkHandlerCallable, AsyncSinkCallable]

@@ -12,9 +12,9 @@ from pynumaflow import setup_logging
 from pynumaflow.mapstreamer import (
     Message,
     Datum,
-    AsyncMapStreamer,
+    MapStreamServer,
 )
-from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
+from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 from tests.mapstream.utils import start_request_map_stream
 
 LOGGER = setup_logging(__name__)
@@ -47,12 +47,14 @@ def startup_callable(loop):
 def NewAsyncMapStreamer(
     map_stream_handler=async_map_stream_handler,
 ):
-    udfs = AsyncMapStreamer(handler=async_map_stream_handler)
-
+    server = MapStreamServer(map_stream_instance=async_map_stream_handler)
+    udfs = server.get_servicer(
+        map_stream_instance=async_map_stream_handler, server_type=server.server_type
+    )
     return udfs
 
 
-async def start_server(udfs: AsyncMapStreamer):
+async def start_server(udfs):
     server = grpc.aio.server()
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
     listen_addr = "[::]:50060"

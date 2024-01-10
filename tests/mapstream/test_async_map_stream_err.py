@@ -7,10 +7,11 @@ from collections.abc import AsyncIterable
 import grpc
 
 from grpc.aio._server import Server
+from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
-from pynumaflow.mapstreamer import Message, Datum, AsyncMapStreamer
-from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
+from pynumaflow.mapstreamer import Message, Datum, MapStreamServer
+from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 from tests.mapstream.utils import start_request_map_stream
 
 LOGGER = setup_logging(__name__)
@@ -32,7 +33,7 @@ async def err_async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIt
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50052")
+_channel = grpc.insecure_channel("localhost:50041")
 _loop = None
 
 
@@ -43,9 +44,12 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = AsyncMapStreamer(handler=err_async_map_stream_handler)
+    server_instance = MapStreamServer(map_stream_instance=err_async_map_stream_handler)
+    udfs = server_instance.get_servicer(
+        map_stream_instance=err_async_map_stream_handler, server_type=server.server_type
+    )
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
-    listen_addr = "[::]:50052"
+    listen_addr = "[::]:50041"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -65,7 +69,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50052") as channel:
+                with grpc.insecure_channel("localhost:50041") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -100,7 +104,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            AsyncMapStreamer()
+            MapStreamServer(server_type=ServerType.Async)
 
 
 if __name__ == "__main__":

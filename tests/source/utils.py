@@ -1,8 +1,14 @@
 from collections.abc import AsyncIterable, Iterable
 
 from pynumaflow.sourcer import ReadRequest, Message
-from pynumaflow.sourcer._dtypes import AckRequest, PendingResponse, Offset, PartitionsResponse
-from pynumaflow.sourcer.proto import source_pb2
+from pynumaflow.sourcer._dtypes import (
+    AckRequest,
+    PendingResponse,
+    Offset,
+    PartitionsResponse,
+    SourcerClass,
+)
+from pynumaflow.proto.sourcer import source_pb2
 from tests.testing_utils import mock_event_time
 
 
@@ -14,46 +20,42 @@ def mock_partitions() -> list[int]:
     return [1, 2, 3]
 
 
-async def async_source_read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
-    payload = b"payload:test_mock_message"
-    keys = ["test_key"]
-    offset = mock_offset()
-    event_time = mock_event_time()
-    for i in range(10):
-        yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+class AsyncSource(SourcerClass):
+    async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
+        payload = b"payload:test_mock_message"
+        keys = ["test_key"]
+        offset = mock_offset()
+        event_time = mock_event_time()
+        for i in range(10):
+            yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+
+    async def ack_handler(self, ack_request: AckRequest):
+        return
+
+    async def pending_handler(self) -> PendingResponse:
+        return PendingResponse(count=10)
+
+    async def partitions_handler(self) -> PartitionsResponse:
+        return PartitionsResponse(partitions=mock_partitions())
 
 
-async def async_source_ack_handler(ack_request: AckRequest):
-    return
+class SyncSource(SourcerClass):
+    def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
+        payload = b"payload:test_mock_message"
+        keys = ["test_key"]
+        offset = mock_offset()
+        event_time = mock_event_time()
+        for i in range(10):
+            yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
 
+    def ack_handler(self, ack_request: AckRequest):
+        return
 
-async def async_source_pending_handler() -> PendingResponse:
-    return PendingResponse(count=10)
+    def pending_handler(self) -> PendingResponse:
+        return PendingResponse(count=10)
 
-
-async def async_source_partition_handler() -> PartitionsResponse:
-    return PartitionsResponse(partitions=mock_partitions())
-
-
-def sync_source_read_handler(datum: ReadRequest) -> Iterable[Message]:
-    payload = b"payload:test_mock_message"
-    keys = ["test_key"]
-    offset = mock_offset()
-    event_time = mock_event_time()
-    for i in range(10):
-        yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
-
-
-def sync_source_ack_handler(ack_request: AckRequest):
-    return
-
-
-def sync_source_pending_handler() -> PendingResponse:
-    return PendingResponse(count=10)
-
-
-def sync_source_partition_handler() -> PartitionsResponse:
-    return PartitionsResponse(partitions=mock_partitions())
+    def partitions_handler(self) -> PartitionsResponse:
+        return PartitionsResponse(partitions=mock_partitions())
 
 
 def read_req_source_fn() -> ReadRequest:
@@ -70,40 +72,36 @@ def ack_req_source_fn() -> AckRequest:
     return request
 
 
-# This handler mimics the scenario where map stream UDF throws a runtime error.
-async def err_async_source_read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
-    payload = b"payload:test_mock_message"
-    keys = ["test_key"]
-    offset = mock_offset()
-    event_time = mock_event_time()
-    for i in range(10):
-        yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
-    raise RuntimeError("Got a runtime error from read handler.")
+class AsyncSourceError(SourcerClass):
+    # This handler mimics the scenario where map stream UDF throws a runtime error.
+    async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
+        payload = b"payload:test_mock_message"
+        keys = ["test_key"]
+        offset = mock_offset()
+        event_time = mock_event_time()
+        for i in range(10):
+            yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+        raise RuntimeError("Got a runtime error from read handler.")
+
+    async def ack_handler(self, ack_request: AckRequest):
+        raise RuntimeError("Got a runtime error from ack handler.")
+
+    async def pending_handler(self) -> PendingResponse:
+        raise RuntimeError("Got a runtime error from pending handler.")
+
+    async def partitions_handler(self) -> PartitionsResponse:
+        raise RuntimeError("Got a runtime error from partition handler.")
 
 
-async def err_async_source_ack_handler(ack_request: AckRequest):
-    raise RuntimeError("Got a runtime error from ack handler.")
+class SyncSourceError(SourcerClass):
+    def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
+        raise RuntimeError("Got a runtime error from read handler.")
 
+    def ack_handler(self, ack_request: AckRequest):
+        raise RuntimeError("Got a runtime error from ack handler.")
 
-async def err_async_source_pending_handler() -> PendingResponse:
-    raise RuntimeError("Got a runtime error from pending handler.")
+    def pending_handler(self) -> PendingResponse:
+        raise RuntimeError("Got a runtime error from pending handler.")
 
-
-async def err_async_source_partition_handler() -> PartitionsResponse:
-    raise RuntimeError("Got a runtime error from partition handler.")
-
-
-def err_sync_source_read_handler(datum: ReadRequest) -> Iterable[Message]:
-    raise RuntimeError("Got a runtime error from read handler.")
-
-
-def err_sync_source_ack_handler(ack_request: AckRequest):
-    raise RuntimeError("Got a runtime error from ack handler.")
-
-
-def err_sync_source_pending_handler() -> PendingResponse:
-    raise RuntimeError("Got a runtime error from pending handler.")
-
-
-def err_sync_source_partition_handler() -> PartitionsResponse:
-    raise RuntimeError("Got a runtime error from partition handler.")
+    def partitions_handler(self) -> PartitionsResponse:
+        raise RuntimeError("Got a runtime error from partition handler.")

@@ -1,5 +1,5 @@
 from pynumaflow.mapstreamer import Datum
-from pynumaflow.mapstreamer.proto import mapstream_pb2
+from pynumaflow.proto.mapstreamer import mapstream_pb2
 from tests.testing_utils import get_time_args, mock_message
 
 

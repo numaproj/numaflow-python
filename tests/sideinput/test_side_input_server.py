@@ -5,7 +5,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 from pynumaflow.sideinput import SideInput
-from pynumaflow.sideinput.proto import sideinput_pb2
+from pynumaflow.proto.sideinput import sideinput_pb2
 
 from pynumaflow.sideinput import Response
 

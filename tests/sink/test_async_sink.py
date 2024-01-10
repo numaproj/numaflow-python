@@ -7,14 +7,14 @@ from collections.abc import AsyncIterable
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
+from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
 from pynumaflow.sinker import (
     Datum,
 )
-from pynumaflow.sinker import Responses, Response, AsyncSinker
-from pynumaflow.sinker.proto import sink_pb2
-from pynumaflow.sinker.proto import sink_pb2_grpc
+from pynumaflow.sinker import Responses, Response, SinkServer
+from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from tests.sink.test_server import (
     mock_message,
     mock_err_message,
@@ -69,7 +69,8 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    uds = AsyncSinker(handler=udsink_handler)
+    server_instance = SinkServer(sinker_instance=udsink_handler, server_type=ServerType.Async)
+    uds = server_instance.get_servicer(sinker_instance=udsink_handler, server_type=ServerType.Async)
     sink_pb2_grpc.add_SinkServicer_to_server(uds, server)
     listen_addr = "[::]:50055"
     server.add_insecure_port(listen_addr)

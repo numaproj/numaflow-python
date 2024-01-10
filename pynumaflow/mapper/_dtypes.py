@@ -171,14 +171,12 @@ class MapperClass(metaclass=ABCMeta):
     """
     Provides an interface to write a Mapper
     which will be exposed over a Synchronous gRPC server.
-
-    Args:
-
     """
 
     def __call__(self, *args, **kwargs):
         """
-        Allow to call handler function directly if class instance is sent
+        This allows to execute the handler function directly if
+        class instance is sent as a callable.
         """
         return self.handler(*args, **kwargs)
 
@@ -190,4 +188,5 @@ class MapperClass(metaclass=ABCMeta):
         pass
 
 
+# MapCallable is a callable which can be used as a handler for the Map UDF
 MapCallable = Union[MapperClass, MapSyncCallable, MapAsyncCallable]

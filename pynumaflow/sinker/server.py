@@ -34,26 +34,9 @@ def datum_generator(request_iterator: Iterable[sink_pb2.SinkRequest]) -> Iterabl
 
 class Sinker(sink_pb2_grpc.SinkServicer):
     """
-    Provides an interface to write a Sinker
-    which will be exposed over gRPC.
-
-    Args:
-        handler: Function callable following the type signature of SinkCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x 4
-
-    Example invocation:
-    >>> from typing import List
-    >>> from pynumaflow.sinker import Datum, Responses, Response, Sinker
-    >>> def my_handler(datums: Iterator[Datum]) -> Responses:
-    ...   responses = Responses()
-    ...   for msg in datums:
-    ...     responses.append(Response.as_success(msg.id))
-    ...   return responses
-    >>> grpc_server = Sinker(handler=my_handler)
-    >>> grpc_server.start()
+    This class is used to create a new grpc Sink servicer instance.
+    It implements the SinkServicer interface from the proto sink.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

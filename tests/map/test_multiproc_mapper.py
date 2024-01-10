@@ -35,43 +35,19 @@ class TestMultiProcMethods(unittest.TestCase):
 
     @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        my_server = MapServer(mapper_instance=map_handler)
+        my_server = MapServer(mapper_instance=map_handler, server_type=ServerType.Multiproc)
         self.assertEqual(my_server._process_count, 3)
 
     @patch("os.cpu_count", Mock(return_value=4))
     def test_multiproc_process_count(self) -> None:
-        my_server = MapServer(mapper_instance=map_handler)
+        my_server = MapServer(mapper_instance=map_handler, server_type=ServerType.Multiproc)
         self.assertEqual(my_server._process_count, 4)
 
     @patch("os.cpu_count", Mock(return_value=4))
     @mockenv(NUM_CPU_MULTIPROC="10")
     def test_max_process_count(self) -> None:
-        server = MapServer(mapper_instance=map_handler)
+        server = MapServer(mapper_instance=map_handler, server_type=ServerType.Multiproc)
         self.assertEqual(server._process_count, 8)
-
-    # # To test the reuse property for the grpc servers which allow multiple
-    # # bindings to the same server
-    # def test_reuse_port(self):
-    #     serv_options = [("grpc.so_reuseaddr", 1)]
-    #
-    #     server = MapServer(mapper_instance=map_handler)
-    #
-    #     with server._reserve_port(0) as port:
-    #         print(port)
-    #         bind_address = f"localhost:{port}"
-    #         server1 = grpc.server(thread_pool=None, options=serv_options)
-    #         map_pb2_grpc.add_MapServicer_to_server(server, server1)
-    #         server1.add_insecure_port(bind_address)
-    #
-    #         # so_reuseport=0 -> the bind should raise an error
-    #         server2 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 0),))
-    #         map_pb2_grpc.add_MapServicer_to_server(server, server2)
-    #         self.assertRaises(RuntimeError, server2.add_insecure_port, bind_address)
-    #
-    #         # so_reuseport=1 -> should allow server to bind to port again
-    #         server3 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 1),))
-    #         map_pb2_grpc.add_MapServicer_to_server(server, server3)
-    #         server3.add_insecure_port(bind_address)
 
     def test_udf_map_err(self):
         my_server = MapServer(mapper_instance=err_map_handler)
@@ -155,7 +131,7 @@ class TestMultiProcMethods(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            MapServer()
+            MapServer(server_type=ServerType.Multiproc)
 
 
 if __name__ == "__main__":

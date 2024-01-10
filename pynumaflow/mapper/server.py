@@ -1,44 +1,16 @@
-import logging
-import os
-
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.mapper._dtypes import MapCallable
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.mapper.utils import _map_fn_util
 from pynumaflow.types import NumaflowServicerContext
 
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
 
 class Mapper(map_pb2_grpc.MapServicer):
     """
-    Provides an interface to write a Mapper
-    which will be exposed over a Synchronous gRPC server.
-
-    Args:
-        handler: Function callable following the type signature of MapCallable
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.mapper import Messages, Message\
-    ...     Datum, Mapper
-    ...
-    >>> def map_handler(key: [str], datum: Datum) -> Messages:
-    ...   val = datum.value
-    ...   _ = datum.event_time
-    ...   _ = datum.watermark
-    ...   messages = Messages(Message(val, keys=keys))
-    ...   return messages
-    ...
-    >>> grpc_server = Mapper(handler=map_handler)
-    >>> grpc_server.start()
+    This class is used to create a new grpc Map Servicer instance.
+    It implements the MapServicer interface from the proto map.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

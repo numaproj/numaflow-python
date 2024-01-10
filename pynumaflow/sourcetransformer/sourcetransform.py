@@ -19,7 +19,9 @@ from pynumaflow.shared import NumaflowServer
 
 
 class SourceTransformServer(NumaflowServer):
-    """ """
+    """
+    Class for a new Source Transformer Server instance.
+    """
 
     def __init__(
         self,
@@ -30,13 +32,17 @@ class SourceTransformServer(NumaflowServer):
         server_type=ServerType.Sync,
     ):
         """
-        Create a new grpc Server instance.
+        Create a new grpc Source Transformer Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
-
+        Args:
+        source_transform_instance: The source transformer instance to be used for
+        Source Transformer UDF
+        sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
+                        defaults to number of processors x4
+        server_type: The type of server to be used
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
@@ -63,14 +69,18 @@ class SourceTransformServer(NumaflowServer):
 
     def start(self):
         """
-        Starts the gRPC server on the given UNIX socket with given max threads.
+        Starter function for the Source Transformer server,
+        Handles the server type and starts the server.
+        Currrently supported server types:
+        1. ServerType.Sync
+        2. ServerType.Multiproc
         """
         if self.server_type == ServerType.Sync:
             self.exec()
         elif self.server_type == ServerType.Multiproc:
             self.exec_multiproc()
         else:
-            _LOGGER.error("Server type not supported", self.server_type)
+            _LOGGER.error("Server type not supported - %s", str(self.server_type))
             raise NotImplementedError
 
     def exec(self):
@@ -85,7 +95,7 @@ class SourceTransformServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
-
+        # Start the sync server
         sync_server_start(
             servicer=transform_servicer,
             bind_address=self.sock_path,
@@ -96,7 +106,8 @@ class SourceTransformServer(NumaflowServer):
 
     def exec_multiproc(self):
         """
-        Starts the Multiproc gRPC server on the given UNIX socket with given max threads.
+        Starts the Multiproc gRPC server on the given TCP sockets
+        with given max threads.
         """
         transform_servicer = self.get_servicer(
             source_transform_instance=self.source_transform_instance, server_type=self.server_type
@@ -112,10 +123,11 @@ class SourceTransformServer(NumaflowServer):
     def get_servicer(
         self, source_transform_instance: SourceTransformCallable, server_type: ServerType
     ):
+        """
+        Returns the servicer instance for the given server type.
+        """
         if server_type == ServerType.Sync:
             transform_servicer = SourceTransformer(handler=source_transform_instance)
         elif server_type == ServerType.Multiproc:
             transform_servicer = SourceTransformer(handler=source_transform_instance)
-        else:
-            raise NotImplementedError
         return transform_servicer

@@ -237,14 +237,12 @@ class ReducerClass(metaclass=ABCMeta):
     """
     Provides an interface to write a Reducer
     which will be exposed over a gRPC server.
-
-    Args:
-
     """
 
     def __call__(self, *args, **kwargs):
         """
         Allow to call handler function directly if class instance is sent
+        as the reducer_instance.
         """
         return self.handler(*args, **kwargs)
 
@@ -259,4 +257,5 @@ class ReducerClass(metaclass=ABCMeta):
 
 
 ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+# ReduceCallable is a callable which can be used as a handler for the reduce UDF.
 ReduceCallable = Union[ReduceAsyncCallable, ReducerClass]

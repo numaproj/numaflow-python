@@ -1,62 +1,21 @@
-import logging
-import os
-
 from collections.abc import AsyncIterable
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.sourcer._dtypes import ReadRequest
 from pynumaflow.sourcer._dtypes import Offset, AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
+from pynumaflow._constants import _LOGGER
 
 
 class AsyncSourcer(source_pb2_grpc.SourceServicer):
     """
-    Provides an interface to write an Asynchronous Sourcer
-    which will be exposed over gRPC.
-
-    Args:
-        read_handler: Function callable following the type signature of AsyncSourceReadCallable
-        ack_handler: Function handler for AckFn
-        pending_handler: Function handler for PendingFn
-        partitions_handler: Function handler for PartitionsFn
-
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Message, get_default_partitions \
-    ...     ReadRequest, AsyncSourcer,
-    ... import aiorun
-    ... async def read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
-    ...     payload = b"payload:test_mock_message"
-    ...     keys = ["test_key"]
-    ...     offset = mock_offset()
-    ...     event_time = mock_event_time()
-    ...     for i in range(10):
-    ...         yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
-    ... async def ack_handler(ack_request: AckRequest):
-    ...     return
-    ... async def pending_handler() -> PendingResponse:
-    ...     PendingResponse(count=10)
-    ... async def partitions_handler() -> PartitionsResponse:
-    ...     return PartitionsResponse(partitions=get_default_partitions())
-    >>> grpc_server = AsyncSourcer(read_handler=read_handler,
-    ...                     ack_handler=ack_handler,
-    ...                     pending_handler=pending_handler,
-    ...                     partitions_handler=partitions_handler)
-    >>> aiorun.run(grpc_server.start())
+    This class is used to create a new grpc Source servicer instance.
+    It implements the SourceServicer interface from the proto source.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(self, source_handler: SourceCallable):

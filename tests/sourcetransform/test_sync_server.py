@@ -145,6 +145,10 @@ class TestServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             SourceTransformServer()
+        with self.assertRaises(NotImplementedError):
+            SourceTransformServer(
+                source_transform_instance=transform_handler, server_type=ServerType.Async
+            ).start()
 
 
 if __name__ == "__main__":

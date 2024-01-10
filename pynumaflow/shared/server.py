@@ -31,50 +31,17 @@ class NumaflowServer:
     """
     Provides an interface to write a Numaflow Server
     which will be exposed over gRPC.
-
-    Members:
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
     """
 
     @abstractmethod
     def start(self):
         """
-        Start the server
+        Start the gRPC server
         """
         raise NotImplementedError
 
 
-# def prepare_server(
-#         sock_path: str,
-#         server_type: ServerType,
-#         max_threads=MAX_THREADS,
-#         server_options=None,
-#         process_count=1,
-# ):
-#     """
-#     Create a new grpc Server instance.
-#     A new servicer instance is created and attached to the server.
-#     The server instance is returned.
-#
-#     """
-#     if server_type == ServerType.Sync:
-#         server = _get_sync_server(
-#             bind_address=sock_path, threads_per_proc=max_threads, server_options=server_options
-#         )
-#         return server
-#     # elif server_type == ServerType.Multiproc:
-#     #     servers, server_ports = get_multiproc_servers(
-#     #         max_threads=max_threads,
-#     #         server_options=server_options,
-#     #         process_count=process_count,
-#     #     )
-#     #     return servers, server_ports
-
-
-def write_info_file(protocol: Protocol) -> None:
+def write_info_file(protocol: Protocol, info_file=SERVER_INFO_FILE_PATH) -> None:
     """
     Write the server info file to the given path.
     """
@@ -83,15 +50,14 @@ def write_info_file(protocol: Protocol) -> None:
         language=Language.PYTHON,
         version=get_sdk_version(),
     )
-    info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+    info_server_write(server_info=serv_info, info_file=info_file)
 
 
 def sync_server_start(
     servicer, bind_address: str, max_threads: int, server_options=None, udf_type: str = UDFType.Map
 ):
     """
-    Starts the Synchronous server instance on the given UNIX socket with given max threads.
-    Wait for the server to terminate.
+    Utility function to start a sync grpc server instance.
     """
     # Add the server information to the server info file,
     # here we just write the protocol and language information
@@ -233,44 +199,6 @@ async def start_async_server(
 
     cleanup_coroutines.append(server_graceful_shutdown())
     await server_async.wait_for_termination()
-
-
-# async def __serve_async(self, server) -> None:
-#     async def server_graceful_shutdown():
-#         """
-#         Shuts down the server with 5 seconds of grace period. During the
-#         grace period, the server won't accept new connections and allow
-#         existing RPCs to continue within the grace period.
-#         """
-#         _LOGGER.info("Starting graceful shutdown...")
-#         await server.stop(5)
-#
-#     self.cleanup_coroutines.append(server_graceful_shutdown())
-#     await server.wait_for_termination()
-#
-#
-# async def start(self) -> None:
-#     """Starts the Async gRPC mapper on the given UNIX socket."""
-#     server = grpc.aio.server(options=self._server_options)
-#     await self.__serve_async(server)
-
-
-def _get_sync_server(bind_address: str, threads_per_proc: int, server_options: list):
-    """Get a new sync grpc server instance."""
-    try:
-        server = grpc.server(
-            ThreadPoolExecutor(
-                max_workers=threads_per_proc,
-            ),
-            options=server_options,
-        )
-        server.add_insecure_port(bind_address)
-        print("bind_address", bind_address)
-        _LOGGER.info("Starting new server with bind_address: %s", bind_address)
-    except Exception as err:
-        _LOGGER.critical("Failed to start server: %s", err, exc_info=True)
-        raise err
-    return server
 
 
 @contextlib.contextmanager

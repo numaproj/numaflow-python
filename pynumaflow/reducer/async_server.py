@@ -1,7 +1,4 @@
 import asyncio
-import logging
-import multiprocessing
-import os
 
 from datetime import datetime, timezone
 from collections.abc import AsyncIterable
@@ -9,7 +6,6 @@ from collections.abc import AsyncIterable
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow._constants import (
     WIN_START_TIME,
     WIN_END_TIME,
@@ -21,13 +17,7 @@ from pynumaflow.reducer._dtypes import ReduceResult, ReduceCallable
 from pynumaflow.reducer.asynciter import NonBlockingIterator
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+from pynumaflow._constants import _LOGGER
 
 
 async def datum_generator(
@@ -45,36 +35,9 @@ async def datum_generator(
 
 class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
     """
-    Provides an interface to write a Reduce Function
-    which will be exposed over gRPC.
-
-    Args:
-        handler: Function callable following the type signature of ReduceCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.reducer import Messages, Message\
-    ...     Datum, Metadata, AsyncReducer
-    ... import aiorun
-    ...
-    >>> async def reduce_handler(key: list[str], datums: AsyncIterable[Datum],
-    >>> md: Metadata) -> Messages:
-    ...   interval_window = md.interval_window
-    ...   counter = 0
-    ...   async for _ in datums:
-    ...     counter += 1
-    ...   msg = (
-    ...       f"counter:{counter} interval_window_start:{interval_window.start} "
-    ...       f"interval_window_end:{interval_window.end}"
-    ...   )
-    ...   return Messages(Message(value=str.encode(msg), keys=keys))
-    ...
-    >>> grpc_server = AsyncReducer(handler=reduce_handler)
-    >>> aiorun.run(grpc_server.start())
+    This class is used to create a new grpc Reduce servicer instance.
+    It implements the MapServicer interface from the proto reduce.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

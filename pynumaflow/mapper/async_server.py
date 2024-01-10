@@ -1,52 +1,18 @@
-import logging
-import multiprocessing
-import os
-
-
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.mapper._dtypes import MapAsyncCallable, MapCallable
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+from pynumaflow._constants import _LOGGER
 
 
 class AsyncMapper(map_pb2_grpc.MapServicer):
     """
-    Provides an interface to write an Async Mapper
-    which will be exposed over gRPC.
-
-    Args:
-        handler: Function callable following the type signature of MapCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.mapper import Messages, Message\
-    ...     Datum, AsyncMapper
-    ... import aiorun
-    ...
-    >>> async def map_handler(key: [str], datum: Datum) -> Messages:
-    ...   val = datum.value
-    ...   _ = datum.event_time
-    ...   _ = datum.watermark
-    ...   messages = Messages(Message(val, keys=keys))
-    ...   return messages
-    ...
-    >>> grpc_server = AsyncMapper(handler=map_handler)
-    >>> aiorun.run(grpc_server.start())
+    This class is used to create a new grpc Async Map Servicer instance.
+    It implements the MapServicer interface from the proto map.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

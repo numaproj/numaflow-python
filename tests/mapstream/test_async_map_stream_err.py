@@ -105,6 +105,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             MapStreamServer(server_type=ServerType.Async)
+        with self.assertRaises(NotImplementedError):
+            MapStreamServer(
+                map_stream_instance=err_async_map_stream_handler, server_type="ERORR"
+            ).start()
 
 
 if __name__ == "__main__":

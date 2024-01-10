@@ -177,24 +177,25 @@ class SourceTransformerClass(metaclass=ABCMeta):
     """
     Provides an interface to write a Source Transformer
     which will be exposed over a GRPC server.
-
-    Args:
-
     """
 
     def __call__(self, *args, **kwargs):
         """
         Allow to call handler function directly if class instance is sent
+        as the source_transformer_instance.
         """
         return self.handler(*args, **kwargs)
 
     @abstractmethod
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         """
-        Write a handler function which implements the MapCallable interface.
+        Write a handler function which implements the
+        SourceTransformCallable interface.
         """
         pass
 
 
 SourceTransformHandler = Callable[[list[str], Datum], Messages]
+# SourceTransformCallable is the type of the handler function for the
+# Source Transformer UDFunction.
 SourceTransformCallable = Union[SourceTransformHandler, SourceTransformerClass]

@@ -1,13 +1,9 @@
-import logging
-import os
-
 from collections.abc import Iterable
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.sourcer._dtypes import ReadRequest
 from pynumaflow.sourcer._dtypes import (
     SourceReadCallable,
@@ -19,42 +15,14 @@ from pynumaflow.sourcer._dtypes import (
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
+from pynumaflow._constants import _LOGGER
 
 
 class Sourcer(source_pb2_grpc.SourceServicer):
     """
-    Provides an interface to write a Sourcer
-    which will be exposed over gRPC.
-
-    Args:
-        source_handler: Class of the type SourcerClass which implements the UDS methods
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Message, get_default_partitions, PartitionsResponse \
-    ...     ReadRequest, Sourcer, AckRequest,
-    ... def read_handler(datum: ReadRequest) -> Iterable[Message]:
-    ...     payload = b"payload:test_mock_message"
-    ...     keys = ["test_key"]
-    ...     offset = mock_offset()
-    ...     event_time = mock_event_time()
-    ...     for i in range(10):
-    ...         yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
-    ... def ack_handler(ack_request: AckRequest):
-    ...     return
-    ... def pending_handler() -> PendingResponse:
-    ...     PendingResponse(count=10)
-    ... def partitions_handler() -> PartitionsResponse:
-    ...     return PartitionsResponse(partitions=get_default_partitions())
-    >>> grpc_server = Sourcer(read_handler=read_handler,
-    ...                     ack_handler=ack_handler,
-    ...                     pending_handler=pending_handler,
-    ...                     partitions_handler=partition_handler,)
-    >>> grpc_server.start()
+    This class is used to create a new grpc Source servicer instance.
+    It implements the SourceServicer interface from the proto source.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

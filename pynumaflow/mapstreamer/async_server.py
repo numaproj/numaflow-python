@@ -1,4 +1,3 @@
-import logging
 import multiprocessing
 import os
 
@@ -6,15 +5,11 @@ from collections.abc import AsyncIterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.mapstreamer import Datum
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable
 from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc, mapstream_pb2
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
+from pynumaflow._constants import _LOGGER
 
 _PROCESS_COUNT = multiprocessing.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
@@ -22,30 +17,10 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
     """
-    Provides an interface to write a Map Streamer
-    which will be exposed over gRPC.
-
-    Args:
-        handler: Function callable following the type signature of MapStreamCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.mapstreamer import Messages, Message \
-    ...     Datum, AsyncMapStreamer
-    ... import aiorun
-    >>> async def map_stream_handler(key: [str], datums: Datum) -> AsyncIterable[Message]:
-    ...    val = datum.value
-    ...    _ = datum.event_time
-    ...    _ = datum.watermark
-    ...    for i in range(10):
-    ...        yield Message(val, keys=keys)
-    ...
-    >>> grpc_server = AsyncMapStreamer(handler=map_stream_handler)
-    >>> aiorun.run(grpc_server.start())
+    This class is used to create a new grpc Map Stream Servicer instance.
+    It implements the MapServicer interface from the proto
+    mapstream_pb2_grpc.py file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

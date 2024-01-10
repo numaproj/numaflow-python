@@ -161,6 +161,12 @@ class TestAsyncSink(unittest.TestCase):
     def __stub(self):
         return sink_pb2_grpc.SinkStub(_channel)
 
+    def test_invalid_server_type(self) -> None:
+        with self.assertRaises(TypeError):
+            SinkServer(server_type=ServerType.Async)
+        with self.assertRaises(NotImplementedError):
+            SinkServer(sinker_instance=udsink_handler, server_type="ERORR").start()
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

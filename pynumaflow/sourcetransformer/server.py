@@ -1,47 +1,20 @@
-import logging
-import os
-
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.sourcetransformer import Datum
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
+from pynumaflow._constants import _LOGGER
 
 
 class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
     """
-    Provides an interface to write a Source Transformer
-    which will be exposed over a Synchronous gRPC server.
-
-    Args:
-        handler: Function callable following the type signature of SourceTransformCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.sourcetransformer import Messages, Message \
-    ...     Datum, SourceTransformer
-    >>> def transform_handler(key: [str], datum: Datum) -> Messages:
-    ...   val = datum.value
-    ...   new_event_time = datetime.time()
-    ...   _ = datum.watermark
-    ...   message_t_s = Messages(Message(val, event_time=new_event_time, keys=key))
-    ...   return message_t_s
-    ...
-    >>> grpc_server = SourceTransformer(handler=transform_handler)
-    >>> grpc_server.start()
+    This class is used to create a new grpc SourceTransform servicer instance.
+    It implements the SourceTransformServicer interface from the proto transform.proto file.
+    Provides the functionality for the required rpc methods.
     """
 
     def __init__(

@@ -103,6 +103,8 @@ class TestSyncSourcer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             SourceServer()
+        with self.assertRaises(NotImplementedError):
+            SourceServer(sourcer_instance=SyncSourceError(), server_type="random").start()
 
 
 if __name__ == "__main__":

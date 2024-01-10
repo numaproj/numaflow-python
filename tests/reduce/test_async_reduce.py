@@ -237,6 +237,12 @@ class TestAsyncReducer(unittest.TestCase):
     def __stub(self):
         return reduce_pb2_grpc.ReduceStub(_channel)
 
+    def test_error_init(self):
+        with self.assertRaises(TypeError):
+            ReduceServer()
+        with self.assertRaises(NotImplementedError):
+            ReduceServer(reducer_instance=async_reduce_handler, server_type="ERORR").start()
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

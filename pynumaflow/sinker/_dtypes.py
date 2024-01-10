@@ -168,24 +168,24 @@ class SinkerClass(metaclass=ABCMeta):
     Provides an interface to write a Sinker
     which will be exposed over a gRPC server.
 
-    Args:
-
     """
 
     def __call__(self, *args, **kwargs):
         """
         Allow to call handler function directly if class instance is sent
+        as the sinker_instance.
         """
         return self.handler(*args, **kwargs)
 
     @abstractmethod
     def handler(self, datums: Iterator[Datum]) -> Responses:
         """
-        Write a handler function which implements the MapCallable interface.
+        Write a handler function which implements the SinkCallable interface.
         """
         pass
 
 
 SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
 AsyncSinkCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
+# SinkCallable is a callable which can be used as a handler for the UDSink.
 SinkCallable = Union[SinkerClass, SinkHandlerCallable, AsyncSinkCallable]

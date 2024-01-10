@@ -27,7 +27,7 @@ from pynumaflow.shared.server import (
 
 class MapServer(NumaflowServer):
     """
-    Create a new grpc Server instance.
+    Create a new grpc Map Server instance.
     """
 
     def __init__(
@@ -39,13 +39,19 @@ class MapServer(NumaflowServer):
         server_type=ServerType.Sync,
     ):
         """
-        Create a new grpc Server instance.
+        Create a new grpc Map Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
-
+        Args:
+        mapper_instance: The mapper instance to be used for Map UDF
+        sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
                      defaults to number of processors x4
+        server_type: The type of server to be used, this can be one of the following:
+                        - ServerType.Sync: Synchronous server
+                        - ServerType.Async: Asynchronous server
+                        - ServerType.Multiproc: Multiprocess server
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
@@ -72,7 +78,9 @@ class MapServer(NumaflowServer):
 
     def start(self) -> None:
         """
-        Starts the gRPC server on the given UNIX socket with given max threads.
+        Starter function for the server class, Handles the server type and
+        starts the server accordingly. If the server type is not supported,
+        raises NotImplementedError.
         """
         if self.server_type == ServerType.Sync:
             self.exec()
@@ -81,13 +89,14 @@ class MapServer(NumaflowServer):
         elif self.server_type == ServerType.Multiproc:
             self.exec_multiproc()
         else:
-            _LOGGER.error("Server type not supported", self.server_type)
+            _LOGGER.error("Server type not supported - %s", str(self.server_type))
             raise NotImplementedError
 
     def exec(self):
         """
         Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
+        # Get the servicer instance based on the server type
         map_servicer = self.get_servicer(
             mapper_instance=self.mapper_instance, server_type=self.server_type
         )
@@ -96,7 +105,7 @@ class MapServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
-        # sync_server_start(server=server)
+        # Start the server
         sync_server_start(
             servicer=map_servicer,
             bind_address=self.sock_path,
@@ -107,11 +116,16 @@ class MapServer(NumaflowServer):
 
     def exec_multiproc(self):
         """
-        Starts the gRPC server on the given UNIX socket with given max threads.
+        Starts the multirpoc gRPC server on the given UNIX socket with
+        given max threads.
         """
+
+        # Get the servicer instance based on the server type
         map_servicer = self.get_servicer(
             mapper_instance=self.mapper_instance, server_type=self.server_type
         )
+
+        # Start the multirpoc server
         start_multiproc_server(
             max_threads=self.max_threads,
             servicer=map_servicer,
@@ -122,8 +136,14 @@ class MapServer(NumaflowServer):
 
     async def aexec(self) -> None:
         """
-        Starts the Async gRPC server on the given UNIX socket with given max threads.s
+        Starts the Async gRPC server on the given UNIX socket with
+        given max threads.
         """
+
+        # As the server is async, we need to create a new server instance in the
+        # same thread as the event loop so that all the async calls are made in the
+        # same context
+        # Create a new async server instance and add the servicer to it
         server_new = grpc.aio.server()
         server_new.add_insecure_port(self.sock_path)
         map_servicer = self.get_servicer(
@@ -131,15 +151,15 @@ class MapServer(NumaflowServer):
         )
         map_pb2_grpc.add_MapServicer_to_server(map_servicer, server_new)
 
+        # Start the async server
         await start_async_server(server_new, self.sock_path, self.max_threads, self._server_options)
 
     def get_servicer(self, mapper_instance: MapCallable, server_type: ServerType):
+        """Returns the servicer instance based on the server type"""
         if server_type == ServerType.Sync:
             map_servicer = Mapper(handler=mapper_instance)
         elif server_type == ServerType.Async:
             map_servicer = AsyncMapper(handler=mapper_instance)
         elif server_type == ServerType.Multiproc:
             map_servicer = Mapper(handler=mapper_instance)
-        else:
-            raise NotImplementedError
         return map_servicer

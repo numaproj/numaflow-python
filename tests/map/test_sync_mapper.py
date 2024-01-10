@@ -7,8 +7,6 @@ from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 from pynumaflow._constants import ServerType
 
-from pynumaflow.mapper.server import Mapper
-
 from pynumaflow.mapper import MapServer
 from pynumaflow.proto.mapper import map_pb2
 from tests.map.utils import map_handler, err_map_handler
@@ -39,7 +37,10 @@ class TestSyncMapper(unittest.TestCase):
         self.assertEqual(my_servicer.max_message_size, 1024 * 1024 * 5)
 
     def test_udf_map_err(self):
-        my_servicer = Mapper(handler=err_map_handler)
+        my_server = MapServer(mapper_instance=err_map_handler)
+        my_servicer = my_server.get_servicer(
+            mapper_instance=my_server.mapper_instance, server_type=ServerType.Sync
+        )
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -66,7 +67,10 @@ class TestSyncMapper(unittest.TestCase):
         self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_udf_map_error_response(self):
-        my_servicer = Mapper(handler=err_map_handler)
+        my_server = MapServer(mapper_instance=err_map_handler)
+        my_servicer = my_server.get_servicer(
+            mapper_instance=my_server.mapper_instance, server_type=my_server.server_type
+        )
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -144,7 +148,9 @@ class TestSyncMapper(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            Mapper()
+            MapServer()
+        with self.assertRaises(NotImplementedError):
+            MapServer(mapper_instance=map_handler, server_type="ERORR").start()
 
 
 if __name__ == "__main__":

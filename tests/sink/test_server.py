@@ -162,6 +162,12 @@ class TestServer(unittest.TestCase):
         self.assertEqual("mock sink message error", response.results[1].err_msg)
         self.assertEqual(code, StatusCode.OK)
 
+    def test_invalid_init(self):
+        with self.assertRaises(TypeError):
+            SinkServer()
+        with self.assertRaises(NotImplementedError):
+            SinkServer(sinker_instance=udsink_handler, server_type="ERORR").start()
+
 
 if __name__ == "__main__":
     unittest.main()

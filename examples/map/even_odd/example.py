@@ -1,4 +1,4 @@
-from pynumaflow.mapper import Messages, Message, Datum, Mapper
+from pynumaflow.mapper import Messages, Message, Datum, MapServer
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
@@ -22,5 +22,5 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = Mapper(handler=my_handler)
+    grpc_server = MapServer(mapper_instance=my_handler)
     grpc_server.start()

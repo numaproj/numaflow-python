@@ -4,16 +4,17 @@ from datetime import datetime
 from pynumaflow.sourcer import (
     ReadRequest,
     Message,
-    Sourcer,
     AckRequest,
     PendingResponse,
     Offset,
     PartitionsResponse,
     get_default_partitions,
+    SourcerClass,
+    SourceServer,
 )
 
 
-class SimpleSource:
+class SimpleSource(SourcerClass):
     """
     SimpleSource is a class for User Defined Source implementation.
     """
@@ -67,10 +68,5 @@ class SimpleSource:
 
 if __name__ == "__main__":
     ud_source = SimpleSource()
-    grpc_server = Sourcer(
-        read_handler=ud_source.read_handler,
-        ack_handler=ud_source.ack_handler,
-        pending_handler=ud_source.pending_handler,
-        partitions_handler=ud_source.partitions_handler,
-    )
+    grpc_server = SourceServer(sourcer_instance=ud_source)
     grpc_server.start()

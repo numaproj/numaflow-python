@@ -15,10 +15,11 @@ processes to bind to the same port.
 
 To enable multiprocessing mode 
 
-1) Start the multiproc server in the UDF using the following command 
+1) Start the multiproc server in the UDF using the following command, select the server_type = ServerType.Multiproc
 ```python
 if __name__ == "__main__":
-    grpc_server = MultiProcServer(map_handler=my_handler)
+    grpc_server = MapServer(mapper_instance=handler,
+                            server_type=ServerType.Multiproc)
     grpc_server.start()
 ```
 2) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF container,

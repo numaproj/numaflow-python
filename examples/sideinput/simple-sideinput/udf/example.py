@@ -1,6 +1,6 @@
 from threading import Thread
 import pynumaflow.sideinput as sideinputsdk
-from pynumaflow.mapper import Messages, Mapper, Message, Datum
+from pynumaflow.mapper import Messages, MapServer, Message, Datum
 from watchfiles import watch
 
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     This function is used to start the GRPC server and the watcher thread.
     """
     daemon = Thread(target=watcher, daemon=True, name="Monitor")
-    grpc_server = Mapper(handler=my_handler)
+    grpc_server = MapServer(mapper_instance=my_handler)
     thread_server = Thread(target=grpc_server.start, daemon=True, name="GRPC Server")
     daemon.start()
     thread_server.start()

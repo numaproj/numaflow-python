@@ -1,7 +1,8 @@
-import aiorun
 from collections.abc import AsyncIterable
 
-from pynumaflow.mapstreamer import Message, Datum, AsyncMapStreamer
+from pynumaflow._constants import ServerType
+
+from pynumaflow.mapstreamer import Message, Datum, MapStreamServer
 
 
 async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Message]:
@@ -22,5 +23,7 @@ async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Messag
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncMapStreamer(handler=map_stream_handler)
-    aiorun.run(grpc_server.start())
+    grpc_server = MapStreamServer(
+        map_stream_instance=map_stream_handler, server_type=ServerType.Async
+    )
+    grpc_server.start()

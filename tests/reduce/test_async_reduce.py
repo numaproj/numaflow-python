@@ -15,7 +15,8 @@ from pynumaflow.reducer import (
     Messages,
     Message,
     Datum,
-    Metadata, ReduceServer,
+    Metadata,
+    ReduceServer,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from tests.testing_utils import (
@@ -69,7 +70,7 @@ def start_request() -> (Datum, tuple):
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50057")
+_channel = grpc.insecure_channel("unix:///tmp/reduce.sock")
 _loop = None
 
 
@@ -93,10 +94,12 @@ async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata)
 def NewAsyncReducer(
     reduce_handler=async_reduce_handler,
 ):
-    server_instance = ReduceServer(reducer_instance=async_reduce_handler,
-                                   server_type=ServerType.Async)
-    udfs = server_instance.get_servicer(reducer_instance=server_instance.reducer_instance,
-                                        server_type=server_instance.server_type)
+    server_instance = ReduceServer(
+        reducer_instance=async_reduce_handler, server_type=ServerType.Async
+    )
+    udfs = server_instance.get_servicer(
+        reducer_instance=server_instance.reducer_instance, server_type=server_instance.server_type
+    )
 
     return udfs
 
@@ -104,7 +107,7 @@ def NewAsyncReducer(
 async def start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
-    listen_addr = "[::]:50057"
+    listen_addr = "unix:///tmp/reduce.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -125,7 +128,7 @@ class TestAsyncReducer(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50057") as channel:
+                with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -219,7 +222,7 @@ class TestAsyncReducer(unittest.TestCase):
         self.assertEqual(100, count)
 
     def test_is_ready(self) -> None:
-        with grpc.insecure_channel("localhost:50057") as channel:
+        with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:
             stub = reduce_pb2_grpc.ReduceStub(channel)
 
             request = _empty_pb2.Empty()

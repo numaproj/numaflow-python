@@ -53,7 +53,7 @@ def request_generator(count, request, resetkey: bool = False):
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50056")
+_channel = grpc.insecure_channel("unix:///tmp/async_map.sock")
 _loop = None
 
 
@@ -71,7 +71,7 @@ def new_async_mapper():
 async def start_server(udfs):
     server = grpc.aio.server()
     map_pb2_grpc.add_MapServicer_to_server(udfs, server)
-    listen_addr = "[::]:50056"
+    listen_addr = "unix:///tmp/async_map.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -92,7 +92,7 @@ class TestAsyncMapper(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50056") as channel:
+                with grpc.insecure_channel("unix:///tmp/async_map.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -110,7 +110,7 @@ class TestAsyncMapper(unittest.TestCase):
             LOGGER.error(e)
 
     def test_run_server(self) -> None:
-        with grpc.insecure_channel("localhost:50056") as channel:
+        with grpc.insecure_channel("unix:///tmp/async_map.sock") as channel:
             stub = map_pb2_grpc.MapStub(channel)
             event_time_timestamp = _timestamp_pb2.Timestamp()
             event_time_timestamp.FromDatetime(dt=mock_event_time())
@@ -200,7 +200,7 @@ class TestAsyncMapper(unittest.TestCase):
         self.assertIsNotNone(grpcException)
 
     def test_is_ready(self) -> None:
-        with grpc.insecure_channel("localhost:50056") as channel:
+        with grpc.insecure_channel("unix:///tmp/async_map.sock") as channel:
             stub = map_pb2_grpc.MapStub(channel)
 
             request = _empty_pb2.Empty()

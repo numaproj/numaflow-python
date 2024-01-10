@@ -26,7 +26,7 @@ LOGGER = setup_logging(__name__)
 # if set to true, map handler will raise a `ValueError` exception.
 raise_error_from_map = False
 
-server_port = "localhost:50058"
+server_port = "unix:///tmp/async_source.sock"
 
 _s: Server = None
 _channel = grpc.insecure_channel(server_port)
@@ -51,7 +51,7 @@ def NewAsyncSourcer():
 async def start_server(udfs):
     server = grpc.aio.server()
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
-    listen_addr = "[::]:50058"
+    listen_addr = "unix:///tmp/async_source.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s

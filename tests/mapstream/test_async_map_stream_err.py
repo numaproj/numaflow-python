@@ -33,7 +33,7 @@ async def err_async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIt
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50041")
+_channel = grpc.insecure_channel("unix:///tmp/async_map_stream_err.sock")
 _loop = None
 
 
@@ -46,10 +46,10 @@ async def start_server():
     server = grpc.aio.server()
     server_instance = MapStreamServer(map_stream_instance=err_async_map_stream_handler)
     udfs = server_instance.get_servicer(
-        map_stream_instance=err_async_map_stream_handler, server_type=server.server_type
+        map_stream_instance=err_async_map_stream_handler, server_type=server_instance.server_type
     )
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
-    listen_addr = "[::]:50041"
+    listen_addr = "unix:///tmp/async_map_stream_err.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -69,7 +69,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50041") as channel:
+                with grpc.insecure_channel("unix:///tmp/async_map_stream_err.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():

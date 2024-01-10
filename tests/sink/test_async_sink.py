@@ -58,7 +58,7 @@ def start_sink_streaming_request(err=False) -> (Datum, tuple):
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50055")
+_channel = grpc.insecure_channel("unix:///tmp/async_sink.sock")
 _loop = None
 
 
@@ -72,7 +72,7 @@ async def start_server():
     server_instance = SinkServer(sinker_instance=udsink_handler, server_type=ServerType.Async)
     uds = server_instance.get_servicer(sinker_instance=udsink_handler, server_type=ServerType.Async)
     sink_pb2_grpc.add_SinkServicer_to_server(uds, server)
-    listen_addr = "[::]:50055"
+    listen_addr = "unix:///tmp/async_sink.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -92,7 +92,7 @@ class TestAsyncSink(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50055") as channel:
+                with grpc.insecure_channel("unix:///tmp/async_sink.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -111,7 +111,7 @@ class TestAsyncSink(unittest.TestCase):
 
     #
     def test_run_server(self) -> None:
-        with grpc.insecure_channel("localhost:50055") as channel:
+        with grpc.insecure_channel("unix:///tmp/async_sink.sock") as channel:
             stub = sink_pb2_grpc.SinkStub(channel)
 
             request = _empty_pb2.Empty()

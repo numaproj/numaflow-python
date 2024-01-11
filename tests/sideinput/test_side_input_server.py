@@ -146,6 +146,8 @@ class TestServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             SideInputServer()
+        with self.assertRaises(NotImplementedError):
+            SideInputServer(side_input_instance=retrieve_side_input_handler, server_type="test").start()
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.mapper import Messages, Message, DROP
+from pynumaflow.mapper import Messages, Message, DROP, MapperClass, Datum
 from tests.testing_utils import mock_message
 
 
@@ -88,6 +88,31 @@ class TestMessages(unittest.TestCase):
         msgts = Messages(self.mock_message_object(), self.mock_message_object())
         with self.assertRaises(TypeError):
             msgts[:1]
+
+
+class ExampleMapper(MapperClass):
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
+        messages = Messages()
+        messages.append(Message(mock_message(), keys=keys))
+        return messages
+
+
+class TestMapClass(unittest.TestCase):
+    def setUp(self) -> None:
+        # Create a map class instance
+        self.mapper_instance = ExampleMapper()
+
+    def test_map_class_call(self):
+        """Test that the __call__ functionality for the class works,
+        ie the class instance can be called directly to invoke the handler function
+        """
+        # make a call to the class directly
+        ret = self.mapper_instance([], None)
+        self.assertEqual(mock_message(), ret[0].value)
+        # make a call to the handler
+        ret_handler = self.mapper_instance.handler(keys=[], datum=None)
+        #
+        self.assertEqual(ret[0], ret_handler[0])
 
 
 if __name__ == "__main__":

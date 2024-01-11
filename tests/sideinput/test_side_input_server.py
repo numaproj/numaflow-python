@@ -147,7 +147,9 @@ class TestServer(unittest.TestCase):
         with self.assertRaises(TypeError):
             SideInputServer()
         with self.assertRaises(NotImplementedError):
-            SideInputServer(side_input_instance=retrieve_side_input_handler, server_type="test").start()
+            SideInputServer(
+                side_input_instance=retrieve_side_input_handler, server_type="test"
+            ).start()
 
 
 if __name__ == "__main__":

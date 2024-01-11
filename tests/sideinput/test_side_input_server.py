@@ -4,10 +4,9 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from pynumaflow.sideinput import SideInput
 from pynumaflow.proto.sideinput import sideinput_pb2
 
-from pynumaflow.sideinput import Response
+from pynumaflow.sideinput import Response, SideInputServer
 
 
 def retrieve_side_input_handler() -> Response:
@@ -34,7 +33,10 @@ class TestServer(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        my_service = SideInput(handler=retrieve_side_input_handler)
+        server = SideInputServer(side_input_instance=retrieve_side_input_handler)
+        my_service = server.get_servicer(
+            side_input_instance=server.side_input_instance, server_type=server.server_type
+        )
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -42,20 +44,23 @@ class TestServer(unittest.TestCase):
         """
         Test the initialization of the SideInput class,
         """
-        my_servicer = SideInput(
-            handler=retrieve_side_input_handler,
+        my_servicer = SideInputServer(
+            side_input_instance=retrieve_side_input_handler,
             sock_path="/tmp/test_side_input.sock",
             max_message_size=1024 * 1024 * 5,
         )
         self.assertEqual(my_servicer.sock_path, "unix:///tmp/test_side_input.sock")
-        self.assertEqual(my_servicer._max_message_size, 1024 * 1024 * 5)
+        self.assertEqual(my_servicer.max_message_size, 1024 * 1024 * 5)
 
     def test_side_input_err(self):
         """
         Test the error case for the RetrieveSideInput method,
         """
-        my_servicer = SideInput(handler=err_retrieve_handler)
-        services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_servicer}
+        server = SideInputServer(side_input_instance=err_retrieve_handler)
+        my_service = server.get_servicer(
+            side_input_instance=server.side_input_instance, server_type=server.server_type
+        )
+        services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
         method = self.test_server.invoke_unary_unary(
@@ -115,7 +120,10 @@ class TestServer(unittest.TestCase):
         Test the no_broadcast_message method,
         where we expect the no_broadcast flag to be True.
         """
-        my_servicer = SideInput(handler=retrieve_no_broadcast_handler)
+        server = SideInputServer(side_input_instance=retrieve_no_broadcast_handler)
+        my_servicer = server.get_servicer(
+            side_input_instance=server.side_input_instance, server_type=server.server_type
+        )
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -137,7 +145,7 @@ class TestServer(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            SideInput()
+            SideInputServer()
 
 
 if __name__ == "__main__":

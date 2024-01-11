@@ -14,7 +14,7 @@ def watcher():
     """
     This function is used to watch the side input directory for changes.
     """
-    path = sideinputsdk.SideInput.SIDE_INPUT_DIR_PATH
+    path = sideinputsdk.SIDE_INPUT_DIR_PATH
     for changes in watch(path):
         print(changes)
 

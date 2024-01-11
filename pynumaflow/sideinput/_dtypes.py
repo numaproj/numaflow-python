@@ -1,5 +1,6 @@
+from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import TypeVar, Callable, Union
 
 R = TypeVar("R", bound="Response")
 
@@ -36,3 +37,28 @@ class Response:
         This event will not be broadcasted.
         """
         return Response(value=b"", no_broadcast=True)
+
+
+class SideInputClass(metaclass=ABCMeta):
+    """
+    Provides an interface to write a SideInput Class
+    which will be exposed over gRPC.
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        This allows to execute the handler function directly if
+        class instance is sent as a callable.
+        """
+        return self.retrieve_handler(*args, **kwargs)
+
+    @abstractmethod
+    def retrieve_handler(self) -> Response:
+        """
+        This function is called when a Side Input request is received.
+        """
+        pass
+
+
+RetrieverHandlerCallable = Callable[[], Response]
+RetrieverCallable = Union[SideInputClass, RetrieverHandlerCallable]

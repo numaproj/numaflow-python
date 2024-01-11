@@ -1,4 +1,5 @@
-from pynumaflow.sideinput._dtypes import Response
-from pynumaflow.sideinput.server import SideInput
+from pynumaflow._constants import SIDE_INPUT_DIR_PATH
+from pynumaflow.sideinput._dtypes import Response, SideInputClass
+from pynumaflow.sideinput.sideinput import SideInputServer
 
-__all__ = ["Response", "SideInput"]
+__all__ = ["Response", "SideInputClass", "SideInputServer", "SIDE_INPUT_DIR_PATH"]

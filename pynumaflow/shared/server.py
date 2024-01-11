@@ -2,7 +2,7 @@ import contextlib
 import multiprocessing
 import os
 import socket
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 
@@ -22,12 +22,13 @@ from pynumaflow.info.types import (
     METADATA_ENVS,
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
+from pynumaflow.proto.sideinput import sideinput_pb2_grpc
 from pynumaflow.proto.sinker import sink_pb2_grpc
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 
 
-class NumaflowServer:
+class NumaflowServer(metaclass=ABCMeta):
     """
     Provides an interface to write a Numaflow Server
     which will be exposed over gRPC.
@@ -38,7 +39,7 @@ class NumaflowServer:
         """
         Start the gRPC server
         """
-        raise NotImplementedError
+        pass
 
 
 def write_info_file(protocol: Protocol, info_file=SERVER_INFO_FILE_PATH) -> None:
@@ -59,18 +60,21 @@ def sync_server_start(
     max_threads: int,
     server_options=None,
     udf_type: str = UDFType.Map,
-    server_info_file=SERVER_INFO_FILE_PATH,
+    add_info_server=True,
 ):
     """
     Utility function to start a sync grpc server instance.
     """
     # Add the server information to the server info file,
     # here we just write the protocol and language information
-    server_info = ServerInfo(
-        protocol=Protocol.UDS,
-        language=Language.PYTHON,
-        version=get_sdk_version(),
-    )
+    if add_info_server:
+        server_info = ServerInfo(
+            protocol=Protocol.UDS,
+            language=Language.PYTHON,
+            version=get_sdk_version(),
+        )
+    else:
+        server_info = None
     # Run a sync server instances
     _run_server(
         servicer=servicer,
@@ -79,7 +83,6 @@ def sync_server_start(
         server_options=server_options,
         udf_type=udf_type,
         server_info=server_info,
-        server_info_file=server_info_file,
     )
 
 
@@ -112,6 +115,8 @@ def _run_server(
         transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
     elif udf_type == UDFType.Source:
         source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
+    elif udf_type == UDFType.SideInput:
+        sideinput_pb2_grpc.add_SideInputServicer_to_server(servicer, server)
 
     # bind the server to the UDS/TCP socket
     server.add_insecure_port(bind_address)
@@ -119,7 +124,7 @@ def _run_server(
     server.start()
 
     # Add the server information to the server info file if provided
-    if server_info:
+    if server_info and server_info_file:
         info_server_write(server_info=server_info, info_file=server_info_file)
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
@@ -191,7 +196,12 @@ async def start_async_server(
 
     # Add the server information to the server info file
     # Here we just write the protocol and language information
-    write_info_file(Protocol.UDS)
+    serv_info = ServerInfo(
+        protocol=Protocol.UDS,
+        language=Language.PYTHON,
+        version=get_sdk_version(),
+    )
+    info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
 
     # Log the server start
     _LOGGER.info(

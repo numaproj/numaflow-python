@@ -1,5 +1,5 @@
 import datetime
-from pynumaflow.sideinput import Response, SideInput
+from pynumaflow.sideinput import Response, SideInputServer
 
 counter = 0
 
@@ -22,5 +22,5 @@ def my_handler() -> Response:
 
 
 if __name__ == "__main__":
-    grpc_server = SideInput(handler=my_handler)
+    grpc_server = SideInputServer(side_input_instance=my_handler)
     grpc_server.start()

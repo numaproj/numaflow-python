@@ -81,6 +81,10 @@ class MapServer(NumaflowServer):
         Starter function for the server class, Handles the server type and
         starts the server accordingly. If the server type is not supported,
         raises NotImplementedError.
+        Currently supported server types are:
+            - ServerType.Sync: Synchronous server
+            - ServerType.Async: Asynchronous server
+            - ServerType.Multiproc: Multiprocess server
         """
         if self.server_type == ServerType.Sync:
             self.exec()

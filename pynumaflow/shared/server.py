@@ -54,7 +54,12 @@ def write_info_file(protocol: Protocol, info_file=SERVER_INFO_FILE_PATH) -> None
 
 
 def sync_server_start(
-    servicer, bind_address: str, max_threads: int, server_options=None, udf_type: str = UDFType.Map
+    servicer,
+    bind_address: str,
+    max_threads: int,
+    server_options=None,
+    udf_type: str = UDFType.Map,
+    server_info_file=SERVER_INFO_FILE_PATH,
 ):
     """
     Utility function to start a sync grpc server instance.
@@ -74,11 +79,18 @@ def sync_server_start(
         server_options=server_options,
         udf_type=udf_type,
         server_info=server_info,
+        server_info_file=server_info_file,
     )
 
 
 def _run_server(
-    servicer, bind_address: str, threads_per_proc, server_options, udf_type: str, server_info=None
+    servicer,
+    bind_address: str,
+    threads_per_proc,
+    server_options,
+    udf_type: str,
+    server_info=None,
+    server_info_file=SERVER_INFO_FILE_PATH,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -108,7 +120,7 @@ def _run_server(
 
     # Add the server information to the server info file if provided
     if server_info:
-        info_server_write(server_info=server_info, info_file=SERVER_INFO_FILE_PATH)
+        info_server_write(server_info=server_info, info_file=server_info_file)
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
     server.wait_for_termination()

@@ -5,14 +5,18 @@ source = pynumaflow
 omit =
     pynumaflow/tests/*
     examples/*
+    pynumaflow/proto/*
+    pynumaflow/shared/server.py
 
 [report]
 exclude_lines =
-    def start
-    def start_async
-    def __serve_async
-    def start_multiproc
+    def sync_server_start
     def _run_server
+    def start_multiproc_server
+    async def start_async_server
     def _reserve_port
     if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
+    def exec_multiproc
+    def exec
+    async def aexec

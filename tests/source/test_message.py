@@ -1,6 +1,11 @@
 import unittest
 
-from pynumaflow.sourcer import Message, Offset, ReadRequest, PartitionsResponse
+from pynumaflow.sourcer import (
+    Message,
+    Offset,
+    ReadRequest,
+    PartitionsResponse,
+)
 from tests.source.utils import mock_offset
 from tests.testing_utils import mock_event_time
 

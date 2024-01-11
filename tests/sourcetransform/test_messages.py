@@ -1,7 +1,8 @@
 import unittest
 from datetime import datetime, timezone
 
-from pynumaflow.sourcetransformer import Messages, Message, DROP
+from pynumaflow.sourcetransformer import Messages, Message, DROP, SourceTransformerClass, Datum
+from tests.testing_utils import mock_new_event_time
 
 
 def mock_message_t():
@@ -91,6 +92,31 @@ class TestMessages(unittest.TestCase):
         msgts = Messages(self.mock_Message_object(), self.mock_Message_object())
         with self.assertRaises(TypeError):
             msgts[:1]
+
+
+class ExampleSourceTransformClass(SourceTransformerClass):
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
+        messages = Messages()
+        messages.append(Message(mock_message_t(), mock_new_event_time(), keys=keys))
+        return messages
+
+
+class TestSourceTransformClass(unittest.TestCase):
+    def setUp(self) -> None:
+        # Create a map class instance
+        self.transform_instance = ExampleSourceTransformClass()
+
+    def test_source_transform_class_call(self):
+        """Test that the __call__ functionality for the class works,
+        ie the class instance can be called directly to invoke the handler function
+        """
+        # make a call to the class directly
+        ret = self.transform_instance([], None)
+        self.assertEqual(mock_message_t(), ret[0].value)
+        # make a call to the handler
+        ret_handler = self.transform_instance.handler([], None)
+        # Both responses should be equal
+        self.assertEqual(ret[0], ret_handler[0])
 
 
 if __name__ == "__main__":

@@ -46,18 +46,25 @@ pre-commit install
 ### Map
 
 ```python
-from pynumaflow.mapper import Messages, Message, Datum, Mapper
+from pynumaflow.mapper import Messages, Message, Datum, MapServer
 
 
-def my_handler(keys: list[str], datum: Datum) -> Messages:
+def handler(keys: list[str], datum: Datum) -> Messages:
     val = datum.value
     _ = datum.event_time
     _ = datum.watermark
-    return Messages(Message(value=val, keys=keys))
+    strs = val.decode("utf-8").split(",")
+    messages = Messages()
+    if len(strs) == 0:
+        messages.append(Message.to_drop())
+        return messages
+    for s in strs:
+        messages.append(Message(str.encode(s)))
+    return messages
 
 
 if __name__ == "__main__":
-    grpc_server = Mapper(handler=my_handler)
+    grpc_server = MapServer(mapper_instance=handler)
     grpc_server.start()
 ```
 ### SourceTransformer - Map with event time assignment capability
@@ -66,7 +73,7 @@ SourceTransformer is only supported at source vertex to enable (a) early data fi
 
 ```python
 from datetime import datetime
-from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformer
+from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
 
 
 def transform_handler(keys: list[str], datum: Datum) -> Messages:
@@ -78,21 +85,18 @@ def transform_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SourceTransformer(handler=transform_handler)
+    grpc_server = SourceTransformServer(source_transform_instance=transform_handler)
     grpc_server.start()
 ```
 
 ### Reduce
 
 ```python
-import aiorun
-from typing import Iterator, List
-from pynumaflow.reducer import Messages, Message, Datum, Metadata, AsyncReducer
+from typing import AsyncIterable
+from pynumaflow.reducer import Messages, Message, Datum, Metadata, ReduceServer
 
 
-async def my_handler(
-        keys: List[str], datums: Iterator[Datum], md: Metadata
-) -> Messages:
+async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -101,12 +105,12 @@ async def my_handler(
         f"counter:{counter} interval_window_start:{interval_window.start} "
         f"interval_window_end:{interval_window.end}"
     )
-    return Messages(Message(str.encode(msg), keys))
+    return Messages(Message(str.encode(msg), keys=keys))
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncReducer(handler=my_handler)
-    aiorun.run(grpc_server.start())
+    grpc_server = ReduceServer(reducer_instance=reduce_handler)
+    grpc_server.start()
 ```
 
 ### Sample Image
@@ -117,7 +121,7 @@ under [examples](examples/map/forward_message).
 
 ```python
 from typing import Iterator
-from pynumaflow.sinker import Datum, Responses, Response, Sinker
+from pynumaflow.sinker import Datum, Responses, Response, SinkServer
 
 
 def my_handler(datums: Iterator[Datum]) -> Responses:
@@ -129,7 +133,7 @@ def my_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = Sinker(my_handler)
+    grpc_server = SinkServer(sinker_instance=my_handler)
     grpc_server.start()
 ```
 
@@ -137,3 +141,77 @@ if __name__ == "__main__":
 
 A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided
 under [examples](examples/sink/log).
+
+## Class based handlers 
+
+We can also implement UDFs and UDSinks using class based handlers.
+
+The class based handlers are useful when we want to maintain state across multiple invocations of the handler.
+
+Here we can pass the class instance to the server and the server will invoke the handler methods on the instance.
+
+To use a class based handler, we the user needs to inherit the base class of the UDF/UDSink.
+And implement the required methods in the class.
+
+Example For Mapper, the user needs to inherit the [MapperClass](pynumaflow/mapper/_dtypes.py#170) class and then implement the [handler](pynumaflow/mapper/_dtypes.py#170) method.
+
+### Map
+
+```python
+from pynumaflow.mapper import Messages, Message, Datum, MapServer, MapperClass
+
+class MyHandler(MapperClass):
+     def handler(self, keys: list[str], datum: Datum) -> Messages:
+        val = datum.value
+        _ = datum.event_time
+        _ = datum.watermark
+        strs = val.decode("utf-8").split(",")
+        messages = Messages()
+        if len(strs) == 0:
+            messages.append(Message.to_drop())
+            return messages
+        for s in strs:
+            messages.append(Message(str.encode(s)))
+        return messages
+
+if __name__ == "__main__":
+    class_instance = MyHandler()
+    grpc_server = MapServer(mapper_instance=class_instance)
+    grpc_server.start()
+```
+
+
+## Server Types
+
+For different types of UDFs and UDSinks, we have different server types which are supported.
+
+These have different functionalities and are used for different use cases.
+
+Currently we support the following server types:
+1) SyncServer
+2) AsyncServer
+3) MultiProcessServer
+
+Not all of the above are supported for all UDFs and UDSinks.
+
+To use a server type, the user needs to pass the server type to the server constructor.
+
+There is a class of the ```ServerType``` which can be imported from the package and be used.
+
+
+### SyncServer
+```
+grpc_server = MapServer(mapper_instance=handler, server_type=ServerType.Sync)
+```
+
+### AsyncServer
+```
+grpc_server = MapServer(mapper_instance=handler, server_type=ServerType.Async)
+```
+
+### MultiProcessServer
+```
+grpc_server = MapServer(mapper_instance=handler, server_type=ServerType.MultiProc)
+```
+
+

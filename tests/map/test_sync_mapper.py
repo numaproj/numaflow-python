@@ -9,7 +9,7 @@ from pynumaflow._constants import ServerType
 
 from pynumaflow.mapper import MapServer
 from pynumaflow.proto.mapper import map_pb2
-from tests.map.utils import map_handler, err_map_handler
+from tests.map.utils import map_handler, err_map_handler, ExampleMap
 from tests.testing_utils import (
     mock_event_time,
     mock_watermark,
@@ -19,7 +19,8 @@ from tests.testing_utils import (
 
 class TestSyncMapper(unittest.TestCase):
     def setUp(self) -> None:
-        my_server = MapServer(mapper_instance=map_handler)
+        class_instance = ExampleMap()
+        my_server = MapServer(mapper_instance=class_instance)
         my_servicer = my_server.get_servicer(
             mapper_instance=map_handler, server_type=ServerType.Sync
         )

@@ -1,8 +1,22 @@
-from pynumaflow.mapper import Datum, Messages, Message
+from pynumaflow.mapper import Datum, Messages, Message, MapperClass
 
 
 async def async_map_error_fn(keys: list[str], datum: Datum) -> Messages:
     raise ValueError("error invoking map")
+
+
+class ExampleMap(MapperClass):
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
+        val = datum.value
+        msg = "payload:{} event_time:{} watermark:{}".format(
+            val.decode("utf-8"),
+            datum.event_time,
+            datum.watermark,
+        )
+        val = bytes(msg, encoding="utf-8")
+        messages = Messages()
+        messages.append(Message(val, keys=keys))
+        return messages
 
 
 def map_handler(keys: list[str], datum: Datum) -> Messages:

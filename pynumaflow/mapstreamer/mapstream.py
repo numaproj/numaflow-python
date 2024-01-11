@@ -64,7 +64,7 @@ class MapStreamServer(NumaflowServer):
             - ServerType.Async: Asynchronous server
         """
         if self.server_type == ServerType.Async:
-            aiorun.run(self.aexec())
+            aiorun.run(self.aexec(), use_uvloop=True)
         else:
             _LOGGER.error("Server type not supported - %s", str(self.server_type))
             raise NotImplementedError

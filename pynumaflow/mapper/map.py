@@ -89,7 +89,7 @@ class MapServer(NumaflowServer):
         if self.server_type == ServerType.Sync:
             self.exec()
         elif self.server_type == ServerType.Async:
-            aiorun.run(self.aexec())
+            aiorun.run(self.aexec(), use_uvloop=True)
         elif self.server_type == ServerType.Multiproc:
             self.exec_multiproc()
         else:

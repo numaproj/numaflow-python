@@ -1,70 +1,80 @@
-import multiprocessing
 import os
 
-from collections.abc import AsyncIterable
+import aiorun
+import grpc
 
-from google.protobuf import empty_pb2 as _empty_pb2
+from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
+from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 
-from pynumaflow.mapstreamer import Datum
+from pynumaflow._constants import (
+    MAP_STREAM_SOCK_PATH,
+    MAX_MESSAGE_SIZE,
+    MAX_THREADS,
+    _LOGGER,
+)
+
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable
-from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc, mapstream_pb2
-from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER
 
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+from pynumaflow.shared.server import NumaflowServer, start_async_server
 
 
-class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
+class MapStreamAsyncServer(NumaflowServer):
     """
-    This class is used to create a new grpc Map Stream Servicer instance.
-    It implements the SyncMapServicer interface from the proto
-    mapstream_pb2_grpc.py file.
-    Provides the functionality for the required rpc methods.
+    Class for a new Map Stream Server instance.
     """
 
     def __init__(
         self,
-        handler: MapStreamCallable,
+        map_stream_instance: MapStreamCallable,
+        sock_path=MAP_STREAM_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
-        self.__map_stream_handler: MapStreamCallable = handler
-
-    async def MapStreamFn(
-        self,
-        request: mapstream_pb2.MapStreamRequest,
-        context: NumaflowServicerContext,
-    ) -> AsyncIterable[mapstream_pb2.MapStreamResponse]:
         """
-        Applies a map function to a datum stream in streaming mode.
-        The pascal case function name comes from the proto mapstream_pb2_grpc.py file.
+        Create a new grpc Async Map Stream Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+        map_stream_instance: The map stream instance to be used for Map Stream UDF
+        sock_path: The UNIX socket path to be used for the server
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+                        defaults to number of processors x4
+        server_type: The type of server to be used
         """
+        self.map_stream_instance: MapStreamCallable = map_stream_instance
+        self.sock_path = f"unix://{sock_path}"
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
 
-        async for res in self.__invoke_map_stream(
-            list(request.keys),
-            Datum(
-                keys=list(request.keys),
-                value=request.value,
-                event_time=request.event_time.ToDatetime(),
-                watermark=request.watermark.ToDatetime(),
-            ),
-        ):
-            yield mapstream_pb2.MapStreamResponse(result=res)
+        self._server_options = [
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
+        ]
 
-    async def __invoke_map_stream(self, keys: list[str], req: Datum):
-        try:
-            async for msg in self.__map_stream_handler(keys, req):
-                yield mapstream_pb2.MapStreamResponse.Result(
-                    keys=msg.keys, value=msg.value, tags=msg.tags
-                )
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
+        self.servicer = AsyncMapStreamServicer(handler=self.map_stream_instance)
 
-    async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> mapstream_pb2.ReadyResponse:
+    def start(self):
         """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto mapstream_pb2_grpc.py file.
+        Starter function for the Async Map Stream server, we need a separate caller
+        to the aexec so that all the async coroutines can be started from a single context
         """
-        return mapstream_pb2.ReadyResponse(ready=True)
+        aiorun.run(self.aexec(), use_uvloop=True)
+
+    async def aexec(self):
+        """
+        Starts the Async gRPC server on the given UNIX socket with
+        given max threads.
+        """
+        # As the server is async, we need to create a new server instance in the
+        # same thread as the event loop so that all the async calls are made in the
+        # same context
+        # Create a new async server instance and add the servicer to it
+        server = grpc.aio.server()
+        server.add_insecure_port(self.sock_path)
+        mapstream_pb2_grpc.add_MapStreamServicer_to_server(
+            self.servicer,
+            server,
+        )
+        _LOGGER.info("Starting Map Stream Server")
+        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)

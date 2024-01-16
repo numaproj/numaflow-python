@@ -7,10 +7,9 @@ from collections.abc import AsyncIterable
 import grpc
 
 from grpc.aio._server import Server
-from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
-from pynumaflow.mapstreamer import Message, Datum, MapStreamServer
+from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer
 from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 from tests.mapstream.utils import start_request_map_stream
 
@@ -44,10 +43,8 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    server_instance = MapStreamServer(map_stream_instance=err_async_map_stream_handler)
-    udfs = server_instance.get_servicer(
-        map_stream_instance=err_async_map_stream_handler, server_type=server_instance.server_type
-    )
+    server_instance = MapStreamAsyncServer(map_stream_instance=err_async_map_stream_handler)
+    udfs = server_instance.servicer
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
     listen_addr = "unix:///tmp/async_map_stream_err.sock"
     server.add_insecure_port(listen_addr)
@@ -104,11 +101,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            MapStreamServer(server_type=ServerType.Async)
-        with self.assertRaises(NotImplementedError):
-            MapStreamServer(
-                map_stream_instance=err_async_map_stream_handler, server_type="ERORR"
-            ).start()
+            MapStreamAsyncServer()
 
 
 if __name__ == "__main__":

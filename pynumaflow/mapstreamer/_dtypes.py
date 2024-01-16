@@ -164,7 +164,7 @@ class Datum:
         return self._watermark
 
 
-class MapStreamerClass(metaclass=ABCMeta):
+class MapStreamer(metaclass=ABCMeta):
     """
     Provides an interface to write a Map Streamer
     which will be exposed over a gRPC server.
@@ -188,4 +188,4 @@ class MapStreamerClass(metaclass=ABCMeta):
 
 
 MapStreamAsyncCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
-MapStreamCallable = Union[MapStreamerClass, MapStreamAsyncCallable]
+MapStreamCallable = Union[MapStreamer, MapStreamAsyncCallable]

@@ -1,5 +1,4 @@
 import logging
-import multiprocessing
 import os
 from enum import Enum
 
@@ -26,7 +25,7 @@ STREAM_EOF = "EOF"
 DELIMITER = ":"
 DROP = "U+005C__DROP__"
 
-_PROCESS_COUNT = multiprocessing.cpu_count()
+_PROCESS_COUNT = os.cpu_count()
 MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
 
 _LOGGER = setup_logging(__name__)

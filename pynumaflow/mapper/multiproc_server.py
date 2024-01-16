@@ -5,6 +5,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     MAP_SOCK_PATH,
     UDFType,
+    _PROCESS_COUNT,
 )
 from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
@@ -22,7 +23,7 @@ class MapMultiprocServer(NumaflowServer):
     def __init__(
         self,
         mapper_instance: MapSyncCallable,
-        server_count: int = os.cpu_count(),
+        server_count: int = _PROCESS_COUNT,
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
@@ -55,7 +56,7 @@ class MapMultiprocServer(NumaflowServer):
         # the value of the env var NUM_CPU_MULTIPROC defined by the user
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
-        self._process_count = min(server_count, 2 * os.cpu_count())
+        self._process_count = min(server_count, 2 * _PROCESS_COUNT)
         self.servicer = SyncMapServicer(handler=mapper_instance)
 
     def start(self) -> None:

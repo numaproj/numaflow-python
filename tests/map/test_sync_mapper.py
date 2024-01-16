@@ -5,7 +5,6 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from pynumaflow._constants import ServerType
 
 from pynumaflow.mapper import MapServer
 from pynumaflow.proto.mapper import map_pb2
@@ -21,11 +20,11 @@ class TestSyncMapper(unittest.TestCase):
     def setUp(self) -> None:
         class_instance = ExampleMap()
         my_server = MapServer(mapper_instance=class_instance)
-        my_servicer = my_server.get_servicer(
-            mapper_instance=map_handler, server_type=ServerType.Sync
-        )
+        # my_servicer = my_server.get_servicer(
+        #     mapper_instance=map_handler, server_type=ServerType.Sync
+        # )
 
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
     def test_init_with_args(self) -> None:
@@ -39,10 +38,7 @@ class TestSyncMapper(unittest.TestCase):
 
     def test_udf_map_err(self):
         my_server = MapServer(mapper_instance=err_map_handler)
-        my_servicer = my_server.get_servicer(
-            mapper_instance=my_server.mapper_instance, server_type=ServerType.Sync
-        )
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
         event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -69,10 +65,7 @@ class TestSyncMapper(unittest.TestCase):
 
     def test_udf_map_error_response(self):
         my_server = MapServer(mapper_instance=err_map_handler)
-        my_servicer = my_server.get_servicer(
-            mapper_instance=my_server.mapper_instance, server_type=my_server.server_type
-        )
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
         event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -150,8 +143,6 @@ class TestSyncMapper(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             MapServer()
-        with self.assertRaises(NotImplementedError):
-            MapServer(mapper_instance=map_handler, server_type="ERORR").start()
 
 
 if __name__ == "__main__":

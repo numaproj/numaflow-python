@@ -1,7 +1,7 @@
-from pynumaflow.mapper import Messages, Message, Datum, MapServer, MapperClass
+from pynumaflow.mapper import Messages, Message, Datum, MapServer, Mapper
 
 
-class Flatmap(MapperClass):
+class Flatmap(Mapper):
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         val = datum.value
         _ = datum.event_time
@@ -17,6 +17,5 @@ class Flatmap(MapperClass):
 
 
 if __name__ == "__main__":
-    flatmap_instance = Flatmap()
-    grpc_server = MapServer(mapper_instance=flatmap_instance)
+    grpc_server = MapServer(Flatmap())
     grpc_server.start()

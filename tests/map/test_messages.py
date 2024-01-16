@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.mapper import Messages, Message, DROP, MapperClass, Datum
+from pynumaflow.mapper import Messages, Message, DROP, Mapper, Datum
 from tests.testing_utils import mock_message
 
 
@@ -90,7 +90,7 @@ class TestMessages(unittest.TestCase):
             msgts[:1]
 
 
-class ExampleMapper(MapperClass):
+class ExampleMapper(Mapper):
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         messages = Messages()
         messages.append(Message(mock_message(), keys=keys))

@@ -1,72 +1,78 @@
+import os
+
+import aiorun
 import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow.mapper._dtypes import Datum
-from pynumaflow.mapper._dtypes import MapAsyncCallable, MapCallable
-from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER
+from pynumaflow._constants import (
+    MAX_THREADS,
+    MAX_MESSAGE_SIZE,
+    MAP_SOCK_PATH,
+)
+from pynumaflow.mapper._dtypes import MapAsyncCallable
+from pynumaflow.mapper.servicer.async_servicer import AsyncMapServicer
+from pynumaflow.proto.mapper import map_pb2_grpc
+from pynumaflow.shared.server import (
+    NumaflowServer,
+    start_async_server,
+)
 
 
-class AsyncMapper(map_pb2_grpc.MapServicer):
+class MapAsyncServer(NumaflowServer):
     """
-    This class is used to create a new grpc Async Map Servicer instance.
-    It implements the MapServicer interface from the proto map.proto file.
-    Provides the functionality for the required rpc methods.
+    Create a new grpc Map Server instance.
     """
 
     def __init__(
         self,
-        handler: MapAsyncCallable,
+        mapper_instance: MapAsyncCallable,
+        sock_path=MAP_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
-        self.__map_handler: MapCallable = handler
+        """
+        Create a new grpc Asynchronous Map Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+        mapper_instance: The mapper instance to be used for Map UDF
+        sock_path: The UNIX socket path to be used for the server
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+                     defaults to number of processors x4
+        """
+        self.sock_path = f"unix://{sock_path}"
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
 
-    async def MapFn(
-        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
-    ) -> map_pb2.MapResponse:
-        """
-        Applies a function to each datum element.
-        The pascal case function name comes from the proto map_pb2_grpc.py file.
-        """
-        # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        try:
-            res = await self.__invoke_map(
-                list(request.keys),
-                Datum(
-                    keys=list(request.keys),
-                    value=request.value,
-                    event_time=request.event_time.ToDatetime(),
-                    watermark=request.watermark.ToDatetime(),
-                ),
-            )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            return map_pb2.MapResponse(results=[])
+        self.mapper_instance = mapper_instance
 
-        return map_pb2.MapResponse(results=res)
+        self._server_options = [
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
+        ]
+        # Get the servicer instance for the async server
+        self.servicer = AsyncMapServicer(handler=mapper_instance)
 
-    async def __invoke_map(self, keys: list[str], req: Datum):
+    def start(self) -> None:
         """
-        Invokes the user defined function.
+        Starter function for the Async server class, need a separate caller
+        so that all the async coroutines can be started from a single context
         """
-        try:
-            msgs = await self.__map_handler(keys, req)
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
-        datums = []
-        for msg in msgs:
-            datums.append(map_pb2.MapResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags))
+        aiorun.run(self.aexec(), use_uvloop=True)
 
-        return datums
+    async def aexec(self) -> None:
+        """
+        Starts the Async gRPC server on the given UNIX socket with
+        given max threads.
+        """
 
-    async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> map_pb2.ReadyResponse:
-        """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto map_pb2_grpc.py file.
-        """
-        return map_pb2.ReadyResponse(ready=True)
+        # As the server is async, we need to create a new server instance in the
+        # same thread as the event loop so that all the async calls are made in the
+        # same context
+
+        server_new = grpc.aio.server()
+        server_new.add_insecure_port(self.sock_path)
+        map_pb2_grpc.add_MapServicer_to_server(self.servicer, server_new)
+
+        # Start the async server
+        await start_async_server(server_new, self.sock_path, self.max_threads, self._server_options)

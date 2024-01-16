@@ -1,23 +1,23 @@
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow.mapper._dtypes import MapCallable
+from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
-from pynumaflow.mapper.utils import _map_fn_util
+from pynumaflow.mapper.servicer.utils import _map_fn_util
 from pynumaflow.types import NumaflowServicerContext
 
 
-class Mapper(map_pb2_grpc.MapServicer):
+class SyncMapServicer(map_pb2_grpc.MapServicer):
     """
     This class is used to create a new grpc Map Servicer instance.
-    It implements the MapServicer interface from the proto map.proto file.
+    It implements the SyncMapServicer interface from the proto map.proto file.
     Provides the functionality for the required rpc methods.
     """
 
     def __init__(
         self,
-        handler: MapCallable,
+        handler: MapSyncCallable,
     ):
-        self.__map_handler: MapCallable = handler
+        self.__map_handler: MapSyncCallable = handler
 
     def MapFn(
         self, request: map_pb2.MapRequest, context: NumaflowServicerContext

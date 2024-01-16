@@ -163,13 +163,9 @@ class Datum:
         return self._watermark
 
 
-MapSyncCallable = Callable[[list[str], Datum], Messages]
-MapAsyncCallable = Callable[[list[str], Datum], Awaitable[Messages]]
-
-
-class MapperClass(metaclass=ABCMeta):
+class Mapper(metaclass=ABCMeta):
     """
-    Provides an interface to write a Mapper
+    Provides an interface to write a SyncMapServicer
     which will be exposed over a Synchronous gRPC server.
     """
 
@@ -183,10 +179,15 @@ class MapperClass(metaclass=ABCMeta):
     @abstractmethod
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         """
-        Write a handler function which implements the MapCallable interface.
+        Write a handler function which implements the MapSyncCallable interface.
         """
         pass
 
 
-# MapCallable is a callable which can be used as a handler for the Map UDF
-MapCallable = Union[MapperClass, MapSyncCallable, MapAsyncCallable]
+# MapSyncCallable is a callable which can be used as a handler for the Synchronous Map UDF
+MapSyncHandlerCallable = Callable[[list[str], Datum], Messages]
+MapSyncCallable = Union[Mapper, MapSyncHandlerCallable]
+
+# MapAsyncCallable is a callable which can be used as a handler for the Asynchronous Map UDF
+MapAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
+MapAsyncCallable = Union[Mapper, MapAsyncHandlerCallable]

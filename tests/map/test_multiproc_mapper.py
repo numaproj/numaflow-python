@@ -1,16 +1,14 @@
 import os
 import unittest
 from unittest import mock
-from unittest.mock import patch, Mock
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from pynumaflow._constants import ServerType
 
-from pynumaflow.mapper import MapServer
+from pynumaflow.mapper import MapMultiprocServer
 from pynumaflow.proto.mapper import map_pb2
 from tests.map.utils import map_handler, err_map_handler
 from tests.testing_utils import (
@@ -26,35 +24,27 @@ def mockenv(**envvars):
 
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
-        my_server = MapServer(mapper_instance=map_handler)
-        my_servicer = my_server.get_servicer(
-            mapper_instance=map_handler, server_type=ServerType.Multiproc
-        )
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        my_server = MapMultiprocServer(mapper_instance=map_handler)
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
-    @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        my_server = MapServer(mapper_instance=map_handler, server_type=ServerType.Multiproc)
+        my_server = MapMultiprocServer(mapper_instance=map_handler, server_count=3)
         self.assertEqual(my_server._process_count, 3)
 
-    @patch("os.cpu_count", Mock(return_value=4))
     def test_multiproc_process_count(self) -> None:
-        my_server = MapServer(mapper_instance=map_handler, server_type=ServerType.Multiproc)
-        self.assertEqual(my_server._process_count, 4)
+        my_server = MapMultiprocServer(mapper_instance=map_handler)
+        self.assertEqual(my_server._process_count, 8)
 
-    @patch("os.cpu_count", Mock(return_value=4))
-    @mockenv(NUM_CPU_MULTIPROC="10")
     def test_max_process_count(self) -> None:
-        server = MapServer(mapper_instance=map_handler, server_type=ServerType.Multiproc)
-        self.assertEqual(server._process_count, 8)
+        """Max process count is capped at 2 * os.cpu_count, irrespective of what the user
+        provides as input"""
+        server = MapMultiprocServer(mapper_instance=map_handler, server_count=20)
+        self.assertEqual(server._process_count, 16)
 
     def test_udf_map_err(self):
-        my_server = MapServer(mapper_instance=err_map_handler)
-        my_servicer = my_server.get_servicer(
-            mapper_instance=my_server.mapper_instance, server_type=ServerType.Multiproc
-        )
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        my_server = MapMultiprocServer(mapper_instance=err_map_handler)
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
         event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -131,7 +121,7 @@ class TestMultiProcMethods(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            MapServer(server_type=ServerType.Multiproc)
+            MapMultiprocServer()
 
 
 if __name__ == "__main__":

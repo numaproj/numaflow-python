@@ -1,5 +1,5 @@
 import grpc
-from pynumaflow.mapper._dtypes import MapCallable
+from pynumaflow.mapper._dtypes import MapSyncCallable
 
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.proto.mapper import map_pb2
@@ -8,7 +8,7 @@ from pynumaflow._constants import _LOGGER
 
 
 def _map_fn_util(
-    __map_handler: MapCallable, request: map_pb2.MapRequest, context: NumaflowServicerContext
+    __map_handler: MapSyncCallable, request: map_pb2.MapRequest, context: NumaflowServicerContext
 ) -> map_pb2.MapResponse:
     # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
     # we need to explicitly convert it to list

@@ -1,8 +1,7 @@
 import math
 
-from pynumaflow._constants import ServerType
 
-from pynumaflow.mapper import Messages, Message, Datum, MapServer, MapperClass
+from pynumaflow.mapper import Messages, Message, Datum, Mapper, MapMultiprocServer
 
 
 def is_prime(n):
@@ -13,7 +12,7 @@ def is_prime(n):
         return True
 
 
-class PrimeMap(MapperClass):
+class PrimeMap(Mapper):
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         val = datum.value
         _ = datum.event_time
@@ -34,5 +33,5 @@ if __name__ == "__main__":
     in the pipeline config for the numa container.
     """
     prime_class = PrimeMap()
-    grpc_server = MapServer(mapper_instance=prime_class, server_type=ServerType.Multiproc)
+    grpc_server = MapMultiprocServer(mapper_instance=prime_class, server_count=2)
     grpc_server.start()

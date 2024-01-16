@@ -36,7 +36,7 @@ async def datum_generator(
 class AsyncReducer(reduce_pb2_grpc.ReduceServicer):
     """
     This class is used to create a new grpc Reduce servicer instance.
-    It implements the MapServicer interface from the proto reduce.proto file.
+    It implements the SyncMapServicer interface from the proto reduce.proto file.
     Provides the functionality for the required rpc methods.
     """
 

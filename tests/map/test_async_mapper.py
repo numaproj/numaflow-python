@@ -7,15 +7,14 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
-from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
 from pynumaflow.mapper import (
     Datum,
     Messages,
     Message,
-    MapServer,
 )
+from pynumaflow.mapper.async_server import MapAsyncServer
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from tests.testing_utils import (
     mock_event_time,
@@ -63,8 +62,8 @@ def startup_callable(loop):
 
 
 def new_async_mapper():
-    server = MapServer(mapper_instance=async_map_handler, server_type=ServerType.Async)
-    udfs = server.get_servicer(mapper_instance=async_map_handler, server_type=ServerType.Async)
+    server = MapAsyncServer(mapper_instance=async_map_handler)
+    udfs = server.servicer
     return udfs
 
 
@@ -211,6 +210,10 @@ class TestAsyncMapper(unittest.TestCase):
                 logging.error(e)
 
             self.assertTrue(response.ready)
+
+    def test_invalid_input(self):
+        with self.assertRaises(TypeError):
+            MapAsyncServer()
 
     def __stub(self):
         return map_pb2_grpc.MapStub(_channel)

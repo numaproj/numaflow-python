@@ -18,7 +18,7 @@ MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
     """
     This class is used to create a new grpc Map Stream Servicer instance.
-    It implements the MapServicer interface from the proto
+    It implements the SyncMapServicer interface from the proto
     mapstream_pb2_grpc.py file.
     Provides the functionality for the required rpc methods.
     """

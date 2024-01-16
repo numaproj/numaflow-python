@@ -153,15 +153,16 @@ Here we can pass the class instance to the server and the server will invoke the
 To use a class based handler, we the user needs to inherit the base class of the UDF/UDSink.
 And implement the required methods in the class.
 
-Example For Mapper, the user needs to inherit the [MapperClass](pynumaflow/mapper/_dtypes.py#170) class and then implement the [handler](pynumaflow/mapper/_dtypes.py#170) method.
+Example For Mapper, the user needs to inherit the [Mapper](pynumaflow/mapper/_dtypes.py#170) class and then implement the [handler](pynumaflow/mapper/_dtypes.py#170) method.
 
 ### Map
 
 ```python
-from pynumaflow.mapper import Messages, Message, Datum, MapServer, MapperClass
+from pynumaflow.mapper import Messages, Message, Datum, MapServer, Mapper
 
-class MyHandler(MapperClass):
-     def handler(self, keys: list[str], datum: Datum) -> Messages:
+
+class MyHandler(Mapper):
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
         val = datum.value
         _ = datum.event_time
         _ = datum.watermark
@@ -173,6 +174,7 @@ class MyHandler(MapperClass):
         for s in strs:
             messages.append(Message(str.encode(s)))
         return messages
+
 
 if __name__ == "__main__":
     class_instance = MyHandler()

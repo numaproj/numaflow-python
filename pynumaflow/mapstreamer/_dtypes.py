@@ -182,7 +182,7 @@ class MapStreamerClass(metaclass=ABCMeta):
     @abstractmethod
     async def handler(self, keys: list[str], datum: Datum) -> AsyncIterable[Message]:
         """
-        Write a handler function which implements the MapCallable interface.
+        Write a handler function which implements the MapSyncCallable interface.
         """
         pass
 

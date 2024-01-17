@@ -3,7 +3,6 @@ import unittest
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc_testing import server_from_dictionary, strict_real_time
-from pynumaflow._constants import ServerType
 
 from pynumaflow.sourcer import SourceServer
 from pynumaflow.proto.sourcer import source_pb2
@@ -17,10 +16,8 @@ from tests.source.utils import (
 class TestSyncSourcer(unittest.TestCase):
     def setUp(self) -> None:
         class_instance = SyncSourceError()
-        server = SourceServer(sourcer_instance=class_instance, server_type=ServerType.Sync)
-        my_servicer = server.get_servicer(
-            sourcer_instance=server.sourcer_instance, server_type=server.server_type
-        )
+        server = SourceServer(sourcer_instance=class_instance)
+        my_servicer = server.servicer
         services = {source_pb2.DESCRIPTOR.services_by_name["Source"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -103,8 +100,6 @@ class TestSyncSourcer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             SourceServer()
-        with self.assertRaises(NotImplementedError):
-            SourceServer(sourcer_instance=SyncSourceError(), server_type="random").start()
 
 
 if __name__ == "__main__":

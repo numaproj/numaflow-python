@@ -6,7 +6,7 @@ from pynumaflow.sourcer._dtypes import (
     PendingResponse,
     Offset,
     PartitionsResponse,
-    SourcerClass,
+    Sourcer,
 )
 from pynumaflow.proto.sourcer import source_pb2
 from tests.testing_utils import mock_event_time
@@ -20,7 +20,7 @@ def mock_partitions() -> list[int]:
     return [1, 2, 3]
 
 
-class AsyncSource(SourcerClass):
+class AsyncSource(Sourcer):
     async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
         payload = b"payload:test_mock_message"
         keys = ["test_key"]
@@ -39,7 +39,7 @@ class AsyncSource(SourcerClass):
         return PartitionsResponse(partitions=mock_partitions())
 
 
-class SyncSource(SourcerClass):
+class SyncSource(Sourcer):
     def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
         payload = b"payload:test_mock_message"
         keys = ["test_key"]
@@ -72,7 +72,7 @@ def ack_req_source_fn() -> AckRequest:
     return request
 
 
-class AsyncSourceError(SourcerClass):
+class AsyncSourceError(Sourcer):
     # This handler mimics the scenario where map stream UDF throws a runtime error.
     async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
         payload = b"payload:test_mock_message"
@@ -93,7 +93,7 @@ class AsyncSourceError(SourcerClass):
         raise RuntimeError("Got a runtime error from partition handler.")
 
 
-class SyncSourceError(SourcerClass):
+class SyncSourceError(Sourcer):
     def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
         raise RuntimeError("Got a runtime error from read handler.")
 

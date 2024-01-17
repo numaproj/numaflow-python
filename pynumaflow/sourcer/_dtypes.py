@@ -204,7 +204,7 @@ class PartitionsResponse:
         return self._partitions
 
 
-class SourcerClass(metaclass=ABCMeta):
+class Sourcer(metaclass=ABCMeta):
     """
     Provides an interface to write a Sourcer
     which will be exposed over an gRPC server.
@@ -257,7 +257,7 @@ DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", "0"))
 SourceReadCallable = Callable[[ReadRequest], Iterable[Message]]
 AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterable[Message]]
 SourceAckCallable = Callable[[AckRequest], None]
-SourceCallable = SourcerClass
+SourceCallable = Sourcer
 
 
 def get_default_partitions() -> list[int]:

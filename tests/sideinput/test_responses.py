@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.sideinput import Response, SideInputClass
+from pynumaflow.sideinput import Response, SideInput
 
 
 class TestResponse(unittest.TestCase):
@@ -26,7 +26,7 @@ class TestResponse(unittest.TestCase):
         self.assertTrue(succ_response.no_broadcast)
 
 
-class ExampleSideInput(SideInputClass):
+class ExampleSideInput(SideInput):
     def retrieve_handler(self) -> Response:
         return Response.broadcast_message(b"testMessage")
 

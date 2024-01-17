@@ -1,45 +1,59 @@
-import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
-
-from pynumaflow._constants import (
-    _LOGGER,
-)
-from pynumaflow.proto.sideinput import sideinput_pb2_grpc, sideinput_pb2
+import os
+from pynumaflow.shared import NumaflowServer
+from pynumaflow.shared.server import sync_server_start
 from pynumaflow.sideinput._dtypes import RetrieverCallable
-from pynumaflow.types import NumaflowServicerContext
+from pynumaflow.sideinput.servicer.servicer import SideInputServicer
+from pynumaflow._constants import (
+    MAX_THREADS,
+    MAX_MESSAGE_SIZE,
+    SIDE_INPUT_SOCK_PATH,
+    _LOGGER,
+    UDFType,
+    SIDE_INPUT_DIR_PATH,
+)
 
 
-class SideInput(sideinput_pb2_grpc.SideInputServicer):
+class SideInputServer(NumaflowServer):
+    """Server for side input"""
+
     def __init__(
         self,
-        handler: RetrieverCallable,
+        side_input_instance: RetrieverCallable,
+        sock_path=SIDE_INPUT_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
+        side_input_dir_path=SIDE_INPUT_DIR_PATH,
     ):
-        self.__retrieve_handler: RetrieverCallable = handler
+        self.sock_path = f"unix://{sock_path}"
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
 
-    def RetrieveSideInput(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> sideinput_pb2.SideInputResponse:
-        """
-        Applies a sideinput function for a retrieval request.
-        The pascal case function name comes from the proto sideinput_pb2_grpc.py file.
-        """
-        # if there is an exception, we will mark all the responses as a failure
-        try:
-            rspn = self.__retrieve_handler()
-        except Exception as err:
-            err_msg = "RetrieveSideInputErr: %r" % err
-            _LOGGER.critical(err_msg, exc_info=True)
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(err))
-            return sideinput_pb2.SideInputResponse(value=None, no_broadcast=True)
+        self._server_options = [
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
+        ]
 
-        return sideinput_pb2.SideInputResponse(value=rspn.value, no_broadcast=rspn.no_broadcast)
+        self.side_input_instance = side_input_instance
+        self.side_input_dir_path = side_input_dir_path
+        self.servicer = SideInputServicer(side_input_instance)
 
-    def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> sideinput_pb2.ReadyResponse:
+    def start(self):
         """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto sideinput_pb2_grpc.py file.
+        Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
-        return sideinput_pb2.ReadyResponse(ready=True)
+        # Get the servicer instance based on the server type
+        side_input_servicer = self.servicer
+        _LOGGER.info(
+            "Side Input GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
+        )
+        # Start the server
+        sync_server_start(
+            servicer=side_input_servicer,
+            bind_address=self.sock_path,
+            max_threads=self.max_threads,
+            server_options=self._server_options,
+            udf_type=UDFType.SideInput,
+            add_info_server=False,
+        )

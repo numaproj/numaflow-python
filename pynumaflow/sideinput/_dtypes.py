@@ -39,7 +39,7 @@ class Response:
         return Response(value=b"", no_broadcast=True)
 
 
-class SideInputClass(metaclass=ABCMeta):
+class SideInput(metaclass=ABCMeta):
     """
     Provides an interface to write a SideInput Class
     which will be exposed over gRPC.
@@ -61,4 +61,4 @@ class SideInputClass(metaclass=ABCMeta):
 
 
 RetrieverHandlerCallable = Callable[[], Response]
-RetrieverCallable = Union[SideInputClass, RetrieverHandlerCallable]
+RetrieverCallable = Union[SideInput, RetrieverHandlerCallable]

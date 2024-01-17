@@ -1,13 +1,12 @@
-from pynumaflow._constants import ServerType
-
 from pynumaflow.sourcetransformer._dtypes import (
     Message,
     Messages,
     Datum,
     DROP,
-    SourceTransformerClass,
+    SourceTransformer,
 )
-from pynumaflow.sourcetransformer.sourcetransform import SourceTransformServer
+from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiProcServer
+from pynumaflow.sourcetransformer.server import SourceTransformServer
 
 __all__ = [
     "Message",
@@ -15,6 +14,6 @@ __all__ = [
     "Datum",
     "DROP",
     "SourceTransformServer",
-    "SourceTransformerClass",
-    "ServerType",
+    "SourceTransformer",
+    "SourceTransformMultiProcServer",
 ]

@@ -33,16 +33,6 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 
-class ServerType(str, Enum):
-    """
-    Enumerate grpc server connection protocol.
-    """
-
-    Sync = "sync"
-    Async = "async"
-    Multiproc = "multiproc"
-
-
 class UDFType(str, Enum):
     """
     Enumerate the type of UDF.

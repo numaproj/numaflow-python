@@ -43,7 +43,7 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    server_instance = MapStreamAsyncServer(map_stream_instance=err_async_map_stream_handler)
+    server_instance = MapStreamAsyncServer(err_async_map_stream_handler)
     udfs = server_instance.servicer
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
     listen_addr = "unix:///tmp/async_map_stream_err.sock"

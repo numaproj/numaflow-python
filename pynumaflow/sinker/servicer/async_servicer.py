@@ -1,22 +1,12 @@
-import logging
-import multiprocessing
-import os
 from collections.abc import AsyncIterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
 from pynumaflow.sinker._dtypes import Responses, Datum, Response
-from pynumaflow.sinker._dtypes import SinkCallable
+from pynumaflow.sinker._dtypes import SyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+from pynumaflow._constants import _LOGGER
 
 
 async def datum_generator(
@@ -33,7 +23,7 @@ async def datum_generator(
         yield datum
 
 
-class AsyncSinker(sink_pb2_grpc.SinkServicer):
+class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
     """
     This class is used to create a new grpc Sink servicer instance.
     It implements the SinkServicer interface from the proto sink.proto file.
@@ -42,9 +32,9 @@ class AsyncSinker(sink_pb2_grpc.SinkServicer):
 
     def __init__(
         self,
-        handler: SinkCallable,
+        handler: SyncSinkCallable,
     ):
-        self.__sink_handler: SinkCallable = handler
+        self.__sink_handler: SyncSinkCallable = handler
         self.cleanup_coroutines = []
 
     async def SinkFn(

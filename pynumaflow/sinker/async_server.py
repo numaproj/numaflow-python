@@ -1,28 +1,30 @@
 import os
 
+import aiorun
+import grpc
 
-from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
+from pynumaflow.sinker.servicer.async_servicer import AsyncSinkServicer
+from pynumaflow.proto.sinker import sink_pb2_grpc
+
 
 from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
     MAX_THREADS,
-    _LOGGER,
-    UDFType,
 )
 
-from pynumaflow.shared.server import NumaflowServer, sync_server_start
-from pynumaflow.sinker._dtypes import SyncSinkCallable
+from pynumaflow.shared.server import NumaflowServer, start_async_server
+from pynumaflow.sinker._dtypes import AsyncSinkCallable
 
 
-class SinkServer(NumaflowServer):
+class SinkAsyncServer(NumaflowServer):
     """
     SinkServer is the main class to start a gRPC server for a sinker.
     """
 
     def __init__(
         self,
-        sinker_instance: SyncSinkCallable,
+        sinker_instance: AsyncSinkCallable,
         sock_path=SINK_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
@@ -48,24 +50,24 @@ class SinkServer(NumaflowServer):
             ("grpc.max_send_message_length", self.max_message_size),
             ("grpc.max_receive_message_length", self.max_message_size),
         ]
-
-        self.servicer = SyncSinkServicer(sinker_instance)
+        self.servicer = AsyncSinkServicer(sinker_instance)
 
     def start(self):
         """
-        Starts the Synchronous gRPC server on the
-        given UNIX socket with given max threads.
+        Starter function for the Async server class, need a separate caller
+        so that all the async coroutines can be started from a single context
         """
-        _LOGGER.info(
-            "Sync GRPC Sink listening on: %s with max threads: %s",
-            self.sock_path,
-            self.max_threads,
-        )
-        # Start the server
-        sync_server_start(
-            servicer=self.servicer,
-            bind_address=self.sock_path,
-            max_threads=self.max_threads,
-            server_options=self._server_options,
-            udf_type=UDFType.Sink,
-        )
+        aiorun.run(self.aexec(), use_uvloop=True)
+
+    async def aexec(self):
+        """
+        Starts the Asynchronous gRPC server on the given UNIX socket with given max threads.
+        """
+        # As the server is async, we need to create a new server instance in the
+        # same thread as the event loop so that all the async calls are made in the
+        # same context
+        # Create a new server instance, add the servicer to it and start the server
+        server = grpc.aio.server()
+        server.add_insecure_port(self.sock_path)
+        sink_pb2_grpc.add_SinkServicer_to_server(self.servicer, server)
+        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)

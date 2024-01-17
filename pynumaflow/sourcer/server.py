@@ -1,143 +1,70 @@
-from collections.abc import Iterable
+import os
 
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
-import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
-
-from pynumaflow.sourcer._dtypes import ReadRequest
-from pynumaflow.sourcer._dtypes import (
-    SourceReadCallable,
-    Offset,
-    AckRequest,
-    SourceAckCallable,
-    SourceCallable,
+from pynumaflow._constants import (
+    SOURCE_SOCK_PATH,
+    MAX_MESSAGE_SIZE,
+    MAX_THREADS,
+    _LOGGER,
+    UDFType,
 )
-from pynumaflow.proto.sourcer import source_pb2
-from pynumaflow.proto.sourcer import source_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER
+from pynumaflow.shared.server import NumaflowServer, sync_server_start
+from pynumaflow.sourcer._dtypes import SourceCallable
+from pynumaflow.sourcer.servicer.sync_servicer import SyncSourceServicer
 
 
-class Sourcer(source_pb2_grpc.SourceServicer):
+class SourceServer(NumaflowServer):
     """
-    This class is used to create a new grpc Source servicer instance.
-    It implements the SourceServicer interface from the proto source.proto file.
-    Provides the functionality for the required rpc methods.
+    Class for a new Source Server instance.
     """
 
     def __init__(
         self,
-        source_handler: SourceCallable,
+        sourcer_instance: SourceCallable,
+        sock_path=SOURCE_SOCK_PATH,
+        max_message_size=MAX_MESSAGE_SIZE,
+        max_threads=MAX_THREADS,
     ):
-        self.source_handler = source_handler
-        self.__source_read_handler: SourceReadCallable = source_handler.read_handler
-        self.__source_ack_handler: SourceAckCallable = source_handler.ack_handler
-        self.__source_pending_handler = source_handler.pending_handler
-        self.__source_partitions_handler = source_handler.partitions_handler
+        """
+        Create a new grpc Source Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+        sourcer_instance: The sourcer instance to be used for Source UDF
+        sock_path: The UNIX socket path to be used for the server
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+                        defaults to number of processors x4
+        """
+        self.sock_path = f"unix://{sock_path}"
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
 
-    def ReadFn(
-        self,
-        request: source_pb2.ReadRequest,
-        context: NumaflowServicerContext,
-    ) -> Iterable[source_pb2.ReadResponse]:
-        """
-        Applies a Read function to a datum stream in streaming mode.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
-        """
+        self.sourcer_instance = sourcer_instance
 
-        for res in self.__invoke_source_read_stream(
-            ReadRequest(
-                num_records=request.request.num_records,
-                timeout_in_ms=request.request.timeout_in_ms,
-            )
-        ):
-            yield source_pb2.ReadResponse(result=res)
+        self._server_options = [
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
+        ]
 
-    def __invoke_source_read_stream(self, req: ReadRequest):
-        try:
-            for msg in self.__source_read_handler(req):
-                event_time_timestamp = _timestamp_pb2.Timestamp()
-                event_time_timestamp.FromDatetime(dt=msg.event_time)
-                yield source_pb2.ReadResponse.Result(
-                    payload=msg.payload,
-                    keys=msg.keys,
-                    offset=msg.offset.as_dict,
-                    event_time=event_time_timestamp,
-                )
-        except Exception as err:
-            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            raise err
+        self.servicer = SyncSourceServicer(source_handler=sourcer_instance)
 
-    def AckFn(
-        self, request: source_pb2.AckRequest, context: NumaflowServicerContext
-    ) -> source_pb2.AckResponse:
+    def start(self):
         """
-        Applies an Ack function in User Defined Source
+        Starts the Synchronous Source gRPC server on the given
+        UNIX socket with given max threads.
         """
-        # proto repeated field(offsets) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        offsets = []
-        for offset in request.request.offsets:
-            offsets.append(Offset(offset.offset, offset.partition_id))
-        try:
-            self.__invoke_ack(ack_req=offsets)
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            raise e
-
-        return source_pb2.AckResponse()
-
-    def __invoke_ack(self, ack_req: list[Offset]):
-        """
-        Invokes the Source Ack Function.
-        """
-        try:
-            self.__source_ack_handler(AckRequest(offsets=ack_req))
-        except Exception as err:
-            _LOGGER.critical("AckFn Error", exc_info=True)
-            raise err
-        return source_pb2.AckResponse.Result()
-
-    def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.ReadyResponse:
-        """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
-        """
-        return source_pb2.ReadyResponse(ready=True)
-
-    def PendingFn(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.PendingResponse:
-        """
-        PendingFn returns the number of pending records
-        at the user defined source.
-        """
-        try:
-            count = self.__source_pending_handler()
-        except Exception as err:
-            _LOGGER.critical("PendingFn error", exc_info=True)
-            raise err
-        resp = source_pb2.PendingResponse.Result(count=count.count)
-        return source_pb2.PendingResponse(result=resp)
-
-    def PartitionsFn(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.PartitionsResponse:
-        """
-        Partitions returns the partitions associated with the source, will be used by
-        the platform to determine the partitions to which the watermark should be published.
-        If the source doesn't have partitions, get_default_partitions() can be used to
-        return the default partitions. In most cases, the get_default_partitions()
-        should be enough; the cases where we need to implement custom partitions_handler()
-        is in a case like Kafka, where a reader can read from multiple Kafka partitions.
-        """
-        try:
-            partitions = self.__source_partitions_handler()
-        except Exception as err:
-            _LOGGER.critical("PartitionFn error", exc_info=True)
-            raise err
-        resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
-        return source_pb2.PartitionsResponse(result=resp)
+        # Get the servicer instance
+        source_servicer = self.servicer
+        _LOGGER.info(
+            "Sync Source GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
+        )
+        # Start the sync server
+        sync_server_start(
+            servicer=source_servicer,
+            bind_address=self.sock_path,
+            max_threads=self.max_threads,
+            server_options=self._server_options,
+            udf_type=UDFType.Source,
+        )

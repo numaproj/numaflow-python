@@ -33,10 +33,8 @@ class TestServer(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        server = SideInputServer(side_input_instance=retrieve_side_input_handler)
-        my_service = server.get_servicer(
-            side_input_instance=server.side_input_instance, server_type=server.server_type
-        )
+        server = SideInputServer(retrieve_side_input_handler)
+        my_service = server.servicer
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -56,10 +54,8 @@ class TestServer(unittest.TestCase):
         """
         Test the error case for the RetrieveSideInput method,
         """
-        server = SideInputServer(side_input_instance=err_retrieve_handler)
-        my_service = server.get_servicer(
-            side_input_instance=server.side_input_instance, server_type=server.server_type
-        )
+        server = SideInputServer(err_retrieve_handler)
+        my_service = server.servicer
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -121,9 +117,7 @@ class TestServer(unittest.TestCase):
         where we expect the no_broadcast flag to be True.
         """
         server = SideInputServer(side_input_instance=retrieve_no_broadcast_handler)
-        my_servicer = server.get_servicer(
-            side_input_instance=server.side_input_instance, server_type=server.server_type
-        )
+        my_servicer = server.servicer
         services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -146,10 +140,6 @@ class TestServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             SideInputServer()
-        with self.assertRaises(NotImplementedError):
-            SideInputServer(
-                side_input_instance=retrieve_side_input_handler, server_type="test"
-            ).start()
 
 
 if __name__ == "__main__":

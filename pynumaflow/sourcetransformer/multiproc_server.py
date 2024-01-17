@@ -1,19 +1,23 @@
 import os
 
+from pynumaflow.sourcetransformer.servicer.server import SourceTransformServicer
+
+from pynumaflow.shared.server import start_multiproc_server
+
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     SOURCE_TRANSFORMER_SOCK_PATH,
     MAX_THREADS,
-    _LOGGER,
     UDFType,
+    _PROCESS_COUNT,
 )
-from pynumaflow.shared import NumaflowServer
-from pynumaflow.shared.server import sync_server_start
+
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
-from pynumaflow.sourcetransformer.servicer.server import SourceTransformServicer
+
+from pynumaflow.shared import NumaflowServer
 
 
-class SourceTransformServer(NumaflowServer):
+class SourceTransformMultiProcServer(NumaflowServer):
     """
     Class for a new Source Transformer Server instance.
     """
@@ -21,6 +25,7 @@ class SourceTransformServer(NumaflowServer):
     def __init__(
         self,
         source_transform_instance: SourceTransformCallable,
+        server_count: int = _PROCESS_COUNT,
         sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
@@ -46,23 +51,25 @@ class SourceTransformServer(NumaflowServer):
         self._server_options = [
             ("grpc.max_send_message_length", self.max_message_size),
             ("grpc.max_receive_message_length", self.max_message_size),
+            ("grpc.so_reuseport", 1),
+            ("grpc.so_reuseaddr", 1),
         ]
+        # Set the number of processes to be spawned to the number of CPUs or
+        # the value of the env var NUM_CPU_MULTIPROC defined by the user
+        # Setting the max value to 2 * CPU count
+        # Used for multiproc server
+        self._process_count = min(server_count, 2 * _PROCESS_COUNT)
         self.servicer = SourceTransformServicer(handler=source_transform_instance)
 
     def start(self):
         """
-        Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
+        Starts the Multiproc gRPC server on the given TCP sockets
+        with given max threads.
         """
-        _LOGGER.info(
-            "Sync GRPC Server listening on: %s with max threads: %s",
-            self.sock_path,
-            self.max_threads,
-        )
-        # Start the sync server
-        sync_server_start(
-            servicer=self.servicer,
-            bind_address=self.sock_path,
+        start_multiproc_server(
             max_threads=self.max_threads,
+            servicer=self.servicer,
+            process_count=self._process_count,
             server_options=self._server_options,
-            udf_type=UDFType.SourceTransformer,
+            udf_type=UDFType.Map,
         )

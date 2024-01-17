@@ -173,7 +173,7 @@ class Datum:
         return self._watermark
 
 
-class SourceTransformerClass(metaclass=ABCMeta):
+class SourceTransformer(metaclass=ABCMeta):
     """
     Provides an interface to write a Source Transformer
     which will be exposed over a GRPC server.
@@ -198,4 +198,4 @@ class SourceTransformerClass(metaclass=ABCMeta):
 SourceTransformHandler = Callable[[list[str], Datum], Messages]
 # SourceTransformCallable is the type of the handler function for the
 # Source Transformer UDFunction.
-SourceTransformCallable = Union[SourceTransformHandler, SourceTransformerClass]
+SourceTransformCallable = Union[SourceTransformHandler, SourceTransformer]

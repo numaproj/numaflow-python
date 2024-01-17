@@ -1,7 +1,7 @@
 import unittest
 from collections.abc import Iterator
 
-from pynumaflow.sinker import Response, Responses, SinkerClass, Datum
+from pynumaflow.sinker import Response, Responses, Sinker, Datum
 
 
 class TestResponse(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestResponses(unittest.TestCase):
         )
 
 
-class ExampleSinkClass(SinkerClass):
+class ExampleSinkClass(Sinker):
     def handler(self, datums: Iterator[Datum]) -> Responses:
         results = Responses()
         results.append(Response.as_success("test_message"))

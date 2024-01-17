@@ -20,10 +20,6 @@ class TestSyncMapper(unittest.TestCase):
     def setUp(self) -> None:
         class_instance = ExampleMap()
         my_server = MapServer(mapper_instance=class_instance)
-        # my_servicer = my_server.get_servicer(
-        #     mapper_instance=map_handler, server_type=ServerType.Sync
-        # )
-
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

@@ -1,7 +1,3 @@
-from pynumaflow._constants import ServerType
-
-from pynumaflow.sourcer.source import SourceServer
-
 from pynumaflow.sourcer._dtypes import (
     Message,
     ReadRequest,
@@ -10,8 +6,10 @@ from pynumaflow.sourcer._dtypes import (
     Offset,
     PartitionsResponse,
     get_default_partitions,
-    SourcerClass,
+    Sourcer,
 )
+from pynumaflow.sourcer.async_server import SourceAsyncServer
+from pynumaflow.sourcer.server import SourceServer
 
 __all__ = [
     "Message",
@@ -22,6 +20,6 @@ __all__ = [
     "PartitionsResponse",
     "get_default_partitions",
     "SourceServer",
-    "SourcerClass",
-    "ServerType",
+    "Sourcer",
+    "SourceAsyncServer",
 ]

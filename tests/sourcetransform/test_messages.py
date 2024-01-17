@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from pynumaflow.sourcetransformer import Messages, Message, DROP, SourceTransformerClass, Datum
+from pynumaflow.sourcetransformer import Messages, Message, DROP, SourceTransformer, Datum
 from tests.testing_utils import mock_new_event_time
 
 
@@ -94,7 +94,7 @@ class TestMessages(unittest.TestCase):
             msgts[:1]
 
 
-class ExampleSourceTransformClass(SourceTransformerClass):
+class ExampleSourceTransformClass(SourceTransformer):
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         messages = Messages()
         messages.append(Message(mock_message_t(), mock_new_event_time(), keys=keys))

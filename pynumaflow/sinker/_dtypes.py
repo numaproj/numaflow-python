@@ -163,7 +163,7 @@ class Datum:
         return self._watermark
 
 
-class SinkerClass(metaclass=ABCMeta):
+class Sinker(metaclass=ABCMeta):
     """
     Provides an interface to write a Sinker
     which will be exposed over a gRPC server.
@@ -185,7 +185,10 @@ class SinkerClass(metaclass=ABCMeta):
         pass
 
 
+# SyncSinkCallable is a callable which can be used as a handler for the Synchronous UDSink.
 SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
-AsyncSinkCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
-# SinkCallable is a callable which can be used as a handler for the UDSink.
-SinkCallable = Union[SinkerClass, SinkHandlerCallable, AsyncSinkCallable]
+SyncSinkCallable = Union[Sinker, SinkHandlerCallable]
+
+# AsyncSinkCallable is a callable which can be used as a handler for the Asynchronous UDSink.
+AsyncSinkHandlerCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
+AsyncSinkCallable = Union[Sinker, AsyncSinkHandlerCallable]

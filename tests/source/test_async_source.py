@@ -6,13 +6,12 @@ import unittest
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
-from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
-from pynumaflow.sourcer import (
-    SourceServer,
-)
 from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
+from pynumaflow.sourcer import (
+    SourceAsyncServer,
+)
 from tests.source.utils import (
     mock_offset,
     read_req_source_fn,
@@ -40,11 +39,8 @@ def startup_callable(loop):
 
 def NewAsyncSourcer():
     class_instance = AsyncSource()
-    server = SourceServer(sourcer_instance=class_instance, server_type=ServerType.Async)
-
-    udfs = server.get_servicer(
-        sourcer_instance=server.sourcer_instance, server_type=server.server_type
-    )
+    server = SourceAsyncServer(sourcer_instance=class_instance)
+    udfs = server.servicer
     return udfs
 
 

@@ -6,10 +6,9 @@ import unittest
 import grpc
 
 from grpc.aio._server import Server
-from pynumaflow._constants import ServerType
 
 from pynumaflow import setup_logging
-from pynumaflow.sourcer import SourceServer
+from pynumaflow.sourcer import SourceAsyncServer
 from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from tests.source.utils import (
@@ -34,10 +33,8 @@ def startup_callable(loop):
 async def start_server():
     server = grpc.aio.server()
     class_instance = AsyncSourceError()
-    server_instance = SourceServer(sourcer_instance=class_instance, server_type=ServerType.Async)
-    udfs = server_instance.get_servicer(
-        sourcer_instance=server_instance.sourcer_instance, server_type=ServerType.Async
-    )
+    server_instance = SourceAsyncServer(sourcer_instance=class_instance)
+    udfs = server_instance.servicer
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
     listen_addr = "unix:///tmp/async_err_source.sock"
     server.add_insecure_port(listen_addr)
@@ -122,6 +119,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 self.assertTrue("Got a runtime error from partition handler." in e.__str__())
                 return
         self.fail("Expected an exception.")
+
+    def test_invalid_server_type(self) -> None:
+        with self.assertRaises(TypeError):
+            SourceAsyncServer()
 
 
 if __name__ == "__main__":

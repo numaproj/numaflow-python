@@ -3,7 +3,7 @@ import grpc
 
 from pynumaflow.proto.reducer import reduce_pb2_grpc
 
-from pynumaflow.reducer.servicer.async_server import AsyncReduceServicer
+from pynumaflow.reducer.servicer.async_servicer import AsyncReduceServicer
 
 from pynumaflow._constants import (
     REDUCE_SOCK_PATH,

@@ -5,7 +5,6 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from pynumaflow._constants import ServerType
 
 from pynumaflow.sourcetransformer import SourceTransformServer
 from pynumaflow.proto.sourcetransformer import transform_pb2
@@ -20,13 +19,8 @@ from tests.testing_utils import (
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        server = SourceTransformServer(
-            source_transform_instance=transform_handler, server_type=ServerType.Sync
-        )
-        my_servicer = server.get_servicer(
-            source_transform_instance=server.source_transform_instance,
-            server_type=server.server_type,
-        )
+        server = SourceTransformServer(source_transform_instance=transform_handler)
+        my_servicer = server.servicer
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -35,19 +29,13 @@ class TestServer(unittest.TestCase):
             source_transform_instance=transform_handler,
             sock_path="/tmp/test.sock",
             max_message_size=1024 * 1024 * 5,
-            server_type=ServerType.Sync,
         )
         self.assertEqual(server.sock_path, "unix:///tmp/test.sock")
         self.assertEqual(server.max_message_size, 1024 * 1024 * 5)
 
     def test_udf_mapt_err(self):
-        server = SourceTransformServer(
-            source_transform_instance=err_transform_handler, server_type=ServerType.Sync
-        )
-        my_servicer = server.get_servicer(
-            source_transform_instance=server.source_transform_instance,
-            server_type=server.server_type,
-        )
+        server = SourceTransformServer(source_transform_instance=err_transform_handler)
+        my_servicer = server.servicer
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -145,10 +133,6 @@ class TestServer(unittest.TestCase):
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             SourceTransformServer()
-        with self.assertRaises(NotImplementedError):
-            SourceTransformServer(
-                source_transform_instance=transform_handler, server_type=ServerType.Async
-            ).start()
 
 
 if __name__ == "__main__":

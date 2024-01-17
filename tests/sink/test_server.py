@@ -48,9 +48,7 @@ def mock_watermark():
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
         server = SinkServer(sinker_instance=udsink_handler)
-        my_servicer = server.get_servicer(
-            sinker_instance=server.sinker_instance, server_type=server.server_type
-        )
+        my_servicer = server.servicer
         services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -71,9 +69,7 @@ class TestServer(unittest.TestCase):
 
     def test_udsink_err(self):
         server = SinkServer(sinker_instance=err_udsink_handler)
-        my_servicer = server.get_servicer(
-            sinker_instance=server.sinker_instance, server_type=server.server_type
-        )
+        my_servicer = server.servicer
         services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -165,8 +161,6 @@ class TestServer(unittest.TestCase):
     def test_invalid_init(self):
         with self.assertRaises(TypeError):
             SinkServer()
-        with self.assertRaises(NotImplementedError):
-            SinkServer(sinker_instance=udsink_handler, server_type="ERORR").start()
 
 
 if __name__ == "__main__":

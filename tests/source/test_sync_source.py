@@ -19,9 +19,7 @@ class TestSyncSourcer(unittest.TestCase):
     def setUp(self) -> None:
         class_instance = SyncSource()
         server = SourceServer(sourcer_instance=class_instance)
-        my_servicer = server.get_servicer(
-            sourcer_instance=server.sourcer_instance, server_type=server.server_type
-        )
+        my_servicer = server.servicer
         services = {source_pb2.DESCRIPTOR.services_by_name["Source"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 

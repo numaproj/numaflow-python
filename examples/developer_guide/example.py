@@ -1,12 +1,12 @@
 from collections.abc import AsyncIterable
 
-import aiorun
 
 from pynumaflow.reducer import (
     Messages,
     Message,
     Datum,
-    Metadata, ReduceAsyncServer,
+    Metadata,
+    ReduceAsyncServer,
 )
 
 

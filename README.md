@@ -5,9 +5,9 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Release Version](https://img.shields.io/github/v/release/numaproj/numaflow-python?label=pynumaflow)](https://github.com/numaproj/numaflow-python/releases/latest)
 
+This is the Python SDK for [Numaflow](https://numaflow.numaproj.io/).
 
-This SDK provides the interface for writing [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/)
-and [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/) in Python.
+This SDK provides the interface for writing different functionalities of Numaflow like [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/), [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/), [UDSources](https://numaflow.numaproj.io/user-guide/sources/user-defined-sources/) and [SideInput](https://numaflow.numaproj.io/specifications/side-inputs/) in Python.
 
 ## Installation
 
@@ -40,177 +40,89 @@ Setup [pre-commit](https://pre-commit.com/) hooks:
 pre-commit install
 ```
 
-## Implement a User Defined Function (UDF)
-
-
-### Map
-
-```python
-from pynumaflow.mapper import Messages, Message, Datum, MapServer
-
-
-def handler(keys: list[str], datum: Datum) -> Messages:
-    val = datum.value
-    _ = datum.event_time
-    _ = datum.watermark
-    strs = val.decode("utf-8").split(",")
-    messages = Messages()
-    if len(strs) == 0:
-        messages.append(Message.to_drop())
-        return messages
-    for s in strs:
-        messages.append(Message(str.encode(s)))
-    return messages
-
-
-if __name__ == "__main__":
-    grpc_server = MapServer(handler)
-    grpc_server.start()
-```
-### SourceTransformer - Map with event time assignment capability
-In addition to the regular Map function, SourceTransformer supports assigning a new event time to the message.
-SourceTransformer is only supported at source vertex to enable (a) early data filtering and (b) watermark assignment by extracting new event time from the message payload.
-
-```python
-from datetime import datetime
-from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
-
-
-def transform_handler(keys: list[str], datum: Datum) -> Messages:
-    val = datum.value
-    new_event_time = datetime.now()
-    _ = datum.watermark
-    message_t_s = Messages(Message(val, event_time=new_event_time, keys=keys))
-    return message_t_s
-
-
-if __name__ == "__main__":
-    grpc_server = SourceTransformServer(transform_handler)
-    grpc_server.start()
-```
-
-### Reduce
-
-```python
-from typing import AsyncIterable
-from pynumaflow.reducer import Messages, Message, Datum, Metadata, ReduceAsyncServer
-
-
-async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
-    interval_window = md.interval_window
-    counter = 0
-    async for _ in datums:
-        counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
-    return Messages(Message(str.encode(msg), keys=keys))
-
-
-if __name__ == "__main__":
-    grpc_server = ReduceAsyncServer(reduce_handler)
-    grpc_server.start()
-```
-
-### Sample Image
-A sample UDF [Dockerfile](examples/map/forward_message/Dockerfile) is provided
-under [examples](examples/map/forward_message).
-
-## Implement a User Defined Sink (UDSink)
-
-```python
-from typing import Iterator
-from pynumaflow.sinker import Datum, Responses, Response, SinkServer
-
-
-def my_handler(datums: Iterator[Datum]) -> Responses:
-    responses = Responses()
-    for msg in datums:
-        print("User Defined Sink", msg.value.decode("utf-8"))
-        responses.append(Response.as_success(msg.id))
-    return responses
-
-
-if __name__ == "__main__":
-    grpc_server = SinkServer(my_handler)
-    grpc_server.start()
-```
-
-### Sample Image
-
-A sample UDSink [Dockerfile](examples/sink/log/Dockerfile) is provided
-under [examples](examples/sink/log).
-
-## Class based handlers 
-
-We can also implement UDFs and UDSinks using class based handlers.
-
-The class based handlers are useful when we want to maintain state across multiple invocations of the handler.
-
-Here we can pass the class instance to the server and the server will invoke the handler methods on the instance.
-
-To use a class based handler, we the user needs to inherit the base class of the UDF/UDSink.
-And implement the required methods in the class.
-
-Example For Mapper, the user needs to inherit the [Mapper](pynumaflow/mapper/_dtypes.py#170) class and then implement the [handler](pynumaflow/mapper/_dtypes.py#170) method.
-
-### Map
-
-```python
-from pynumaflow.mapper import Messages, Message, Datum, MapServer, Mapper
-
-
-class MyHandler(Mapper):
-    def handler(self, keys: list[str], datum: Datum) -> Messages:
-        val = datum.value
-        _ = datum.event_time
-        _ = datum.watermark
-        strs = val.decode("utf-8").split(",")
-        messages = Messages()
-        if len(strs) == 0:
-            messages.append(Message.to_drop())
-            return messages
-        for s in strs:
-            messages.append(Message(str.encode(s)))
-        return messages
-
-
-if __name__ == "__main__":
-    class_instance = MyHandler()
-    grpc_server = MapServer(class_instance)
-    grpc_server.start()
-```
-
+## Implementing different functionalities
+- [Implement User Defined Sources](https://github.com/numaproj/numaflow-python/tree/main/examples/source)
+- [Implement User Defined Source Transformers](https://github.com/numaproj/numaflow-python/tree/main/examples/sourcetransform)
+- Implement User Defined Functions
+    - [Map](https://github.com/numaproj/numaflow-python/tree/main/examples/map)
+    - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/examples/reduce/counter)
+    - [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/examples/mapstream)
+- [Implement User Defined Sinks](https://github.com/numaproj/numaflow-python/tree/main/examples/sink)
+- [Implement User Defined SideInputs](https://github.com/numaproj/numaflow-python/tree/main/examples/sideinput)
 
 ## Server Types
 
-For different types of UDFs and UDSinks, we have different server types which are supported.
-
+There are different types of gRPC server mechanisms which can be used to serve the UDFs, UDSinks and UDSource.
 These have different functionalities and are used for different use cases.
 
 Currently we support the following server types:
-1) SyncServer
-2) AsyncServer
-3) MultiProcessServer
+- Sync Server
+- Asyncronous Server
+- MultiProcessing Server
 
-Not all of the above are supported for all UDFs and UDSinks.
+Not all of the above are supported for all UDFs, UDSource and UDSinks.
+
+For each of the UDFs, UDSource and UDSinks, there are seperate classes for each of the server types.
+This helps in keeping the interface simple and easy to use, and the user can start the specific server type based
+on the use case.
 
 
+#### SyncServer
 
-### SyncServer
+Syncronous Server is the simplest server type. It is a multithreaded threaded server which can be used for simple UDFs and UDSinks.
+Here the server will invoke the handler function for each message. The messaging is synchronous and the server will wait
+for the handler to return before processing the next message.
+
 ```
 grpc_server = MapServer(handler)
 ```
 
-### AsyncServer
+#### AsyncServer
+
+Asyncronous Server is a multi threaded server which can be used for UDFs which are asyncronous. Here we utilize the asyncronous capabilities of Python to process multiple messages in parallel. The server will invoke the handler function for each message. The messaging is asyncronous and the server will not wait for the handler to return before processing the next message. Thus this server type is useful for UDFs which are asyncronous.
+The handler function for such a server should be an async function.
+
 ```
 grpc_server = MapAsyncServer(handler)
 ```
 
-### MultiProcessServer
+#### MultiProcessServer
+
+MultiProcess Server is a multi process server which can be used for UDFs which are CPU intensive. Here we utilize the multi process capabilities of Python to process multiple messages in parallel by forking multiple servers in different processes. 
+The server will invoke the handler function for each message. Individually at the server level the messaging is synchronous and the server will wait for the handler to return before processing the next message. But since we have multiple servers running in parallel, the overall messaging also executes in parallel.
+
+This could be an alternative to creating multiple replicas of the same UDF container as here we are using the multi processing capabilities of the system to process multiple messages in parallel but within the same container.
+
+Thus this server type is useful for UDFs which are CPU intensive.
 ```
 grpc_server = MapMultiProcServer(handler)
 ```
+
+#### Currently Supported Server Types for each functionality
+
+These are the class names for the server types supported by each of the functionalities.
+
+- UDFs
+    - Map
+        - MapServer
+        - MapAsyncServer
+        - MapMultiProcServer
+    - Reduce
+        - ReduceAsyncServer
+    - MapStream
+        - MapStreamAsyncServer
+    - Source Transform
+        - SourceTransformServer
+        - SourceTransformMultiProcServer
+- UDSource
+    - SourceServer
+    - SourceAsyncServer
+- UDSink
+    - SinkServer
+    - SinkAsyncServer
+- SideInput
+    - SideInputServer
+
+
 
 

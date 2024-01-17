@@ -5,8 +5,9 @@ from pynumaflow.reducer._dtypes import (
     IntervalWindow,
     Metadata,
     DROP,
-    ReducerClass,
+    Reducer,
 )
+from pynumaflow.reducer.async_server import ReduceAsyncServer
 
 __all__ = [
     "Message",
@@ -15,8 +16,6 @@ __all__ = [
     "IntervalWindow",
     "Metadata",
     "DROP",
-    "ReduceServer",
-    "ReducerClass",
+    "ReduceAsyncServer",
+    "Reducer",
 ]
-
-from pynumaflow.reducer.reduce import ReduceServer

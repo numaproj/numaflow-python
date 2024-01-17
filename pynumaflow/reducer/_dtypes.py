@@ -7,7 +7,7 @@ from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
 from warnings import warn
 
-from pynumaflow.reducer.asynciter import NonBlockingIterator
+from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
@@ -233,7 +233,7 @@ class ReduceResult:
         return self._key
 
 
-class ReducerClass(metaclass=ABCMeta):
+class Reducer(metaclass=ABCMeta):
     """
     Provides an interface to write a Reducer
     which will be exposed over a gRPC server.
@@ -258,4 +258,4 @@ class ReducerClass(metaclass=ABCMeta):
 
 ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
 # ReduceCallable is a callable which can be used as a handler for the reduce UDF.
-ReduceCallable = Union[ReduceAsyncCallable, ReducerClass]
+ReduceCallable = Union[ReduceAsyncCallable, Reducer]

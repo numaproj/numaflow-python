@@ -4,7 +4,6 @@ from pynumaflow.mapper import Messages, Message, Datum, MapServer, Mapper
 
 
 class Example(Mapper):
-
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         val = datum.value
         _ = datum.event_time

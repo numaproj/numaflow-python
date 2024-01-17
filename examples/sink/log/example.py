@@ -2,10 +2,10 @@ import os
 from collections.abc import Iterator
 
 from pynumaflow.sinker import Datum, Responses, Response, SinkServer
-from pynumaflow.sinker import SinkerClass
+from pynumaflow.sinker import Sinker
 
 
-class UserDefinedSink(SinkerClass):
+class UserDefinedSink(Sinker):
     def handler(self, datums: Iterator[Datum]) -> Responses:
         responses = Responses()
         for msg in datums:
@@ -28,5 +28,5 @@ if __name__ == "__main__":
         sink_handler = UserDefinedSink()
     else:
         sink_handler = udsink_handler
-    grpc_server = SinkServer(sinker_instance=sink_handler)
+    grpc_server = SinkServer(sink_handler)
     grpc_server.start()

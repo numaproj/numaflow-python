@@ -9,12 +9,12 @@ from pynumaflow.sourcer import (
     Offset,
     PartitionsResponse,
     get_default_partitions,
-    SourcerClass,
+    Sourcer,
     SourceServer,
 )
 
 
-class SimpleSource(SourcerClass):
+class SimpleSource(Sourcer):
     """
     SimpleSource is a class for User Defined Source implementation.
     """
@@ -68,5 +68,5 @@ class SimpleSource(SourcerClass):
 
 if __name__ == "__main__":
     ud_source = SimpleSource()
-    grpc_server = SourceServer(sourcer_instance=ud_source)
+    grpc_server = SourceServer(ud_source)
     grpc_server.start()

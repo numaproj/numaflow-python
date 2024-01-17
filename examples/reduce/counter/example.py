@@ -1,12 +1,11 @@
 import os
 from collections.abc import AsyncIterable
 
-from pynumaflow._constants import ServerType
 
-from pynumaflow.reducer import Messages, Message, Datum, Metadata, ReduceServer, ReducerClass
+from pynumaflow.reducer import Messages, Message, Datum, Metadata, ReduceAsyncServer, Reducer
 
 
-class ExampleClass(ReducerClass):
+class Example(Reducer):
     async def handler(
         self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
     ) -> Messages:
@@ -36,8 +35,8 @@ async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Meta
 if __name__ == "__main__":
     invoke = os.getenv("INVOKE", "handler")
     if invoke == "class":
-        handler = ExampleClass()
+        handler = Example()
     else:
         handler = reduce_handler
-    grpc_server = ReduceServer(reducer_instance=handler, server_type=ServerType.Async)
+    grpc_server = ReduceAsyncServer(handler)
     grpc_server.start()

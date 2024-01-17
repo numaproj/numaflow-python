@@ -2,10 +2,11 @@ import os
 from collections.abc import AsyncIterable
 
 
-from pynumaflow.sinker import Datum, Responses, Response, SinkServer, SinkerClass, ServerType
+from pynumaflow.sinker import Datum, Responses, Response, Sinker
+from pynumaflow.sinker import SinkAsyncServer
 
 
-class UserDefinedSink(SinkerClass):
+class UserDefinedSink(Sinker):
     async def handler(self, datums: AsyncIterable[Datum]) -> Responses:
         responses = Responses()
         async for msg in datums:
@@ -28,5 +29,5 @@ if __name__ == "__main__":
         sink_handler = UserDefinedSink()
     else:
         sink_handler = udsink_handler
-    grpc_server = SinkServer(sinker_instance=sink_handler, server_type=ServerType.Async)
+    grpc_server = SinkAsyncServer(sink_handler)
     grpc_server.start()

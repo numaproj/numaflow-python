@@ -1,5 +1,5 @@
 import math
-
+import os
 
 from pynumaflow.mapper import Messages, Message, Datum, Mapper, MapMultiprocServer
 
@@ -27,11 +27,10 @@ class PrimeMap(Mapper):
 if __name__ == "__main__":
     """
     Example of starting a multiprocessing map vertex.
-    To enable set the env variable
-        NUM_CPU_MULTIPROC="N"
-        Set the server_type = ServerType.Multiproc
-    in the pipeline config for the numa container.
     """
+    # To set the env server_count value set the env variable
+    # NUM_CPU_MULTIPROC="N"
+    server_count = int(os.getenv("NUM_CPU_MULTIPROC", "2"))
     prime_class = PrimeMap()
-    grpc_server = MapMultiprocServer(mapper_instance=prime_class, server_count=2)
+    grpc_server = MapMultiprocServer(prime_class, server_count=server_count)
     grpc_server.start()

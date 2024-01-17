@@ -8,19 +8,15 @@ writing UDFs using map function. These are particularly useful for CPU intensive
 as it allows for better resource utilisation.
 
 In this mode we would spawn N number (N = Cpu count) of grpc servers in different processes, where each of them
-listening on the same TCP socket. 
-
-This is possible by enabling the `SO_REUSEPORT` flag for the TCP socket, which allows these different
-processes to bind to the same port. 
+listening on multiple TCP sockets.
 
 To enable multiprocessing mode 
 
-1) Start the multiproc server in the UDF using the following command, select the server_type = ServerType.Multiproc
+1) Start the multiproc server in the UDF using the following command
+2) Provide the optional argument `server_count` to specify the number of
+servers to be forked. Defaults to `os.cpu_count` if not provided
 ```python
 if __name__ == "__main__":
-    grpc_server = MapServer(mapper_instance=handler,
-                            server_type=ServerType.Multiproc)
+    grpc_server = MapMultiProcServer(handler, server_count = 3)
     grpc_server.start()
 ```
-2) Set the ENV var value `NUM_CPU_MULTIPROC="n"` for the UDF container,
-to set the value of the number of server instances (one for each subprocess) to be created.

@@ -22,5 +22,5 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = MapServer(mapper_instance=my_handler)
+    grpc_server = MapServer(my_handler)
     grpc_server.start()

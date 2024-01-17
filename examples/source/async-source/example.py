@@ -1,8 +1,5 @@
-from datetime import datetime
 from collections.abc import AsyncIterable
-
-import aiorun
-from pynumaflow._constants import ServerType
+from datetime import datetime
 
 from pynumaflow.sourcer import (
     ReadRequest,
@@ -12,12 +9,12 @@ from pynumaflow.sourcer import (
     Offset,
     PartitionsResponse,
     get_default_partitions,
-    SourceServer,
-    SourcerClass,
+    Sourcer,
+    SourceAsyncServer,
 )
 
 
-class AsyncSource(SourcerClass):
+class AsyncSource(Sourcer):
     """
     AsyncSource is a class for User Defined Source implementation.
     """
@@ -71,5 +68,5 @@ class AsyncSource(SourcerClass):
 
 if __name__ == "__main__":
     ud_source = AsyncSource()
-    grpc_server = SourceServer(sourcer_instance=ud_source, server_type=ServerType.Async)
-    aiorun.run(grpc_server.start())
+    grpc_server = SourceAsyncServer(ud_source)
+    grpc_server.start()

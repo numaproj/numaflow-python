@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
 ```python
 from typing import AsyncIterable
-from pynumaflow.reducer import Messages, Message, Datum, Metadata, ReduceServer
+from pynumaflow.reducer import Messages, Message, Datum, Metadata, ReduceAsyncServer
 
 
 async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
@@ -109,7 +109,7 @@ async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Meta
 
 
 if __name__ == "__main__":
-    grpc_server = ReduceServer(reducer_instance=reduce_handler)
+    grpc_server = ReduceAsyncServer(reducer_instance=reduce_handler)
     grpc_server.start()
 ```
 
@@ -196,24 +196,21 @@ Currently we support the following server types:
 
 Not all of the above are supported for all UDFs and UDSinks.
 
-To use a server type, the user needs to pass the server type to the server constructor.
-
-There is a class of the ```ServerType``` which can be imported from the package and be used.
 
 
 ### SyncServer
 ```
-grpc_server = MapServer(mapper_instance=handler, server_type=ServerType.Sync)
+grpc_server = MapServer(handler)
 ```
 
 ### AsyncServer
 ```
-grpc_server = MapServer(mapper_instance=handler, server_type=ServerType.Async)
+grpc_server = MapAsyncServer(handler)
 ```
 
 ### MultiProcessServer
 ```
-grpc_server = MapServer(mapper_instance=handler, server_type=ServerType.MultiProc)
+grpc_server = MapMultiProcServer(handler)
 ```
 
 

@@ -64,7 +64,7 @@ def handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = MapServer(mapper_instance=handler)
+    grpc_server = MapServer(handler)
     grpc_server.start()
 ```
 ### SourceTransformer - Map with event time assignment capability
@@ -85,7 +85,7 @@ def transform_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SourceTransformServer(source_transform_instance=transform_handler)
+    grpc_server = SourceTransformServer(transform_handler)
     grpc_server.start()
 ```
 
@@ -109,7 +109,7 @@ async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Meta
 
 
 if __name__ == "__main__":
-    grpc_server = ReduceAsyncServer(reducer_instance=reduce_handler)
+    grpc_server = ReduceAsyncServer(reduce_handler)
     grpc_server.start()
 ```
 
@@ -133,7 +133,7 @@ def my_handler(datums: Iterator[Datum]) -> Responses:
 
 
 if __name__ == "__main__":
-    grpc_server = SinkServer(sinker_instance=my_handler)
+    grpc_server = SinkServer(my_handler)
     grpc_server.start()
 ```
 
@@ -178,7 +178,7 @@ class MyHandler(Mapper):
 
 if __name__ == "__main__":
     class_instance = MyHandler()
-    grpc_server = MapServer(mapper_instance=class_instance)
+    grpc_server = MapServer(class_instance)
     grpc_server.start()
 ```
 

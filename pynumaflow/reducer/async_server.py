@@ -8,7 +8,7 @@ from pynumaflow.reducer.servicer.async_servicer import AsyncReduceServicer
 from pynumaflow._constants import (
     REDUCE_SOCK_PATH,
     MAX_MESSAGE_SIZE,
-    MAX_THREADS,
+    MAX_THREADS, _LOGGER,
 )
 
 from pynumaflow.reducer._dtypes import ReduceCallable
@@ -57,6 +57,9 @@ class ReduceAsyncServer(NumaflowServer):
         Starter function for the Async server class, need a separate caller
         so that all the async coroutines can be started from a single context
         """
+        _LOGGER.info(
+            "Starting Async Reduce Server",
+        )
         aiorun.run(self.aexec(), use_uvloop=True)
 
     async def aexec(self):

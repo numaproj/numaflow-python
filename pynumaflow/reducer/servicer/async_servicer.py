@@ -141,8 +141,10 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
     async def __invoke_reduce(
         self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
     ):
-        reducer_class = self.__reduce_handler.__class__
-        new_instance = reducer_class()
+        new_instance = self.__reduce_handler
+        if isinstance(self.__reduce_handler, Reducer):
+            reducer_class = self.__reduce_handler.__class__
+            new_instance = reducer_class()
         try:
             msgs = await new_instance(keys, request_iterator, md)
         except Exception as err:

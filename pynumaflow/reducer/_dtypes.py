@@ -257,5 +257,5 @@ class Reducer(metaclass=ABCMeta):
 
 
 ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
-# ReduceCallable is a callable which can be used as a handler for the reduce UDF.
+# ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
 ReduceCallable = Union[ReduceAsyncCallable, Reducer]

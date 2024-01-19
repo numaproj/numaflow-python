@@ -8,7 +8,8 @@ from pynumaflow.reducer.servicer.async_servicer import AsyncReduceServicer
 from pynumaflow._constants import (
     REDUCE_SOCK_PATH,
     MAX_MESSAGE_SIZE,
-    MAX_THREADS, _LOGGER,
+    MAX_THREADS,
+    _LOGGER,
 )
 
 from pynumaflow.reducer._dtypes import ReduceCallable

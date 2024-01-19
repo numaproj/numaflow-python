@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from asyncio import Task
 from collections.abc import Iterator, Sequence, Awaitable
+from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable, Union
@@ -245,6 +246,17 @@ class Reducer(metaclass=ABCMeta):
         as the reducer_instance.
         """
         return self.handler(*args, **kwargs)
+
+    def __deepcopy__(self, memo):
+        """
+        Allow to deepcopy the class instance.
+        """
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+        return result
 
     @abstractmethod
     async def handler(

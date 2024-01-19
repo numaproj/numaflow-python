@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 
 from datetime import datetime, timezone
 from collections.abc import AsyncIterable
@@ -143,8 +144,8 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
     ):
         new_instance = self.__reduce_handler
         if isinstance(self.__reduce_handler, Reducer):
-            reducer_class = self.__reduce_handler.__class__
-            new_instance = reducer_class()
+            _LOGGER.info("Creating a new copy of the reducer instance")
+            new_instance = deepcopy(self.__reduce_handler)
         try:
             msgs = await new_instance(keys, request_iterator, md)
         except Exception as err:

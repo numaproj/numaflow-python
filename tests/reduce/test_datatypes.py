@@ -1,6 +1,6 @@
 from copy import deepcopy
 import unittest
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow.reducer import Reducer, Messages
@@ -107,7 +107,9 @@ class TestMetadata(unittest.TestCase):
 
 class TestReducerClass(unittest.TestCase):
     class ExampleClass(Reducer):
-        async def handler(self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+        async def handler(
+            self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+        ) -> Messages:
             pass
 
         def __init__(self, test1, test2):
@@ -142,7 +144,6 @@ class TestReducerClass(unittest.TestCase):
         # Verify that the instance type is correct
         self.assertTrue(isinstance(r_copy, self.ExampleClass))
         self.assertTrue(isinstance(r_copy, Reducer))
-
 
 
 if __name__ == "__main__":

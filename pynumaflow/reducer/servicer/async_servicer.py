@@ -144,7 +144,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
     ):
         new_instance = self.__reduce_handler
         # If the reduce handler is a class instance, create a new copy of it.
-        # It is required for a new key to be processed by a 
+        # It is required for a new key to be processed by a
         # new instance of the reducer for a given window
         if isinstance(self.__reduce_handler, Reducer):
             new_instance = deepcopy(self.__reduce_handler)

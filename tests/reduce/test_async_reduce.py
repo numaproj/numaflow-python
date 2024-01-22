@@ -3,7 +3,6 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
-from collections.abc import Iterator
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -17,6 +16,7 @@ from pynumaflow.reducer import (
     Datum,
     Metadata,
     ReduceAsyncServer,
+    Reducer,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from tests.testing_utils import (
@@ -79,22 +79,28 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata) -> Messages:
-    interval_window = md.interval_window
-    counter = 0
-    async for _ in datums:
-        counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
-    return Messages(Message(str.encode(msg), keys=keys))
+class ExampleClass(Reducer):
+    def __init__(self):
+        self.counter = 0
+
+    async def handler(
+        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+    ) -> Messages:
+        interval_window = md.interval_window
+        self.counter = 0
+        async for _ in datums:
+            self.counter += 1
+        msg = (
+            f"counter:{self.counter} interval_window_start:{interval_window.start} "
+            f"interval_window_end:{interval_window.end}"
+        )
+        return Messages(Message(str.encode(msg), keys=keys))
 
 
 def NewAsyncReducer(
     reduce_handler=async_reduce_handler,
 ):
-    server_instance = ReduceAsyncServer(reducer_instance=async_reduce_handler)
+    server_instance = ReduceAsyncServer(reducer_instance=ExampleClass())
     udfs = server_instance.servicer
 
     return udfs

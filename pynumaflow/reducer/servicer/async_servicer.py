@@ -143,8 +143,10 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
     ):
         new_instance = self.__reduce_handler
+        # If the reduce handler is a class instance, create a new copy of it.
+        # It is required for a new key to be processed by a 
+        # new instance of the reducer for a given window
         if isinstance(self.__reduce_handler, Reducer):
-            _LOGGER.info("Creating a new copy of the reducer instance")
             new_instance = deepcopy(self.__reduce_handler)
         try:
             msgs = await new_instance(keys, request_iterator, md)

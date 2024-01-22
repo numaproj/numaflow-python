@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import aiorun
 import grpc
 
@@ -72,7 +74,9 @@ class ReduceAsyncServer(NumaflowServer):
         # same thread as the event loop so that all the async calls are made in the
         # same context
         # Create a new async server instance and add the servicer to it
-        server = grpc.aio.server()
+        server = grpc.aio.server(ThreadPoolExecutor(
+            max_workers=self.max_threads,
+        ))
         server.add_insecure_port(self.sock_path)
         reduce_servicer = self.servicer
         reduce_pb2_grpc.add_ReduceServicer_to_server(reduce_servicer, server)

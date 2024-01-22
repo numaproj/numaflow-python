@@ -126,3 +126,33 @@ These are the class names for the server types supported by each of the function
 
 
 
+### Handler Function and Classes
+
+All the server types take a instance of a handler class or a handler function as an argument.
+The handler function or class is the function or class which implements the functionality of the UDF, UDSource or UDSink.
+For ease of use the user can pass either of the two to the server and the server will handle the rest.
+
+The handler for each of the servers has a specific signature which is defined by the server type and the implentation of the handlers
+should follow the same signature.
+
+For using the class based handlers the user can inherit from the base handler class for each of the functionalities and implement the handler function.
+The base handler class for each of the functionalities has the same signature as the handler function for the respective server type.
+The list of base handler classes for each of the functionalities is given below -
+- UDFs
+    - Map
+        - Mapper
+    - Reduce
+        - Reducer
+    - MapStream
+        - MapStreamer
+    - Source Transform
+        - SourceTransformer
+- UDSource
+    - Sourcer
+- UDSink
+    - Sinker
+- SideInput
+    - SideInput
+
+More details about the signature of the handler function for each of the server types is given in the 
+documentation of the respective server type.

@@ -12,7 +12,7 @@ class ExampleSideInput(SideInput):
         """
         time_now = datetime.datetime.now()
         # val is the value to be broadcasted
-        val = "an example:" + str(time_now)
+        val = f"an example: {str(time_now)}"
         self.counter += 1
         # broadcast every other time
         if self.counter % 2 == 0:

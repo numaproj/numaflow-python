@@ -20,6 +20,28 @@ from pynumaflow.shared.server import (
 class MapAsyncServer(NumaflowServer):
     """
     Create a new grpc Map Server instance.
+    Args:
+        mapper_instance: The mapper instance to be used for Map UDF
+        sock_path: The UNIX socket path to be used for the server
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+                        defaults to number of processors x4
+
+    Example invocation:
+        from pynumaflow.mapper import Messages, Message, Datum, MapAsyncServer
+        async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
+            val = datum.value
+            msg = "payload:{} event_time:{} watermark:{}".format(
+                val.decode("utf-8"),
+                datum.event_time,
+                datum.watermark,
+            )
+            val = bytes(msg, encoding="utf-8")
+            return Messages(Message(value=val, keys=keys))
+
+        if __name__ == "__main__":
+            grpc_server = MapAsyncServer(async_map_handler)
+            grpc_server.start()
     """
 
     def __init__(

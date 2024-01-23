@@ -222,7 +222,7 @@ class Sourcer(metaclass=ABCMeta):
     @abstractmethod
     def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
         """
-        Write a handler function which implements the SourceReadCallable interface.
+        Implement this handler function which implements the SourceReadCallable interface.
         read_handler is used to read the data from the source and send the data forward
         for each read request we process num_records and increment the read_idx to indicate that
         the message has been read and the same is added to the ack set

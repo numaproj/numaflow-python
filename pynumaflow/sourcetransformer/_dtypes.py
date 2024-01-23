@@ -189,7 +189,7 @@ class SourceTransformer(metaclass=ABCMeta):
     @abstractmethod
     def handler(self, keys: list[str], datum: Datum) -> Messages:
         """
-        Write a handler function which implements the
+        Implement this handler function which implements the
         SourceTransformCallable interface.
         """
         pass

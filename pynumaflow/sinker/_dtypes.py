@@ -180,7 +180,7 @@ class Sinker(metaclass=ABCMeta):
     @abstractmethod
     def handler(self, datums: Iterator[Datum]) -> Responses:
         """
-        Write a handler function which implements the SinkCallable interface.
+        Implement this handler function which implements the SinkCallable interface.
         """
         pass
 

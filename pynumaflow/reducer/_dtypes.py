@@ -254,7 +254,7 @@ class Reducer(metaclass=ABCMeta):
         self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
     ) -> Messages:
         """
-        Write a handler function which implements the ReduceCallable interface.
+        Implement this handler function which implements the ReduceCallable interface.
         """
         pass
 
@@ -262,6 +262,8 @@ class Reducer(metaclass=ABCMeta):
 class ReduceBuilderClass:
     """
     Class to build a Reducer class instance.
+    Used Internally
+
     Args:
         reducer_class: the reducer class to be used for Reduce UDF
         args: the arguments to be passed to the reducer class

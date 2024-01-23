@@ -21,6 +21,42 @@ from pynumaflow.shared.server import (
 class MapServer(NumaflowServer):
     """
     Create a new grpc Map Server instance.
+    Args:
+        mapper_instance: The mapper instance to be used for Map UDF
+        sock_path: The UNIX socket path to be used for the server
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+                        defaults to number of processors x4
+
+    Example Invocation:
+        from pynumaflow.mapper import Messages, Message, Datum, MapServer, Mapper
+
+        class MessageForwarder(Mapper):
+            def handler(self, keys: list[str], datum: Datum) -> Messages:
+                val = datum.value
+                _ = datum.event_time
+                _ = datum.watermark
+                return Messages(Message(value=val, keys=keys))
+
+        def my_handler(keys: list[str], datum: Datum) -> Messages:
+            val = datum.value
+            _ = datum.event_time
+            _ = datum.watermark
+            return Messages(Message(value=val, keys=keys))
+
+
+        if __name__ == "__main__":
+            Use the class based approach or function based handler
+            based on the env variable
+            Both can be used and passed directly to the server class
+
+            invoke = os.getenv("INVOKE", "func_handler")
+            if invoke == "class":
+                handler = MessageForwarder()
+            else:
+                handler = my_handler
+            grpc_server = MapServer(handler)
+            grpc_server.start()
     """
 
     def __init__(

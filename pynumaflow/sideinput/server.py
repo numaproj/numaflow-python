@@ -14,7 +14,39 @@ from pynumaflow._constants import (
 
 
 class SideInputServer(NumaflowServer):
-    """Server for side input"""
+    """
+    Class for a new Side Input Server instance.
+    Args:
+        side_input_instance: The side input instance to be used for Side Input UDF
+        sock_path: The UNIX socket path to be used for the server
+        max_message_size: The max message size in bytes the server can receive and send
+        max_threads: The max number of threads to be spawned;
+
+    Example invocation:
+        import datetime
+        from pynumaflow.sideinput import Response, SideInputServer, SideInput
+
+        class ExampleSideInput(SideInput):
+            def __init__(self):
+                self.counter = 0
+
+            def retrieve_handler(self) -> Response:
+                time_now = datetime.datetime.now()
+                # val is the value to be broadcasted
+                val = f"an example: {str(time_now)}"
+                self.counter += 1
+                # broadcast every other time
+                if self.counter % 2 == 0:
+                    # no_broadcast_message() is used to indicate that there is no broadcast
+                    return Response.no_broadcast_message()
+                # broadcast_message() is used to indicate that there is a broadcast
+                return Response.broadcast_message(val.encode("utf-8"))
+
+        if __name__ == "__main__":
+            grpc_server = SideInputServer(ExampleSideInput())
+            grpc_server.start()
+
+    """
 
     def __init__(
         self,

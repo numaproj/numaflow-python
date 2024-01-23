@@ -27,7 +27,7 @@ spec:
               - name: PYTHONDEBUG
                 value: "true"
               - name: INVOKE
-                value: "handler"
+                value: "func_handler"
     - name: log-output
       sink:
         log: {}

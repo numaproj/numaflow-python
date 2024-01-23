@@ -37,6 +37,38 @@ class SinkServer(NumaflowServer):
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
                             defaults to number of processors x4
+        Example invocation:
+            import os
+            from collections.abc import Iterator
+
+            from pynumaflow.sinker import Datum, Responses, Response, SinkServer
+            from pynumaflow.sinker import Sinker
+            from pynumaflow._constants import _LOGGER
+
+            class UserDefinedSink(Sinker):
+                def handler(self, datums: Iterator[Datum]) -> Responses:
+                    responses = Responses()
+                    for msg in datums:
+                        _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
+                        responses.append(Response.as_success(msg.id))
+                    return responses
+
+            def udsink_handler(datums: Iterator[Datum]) -> Responses:
+                responses = Responses()
+                for msg in datums:
+                    _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
+                    responses.append(Response.as_success(msg.id))
+                return responses
+
+            if __name__ == "__main__":
+                invoke = os.getenv("INVOKE", "func_handler")
+                if invoke == "class":
+                    sink_handler = UserDefinedSink()
+                else:
+                    sink_handler = udsink_handler
+                grpc_server = SinkServer(sink_handler)
+                grpc_server.start()
+
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))

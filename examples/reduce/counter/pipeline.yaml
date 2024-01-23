@@ -18,7 +18,7 @@ spec:
       udf:
         container:
           # compute the sum
-          image: quay.io/numaio/numaflow-python/reduce-counter:v0.6.1
+          image: quay.io/kohlisid/numaflow-python/reduce:refactor1
           imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG
@@ -34,7 +34,7 @@ spec:
             persistentVolumeClaim:
               volumeSize: 10Gi
               accessMode: ReadWriteOnce
-      partitions: 2
+      partitions: 1
     - name: sink
       scale:
         min: 1

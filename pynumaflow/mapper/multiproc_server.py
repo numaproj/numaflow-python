@@ -33,12 +33,45 @@ class MapMultiprocServer(NumaflowServer):
         A new servicer instance is created and attached to the server.
         The server instance is returned.
         Args:
-        mapper_instance: The mapper instance to be used for Map UDF
-        server_count: The number of grpc server instances to be forked for multiproc
-        sock_path: The UNIX socket path to be used for the server
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
+            mapper_instance: The mapper instance to be used for Map UDF
+            server_count: The number of grpc server instances to be forked for multiproc
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+                        defaults to number of processors x4
+
+        Example invocation:
+            import math
+            import os
+            from pynumaflow.mapper import Messages, Message, Datum, Mapper, MapMultiprocServer
+
+            def is_prime(n):
+                for i in range(2, int(math.ceil(math.sqrt(n)))):
+                    if n % i == 0:
+                        return False
+                else:
+                    return True
+
+            class PrimeMap(Mapper):
+                def handler(self, keys: list[str], datum: Datum) -> Messages:
+                    val = datum.value
+                    _ = datum.event_time
+                    _ = datum.watermark
+                    messages = Messages()
+                    for i in range(2, 100000):
+                        is_prime(i)
+                    messages.append(Message(val, keys=keys))
+                    return messages
+
+            if __name__ == "__main__":
+                # To set the env server_count value set the env variable
+                # NUM_CPU_MULTIPROC="N"
+                server_count = int(os.getenv("NUM_CPU_MULTIPROC", "2"))
+                prime_class = PrimeMap()
+                # Server count is the number of server processes to start
+                grpc_server = MapMultiprocServer(prime_class, server_count=server_count)
+                grpc_server.start()
+
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))

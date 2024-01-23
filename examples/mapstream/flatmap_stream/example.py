@@ -3,7 +3,7 @@ from collections.abc import AsyncIterable
 from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer, MapStreamer
 
 
-class Example(MapStreamer):
+class FlatMapStream(MapStreamer):
     async def handler(self, keys: list[str], datum: Datum) -> AsyncIterable[Message]:
         """
         A handler that splits the input datum value into multiple strings by `,` separator and
@@ -39,9 +39,9 @@ async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Messag
 
 
 if __name__ == "__main__":
-    invoke = os.getenv("INVOKE", "handler")
+    invoke = os.getenv("INVOKE", "func_handler")
     if invoke == "class":
-        handler = Example()
+        handler = FlatMapStream()
     else:
         handler = map_stream_handler
     grpc_server = MapStreamAsyncServer(handler)

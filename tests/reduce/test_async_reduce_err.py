@@ -73,7 +73,7 @@ async def err_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadat
 
 
 def NewAsyncReducer():
-    server_instance = ReduceAsyncServer(reducer_instance=err_handler)
+    server_instance = ReduceAsyncServer(err_handler)
     udfs = server_instance.servicer
 
     return udfs

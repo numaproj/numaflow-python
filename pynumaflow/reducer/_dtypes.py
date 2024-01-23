@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from asyncio import Task
 from collections.abc import Iterator, Sequence, Awaitable
-from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable, Union
@@ -234,6 +233,9 @@ class ReduceResult:
         return self._key
 
 
+ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+
+
 class Reducer(metaclass=ABCMeta):
     """
     Provides an interface to write a Reducer
@@ -247,17 +249,6 @@ class Reducer(metaclass=ABCMeta):
         """
         return self.handler(*args, **kwargs)
 
-    def __deepcopy__(self, memo):
-        """
-        Allow to deepcopy the class instance.
-        """
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            setattr(result, k, deepcopy(v, memo))
-        return result
-
     @abstractmethod
     async def handler(
         self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
@@ -268,6 +259,26 @@ class Reducer(metaclass=ABCMeta):
         pass
 
 
-ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+class ReduceBuilderClass:
+    """
+    Class to build a Reducer class instance.
+    Args:
+        reducer_class: the reducer class to be used for Reduce UDF
+        args: the arguments to be passed to the reducer class
+        kwargs: the keyword arguments to be passed to the reducer class
+    """
+
+    def __init__(self, reducer_class: type[Reducer], args: tuple, kwargs: dict):
+        self._reducer_class: type[Reducer] = reducer_class
+        self._args = args
+        self._kwargs = kwargs
+
+    def create(self) -> Reducer:
+        """
+        Create a new Reducer instance.
+        """
+        return self._reducer_class(*self._args, **self._kwargs)
+
+
 # ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
-ReduceCallable = Union[ReduceAsyncCallable, Reducer]
+ReduceCallable = Union[ReduceAsyncCallable, type[Reducer]]

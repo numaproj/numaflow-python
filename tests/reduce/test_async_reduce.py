@@ -28,24 +28,6 @@ from tests.testing_utils import (
 
 LOGGER = setup_logging(__name__)
 
-# if set to true, map handler will raise a `ValueError` exception.
-raise_error_from_map = False
-
-
-async def async_reduce_handler(
-    keys: list[str], datums: AsyncIterable[Datum], md: Metadata
-) -> Messages:
-    interval_window = md.interval_window
-    counter = 0
-    async for _ in datums:
-        counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
-
-    return Messages(Message(str.encode(msg), keys=keys))
-
 
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
@@ -80,8 +62,8 @@ def startup_callable(loop):
 
 
 class ExampleClass(Reducer):
-    def __init__(self):
-        self.counter = 0
+    def __init__(self, counter):
+        self.counter = counter
 
     async def handler(
         self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
@@ -97,10 +79,20 @@ class ExampleClass(Reducer):
         return Messages(Message(str.encode(msg), keys=keys))
 
 
-def NewAsyncReducer(
-    reduce_handler=async_reduce_handler,
-):
-    server_instance = ReduceAsyncServer(reducer_instance=ExampleClass())
+async def err_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+    interval_window = md.interval_window
+    counter = 0
+    async for _ in datums:
+        counter += 1
+    msg = (
+        f"counter:{counter} interval_window_start:{interval_window.start} "
+        f"interval_window_end:{interval_window.end}"
+    )
+    return Messages(Message(str.encode(msg), keys=keys))
+
+
+def NewAsyncReducer():
+    server_instance = ReduceAsyncServer(ExampleClass, init_args=(0,))
     udfs = server_instance.servicer
 
     return udfs
@@ -240,8 +232,13 @@ class TestAsyncReducer(unittest.TestCase):
         return reduce_pb2_grpc.ReduceStub(_channel)
 
     def test_error_init(self):
+        # Check that reducer_handler in required
         with self.assertRaises(TypeError):
             ReduceAsyncServer()
+        # Check that the init_args and init_kwargs are passed
+        # only with a Reducer class
+        with self.assertRaises(TypeError):
+            ReduceAsyncServer(err_handler, init_args=(0, 1))
 
 
 if __name__ == "__main__":

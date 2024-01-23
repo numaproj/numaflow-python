@@ -1,8 +1,8 @@
 import asyncio
-from copy import deepcopy
 
 from datetime import datetime, timezone
 from collections.abc import AsyncIterable
+from typing import Union
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -13,8 +13,14 @@ from pynumaflow._constants import (
     STREAM_EOF,
     DELIMITER,
 )
-from pynumaflow.reducer._dtypes import Datum, IntervalWindow, Metadata, Reducer
-from pynumaflow.reducer._dtypes import ReduceResult, ReduceCallable
+from pynumaflow.reducer._dtypes import (
+    Datum,
+    IntervalWindow,
+    Metadata,
+    ReduceAsyncCallable,
+    ReduceBuilderClass,
+)
+from pynumaflow.reducer._dtypes import ReduceResult
 from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -43,13 +49,14 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
 
     def __init__(
         self,
-        handler: ReduceCallable,
+        handler: Union[ReduceAsyncCallable, ReduceBuilderClass],
     ):
         # Collection for storing strong references to all running tasks.
         # Event loop only keeps a weak reference, which can cause it to
         # get lost during execution.
         self.background_tasks = set()
-        self.__reduce_handler: ReduceCallable = handler
+        # The reduce handler can be a function or a builder class instance.
+        self.__reduce_handler: Union[ReduceAsyncCallable, ReduceBuilderClass] = handler
 
     async def ReduceFn(
         self,
@@ -143,11 +150,12 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
     ):
         new_instance = self.__reduce_handler
-        # If the reduce handler is a class instance, create a new copy of it.
+        # If the reduce handler is a class instance, create a new instance of it.
         # It is required for a new key to be processed by a
         # new instance of the reducer for a given window
-        if isinstance(self.__reduce_handler, Reducer):
-            new_instance = deepcopy(self.__reduce_handler)
+        # Otherwise the function handler can be called directly
+        if isinstance(self.__reduce_handler, ReduceBuilderClass):
+            new_instance = self.__reduce_handler.create()
         try:
             msgs = await new_instance(keys, request_iterator, md)
         except Exception as err:

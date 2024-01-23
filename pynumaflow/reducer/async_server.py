@@ -1,3 +1,5 @@
+import inspect
+
 import aiorun
 import grpc
 
@@ -12,9 +14,32 @@ from pynumaflow._constants import (
     _LOGGER,
 )
 
-from pynumaflow.reducer._dtypes import ReduceCallable
+from pynumaflow.reducer._dtypes import (
+    ReduceCallable,
+    ReduceBuilderClass,
+    Reducer,
+)
 
 from pynumaflow.shared.server import NumaflowServer, start_async_server
+
+
+def get_handler(reducer_handler: ReduceCallable, init_args: tuple = (), init_kwargs: dict = None):
+    """
+    Get the correct handler type based on the arguments passed
+    """
+    if inspect.isfunction(reducer_handler):
+        if len(init_args) > 0 or len(init_kwargs) > 0:
+            # if the init_args or init_kwargs are passed, then the reducer_handler
+            # can only be of class Reducer type
+            raise TypeError("Cannot pass function handler with init args or kwargs")
+        # return the function handler
+        return reducer_handler
+    elif issubclass(reducer_handler, Reducer):
+        # if handler is type of Class Reducer, create a new instance of
+        # a ReducerBuilderClass
+        return ReduceBuilderClass(reducer_handler, init_args, init_kwargs)
+    else:
+        raise TypeError("Invalid type passed")
 
 
 class ReduceAsyncServer(NumaflowServer):
@@ -24,7 +49,9 @@ class ReduceAsyncServer(NumaflowServer):
 
     def __init__(
         self,
-        reducer_instance: ReduceCallable,
+        reducer_handler: ReduceCallable,
+        init_args: tuple = (),
+        init_kwargs: dict = None,
         sock_path=REDUCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
@@ -41,7 +68,9 @@ class ReduceAsyncServer(NumaflowServer):
                         defaults to number of processors x4
         server_type: The type of server to be used
         """
-        self.reducer_instance: ReduceCallable = reducer_instance
+        if init_kwargs is None:
+            init_kwargs = {}
+        self.reducer_handler = get_handler(reducer_handler, init_args, init_kwargs)
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
         self.max_threads = max_threads
@@ -51,7 +80,7 @@ class ReduceAsyncServer(NumaflowServer):
             ("grpc.max_receive_message_length", self.max_message_size),
         ]
         # Get the servicer instance for the async server
-        self.servicer = AsyncReduceServicer(reducer_instance)
+        self.servicer = AsyncReduceServicer(self.reducer_handler)
 
     def start(self):
         """

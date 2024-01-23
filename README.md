@@ -45,7 +45,7 @@ pre-commit install
 - [Implement User Defined Source Transformers](https://github.com/numaproj/numaflow-python/tree/main/examples/sourcetransform)
 - Implement User Defined Functions
     - [Map](https://github.com/numaproj/numaflow-python/tree/main/examples/map)
-    - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/examples/reduce/counter)
+    - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/examples/reduce)
     - [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/examples/mapstream)
 - [Implement User Defined Sinks](https://github.com/numaproj/numaflow-python/tree/main/examples/sink)
 - [Implement User Defined SideInputs](https://github.com/numaproj/numaflow-python/tree/main/examples/sideinput)

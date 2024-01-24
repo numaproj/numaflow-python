@@ -235,3 +235,17 @@ def _reserve_port(port_num: int) -> Iterator[int]:
         yield sock.getsockname()[1]
     finally:
         sock.close()
+
+
+def checkInstance(instance, callable_type) -> bool:
+    """
+    Check if the given instance is of the given callable_type.
+    """
+    try:
+        if not isinstance(instance, callable_type):
+            return False
+        else:
+            return True
+    except Exception as e:
+        _LOGGER.error(e)
+        return False

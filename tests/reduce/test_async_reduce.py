@@ -79,7 +79,9 @@ class ExampleClass(Reducer):
         return Messages(Message(str.encode(msg), keys=keys))
 
 
-async def err_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+async def reduce_handler_func(
+    keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -238,7 +240,11 @@ class TestAsyncReducer(unittest.TestCase):
         # Check that the init_args and init_kwargs are passed
         # only with a Reducer class
         with self.assertRaises(TypeError):
-            ReduceAsyncServer(err_handler, init_args=(0, 1))
+            ReduceAsyncServer(reduce_handler_func, init_args=(0, 1))
+        # Check that an instance is not passed instead of the class
+        # signature
+        with self.assertRaises(TypeError):
+            ReduceAsyncServer(ExampleClass(0))
 
 
 if __name__ == "__main__":

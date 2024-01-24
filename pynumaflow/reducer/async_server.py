@@ -20,7 +20,7 @@ from pynumaflow.reducer._dtypes import (
     Reducer,
 )
 
-from pynumaflow.shared.server import NumaflowServer, start_async_server
+from pynumaflow.shared.server import NumaflowServer, checkInstance, start_async_server
 
 
 def get_handler(reducer_handler: ReduceCallable, init_args: tuple = (), init_kwargs: dict = None):
@@ -34,12 +34,13 @@ def get_handler(reducer_handler: ReduceCallable, init_args: tuple = (), init_kwa
             raise TypeError("Cannot pass function handler with init args or kwargs")
         # return the function handler
         return reducer_handler
-    elif issubclass(reducer_handler, Reducer):
+    elif not checkInstance(reducer_handler, Reducer) and issubclass(reducer_handler, Reducer):
         # if handler is type of Class Reducer, create a new instance of
         # a ReducerBuilderClass
         return _ReduceBuilderClass(reducer_handler, init_args, init_kwargs)
     else:
-        raise TypeError("Invalid type passed")
+        _LOGGER.error("Invalid Type: please provide the handler or the class name")
+        raise TypeError("Inavlid Type: please provide the handler or the class name")
 
 
 class ReduceAsyncServer(NumaflowServer):

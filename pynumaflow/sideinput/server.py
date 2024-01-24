@@ -12,7 +12,6 @@ from pynumaflow._constants import (
     SIDE_INPUT_DIR_PATH,
 )
 
-
 class SideInputServer(NumaflowServer):
     """
     Class for a new Side Input Server instance.
@@ -75,6 +74,7 @@ class SideInputServer(NumaflowServer):
         """
         # Get the servicer instance based on the server type
         side_input_servicer = self.servicer
+
         _LOGGER.info(
             "Side Input GRPC Server listening on: %s with max threads: %s",
             self.sock_path,

@@ -1,6 +1,9 @@
+from copy import deepcopy
 import unittest
+from collections.abc import AsyncIterable
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from pynumaflow.reducer import Reducer, Messages
 
 from pynumaflow.reducer._dtypes import (
     IntervalWindow,
@@ -100,6 +103,47 @@ class TestMetadata(unittest.TestCase):
         m = Metadata(interval_window=i)
         self.assertEqual(type(i), type(m.interval_window))
         self.assertEqual(i, m.interval_window)
+
+
+class TestReducerClass(unittest.TestCase):
+    class ExampleClass(Reducer):
+        async def handler(
+            self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+        ) -> Messages:
+            pass
+
+        def __init__(self, test1, test2):
+            self.test1 = test1
+            self.test2 = test2
+            self.test3 = self.test1
+
+    def test_init(self):
+        r = self.ExampleClass(test1=1, test2=2)
+        self.assertEqual(1, r.test1)
+        self.assertEqual(2, r.test2)
+        self.assertEqual(1, r.test3)
+
+    def test_deep_copy(self):
+        """Test that the deepcopy works as expected"""
+        r = self.ExampleClass(test1=1, test2=2)
+        # Create a copy of r
+        r_copy = deepcopy(r)
+        # Check that the attributes are the same
+        self.assertEqual(1, r_copy.test1)
+        self.assertEqual(2, r_copy.test2)
+        self.assertEqual(1, r_copy.test3)
+        # Check that the objects are not the same
+        self.assertNotEqual(id(r), id(r_copy))
+        # Update the attributes of r
+        r.test1 = 5
+        r.test3 = 6
+        # Check that the other object is not updated
+        self.assertNotEqual(r.test1, r_copy.test1)
+        self.assertNotEqual(r.test3, r_copy.test3)
+        self.assertNotEqual(id(r.test3), id(r_copy.test3))
+        # Verify that the instance type is correct
+        self.assertTrue(isinstance(r_copy, self.ExampleClass))
+        self.assertTrue(isinstance(r_copy, Reducer))
 
 
 if __name__ == "__main__":

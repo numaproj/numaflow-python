@@ -6,7 +6,7 @@ spec:
   sideInputs:
     - name: myticker
       container:
-        image: "quay.io/numaio/numaflow-python/sideinput-example:v0.5.0"
+        image: "quay.io/numaio/numaflow-python/sideinput-example:v0.7.0"
         imagePullPolicy: Always
       trigger:
         schedule: "*/2 * * * *"

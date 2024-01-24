@@ -8,19 +8,16 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
+from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from pynumaflow.sourcer import (
-    AsyncSourcer,
+    SourceAsyncServer,
 )
-from pynumaflow.sourcer.proto import source_pb2_grpc, source_pb2
 from tests.source.utils import (
-    async_source_read_handler,
-    async_source_ack_handler,
-    async_source_pending_handler,
-    async_source_partition_handler,
     mock_offset,
     read_req_source_fn,
     ack_req_source_fn,
     mock_partitions,
+    AsyncSource,
 )
 
 LOGGER = setup_logging(__name__)
@@ -28,8 +25,7 @@ LOGGER = setup_logging(__name__)
 # if set to true, map handler will raise a `ValueError` exception.
 raise_error_from_map = False
 
-
-server_port = "localhost:50058"
+server_port = "unix:///tmp/async_source.sock"
 
 _s: Server = None
 _channel = grpc.insecure_channel(server_port)
@@ -41,25 +37,17 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-def NewAsyncSourcer(
-    handler=async_source_read_handler,
-    ack_handler=async_source_ack_handler,
-    pending_handler=async_source_pending_handler,
-    partitions_handler=async_source_partition_handler,
-):
-    udfs = AsyncSourcer(
-        read_handler=async_source_read_handler,
-        ack_handler=async_source_ack_handler,
-        pending_handler=async_source_pending_handler,
-        partitions_handler=async_source_partition_handler,
-    )
+def NewAsyncSourcer():
+    class_instance = AsyncSource()
+    server = SourceAsyncServer(sourcer_instance=class_instance)
+    udfs = server.servicer
     return udfs
 
 
-async def start_server(udfs: AsyncSourcer):
+async def start_server(udfs):
     server = grpc.aio.server()
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
-    listen_addr = "[::]:50058"
+    listen_addr = "unix:///tmp/async_source.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s

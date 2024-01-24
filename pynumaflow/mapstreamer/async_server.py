@@ -1,151 +1,121 @@
-import logging
-import multiprocessing
 import os
 
-from collections.abc import AsyncIterable
-
+import aiorun
 import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow import setup_logging
+from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
+from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
+
 from pynumaflow._constants import (
-    MAX_MESSAGE_SIZE,
     MAP_STREAM_SOCK_PATH,
+    MAX_MESSAGE_SIZE,
+    MAX_THREADS,
+    _LOGGER,
 )
-from pynumaflow.mapstreamer import Datum
+
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable
-from pynumaflow.mapstreamer.proto import mapstream_pb2
-from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
 
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+from pynumaflow.shared.server import NumaflowServer, start_async_server
 
 
-class AsyncMapStreamer(mapstream_pb2_grpc.MapStreamServicer):
+class MapStreamAsyncServer(NumaflowServer):
     """
-    Provides an interface to write a Map Streamer
-    which will be exposed over gRPC.
-
-    Args:
-        handler: Function callable following the type signature of MapStreamCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.mapstreamer import Messages, Message \
-    ...     Datum, AsyncMapStreamer
-    ... import aiorun
-    >>> async def map_stream_handler(key: [str], datums: Datum) -> AsyncIterable[Message]:
-    ...    val = datum.value
-    ...    _ = datum.event_time
-    ...    _ = datum.watermark
-    ...    for i in range(10):
-    ...        yield Message(val, keys=keys)
-    ...
-    >>> grpc_server = AsyncMapStreamer(handler=map_stream_handler)
-    >>> aiorun.run(grpc_server.start())
+    Class for a new Map Stream Server instance.
     """
 
     def __init__(
         self,
-        handler: MapStreamCallable,
+        map_stream_instance: MapStreamCallable,
         sock_path=MAP_STREAM_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__map_stream_handler: MapStreamCallable = handler
+        """
+        Create a new grpc Async Map Stream Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+            map_stream_instance: The map stream instance to be used for Map Stream UDF
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+                            defaults to number of processors x4
+            server_type: The type of server to be used
+
+        Example invocation:
+            import os
+            from collections.abc import AsyncIterable
+            from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer, MapStreamer
+
+            class FlatMapStream(MapStreamer):
+                async def handler(self, keys: list[str], datum: Datum) -> AsyncIterable[Message]:
+                    val = datum.value
+                    _ = datum.event_time
+                    _ = datum.watermark
+                    strs = val.decode("utf-8").split(",")
+
+                    if len(strs) == 0:
+                        yield Message.to_drop()
+                        return
+                    for s in strs:
+                        yield Message(str.encode(s))
+
+            async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Message]:
+
+                val = datum.value
+                _ = datum.event_time
+                _ = datum.watermark
+                strs = val.decode("utf-8").split(",")
+
+                if len(strs) == 0:
+                    yield Message.to_drop()
+                    return
+                for s in strs:
+                    yield Message(str.encode(s))
+
+            if __name__ == "__main__":
+                invoke = os.getenv("INVOKE", "func_handler")
+                if invoke == "class":
+                    handler = FlatMapStream()
+                else:
+                    handler = map_stream_handler
+                grpc_server = MapStreamAsyncServer(handler)
+                grpc_server.start()
+
+        """
+        self.map_stream_instance: MapStreamCallable = map_stream_instance
         self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
-        self.cleanup_coroutines = []
-        # Collection for storing strong references to all running tasks.
-        # Event loop only keeps a weak reference, which can cause it to
-        # get lost during execution.
-        self.background_tasks = set()
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
 
         self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
         ]
 
-    async def MapStreamFn(
-        self,
-        request: mapstream_pb2.MapStreamRequest,
-        context: NumaflowServicerContext,
-    ) -> AsyncIterable[mapstream_pb2.MapStreamResponse]:
-        """
-        Applies a map function to a datum stream in streaming mode.
-        The pascal case function name comes from the proto mapstream_pb2_grpc.py file.
-        """
+        self.servicer = AsyncMapStreamServicer(handler=self.map_stream_instance)
 
-        async for res in self.__invoke_map_stream(
-            list(request.keys),
-            Datum(
-                keys=list(request.keys),
-                value=request.value,
-                event_time=request.event_time.ToDatetime(),
-                watermark=request.watermark.ToDatetime(),
-            ),
-        ):
-            yield mapstream_pb2.MapStreamResponse(result=res)
-
-    async def __invoke_map_stream(self, keys: list[str], req: Datum):
-        try:
-            async for msg in self.__map_stream_handler(keys, req):
-                yield mapstream_pb2.MapStreamResponse.Result(
-                    keys=msg.keys, value=msg.value, tags=msg.tags
-                )
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
-
-    async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> mapstream_pb2.ReadyResponse:
+    def start(self):
         """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto mapstream_pb2_grpc.py file.
+        Starter function for the Async Map Stream server, we need a separate caller
+        to the aexec so that all the async coroutines can be started from a single context
         """
-        return mapstream_pb2.ReadyResponse(ready=True)
+        aiorun.run(self.aexec(), use_uvloop=True)
 
-    async def __serve_async(self, server) -> None:
+    async def aexec(self):
+        """
+        Starts the Async gRPC server on the given UNIX socket with
+        given max threads.
+        """
+        # As the server is async, we need to create a new server instance in the
+        # same thread as the event loop so that all the async calls are made in the
+        # same context
+        # Create a new async server instance and add the servicer to it
+        server = grpc.aio.server()
+        server.add_insecure_port(self.sock_path)
         mapstream_pb2_grpc.add_MapStreamServicer_to_server(
-            AsyncMapStreamer(handler=self.__map_stream_handler),
+            self.servicer,
             server,
         )
-        server.add_insecure_port(self.sock_path)
-        _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
-        await server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-        )
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
-
-        async def server_graceful_shutdown():
-            """
-            Shuts down the server with 5 seconds of grace period. During the
-            grace period, the server won't accept new connections and allow
-            existing RPCs to continue within the grace period.
-            """
-            _LOGGER.info("Starting graceful shutdown...")
-            await server.stop(5)
-
-        self.cleanup_coroutines.append(server_graceful_shutdown())
-        await server.wait_for_termination()
-
-    async def start(self) -> None:
-        """Starts the Async gRPC server on the given UNIX socket."""
-        server = grpc.aio.server(options=self._server_options)
-        await self.__serve_async(server)
+        _LOGGER.info("Starting Map Stream Server")
+        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)

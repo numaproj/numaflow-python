@@ -1,115 +1,91 @@
-import logging
-import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
-
-import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
-
-from pynumaflow import setup_logging
+from pynumaflow.shared import NumaflowServer
+from pynumaflow.shared.server import sync_server_start
+from pynumaflow.sideinput._dtypes import RetrieverCallable
+from pynumaflow.sideinput.servicer.servicer import SideInputServicer
 from pynumaflow._constants import (
+    MAX_THREADS,
     MAX_MESSAGE_SIZE,
     SIDE_INPUT_SOCK_PATH,
+    _LOGGER,
+    UDFType,
+    SIDE_INPUT_DIR_PATH,
 )
-from pynumaflow.sideinput import Response
-from pynumaflow.sideinput.proto import sideinput_pb2, sideinput_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-RetrieverCallable = Callable[[], Response]
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
 
 
-class SideInput(sideinput_pb2_grpc.SideInputServicer):
+class SideInputServer(NumaflowServer):
     """
-    Provides an interface to write a User Defined Side Input (UDSideInput)
-    which will be exposed over gRPC.
-
+    Class for a new Side Input Server instance.
     Args:
-        handler: Function callable following the type signature of RetrieverCallable
-        sock_path: Path to the UNIX Domain Socket
+        side_input_instance: The side input instance to be used for Side Input UDF
+        sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x 4
 
     Example invocation:
-    >>> from typing import List
-    >>> from pynumaflow.sideinput import Response, SideInput
-    >>> def my_handler() -> Response:
-    ...   response = Response.broadcast_message(b"hello")
-    ...   return response
-    >>> grpc_server = SideInput(my_handler)
-    >>> grpc_server.start()
-    """
+        import datetime
+        from pynumaflow.sideinput import Response, SideInputServer, SideInput
 
-    SIDE_INPUT_DIR_PATH = "/var/numaflow/side-inputs"
+        class ExampleSideInput(SideInput):
+            def __init__(self):
+                self.counter = 0
+
+            def retrieve_handler(self) -> Response:
+                time_now = datetime.datetime.now()
+                # val is the value to be broadcasted
+                val = f"an example: {str(time_now)}"
+                self.counter += 1
+                # broadcast every other time
+                if self.counter % 2 == 0:
+                    # no_broadcast_message() is used to indicate that there is no broadcast
+                    return Response.no_broadcast_message()
+                # broadcast_message() is used to indicate that there is a broadcast
+                return Response.broadcast_message(val.encode("utf-8"))
+
+        if __name__ == "__main__":
+            grpc_server = SideInputServer(ExampleSideInput())
+            grpc_server.start()
+
+    """
 
     def __init__(
         self,
-        handler: RetrieverCallable,
+        side_input_instance: RetrieverCallable,
         sock_path=SIDE_INPUT_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        side_input_dir_path=SIDE_INPUT_DIR_PATH,
     ):
-        self.__retrieve_handler: RetrieverCallable = handler
         self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
-        self.cleanup_coroutines = []
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
 
         self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
         ]
 
-    def RetrieveSideInput(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> sideinput_pb2.SideInputResponse:
-        """
-        Applies a sideinput function for a retrieval request.
-        The pascal case function name comes from the proto sideinput_pb2_grpc.py file.
-        """
-        # if there is an exception, we will mark all the responses as a failure
-        try:
-            rspn = self.__retrieve_handler()
-        except Exception as err:
-            err_msg = "RetrieveSideInputErr: %r" % err
-            _LOGGER.critical(err_msg, exc_info=True)
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(err))
-            return sideinput_pb2.SideInputResponse(value=None, no_broadcast=True)
+        self.side_input_instance = side_input_instance
+        self.side_input_dir_path = side_input_dir_path
+        self.servicer = SideInputServicer(side_input_instance)
 
-        return sideinput_pb2.SideInputResponse(value=rspn.value, no_broadcast=rspn.no_broadcast)
-
-    def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> sideinput_pb2.ReadyResponse:
+    def start(self):
         """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto sideinput_pb2_grpc.py file.
+        Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
-        return sideinput_pb2.ReadyResponse(ready=True)
-
-    def start(self) -> None:
-        """
-        Starts the gRPC server on the given UNIX socket with given max threads.
-        """
-        server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
-        sideinput_pb2_grpc.add_SideInputServicer_to_server(
-            SideInput(self.__retrieve_handler), server
-        )
-        server.add_insecure_port(self.sock_path)
-        server.start()
+        # Get the servicer instance based on the server type
+        side_input_servicer = self.servicer
         _LOGGER.info(
-            "Side Input gRPC Server listening on: %s with max threads: %s",
+            "Side Input GRPC Server listening on: %s with max threads: %s",
             self.sock_path,
-            self._max_threads,
+            self.max_threads,
         )
-        server.wait_for_termination()
+        # Start the server
+        sync_server_start(
+            servicer=side_input_servicer,
+            bind_address=self.sock_path,
+            max_threads=self.max_threads,
+            server_options=self._server_options,
+            udf_type=UDFType.SideInput,
+            add_info_server=False,
+        )

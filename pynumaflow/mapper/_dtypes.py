@@ -1,7 +1,8 @@
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Union
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -162,5 +163,31 @@ class Datum:
         return self._watermark
 
 
-MapCallable = Callable[[list[str], Datum], Messages]
-MapAsyncCallable = Callable[[list[str], Datum], Awaitable[Messages]]
+class Mapper(metaclass=ABCMeta):
+    """
+    Provides an interface to write a SyncMapServicer
+    which will be exposed over a Synchronous gRPC server.
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        This allows to execute the handler function directly if
+        class instance is sent as a callable.
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
+        """
+        Implement this handler function which implements the MapSyncCallable interface.
+        """
+        pass
+
+
+# MapSyncCallable is a callable which can be used as a handler for the Synchronous Map UDF
+MapSyncHandlerCallable = Callable[[list[str], Datum], Messages]
+MapSyncCallable = Union[Mapper, MapSyncHandlerCallable]
+
+# MapAsyncCallable is a callable which can be used as a handler for the Asynchronous Map UDF
+MapAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
+MapAsyncCallable = Union[Mapper, MapAsyncHandlerCallable]

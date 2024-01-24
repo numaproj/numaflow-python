@@ -1,7 +1,8 @@
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
 from warnings import warn
 
@@ -163,4 +164,28 @@ class Datum:
         return self._watermark
 
 
-MapStreamCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
+class MapStreamer(metaclass=ABCMeta):
+    """
+    Provides an interface to write a Map Streamer
+    which will be exposed over a gRPC server.
+
+    Args:
+
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        Allow to call handler function directly if class instance is sent
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    async def handler(self, keys: list[str], datum: Datum) -> AsyncIterable[Message]:
+        """
+        Implement this handler function which implements the MapSyncCallable interface.
+        """
+        pass
+
+
+MapStreamAsyncCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
+MapStreamCallable = Union[MapStreamer, MapStreamAsyncCallable]

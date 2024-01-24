@@ -12,9 +12,9 @@ from pynumaflow import setup_logging
 from pynumaflow.sinker import (
     Datum,
 )
-from pynumaflow.sinker import Responses, Response, AsyncSinker
-from pynumaflow.sinker.proto import sink_pb2
-from pynumaflow.sinker.proto import sink_pb2_grpc
+from pynumaflow.sinker import Responses, Response
+from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
+from pynumaflow.sinker.async_server import SinkAsyncServer
 from tests.sink.test_server import (
     mock_message,
     mock_err_message,
@@ -58,7 +58,7 @@ def start_sink_streaming_request(err=False) -> (Datum, tuple):
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50055")
+_channel = grpc.insecure_channel("unix:///tmp/async_sink.sock")
 _loop = None
 
 
@@ -69,9 +69,10 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    uds = AsyncSinker(handler=udsink_handler)
+    server_instance = SinkAsyncServer(sinker_instance=udsink_handler)
+    uds = server_instance.servicer
     sink_pb2_grpc.add_SinkServicer_to_server(uds, server)
-    listen_addr = "[::]:50055"
+    listen_addr = "unix:///tmp/async_sink.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -91,7 +92,7 @@ class TestAsyncSink(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50055") as channel:
+                with grpc.insecure_channel("unix:///tmp/async_sink.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -110,7 +111,7 @@ class TestAsyncSink(unittest.TestCase):
 
     #
     def test_run_server(self) -> None:
-        with grpc.insecure_channel("localhost:50055") as channel:
+        with grpc.insecure_channel("unix:///tmp/async_sink.sock") as channel:
             stub = sink_pb2_grpc.SinkStub(channel)
 
             request = _empty_pb2.Empty()
@@ -159,6 +160,10 @@ class TestAsyncSink(unittest.TestCase):
 
     def __stub(self):
         return sink_pb2_grpc.SinkStub(_channel)
+
+    def test_invalid_server_type(self) -> None:
+        with self.assertRaises(TypeError):
+            SinkAsyncServer()
 
 
 if __name__ == "__main__":

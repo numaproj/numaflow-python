@@ -12,9 +12,9 @@ from pynumaflow import setup_logging
 from pynumaflow.mapstreamer import (
     Message,
     Datum,
-    AsyncMapStreamer,
+    MapStreamAsyncServer,
 )
-from pynumaflow.mapstreamer.proto import mapstream_pb2_grpc
+from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 from tests.mapstream.utils import start_request_map_stream
 
 LOGGER = setup_logging(__name__)
@@ -35,7 +35,7 @@ async def async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIterab
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50060")
+_channel = grpc.insecure_channel("unix:///tmp/async_map_stream.sock")
 _loop = None
 
 
@@ -47,15 +47,15 @@ def startup_callable(loop):
 def NewAsyncMapStreamer(
     map_stream_handler=async_map_stream_handler,
 ):
-    udfs = AsyncMapStreamer(handler=async_map_stream_handler)
-
+    server = MapStreamAsyncServer(map_stream_instance=async_map_stream_handler)
+    udfs = server.servicer
     return udfs
 
 
-async def start_server(udfs: AsyncMapStreamer):
+async def start_server(udfs):
     server = grpc.aio.server()
     mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
-    listen_addr = "[::]:50060"
+    listen_addr = "unix:///tmp/async_map_stream.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -76,7 +76,7 @@ class TestAsyncMapStreamer(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50060") as channel:
+                with grpc.insecure_channel("unix:///tmp/async_map_stream.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -118,7 +118,7 @@ class TestAsyncMapStreamer(unittest.TestCase):
         self.assertEqual(10, counter)
 
     def test_is_ready(self) -> None:
-        with grpc.insecure_channel("localhost:50060") as channel:
+        with grpc.insecure_channel("unix:///tmp/async_map_stream.sock") as channel:
             stub = mapstream_pb2_grpc.MapStreamStub(channel)
 
             request = _empty_pb2.Empty()

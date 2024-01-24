@@ -6,7 +6,7 @@ authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-pynumaflow = "~0.6.0"
+pynumaflow = "~0.7.0"
 
 [tool.poetry.dev-dependencies]
 

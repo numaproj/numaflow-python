@@ -1,7 +1,6 @@
 import os
 import unittest
 from unittest import mock
-from unittest.mock import patch, Mock
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -9,8 +8,8 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow.mapper.multiproc_server import MultiProcMapper
-from pynumaflow.mapper.proto import map_pb2_grpc, map_pb2
+from pynumaflow.mapper import MapMultiprocServer
+from pynumaflow.proto.mapper import map_pb2
 from tests.map.utils import map_handler, err_map_handler
 from tests.testing_utils import (
     mock_event_time,
@@ -25,53 +24,29 @@ def mockenv(**envvars):
 
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = MultiProcMapper(handler=map_handler)
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        my_server = MapMultiprocServer(mapper_instance=map_handler)
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
-    @mockenv(NUM_CPU_MULTIPROC="3")
     def test_multiproc_init(self) -> None:
-        server = MultiProcMapper(handler=map_handler)
-        self.assertEqual(server._process_count, 3)
+        my_server = MapMultiprocServer(mapper_instance=map_handler, server_count=3)
+        self.assertEqual(my_server._process_count, 3)
 
-    @patch("os.cpu_count", Mock(return_value=4))
     def test_multiproc_process_count(self) -> None:
-        server = MultiProcMapper(handler=map_handler)
-        self.assertEqual(server._process_count, 4)
+        default_val = os.cpu_count()
+        my_server = MapMultiprocServer(mapper_instance=map_handler)
+        self.assertEqual(my_server._process_count, default_val)
 
-    @patch("os.cpu_count", Mock(return_value=4))
-    @mockenv(NUM_CPU_MULTIPROC="10")
     def test_max_process_count(self) -> None:
-        server = MultiProcMapper(handler=map_handler)
-        self.assertEqual(server._process_count, 8)
-
-    # To test the reuse property for the grpc servers which allow multiple
-    # bindings to the same server
-    def test_reuse_port(self):
-        serv_options = [("grpc.so_reuseaddr", 1)]
-
-        server = MultiProcMapper(handler=map_handler)
-
-        with server._reserve_port(0) as port:
-            print(port)
-            bind_address = f"localhost:{port}"
-            server1 = grpc.server(thread_pool=None, options=serv_options)
-            map_pb2_grpc.add_MapServicer_to_server(server, server1)
-            server1.add_insecure_port(bind_address)
-
-            # so_reuseport=0 -> the bind should raise an error
-            server2 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 0),))
-            map_pb2_grpc.add_MapServicer_to_server(server, server2)
-            self.assertRaises(RuntimeError, server2.add_insecure_port, bind_address)
-
-            # so_reuseport=1 -> should allow server to bind to port again
-            server3 = grpc.server(thread_pool=None, options=(("grpc.so_reuseport", 1),))
-            map_pb2_grpc.add_MapServicer_to_server(server, server3)
-            server3.add_insecure_port(bind_address)
+        """Max process count is capped at 2 * os.cpu_count, irrespective of what the user
+        provides as input"""
+        default_val = os.cpu_count()
+        server = MapMultiprocServer(mapper_instance=map_handler, server_count=20)
+        self.assertEqual(server._process_count, default_val * 2)
 
     def test_udf_map_err(self):
-        my_servicer = MultiProcMapper(handler=err_map_handler)
-        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_servicer}
+        my_server = MapMultiprocServer(mapper_instance=err_map_handler)
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
         event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -148,7 +123,7 @@ class TestMultiProcMethods(unittest.TestCase):
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
-            MultiProcMapper()
+            MapMultiprocServer()
 
 
 if __name__ == "__main__":

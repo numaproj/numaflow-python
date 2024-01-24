@@ -1,143 +1,120 @@
-import logging
-import multiprocessing
 import os
-from concurrent.futures import ThreadPoolExecutor
 
-import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
-
-from pynumaflow import setup_logging
 from pynumaflow._constants import (
-    SOURCE_TRANSFORMER_SOCK_PATH,
     MAX_MESSAGE_SIZE,
+    SOURCE_TRANSFORMER_SOCK_PATH,
+    MAX_THREADS,
+    _LOGGER,
+    UDFType,
 )
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
-from pynumaflow.sourcetransformer import Datum
+from pynumaflow.shared import NumaflowServer
+from pynumaflow.shared.server import sync_server_start
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
-from pynumaflow.sourcetransformer.proto import transform_pb2
-from pynumaflow.sourcetransformer.proto import transform_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", 0)) or (_PROCESS_COUNT * 4)
+from pynumaflow.sourcetransformer.servicer.server import SourceTransformServicer
 
 
-class SourceTransformer(transform_pb2_grpc.SourceTransformServicer):
+class SourceTransformServer(NumaflowServer):
     """
-    Provides an interface to write a Source Transformer
-    which will be exposed over a Synchronous gRPC server.
-
-    Args:
-        handler: Function callable following the type signature of SourceTransformCallable
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.sourcetransformer import Messages, Message \
-    ...     Datum, SourceTransformer
-    >>> def transform_handler(key: [str], datum: Datum) -> Messages:
-    ...   val = datum.value
-    ...   new_event_time = datetime.time()
-    ...   _ = datum.watermark
-    ...   message_t_s = Messages(Message(val, event_time=new_event_time, keys=key))
-    ...   return message_t_s
-    ...
-    >>> grpc_server = SourceTransformer(handler=transform_handler)
-    >>> grpc_server.start()
+    Class for a new Source Transformer Server instance.
     """
 
     def __init__(
         self,
-        handler: SourceTransformCallable,
+        source_transform_instance: SourceTransformCallable,
         sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__transform_handler: SourceTransformCallable = handler
+        """
+        Create a new grpc Source Transformer Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+            source_transform_instance: The source transformer instance to be used for
+            Source Transformer UDF
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+                            defaults to number of processors x4
+
+        Example Invocation:
+
+        import datetime
+        import logging
+
+        from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
+        # This is a simple User Defined Function example which receives a message,
+        # applies the following
+        # data transformation, and returns the message.
+        # If the message event time is before year 2022, drop the message with event time unchanged.
+        # If it's within year 2022, update the tag to "within_year_2022" and
+        # update the message event time to Jan 1st 2022.
+        # Otherwise, (exclusively after year 2022), update the tag to
+        # "after_year_2022" and update the
+        # message event time to Jan 1st 2023.
+
+        january_first_2022 = datetime.datetime.fromtimestamp(1640995200)
+        january_first_2023 = datetime.datetime.fromtimestamp(1672531200)
+
+
+        def my_handler(keys: list[str], datum: Datum) -> Messages:
+            val = datum.value
+            event_time = datum.event_time
+            messages = Messages()
+
+            if event_time < january_first_2022:
+                logging.info("Got event time:%s, it is before 2022, so dropping", event_time)
+                messages.append(Message.to_drop(event_time))
+            elif event_time < january_first_2023:
+                logging.info(
+                    "Got event time:%s, it is within year 2022, so forwarding to within_year_2022",
+                    event_time,
+                )
+                messages.append(
+                    Message(value=val, event_time=january_first_2022,
+                            tags=["within_year_2022"])
+                )
+            else:
+                logging.info(
+                    "Got event time:%s, it is after year 2022, so forwarding to
+                    after_year_2022", event_time
+                )
+                messages.append(Message(value=val, event_time=january_first_2023,
+                                tags=["after_year_2022"]))
+
+            return messages
+
+
+        if __name__ == "__main__":
+            grpc_server = SourceTransformServer(my_handler)
+            grpc_server.start()
+        """
         self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
+
+        self.source_transform_instance = source_transform_instance
 
         self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
         ]
+        self.servicer = SourceTransformServicer(handler=source_transform_instance)
 
-    def SourceTransformFn(
-        self, request: transform_pb2.SourceTransformRequest, context: NumaflowServicerContext
-    ) -> transform_pb2.SourceTransformResponse:
+    def start(self):
         """
-        Applies a function to each datum element.
-        The pascal case function name comes from the generated transform_pb2_grpc.py file.
+        Starts the Synchronous gRPC server on the given UNIX socket with given max threads.
         """
-
-        # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        try:
-            msgts = self.__transform_handler(
-                list(request.keys),
-                Datum(
-                    keys=list(request.keys),
-                    value=request.value,
-                    event_time=request.event_time.ToDatetime(),
-                    watermark=request.watermark.ToDatetime(),
-                ),
-            )
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(err))
-            return transform_pb2.SourceTransformResponse(results=[])
-
-        datums = []
-        for msgt in msgts:
-            event_time_timestamp = _timestamp_pb2.Timestamp()
-            event_time_timestamp.FromDatetime(dt=msgt.event_time)
-            datums.append(
-                transform_pb2.SourceTransformResponse.Result(
-                    keys=list(msgt.keys),
-                    value=msgt.value,
-                    tags=msgt.tags,
-                    event_time=event_time_timestamp,
-                )
-            )
-        return transform_pb2.SourceTransformResponse(results=datums)
-
-    def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> transform_pb2.ReadyResponse:
-        """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto transform_pb2_grpc.py file.
-        """
-        return transform_pb2.ReadyResponse(ready=True)
-
-    def start(self) -> None:
-        """
-        Starts the gRPC server on the given UNIX socket with given max threads.
-        """
-        server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
-        transform_pb2_grpc.add_SourceTransformServicer_to_server(self, server)
-        server.add_insecure_port(self.sock_path)
-        server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-        )
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
         _LOGGER.info(
-            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
+            "Sync GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
         )
-        server.wait_for_termination()
+        # Start the sync server
+        sync_server_start(
+            servicer=self.servicer,
+            bind_address=self.sock_path,
+            max_threads=self.max_threads,
+            server_options=self._server_options,
+            udf_type=UDFType.SourceTransformer,
+        )

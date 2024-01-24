@@ -1,7 +1,7 @@
 import datetime
 import logging
 
-from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformer
+from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
 
 """
 This is a simple User Defined Function example which receives a message, applies the following
@@ -43,5 +43,5 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = SourceTransformer(handler=my_handler)
+    grpc_server = SourceTransformServer(my_handler)
     grpc_server.start()

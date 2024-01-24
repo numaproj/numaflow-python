@@ -11,10 +11,4 @@ coverage:
 
 ignore:
   - "examples/"
-  - "pynumaflow/mapper/proto/*"
-  - "pynumaflow/sinker/proto/*"
-  - "pynumaflow/mapstreamer/proto/*"
-  - "pynumaflow/reducer/proto/*"
-  - "pynumaflow/sourcetransformer/proto/*"
-  - "pynumaflow/sideinput/proto/*"
-  - "pynumaflow/sourcer/proto/*"
+  - "pynumaflow/proto/*"

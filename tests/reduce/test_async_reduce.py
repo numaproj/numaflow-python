@@ -3,7 +3,6 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
-from collections.abc import Iterator
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -15,10 +14,11 @@ from pynumaflow.reducer import (
     Messages,
     Message,
     Datum,
-    AsyncReducer,
     Metadata,
+    ReduceAsyncServer,
+    Reducer,
 )
-from pynumaflow.reducer.proto import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
@@ -27,24 +27,6 @@ from tests.testing_utils import (
 )
 
 LOGGER = setup_logging(__name__)
-
-# if set to true, map handler will raise a `ValueError` exception.
-raise_error_from_map = False
-
-
-async def async_reduce_handler(
-    keys: list[str], datums: AsyncIterable[Datum], md: Metadata
-) -> Messages:
-    interval_window = md.interval_window
-    counter = 0
-    async for _ in datums:
-        counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
-
-    return Messages(Message(str.encode(msg), keys=keys))
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -70,7 +52,7 @@ def start_request() -> (Datum, tuple):
 
 
 _s: Server = None
-_channel = grpc.insecure_channel("localhost:50057")
+_channel = grpc.insecure_channel("unix:///tmp/reduce.sock")
 _loop = None
 
 
@@ -79,7 +61,27 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata) -> Messages:
+class ExampleClass(Reducer):
+    def __init__(self, counter):
+        self.counter = counter
+
+    async def handler(
+        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+    ) -> Messages:
+        interval_window = md.interval_window
+        self.counter = 0
+        async for _ in datums:
+            self.counter += 1
+        msg = (
+            f"counter:{self.counter} interval_window_start:{interval_window.start} "
+            f"interval_window_end:{interval_window.end}"
+        )
+        return Messages(Message(str.encode(msg), keys=keys))
+
+
+async def reduce_handler_func(
+    keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+) -> Messages:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:
@@ -91,18 +93,17 @@ async def reduce_handler(keys: list[str], datums: Iterator[Datum], md: Metadata)
     return Messages(Message(str.encode(msg), keys=keys))
 
 
-def NewAsyncReducer(
-    reduce_handler=async_reduce_handler,
-):
-    udfs = AsyncReducer(handler=async_reduce_handler)
+def NewAsyncReducer():
+    server_instance = ReduceAsyncServer(ExampleClass, init_args=(0,))
+    udfs = server_instance.servicer
 
     return udfs
 
 
-async def start_server(udfs: AsyncReducer):
+async def start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
-    listen_addr = "[::]:50057"
+    listen_addr = "unix:///tmp/reduce.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -123,7 +124,7 @@ class TestAsyncReducer(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50057") as channel:
+                with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -217,7 +218,7 @@ class TestAsyncReducer(unittest.TestCase):
         self.assertEqual(100, count)
 
     def test_is_ready(self) -> None:
-        with grpc.insecure_channel("localhost:50057") as channel:
+        with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:
             stub = reduce_pb2_grpc.ReduceStub(channel)
 
             request = _empty_pb2.Empty()
@@ -231,6 +232,19 @@ class TestAsyncReducer(unittest.TestCase):
 
     def __stub(self):
         return reduce_pb2_grpc.ReduceStub(_channel)
+
+    def test_error_init(self):
+        # Check that reducer_handler in required
+        with self.assertRaises(TypeError):
+            ReduceAsyncServer()
+        # Check that the init_args and init_kwargs are passed
+        # only with a Reducer class
+        with self.assertRaises(TypeError):
+            ReduceAsyncServer(reduce_handler_func, init_args=(0, 1))
+        # Check that an instance is not passed instead of the class
+        # signature
+        with self.assertRaises(TypeError):
+            ReduceAsyncServer(ExampleClass(0))
 
 
 if __name__ == "__main__":

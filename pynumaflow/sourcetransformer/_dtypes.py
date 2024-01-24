@@ -1,7 +1,8 @@
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Union
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -172,4 +173,29 @@ class Datum:
         return self._watermark
 
 
-SourceTransformCallable = Callable[[list[str], Datum], Messages]
+class SourceTransformer(metaclass=ABCMeta):
+    """
+    Provides an interface to write a Source Transformer
+    which will be exposed over a GRPC server.
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        Allow to call handler function directly if class instance is sent
+        as the source_transformer_instance.
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    def handler(self, keys: list[str], datum: Datum) -> Messages:
+        """
+        Implement this handler function which implements the
+        SourceTransformCallable interface.
+        """
+        pass
+
+
+SourceTransformHandler = Callable[[list[str], Datum], Messages]
+# SourceTransformCallable is the type of the handler function for the
+# Source Transformer UDFunction.
+SourceTransformCallable = Union[SourceTransformHandler, SourceTransformer]

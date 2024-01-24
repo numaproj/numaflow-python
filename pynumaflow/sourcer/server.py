@@ -1,231 +1,133 @@
-import logging
-import multiprocessing
 import os
 
-from collections.abc import Iterable
-from concurrent.futures import ThreadPoolExecutor
-
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
-import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
-
-from pynumaflow import setup_logging
 from pynumaflow._constants import (
-    MAX_MESSAGE_SIZE,
     SOURCE_SOCK_PATH,
+    MAX_MESSAGE_SIZE,
+    MAX_THREADS,
+    _LOGGER,
+    UDFType,
 )
-from pynumaflow.sourcer import ReadRequest
-from pynumaflow.sourcer._dtypes import (
-    SourceReadCallable,
-    Offset,
-    AckRequest,
-    SourceAckCallable,
-)
-from pynumaflow.sourcer.proto import source_pb2
-from pynumaflow.sourcer.proto import source_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
-
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
+from pynumaflow.shared.server import NumaflowServer, sync_server_start
+from pynumaflow.sourcer._dtypes import SourceCallable
+from pynumaflow.sourcer.servicer.sync_servicer import SyncSourceServicer
 
 
-class Sourcer(source_pb2_grpc.SourceServicer):
+class SourceServer(NumaflowServer):
     """
-    Provides an interface to write a Sourcer
-    which will be exposed over gRPC.
-
-    Args:
-        read_handler: Function callable following the type signature of SyncSourceReadCallable
-        ack_handler: Function handler for AckFn
-        pending_handler: Function handler for PendingFn
-        partitions_handler: Function handler for PartitionsFn
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Message, get_default_partitions, PartitionsResponse \
-    ...     ReadRequest, Sourcer, AckRequest,
-    ... def read_handler(datum: ReadRequest) -> Iterable[Message]:
-    ...     payload = b"payload:test_mock_message"
-    ...     keys = ["test_key"]
-    ...     offset = mock_offset()
-    ...     event_time = mock_event_time()
-    ...     for i in range(10):
-    ...         yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
-    ... def ack_handler(ack_request: AckRequest):
-    ...     return
-    ... def pending_handler() -> PendingResponse:
-    ...     PendingResponse(count=10)
-    ... def partitions_handler() -> PartitionsResponse:
-    ...     return PartitionsResponse(partitions=get_default_partitions())
-    >>> grpc_server = Sourcer(read_handler=read_handler,
-    ...                     ack_handler=ack_handler,
-    ...                     pending_handler=pending_handler,
-    ...                     partitions_handler=partition_handler,)
-    >>> grpc_server.start()
+    Class for a new Source Server instance.
     """
 
     def __init__(
         self,
-        read_handler: SourceReadCallable,
-        ack_handler: SourceAckCallable,
-        pending_handler,
-        partitions_handler,
+        sourcer_instance: SourceCallable,
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__source_read_handler: SourceReadCallable = read_handler
-        self.__source_ack_handler: SourceAckCallable = ack_handler
-        self.__source_pending_handler = pending_handler
-        self.__source_partitions_handler = partitions_handler
+        """
+        Create a new grpc Source Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+            sourcer_instance: The sourcer instance to be used for Source UDF
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+                            defaults to number of processors x4
+
+        Example invocation:
+            from collections.abc import Iterable
+            from datetime import datetime
+
+            from pynumaflow.sourcer import (
+                ReadRequest,
+                Message,
+                AckRequest,
+                PendingResponse,
+                Offset,
+                PartitionsResponse,
+                get_default_partitions,
+                Sourcer,
+                SourceServer,
+            )
+
+            class SimpleSource(Sourcer):
+                # SimpleSource is a class for User Defined Source implementation.
+
+                def __init__(self):
+                    # to_ack_set: Set to maintain a track of the offsets yet to be acknowledged
+                    # read_idx : the offset idx till where the messages have been read
+                    self.to_ack_set = set()
+                    self.read_idx = 0
+
+                def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
+                    # read_handler is used to read the data from the source and
+                    # send the data forward
+                    # for each read request we process num_records and increment the
+                    # read_idx to indicate that
+                    # the message has been read and the same is added to the ack set
+                    if self.to_ack_set:
+                        return
+
+                    for x in range(datum.num_records):
+                        yield Message(
+                            payload=str(self.read_idx).encode(),
+                            offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
+                            event_time=datetime.now(),
+                        )
+                        self.to_ack_set.add(str(self.read_idx))
+                        self.read_idx += 1
+
+                def ack_handler(self, ack_request: AckRequest):
+                    # The ack handler is used acknowledge the offsets that have been
+                    # read, and remove them
+                    # from the to_ack_set
+                    for offset in ack_request.offset:
+                        self.to_ack_set.remove(str(offset.offset, "utf-8"))
+
+                def pending_handler(self) -> PendingResponse:
+                    # The simple source always returns zero to indicate there is no pending record.
+                    return PendingResponse(count=0)
+
+                def partitions_handler(self) -> PartitionsResponse:
+                    # The simple source always returns zero to indicate there is no pending record.
+                    return PartitionsResponse(partitions=get_default_partitions())
+
+            if __name__ == "__main__":
+                ud_source = SimpleSource()
+                grpc_server = SourceServer(ud_source)
+                grpc_server.start()
+        """
         self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
-        self.cleanup_coroutines = []
-        # Collection for storing strong references to all running tasks.
-        # Event loop only keeps a weak reference, which can cause it to
-        # get lost during execution.
-        self.background_tasks = set()
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
+
+        self.sourcer_instance = sourcer_instance
 
         self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
         ]
 
-    def ReadFn(
-        self,
-        request: source_pb2.ReadRequest,
-        context: NumaflowServicerContext,
-    ) -> Iterable[source_pb2.ReadResponse]:
-        """
-        Applies a Read function to a datum stream in streaming mode.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
-        """
+        self.servicer = SyncSourceServicer(source_handler=sourcer_instance)
 
-        for res in self.__invoke_source_read_stream(
-            ReadRequest(
-                num_records=request.request.num_records,
-                timeout_in_ms=request.request.timeout_in_ms,
-            )
-        ):
-            yield source_pb2.ReadResponse(result=res)
-
-    def __invoke_source_read_stream(self, req: ReadRequest):
-        try:
-            for msg in self.__source_read_handler(req):
-                event_time_timestamp = _timestamp_pb2.Timestamp()
-                event_time_timestamp.FromDatetime(dt=msg.event_time)
-                yield source_pb2.ReadResponse.Result(
-                    payload=msg.payload,
-                    keys=msg.keys,
-                    offset=msg.offset.as_dict,
-                    event_time=event_time_timestamp,
-                )
-        except Exception as err:
-            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            raise err
-
-    def AckFn(
-        self, request: source_pb2.AckRequest, context: NumaflowServicerContext
-    ) -> source_pb2.AckResponse:
+    def start(self):
         """
-        Applies an Ack function in User Defined Source
+        Starts the Synchronous Source gRPC server on the given
+        UNIX socket with given max threads.
         """
-        # proto repeated field(offsets) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        offsets = []
-        for offset in request.request.offsets:
-            offsets.append(Offset(offset.offset, offset.partition_id))
-        try:
-            self.__invoke_ack(ack_req=offsets)
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            raise e
-
-        return source_pb2.AckResponse()
-
-    def __invoke_ack(self, ack_req: list[Offset]):
-        """
-        Invokes the Source Ack Function.
-        """
-        try:
-            self.__source_ack_handler(AckRequest(offsets=ack_req))
-        except Exception as err:
-            _LOGGER.critical("AckFn Error", exc_info=True)
-            raise err
-        return source_pb2.AckResponse.Result()
-
-    def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.ReadyResponse:
-        """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
-        """
-        return source_pb2.ReadyResponse(ready=True)
-
-    def PendingFn(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.PendingResponse:
-        """
-        PendingFn returns the number of pending records
-        at the user defined source.
-        """
-        try:
-            count = self.__source_pending_handler()
-        except Exception as err:
-            _LOGGER.critical("PendingFn error", exc_info=True)
-            raise err
-        resp = source_pb2.PendingResponse.Result(count=count.count)
-        return source_pb2.PendingResponse(result=resp)
-
-    def PartitionsFn(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.PartitionsResponse:
-        """
-        Partitions returns the partitions associated with the source, will be used by
-        the platform to determine the partitions to which the watermark should be published.
-        If the source doesn't have partitions, get_default_partitions() can be used to
-        return the default partitions. In most cases, the get_default_partitions()
-        should be enough; the cases where we need to implement custom partitions_handler()
-        is in a case like Kafka, where a reader can read from multiple Kafka partitions.
-        """
-        try:
-            partitions = self.__source_partitions_handler()
-        except Exception as err:
-            _LOGGER.critical("PartitionFn error", exc_info=True)
-            raise err
-        resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
-        return source_pb2.PartitionsResponse(result=resp)
-
-    def start(self) -> None:
-        """
-        Starts the gRPC server on the given UNIX socket with given max threads.
-        """
-        server = grpc.server(
-            ThreadPoolExecutor(max_workers=self._max_threads), options=self._server_options
-        )
-        source_pb2_grpc.add_SourceServicer_to_server(self, server)
-        server.add_insecure_port(self.sock_path)
-        server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-        )
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+        # Get the servicer instance
+        source_servicer = self.servicer
         _LOGGER.info(
-            "GRPC Server listening on: %s with max threads: %s", self.sock_path, self._max_threads
+            "Sync Source GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
         )
-        server.wait_for_termination()
+        # Start the sync server
+        sync_server_start(
+            servicer=source_servicer,
+            bind_address=self.sock_path,
+            max_threads=self.max_threads,
+            server_options=self._server_options,
+            udf_type=UDFType.Source,
+        )

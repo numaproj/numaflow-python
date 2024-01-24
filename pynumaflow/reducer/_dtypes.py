@@ -1,12 +1,13 @@
+from abc import ABCMeta, abstractmethod
 from asyncio import Task
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable
+from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
 from warnings import warn
 
-from pynumaflow.reducer.asynciter import NonBlockingIterator
+from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
@@ -232,4 +233,54 @@ class ReduceResult:
         return self._key
 
 
-ReduceCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+
+
+class Reducer(metaclass=ABCMeta):
+    """
+    Provides an interface to write a Reducer
+    which will be exposed over a gRPC server.
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        Allow to call handler function directly if class instance is sent
+        as the reducer_instance.
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    async def handler(
+        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+    ) -> Messages:
+        """
+        Implement this handler function which implements the ReduceCallable interface.
+        """
+        pass
+
+
+class _ReduceBuilderClass:
+    """
+    Class to build a Reducer class instance.
+    Used Internally
+
+    Args:
+        reducer_class: the reducer class to be used for Reduce UDF
+        args: the arguments to be passed to the reducer class
+        kwargs: the keyword arguments to be passed to the reducer class
+    """
+
+    def __init__(self, reducer_class: type[Reducer], args: tuple, kwargs: dict):
+        self._reducer_class: type[Reducer] = reducer_class
+        self._args = args
+        self._kwargs = kwargs
+
+    def create(self) -> Reducer:
+        """
+        Create a new Reducer instance.
+        """
+        return self._reducer_class(*self._args, **self._kwargs)
+
+
+# ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
+ReduceCallable = Union[ReduceAsyncCallable, type[Reducer]]

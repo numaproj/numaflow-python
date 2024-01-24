@@ -1,4 +1,4 @@
-from pynumaflow.mapper import Messages, Message, Datum, Mapper
+from pynumaflow.mapper import Messages, Message, Datum, MapServer
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
@@ -22,5 +22,12 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
 
 
 if __name__ == "__main__":
-    grpc_server = Mapper(handler=my_handler)
+    """
+    This example shows how to create a simple map function that takes in a
+    number and outputs it to the "even" or "odd" key depending on whether it
+    is even or odd.
+    We use a function as handler, but a class that implements
+    a Mapper can be used as well.
+    """
+    grpc_server = MapServer(my_handler)
     grpc_server.start()

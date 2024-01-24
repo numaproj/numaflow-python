@@ -1,6 +1,8 @@
+from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Optional, Callable
+from typing import TypeVar, Optional, Callable, Union
+from collections.abc import AsyncIterable, Awaitable
 from collections.abc import Sequence, Iterator
 from warnings import warn
 
@@ -161,4 +163,32 @@ class Datum:
         return self._watermark
 
 
-SinkCallable = Callable[[Iterator[Datum]], Responses]
+class Sinker(metaclass=ABCMeta):
+    """
+    Provides an interface to write a Sinker
+    which will be exposed over a gRPC server.
+
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        Allow to call handler function directly if class instance is sent
+        as the sinker_instance.
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    def handler(self, datums: Iterator[Datum]) -> Responses:
+        """
+        Implement this handler function which implements the SinkCallable interface.
+        """
+        pass
+
+
+# SyncSinkCallable is a callable which can be used as a handler for the Synchronous UDSink.
+SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
+SyncSinkCallable = Union[Sinker, SinkHandlerCallable]
+
+# AsyncSinkCallable is a callable which can be used as a handler for the Asynchronous UDSink.
+AsyncSinkHandlerCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
+AsyncSinkCallable = Union[Sinker, AsyncSinkHandlerCallable]

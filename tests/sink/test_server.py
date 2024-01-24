@@ -7,8 +7,8 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow.sinker import Responses, Datum, Response, Sinker
-from pynumaflow.sinker.proto import sink_pb2
+from pynumaflow.sinker import Responses, Datum, Response, SinkServer
+from pynumaflow.proto.sinker import sink_pb2
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:
@@ -47,7 +47,8 @@ def mock_watermark():
 
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
-        my_servicer = Sinker(udsink_handler)
+        server = SinkServer(sinker_instance=udsink_handler)
+        my_servicer = server.servicer
         services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -67,7 +68,8 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_udsink_err(self):
-        my_servicer = Sinker(err_udsink_handler)
+        server = SinkServer(sinker_instance=err_udsink_handler)
+        my_servicer = server.servicer
         services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
@@ -155,6 +157,10 @@ class TestServer(unittest.TestCase):
         self.assertEqual("", response.results[0].err_msg)
         self.assertEqual("mock sink message error", response.results[1].err_msg)
         self.assertEqual(code, StatusCode.OK)
+
+    def test_invalid_init(self):
+        with self.assertRaises(TypeError):
+            SinkServer()
 
 
 if __name__ == "__main__":

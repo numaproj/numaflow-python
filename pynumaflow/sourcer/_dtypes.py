@@ -1,4 +1,5 @@
 import os
+from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
@@ -203,11 +204,60 @@ class PartitionsResponse:
         return self._partitions
 
 
+class Sourcer(metaclass=ABCMeta):
+    """
+    Provides an interface to write a Sourcer
+    which will be exposed over an gRPC server.
+
+    Args:
+
+    """
+
+    def __call__(self, *args, **kwargs):
+        """
+        Allow to call handler function directly if class instance is sent
+        """
+        return self.handler(*args, **kwargs)
+
+    @abstractmethod
+    def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
+        """
+        Implement this handler function which implements the SourceReadCallable interface.
+        read_handler is used to read the data from the source and send the data forward
+        for each read request we process num_records and increment the read_idx to indicate that
+        the message has been read and the same is added to the ack set
+        """
+        pass
+
+    @abstractmethod
+    def ack_handler(self, ack_request: AckRequest):
+        """
+        The ack handler is used acknowledge the offsets that have been read, and remove them
+        from the to_ack_set
+        """
+        pass
+
+    @abstractmethod
+    def pending_handler(self) -> PendingResponse:
+        """
+        The simple source always returns zero to indicate there is no pending record.
+        """
+        pass
+
+    @abstractmethod
+    def partitions_handler(self) -> PartitionsResponse:
+        """
+        The simple source always returns zero to indicate there is no pending record.
+        """
+        pass
+
+
 # Create default partition id from the environment variable "NUMAFLOW_REPLICA"
 DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", "0"))
 SourceReadCallable = Callable[[ReadRequest], Iterable[Message]]
 AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterable[Message]]
 SourceAckCallable = Callable[[AckRequest], None]
+SourceCallable = Sourcer
 
 
 def get_default_partitions() -> list[int]:

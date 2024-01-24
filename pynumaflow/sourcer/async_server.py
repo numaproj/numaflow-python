@@ -1,237 +1,135 @@
-import logging
-import multiprocessing
 import os
 
-from collections.abc import AsyncIterable
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
+import aiorun
 import grpc
-from google.protobuf import empty_pb2 as _empty_pb2
+from pynumaflow.sourcer.servicer.async_servicer import AsyncSourceServicer
 
-from pynumaflow import setup_logging
 from pynumaflow._constants import (
-    MAX_MESSAGE_SIZE,
     SOURCE_SOCK_PATH,
+    MAX_MESSAGE_SIZE,
+    MAX_THREADS,
 )
-from pynumaflow.sourcer import ReadRequest
-from pynumaflow.sourcer._dtypes import AsyncSourceReadCallable, Offset, AckRequest
-from pynumaflow.sourcer.proto import source_pb2
-from pynumaflow.sourcer.proto import source_pb2_grpc
-from pynumaflow.types import NumaflowServicerContext
-from pynumaflow.info.server import get_sdk_version, write as info_server_write
-from pynumaflow.info.types import ServerInfo, Protocol, Language, SERVER_INFO_FILE_PATH
+from pynumaflow.proto.sourcer import source_pb2_grpc
 
-_LOGGER = setup_logging(__name__)
-if os.getenv("PYTHONDEBUG"):
-    _LOGGER.setLevel(logging.DEBUG)
-
-_PROCESS_COUNT = multiprocessing.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
+from pynumaflow.shared.server import NumaflowServer, start_async_server
+from pynumaflow.sourcer._dtypes import SourceCallable
 
 
-class AsyncSourcer(source_pb2_grpc.SourceServicer):
+class SourceAsyncServer(NumaflowServer):
     """
-    Provides an interface to write an Asynchronous Sourcer
-    which will be exposed over gRPC.
-
-    Args:
-        read_handler: Function callable following the type signature of AsyncSourceReadCallable
-        ack_handler: Function handler for AckFn
-        pending_handler: Function handler for PendingFn
-        partitions_handler: Function handler for PartitionsFn
-
-        sock_path: Path to the UNIX Domain Socket
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
-
-    Example invocation:
-    >>> from typing import Iterator
-    >>> from pynumaflow.sourcer import Message, get_default_partitions \
-    ...     ReadRequest, AsyncSourcer,
-    ... import aiorun
-    ... async def read_handler(datum: ReadRequest) -> AsyncIterable[Message]:
-    ...     payload = b"payload:test_mock_message"
-    ...     keys = ["test_key"]
-    ...     offset = mock_offset()
-    ...     event_time = mock_event_time()
-    ...     for i in range(10):
-    ...         yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
-    ... async def ack_handler(ack_request: AckRequest):
-    ...     return
-    ... async def pending_handler() -> PendingResponse:
-    ...     PendingResponse(count=10)
-    ... async def partitions_handler() -> PartitionsResponse:
-    ...     return PartitionsResponse(partitions=get_default_partitions())
-    >>> grpc_server = AsyncSourcer(read_handler=read_handler,
-    ...                     ack_handler=ack_handler,
-    ...                     pending_handler=pending_handler,
-    ...                     partitions_handler=partitions_handler)
-    >>> aiorun.run(grpc_server.start())
+    Class for a new Async Source Server instance.
     """
 
     def __init__(
         self,
-        read_handler: AsyncSourceReadCallable,
-        ack_handler,
-        pending_handler,
-        partitions_handler,
+        sourcer_instance: SourceCallable,
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
     ):
-        self.__source_read_handler: AsyncSourceReadCallable = read_handler
-        self.__source_ack_handler = ack_handler
-        self.__source_pending_handler = pending_handler
-        self.__source_partitions_handler = partitions_handler
+        """
+        Create a new grpc Async Source Server instance.
+        A new servicer instance is created and attached to the server.
+        The server instance is returned.
+        Args:
+            sourcer_instance: The sourcer instance to be used for Source UDF
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+                            defaults to number of processors x4
+
+        Example invocation:
+            from collections.abc import AsyncIterable
+            from datetime import datetime
+            from pynumaflow.sourcer import (
+                ReadRequest,
+                Message,
+                AckRequest,
+                PendingResponse,
+                Offset,
+                PartitionsResponse,
+                get_default_partitions,
+                Sourcer,
+                SourceAsyncServer,
+            )
+
+            class AsyncSource(Sourcer):
+                # AsyncSource is a class for User Defined Source implementation.
+
+                def __init__(self):
+                    # to_ack_set: Set to maintain a track of the offsets yet to be acknowledged
+                    # read_idx : the offset idx till where the messages have been read
+                    self.to_ack_set = set()
+                    self.read_idx = 0
+
+                async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
+                    # read_handler is used to read the data from the source and send
+                    # the data forward
+                    # for each read request we process num_records and increment
+                    # the read_idx to indicate that
+                    # the message has been read and the same is added to the ack set
+                    if self.to_ack_set:
+                        return
+
+                    for x in range(datum.num_records):
+                        yield Message(
+                            payload=str(self.read_idx).encode(),
+                            offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
+                            event_time=datetime.now(),
+                        )
+                        self.to_ack_set.add(str(self.read_idx))
+                        self.read_idx += 1
+
+                async def ack_handler(self, ack_request: AckRequest):
+                    # The ack handler is used acknowledge the offsets that have been read,
+                    # and remove them from the to_ack_set
+                    for offset in ack_request.offset:
+                        self.to_ack_set.remove(str(offset.offset, "utf-8"))
+
+                async def pending_handler(self) -> PendingResponse:
+                    # The simple source always returns zero to indicate there is no pending record.
+                    return PendingResponse(count=0)
+
+                async def partitions_handler(self) -> PartitionsResponse:
+                    # The simple source always returns default partitions.
+                    return PartitionsResponse(partitions=get_default_partitions())
+
+            if __name__ == "__main__":
+                ud_source = AsyncSource()
+                grpc_server = SourceAsyncServer(ud_source)
+                grpc_server.start()
+
+        """
         self.sock_path = f"unix://{sock_path}"
-        self._max_message_size = max_message_size
-        self._max_threads = max_threads
-        self.cleanup_coroutines = []
-        # Collection for storing strong references to all running tasks.
-        # Event loop only keeps a weak reference, which can cause it to
-        # get lost during execution.
-        self.background_tasks = set()
+        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_message_size = max_message_size
+
+        self.sourcer_instance = sourcer_instance
 
         self._server_options = [
-            ("grpc.max_send_message_length", self._max_message_size),
-            ("grpc.max_receive_message_length", self._max_message_size),
+            ("grpc.max_send_message_length", self.max_message_size),
+            ("grpc.max_receive_message_length", self.max_message_size),
         ]
 
-    async def ReadFn(
-        self,
-        request: source_pb2.ReadRequest,
-        context: NumaflowServicerContext,
-    ) -> AsyncIterable[source_pb2.ReadResponse]:
-        """
-        Applies a Read function and returns a stream of datum responses.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
-        """
+        self.servicer = AsyncSourceServicer(source_handler=sourcer_instance)
 
-        async for res in self.__invoke_source_read_stream(
-            ReadRequest(
-                num_records=request.request.num_records,
-                timeout_in_ms=request.request.timeout_in_ms,
-            )
-        ):
-            yield source_pb2.ReadResponse(result=res)
+    def start(self):
+        """
+        Starter function for the Async server class, need a separate caller
+        so that all the async coroutines can be started from a single context
+        """
+        aiorun.run(self.aexec(), use_uvloop=True)
 
-    async def __invoke_source_read_stream(self, req: ReadRequest):
-        try:
-            async for msg in self.__source_read_handler(req):
-                event_time_timestamp = _timestamp_pb2.Timestamp()
-                event_time_timestamp.FromDatetime(dt=msg.event_time)
-                yield source_pb2.ReadResponse.Result(
-                    payload=msg.payload,
-                    keys=msg.keys,
-                    offset=msg.offset.as_dict,
-                    event_time=event_time_timestamp,
-                )
-        except Exception as err:
-            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            raise err
-
-    async def AckFn(
-        self, request: source_pb2.AckRequest, context: NumaflowServicerContext
-    ) -> source_pb2.AckResponse:
+    async def aexec(self):
         """
-        Applies an Ack function in User Defined Source
+        Starts the Async gRPC server on the given UNIX socket with given max threads
         """
-        # proto repeated field(offsets) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        offsets = []
-        for offset in request.request.offsets:
-            offsets.append(Offset(offset.offset, offset.partition_id))
-        try:
-            await self.__invoke_ack(ack_req=offsets)
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            raise e
-
-        return source_pb2.AckResponse()
-
-    async def __invoke_ack(self, ack_req: list[Offset]):
-        """
-        Invokes the Source Ack Function.
-        """
-        try:
-            await self.__source_ack_handler(AckRequest(offsets=ack_req))
-        except Exception as err:
-            _LOGGER.critical("AckFn Error", exc_info=True)
-            raise err
-        return source_pb2.AckResponse.Result()
-
-    async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.ReadyResponse:
-        """
-        IsReady is the heartbeat endpoint for gRPC.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
-        """
-        return source_pb2.ReadyResponse(ready=True)
-
-    async def PendingFn(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.PendingResponse:
-        """
-        PendingFn returns the number of pending records
-        at the user defined source.
-        """
-        try:
-            count = await self.__source_pending_handler()
-        except Exception as err:
-            _LOGGER.critical("PendingFn Error", exc_info=True)
-            raise err
-        resp = source_pb2.PendingResponse.Result(count=count.count)
-        return source_pb2.PendingResponse(result=resp)
-
-    async def PartitionsFn(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.PartitionsResponse:
-        """
-        PartitionsFn returns the partitions of the user defined source.
-        """
-        try:
-            partitions = await self.__source_partitions_handler()
-        except Exception as err:
-            _LOGGER.critical("PartitionsFn Error", exc_info=True)
-            raise err
-        resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
-        return source_pb2.PartitionsResponse(result=resp)
-
-    async def __serve_async(self, server) -> None:
-        source_pb2_grpc.add_SourceServicer_to_server(
-            AsyncSourcer(
-                read_handler=self.__source_read_handler,
-                ack_handler=self.__source_ack_handler,
-                pending_handler=self.__source_pending_handler,
-                partitions_handler=self.__source_partitions_handler,
-            ),
-            server,
-        )
+        # As the server is async, we need to create a new server instance in the
+        # same thread as the event loop so that all the async calls are made in the
+        # same context
+        # Create a new async server instance and add the servicer to it
+        server = grpc.aio.server()
         server.add_insecure_port(self.sock_path)
-        _LOGGER.info("GRPC Async Server listening on: %s", self.sock_path)
-        await server.start()
-        serv_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            version=get_sdk_version(),
-        )
-        info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
-
-        async def server_graceful_shutdown():
-            """
-            Shuts down the server with 5 seconds of grace period. During the
-            grace period, the server won't accept new connections and allow
-            existing RPCs to continue within the grace period.
-            """
-            _LOGGER.info("Starting graceful shutdown...")
-            await server.stop(5)
-
-        self.cleanup_coroutines.append(server_graceful_shutdown())
-        await server.wait_for_termination()
-
-    async def start(self) -> None:
-        """Starts the Async gRPC server on the given UNIX socket."""
-        server = grpc.aio.server(options=self._server_options)
-        await self.__serve_async(server)
+        source_servicer = self.servicer
+        source_pb2_grpc.add_SourceServicer_to_server(source_servicer, server)
+        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)

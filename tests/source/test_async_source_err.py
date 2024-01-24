@@ -8,22 +8,19 @@ import grpc
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.sourcer import AsyncSourcer
-from pynumaflow.sourcer.proto import source_pb2_grpc, source_pb2
+from pynumaflow.sourcer import SourceAsyncServer
+from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from tests.source.utils import (
-    err_async_source_read_handler,
-    err_async_source_ack_handler,
-    err_async_source_pending_handler,
     read_req_source_fn,
     ack_req_source_fn,
-    err_async_source_partition_handler,
+    AsyncSourceError,
 )
 
 LOGGER = setup_logging(__name__)
 
 _s: Server = None
-server_port = "localhost:50062"
+server_port = "unix:///tmp/async_err_source.sock"
 _channel = grpc.insecure_channel(server_port)
 _loop = None
 
@@ -35,14 +32,11 @@ def startup_callable(loop):
 
 async def start_server():
     server = grpc.aio.server()
-    udfs = AsyncSourcer(
-        read_handler=err_async_source_read_handler,
-        ack_handler=err_async_source_ack_handler,
-        pending_handler=err_async_source_pending_handler,
-        partitions_handler=err_async_source_partition_handler,
-    )
+    class_instance = AsyncSourceError()
+    server_instance = SourceAsyncServer(sourcer_instance=class_instance)
+    udfs = server_instance.servicer
     source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
-    listen_addr = "[::]:50062"
+    listen_addr = "unix:///tmp/async_err_source.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -62,7 +56,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
         while True:
             try:
-                with grpc.insecure_channel("localhost:50062") as channel:
+                with grpc.insecure_channel("unix:///tmp/async_err_source.sock") as channel:
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
@@ -125,6 +119,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 self.assertTrue("Got a runtime error from partition handler." in e.__str__())
                 return
         self.fail("Expected an exception.")
+
+    def test_invalid_server_type(self) -> None:
+        with self.assertRaises(TypeError):
+            SourceAsyncServer()
 
 
 if __name__ == "__main__":

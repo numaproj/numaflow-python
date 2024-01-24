@@ -1,12 +1,8 @@
-from pynumaflow.mapper._dtypes import (
-    Message,
-    Messages,
-    Datum,
-    DROP,
-)
-from pynumaflow.mapper.async_server import AsyncMapper
-from pynumaflow.mapper.multiproc_server import MultiProcMapper
-from pynumaflow.mapper.server import Mapper
+from pynumaflow.mapper.async_server import MapAsyncServer
+from pynumaflow.mapper.multiproc_server import MapMultiprocServer
+from pynumaflow.mapper.sync_server import MapServer
+
+from pynumaflow.mapper._dtypes import Message, Messages, Datum, DROP, Mapper
 
 __all__ = [
     "Message",
@@ -14,6 +10,7 @@ __all__ = [
     "Datum",
     "DROP",
     "Mapper",
-    "AsyncMapper",
-    "MultiProcMapper",
+    "MapServer",
+    "MapAsyncServer",
+    "MapMultiprocServer",
 ]

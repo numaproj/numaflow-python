@@ -18,7 +18,7 @@ from pynumaflow.reducer._dtypes import (
     IntervalWindow,
     Metadata,
     ReduceAsyncCallable,
-    ReduceBuilderClass,
+    _ReduceBuilderClass,
 )
 from pynumaflow.reducer._dtypes import ReduceResult
 from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
@@ -49,14 +49,14 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
 
     def __init__(
         self,
-        handler: Union[ReduceAsyncCallable, ReduceBuilderClass],
+        handler: Union[ReduceAsyncCallable, _ReduceBuilderClass],
     ):
         # Collection for storing strong references to all running tasks.
         # Event loop only keeps a weak reference, which can cause it to
         # get lost during execution.
         self.background_tasks = set()
         # The reduce handler can be a function or a builder class instance.
-        self.__reduce_handler: Union[ReduceAsyncCallable, ReduceBuilderClass] = handler
+        self.__reduce_handler: Union[ReduceAsyncCallable, _ReduceBuilderClass] = handler
 
     async def ReduceFn(
         self,
@@ -154,7 +154,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         # It is required for a new key to be processed by a
         # new instance of the reducer for a given window
         # Otherwise the function handler can be called directly
-        if isinstance(self.__reduce_handler, ReduceBuilderClass):
+        if isinstance(self.__reduce_handler, _ReduceBuilderClass):
             new_instance = self.__reduce_handler.create()
         try:
             msgs = await new_instance(keys, request_iterator, md)

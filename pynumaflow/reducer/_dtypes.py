@@ -259,7 +259,7 @@ class Reducer(metaclass=ABCMeta):
         pass
 
 
-class ReduceBuilderClass:
+class _ReduceBuilderClass:
     """
     Class to build a Reducer class instance.
     Used Internally

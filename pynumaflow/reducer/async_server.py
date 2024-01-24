@@ -16,7 +16,7 @@ from pynumaflow._constants import (
 
 from pynumaflow.reducer._dtypes import (
     ReduceCallable,
-    ReduceBuilderClass,
+    _ReduceBuilderClass,
     Reducer,
 )
 
@@ -37,7 +37,7 @@ def get_handler(reducer_handler: ReduceCallable, init_args: tuple = (), init_kwa
     elif issubclass(reducer_handler, Reducer):
         # if handler is type of Class Reducer, create a new instance of
         # a ReducerBuilderClass
-        return ReduceBuilderClass(reducer_handler, init_args, init_kwargs)
+        return _ReduceBuilderClass(reducer_handler, init_args, init_kwargs)
     else:
         raise TypeError("Invalid type passed")
 

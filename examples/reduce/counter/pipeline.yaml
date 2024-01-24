@@ -18,7 +18,7 @@ spec:
       udf:
         container:
           # compute the sum
-          image: quay.io/kohlisid/numaflow-python/reduce:refactor1
+          image: quay.io/numaio/numaflow-python/reduce-counter:latest
           imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG

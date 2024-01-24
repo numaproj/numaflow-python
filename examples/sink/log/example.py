@@ -1,9 +1,11 @@
 import os
 from collections.abc import Iterator
-
 from pynumaflow.sinker import Datum, Responses, Response, SinkServer
 from pynumaflow.sinker import Sinker
-from pynumaflow._constants import _LOGGER
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+_LOGGER = logging.getLogger(__name__)
 
 
 class UserDefinedSink(Sinker):

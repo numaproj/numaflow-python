@@ -1,10 +1,11 @@
 import os
 from collections.abc import AsyncIterable
-
-
 from pynumaflow.sinker import Datum, Responses, Response, Sinker
 from pynumaflow.sinker import SinkAsyncServer
-from pynumaflow._constants import _LOGGER
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+_LOGGER = logging.getLogger(__name__)
 
 
 class UserDefinedSink(Sinker):

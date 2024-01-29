@@ -87,5 +87,4 @@ class SideInputServer(NumaflowServer):
             max_threads=self.max_threads,
             server_options=self._server_options,
             udf_type=UDFType.SideInput,
-            add_info_server=False,
         )

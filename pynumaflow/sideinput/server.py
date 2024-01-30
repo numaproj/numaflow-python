@@ -12,6 +12,7 @@ from pynumaflow._constants import (
     SIDE_INPUT_DIR_PATH,
 )
 
+
 class SideInputServer(NumaflowServer):
     """
     Class for a new Side Input Server instance.

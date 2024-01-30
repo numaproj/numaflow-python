@@ -75,6 +75,7 @@ class SideInputServer(NumaflowServer):
         """
         # Get the servicer instance based on the server type
         side_input_servicer = self.servicer
+
         _LOGGER.info(
             "Side Input GRPC Server listening on: %s with max threads: %s",
             self.sock_path,
@@ -87,5 +88,4 @@ class SideInputServer(NumaflowServer):
             max_threads=self.max_threads,
             server_options=self._server_options,
             udf_type=UDFType.SideInput,
-            add_info_server=False,
         )

@@ -18,7 +18,6 @@ from pynumaflow.info.types import (
     ServerInfo,
     Protocol,
     Language,
-    SERVER_INFO_FILE_PATH,
     METADATA_ENVS,
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
@@ -42,7 +41,7 @@ class NumaflowServer(metaclass=ABCMeta):
         pass
 
 
-def write_info_file(protocol: Protocol, info_file=SERVER_INFO_FILE_PATH) -> None:
+def write_info_file(protocol: Protocol, info_file) -> None:
     """
     Write the server info file to the given path.
     """
@@ -58,6 +57,7 @@ def sync_server_start(
     servicer,
     bind_address: str,
     max_threads: int,
+    server_info_file: str,
     server_options=None,
     udf_type: str = UDFType.Map,
     add_info_server=True,
@@ -82,6 +82,7 @@ def sync_server_start(
         threads_per_proc=max_threads,
         server_options=server_options,
         udf_type=udf_type,
+        server_info_file=server_info_file,
         server_info=server_info,
     )
 
@@ -92,8 +93,8 @@ def _run_server(
     threads_per_proc,
     server_options,
     udf_type: str,
+    server_info_file,
     server_info=None,
-    server_info_file=SERVER_INFO_FILE_PATH,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -132,7 +133,12 @@ def _run_server(
 
 
 def start_multiproc_server(
-    max_threads: int, servicer, process_count: int, server_options=None, udf_type: str = UDFType.Map
+    max_threads: int,
+    servicer,
+    process_count: int,
+    server_info_file: str,
+    server_options=None,
+    udf_type: str = UDFType.Map,
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
@@ -178,14 +184,18 @@ def start_multiproc_server(
     )
     # Add the PORTS metadata using the available ports
     serv_info.metadata["SERV_PORTS"] = ports
-    info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+    info_server_write(server_info=serv_info, info_file=server_info_file)
 
     for worker in workers:
         worker.join()
 
 
 async def start_async_server(
-    server_async: grpc.aio.Server, sock_path: str, max_threads: int, cleanup_coroutines: list
+    server_async: grpc.aio.Server,
+    sock_path: str,
+    max_threads: int,
+    cleanup_coroutines: list,
+    server_info_file: str,
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.
@@ -201,7 +211,7 @@ async def start_async_server(
         language=Language.PYTHON,
         version=get_sdk_version(),
     )
-    info_server_write(server_info=serv_info, info_file=SERVER_INFO_FILE_PATH)
+    info_server_write(server_info=serv_info, info_file=server_info_file)
 
     # Log the server start
     _LOGGER.info(

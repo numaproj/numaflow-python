@@ -9,6 +9,7 @@ from pynumaflow._constants import (
     MAX_THREADS,
     _LOGGER,
     UDFType,
+    SINK_SERVER_INFO_FILE_PATH,
 )
 
 from pynumaflow.shared.server import NumaflowServer, sync_server_start
@@ -26,6 +27,7 @@ class SinkServer(NumaflowServer):
         sock_path=SINK_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=SINK_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Sink Server instance.
@@ -73,6 +75,7 @@ class SinkServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self.sinker_instance = sinker_instance
 
@@ -98,6 +101,7 @@ class SinkServer(NumaflowServer):
             servicer=self.servicer,
             bind_address=self.sock_path,
             max_threads=self.max_threads,
+            server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Sink,
         )

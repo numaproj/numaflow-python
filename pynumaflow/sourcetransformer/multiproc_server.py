@@ -10,6 +10,7 @@ from pynumaflow._constants import (
     MAX_THREADS,
     UDFType,
     _PROCESS_COUNT,
+    SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH,
 )
 
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
@@ -29,6 +30,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Source Transformer Server instance.
@@ -97,6 +99,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self.source_transform_instance = source_transform_instance
 
@@ -122,6 +125,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
             max_threads=self.max_threads,
             servicer=self.servicer,
             process_count=self._process_count,
+            server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Map,
         )

@@ -12,6 +12,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     MAX_THREADS,
     _LOGGER,
+    REDUCE_SERVER_INFO_FILE_PATH,
 )
 
 from pynumaflow.reducer._dtypes import (
@@ -112,6 +113,7 @@ class ReduceAsyncServer(NumaflowServer):
         sock_path=REDUCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=REDUCE_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Reduce Server instance.
@@ -131,6 +133,7 @@ class ReduceAsyncServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
         self.max_threads = max_threads
+        self.server_info_file = server_info_file
 
         self._server_options = [
             ("grpc.max_send_message_length", self.max_message_size),
@@ -162,4 +165,6 @@ class ReduceAsyncServer(NumaflowServer):
         server.add_insecure_port(self.sock_path)
         reduce_servicer = self.servicer
         reduce_pb2_grpc.add_ReduceServicer_to_server(reduce_servicer, server)
-        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)
+        await start_async_server(
+            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+        )

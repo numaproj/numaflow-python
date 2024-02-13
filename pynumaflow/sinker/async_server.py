@@ -11,6 +11,7 @@ from pynumaflow._constants import (
     SINK_SOCK_PATH,
     MAX_MESSAGE_SIZE,
     MAX_THREADS,
+    SINK_SERVER_INFO_FILE_PATH,
 )
 
 from pynumaflow.shared.server import NumaflowServer, start_async_server
@@ -71,10 +72,12 @@ class SinkAsyncServer(NumaflowServer):
         sock_path=SINK_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=SINK_SERVER_INFO_FILE_PATH,
     ):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self.sinker_instance = sinker_instance
 
@@ -102,4 +105,6 @@ class SinkAsyncServer(NumaflowServer):
         server = grpc.aio.server()
         server.add_insecure_port(self.sock_path)
         sink_pb2_grpc.add_SinkServicer_to_server(self.servicer, server)
-        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)
+        await start_async_server(
+            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+        )

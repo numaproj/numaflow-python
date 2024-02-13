@@ -8,6 +8,7 @@ from pynumaflow._constants import (
     SOURCE_SOCK_PATH,
     MAX_MESSAGE_SIZE,
     MAX_THREADS,
+    SOURCE_SERVER_INFO_FILE_PATH,
 )
 from pynumaflow.proto.sourcer import source_pb2_grpc
 
@@ -26,6 +27,7 @@ class SourceAsyncServer(NumaflowServer):
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=SOURCE_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Async Source Server instance.
@@ -103,6 +105,7 @@ class SourceAsyncServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self.sourcer_instance = sourcer_instance
 
@@ -132,4 +135,6 @@ class SourceAsyncServer(NumaflowServer):
         server.add_insecure_port(self.sock_path)
         source_servicer = self.servicer
         source_pb2_grpc.add_SourceServicer_to_server(source_servicer, server)
-        await start_async_server(server, self.sock_path, self.max_threads, self._server_options)
+        await start_async_server(
+            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+        )

@@ -7,6 +7,7 @@ from pynumaflow._constants import (
     MAX_THREADS,
     MAX_MESSAGE_SIZE,
     MAP_SOCK_PATH,
+    MAP_SERVER_INFO_FILE_PATH,
 )
 from pynumaflow.mapper._dtypes import MapAsyncCallable
 from pynumaflow.mapper.servicer.async_servicer import AsyncMapServicer
@@ -50,6 +51,7 @@ class MapAsyncServer(NumaflowServer):
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=MAP_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Asynchronous Map Server instance.
@@ -65,6 +67,7 @@ class MapAsyncServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self.mapper_instance = mapper_instance
 
@@ -97,4 +100,10 @@ class MapAsyncServer(NumaflowServer):
         map_pb2_grpc.add_MapServicer_to_server(self.servicer, server_new)
 
         # Start the async server
-        await start_async_server(server_new, self.sock_path, self.max_threads, self._server_options)
+        await start_async_server(
+            server_new,
+            self.sock_path,
+            self.max_threads,
+            self._server_options,
+            self.server_info_file,
+        )

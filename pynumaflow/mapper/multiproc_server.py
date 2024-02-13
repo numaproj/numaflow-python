@@ -6,6 +6,7 @@ from pynumaflow._constants import (
     MAP_SOCK_PATH,
     UDFType,
     _PROCESS_COUNT,
+    MAP_SERVER_INFO_FILE_PATH,
 )
 from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
@@ -27,6 +28,7 @@ class MapMultiprocServer(NumaflowServer):
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
+        server_info_file=MAP_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Multiproc Map Server instance.
@@ -76,6 +78,7 @@ class MapMultiprocServer(NumaflowServer):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self.mapper_instance = mapper_instance
 
@@ -106,6 +109,7 @@ class MapMultiprocServer(NumaflowServer):
             max_threads=self.max_threads,
             servicer=self.servicer,
             process_count=self._process_count,
+            server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Map,
         )

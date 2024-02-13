@@ -3,7 +3,6 @@ from enum import Enum
 
 # Constants for using in the info-server
 # Need to keep consistent with all SDKs and client
-SERVER_INFO_FILE_PATH = "/var/run/numaflow/server-info"
 EOF = "U+005C__END__"
 
 # Env variables to be passed in the info server metadata.

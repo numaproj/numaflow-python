@@ -10,6 +10,7 @@ from pynumaflow._constants import (
     _LOGGER,
     UDFType,
     SIDE_INPUT_DIR_PATH,
+    SIDE_INPUT_SERVER_INFO_FILE_PATH,
 )
 
 
@@ -55,10 +56,12 @@ class SideInputServer(NumaflowServer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=MAX_THREADS,
         side_input_dir_path=SIDE_INPUT_DIR_PATH,
+        server_info_file=SIDE_INPUT_SERVER_INFO_FILE_PATH,
     ):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
+        self.server_info_file = server_info_file
 
         self._server_options = [
             ("grpc.max_send_message_length", self.max_message_size),
@@ -86,6 +89,7 @@ class SideInputServer(NumaflowServer):
             servicer=side_input_servicer,
             bind_address=self.sock_path,
             max_threads=self.max_threads,
+            server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.SideInput,
         )

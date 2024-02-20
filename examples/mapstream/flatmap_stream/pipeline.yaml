@@ -20,7 +20,7 @@ spec:
         readBatchSize: 1
       udf:
         container:
-          image: "quay.io/numaio/numaflow-python/map-flatmap-stream:v0.6.2"
+          image: "quay.io/numaio/numaflow-python/map-flatmap-stream:v0.6.1"
           imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG

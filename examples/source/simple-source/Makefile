@@ -1,6 +1,6 @@
 .PHONY: image
 image:
-	docker build -t "quay.io/numaio/numaflow-python/simple-source:v0.6.1" .
+	docker build -t "quay.io/numaio/numaflow-python/simple-source:v0.6.0" .
 # Github CI runner uses platform linux/amd64. If your local environment don't, the image built by command above might not work
 # under the CI E2E test environment.
 # To build an image that supports multiple platforms(linux/amd64,linux/arm64) and push to quay.io, use the following command

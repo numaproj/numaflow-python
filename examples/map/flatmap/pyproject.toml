@@ -6,8 +6,7 @@ authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-pynumaflow = "~0.7.0"
-
+pynumaflow = { git = "https://github.com/numaproj/numaflow-python.git", rev = "897ebc49ca3db21bd9eeb91b09c9607e910d6776" }
 
 [tool.poetry.dev-dependencies]
 

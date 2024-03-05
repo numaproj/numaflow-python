@@ -26,37 +26,6 @@ class WindowOperation(IntEnum):
 
 
 @dataclass(init=False)
-class ReduceWindow:
-    """Defines the start and end of the interval window for the event."""
-
-    __slots__ = ("_start", "_end", "_slot")
-
-    _start: datetime
-    _end: datetime
-    _slot: str
-
-    def __init__(self, start: datetime, end: datetime, slot: str = ""):
-        self._start = start
-        self._end = end
-        self._slot = slot
-
-    @property
-    def start(self):
-        """Returns the start point of the interval window."""
-        return self._start
-
-    @property
-    def end(self):
-        """Returns the end point of the interval window."""
-        return self._end
-
-    @property
-    def slot(self):
-        """Returns the slot from the window"""
-        return self._slot
-
-
-@dataclass(init=False)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -230,6 +199,43 @@ class IntervalWindow:
     def end(self):
         """Returns the end point of the interval window."""
         return self._end
+
+
+@dataclass(init=False)
+class ReduceWindow:
+    """
+    Defines the window for a reduce operation which includes the
+    interval window along with the slot.
+    """
+
+    __slots__ = ("_window", "_slot")
+
+    _window: IntervalWindow
+    _slot: str
+
+    def __init__(self, start: datetime, end: datetime, slot: str = ""):
+        self._window = IntervalWindow(start=start, end=end)
+        self._slot = slot
+
+    @property
+    def start(self):
+        """Returns the start point of the interval window."""
+        return self._window.start
+
+    @property
+    def end(self):
+        """Returns the end point of the interval window."""
+        return self._window.end
+
+    @property
+    def slot(self):
+        """Returns the slot from the window"""
+        return self._slot
+
+    @property
+    def window(self):
+        """Return the interval window"""
+        return self._window
 
 
 @dataclass(init=False)

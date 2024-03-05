@@ -44,7 +44,8 @@ class TaskManager:
         return resps
     
     async def stream_send_eof(self):
-        for unified_key in self.tasks.keys():
+        for unified_key in self.tasks:
+            _LOGGER.info(f"SENDING EOF")
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
 
     async def create_task(self, req):

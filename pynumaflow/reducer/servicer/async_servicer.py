@@ -101,14 +101,18 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         task_manager = TaskManager(handler=self.__reduce_handler)
 
         # Start iterating through the request iterator
-        async for request in datum_iterator:
-            # check whether the request is an open or append operation
-            if request.operation is int(WindowOperation.OPEN):
-                # create a new task for the open operation
-                await task_manager.create_task(request)
-            elif request.operation is int(WindowOperation.APPEND):
-                # append the task data to the existing task
-                await task_manager.append_task(request)
+        try:
+            async for request in datum_iterator:
+                _LOGGER.info(f"GOT REQUEST {request.operation}")
+                # check whether the request is an open or append operation
+                if request.operation is int(WindowOperation.OPEN):
+                    # create a new task for the open operation
+                    await task_manager.create_task(request)
+                elif request.operation is int(WindowOperation.APPEND):
+                    # append the task data to the existing task
+                    await task_manager.append_task(request)
+        except Exception as e:
+            _LOGGER.critical(e.__str__())
 
         # send EOF to all the tasks once the request iterator is exhausted
         await task_manager.stream_send_eof()
@@ -123,6 +127,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                     yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
                 yield reduce_pb2.ReduceResponse(window=task.window, EOF=True)
         except Exception as e:
+            _LOGGER.critical(e.__str__())
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
             yield reduce_pb2.ReduceResponse(result=[], window=None)

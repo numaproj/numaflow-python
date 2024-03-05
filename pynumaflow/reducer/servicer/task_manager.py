@@ -28,14 +28,16 @@ def get_unique_key(keys, window):
 
 class TaskManager:
     """
-    TaskManager is responsible for managing the reduce tasks.
+    TaskManager is responsible for managing the Reduce tasks.
     It is created whenever a new reduce operation is requested.
     """
 
     def __init__(self, handler: Union[ReduceAsyncCallable, _ReduceBuilderClass]):
         # A dictionary to store the task information
         self.tasks = {}
-        # A set to store the background tasks to keep a reference to them
+        # Collection for storing strong references to all running tasks.
+        # Event loop only keeps a weak reference, which can cause it to
+        # get lost during execution.
         self.background_tasks = set()
         # Handler for the reduce operation
         self.__reduce_handler = handler
@@ -49,7 +51,7 @@ class TaskManager:
 
     async def stream_send_eof(self):
         """
-        Sends EOF to input streams of all the reduce
+        Sends EOF to input streams of all the Reduce
         tasks that are currently being processed.
         This is called when the input grpc stream is closed.
         """

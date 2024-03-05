@@ -45,10 +45,6 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         self,
         handler: Union[ReduceAsyncCallable, _ReduceBuilderClass],
     ):
-        # Collection for storing strong references to all running tasks.
-        # Event loop only keeps a weak reference, which can cause it to
-        # get lost during execution.
-        self.background_tasks = set()
         # The Reduce handler can be a function or a builder class instance.
         self.__reduce_handler: Union[ReduceAsyncCallable, _ReduceBuilderClass] = handler
 

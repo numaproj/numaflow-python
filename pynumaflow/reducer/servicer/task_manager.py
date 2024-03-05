@@ -81,6 +81,7 @@ class TaskManager:
         result = self.tasks.get(unified_key, None)
         if not result:
             await self.create_task(request)
+            return
         await result.iterator.put(d)
     
 

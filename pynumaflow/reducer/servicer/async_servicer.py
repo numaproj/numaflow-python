@@ -23,6 +23,7 @@ from pynumaflow.reducer._dtypes import (
 from pynumaflow.reducer._dtypes import ReduceResult
 from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.reducer.servicer.task_manager import TaskManager
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
@@ -93,31 +94,55 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         # end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
         # interval_window = IntervalWindow(start=start_dt, end=end_dt)
 
+        # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
-        response_task = asyncio.create_task(
-            self.__async_reduce_handler(datum_iterator)
-        )
+        # Create a task manager instance
+        task_manager = TaskManager(handler=self.__reduce_handler)
 
-        # Save a reference to the result of this function, to avoid a
-        # task disappearing mid-execution.
-        self.background_tasks.add(response_task)
-        response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
+        # Start iterating through the request iterator
+        async for request in datum_iterator:
+            # check whether the request is an open or append operation
+            if request.operation is int(WindowOperation.OPEN):
+                # create a new task for the open operation
+                await task_manager.create_task(request)
+            elif request.operation is int(WindowOperation.APPEND):
+                # append the task data to the existing task
+                await task_manager.append_task(request)
 
-        await response_task
-        results_futures = response_task.result()
-        print("RES", type(results_futures[0][1]))
+        # send EOF to all the tasks once the request iterator is exhausted
+        await task_manager.stream_send_eof()
 
+        # get the results from all the tasks
+        res = task_manager.get_tasks()
         try:
-            for tup in results_futures:
-                fut, window = tup[0], tup[1]
-                print("FIT", type(fut), "WIND", type(window))
+            for task in res:
+                fut = task.future
                 await fut
-                yield reduce_pb2.ReduceResponse(result=fut.result()[0], window=window)
+                for msg in fut.result():
+                    yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+                yield reduce_pb2.ReduceResponse(window=task.window, EOF=True)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
-            yield reduce_pb2.ReduceResponse(result=[], window=None, EOF=True)
+            yield reduce_pb2.ReduceResponse(result=[], window=None)
+
+        # # send EOF response for all the windows
+        # eof_resps = task_manager.build_eof_responses()
+        # for resp in eof_resps:
+        #     yield resp
+
+        # try:
+        #     for tup in results_futures:
+        #         fut, window = tup[0], tup[1]
+        #         print("FIT", type(fut), "WIND", type(window))
+        #         await fut
+        #         for msg in fut.result():
+        #             yield reduce_pb2.ReduceResponse(result=msg, window=window)
+        # except Exception as e:
+        #     context.set_code(grpc.StatusCode.UNKNOWN)
+        #     context.set_details(e.__str__())
+        #     yield reduce_pb2.ReduceResponse(result=[], window=None, EOF=True)
 
     async def __async_reduce_handler(self, datum_iterator: AsyncIterable[ReduceRequest]):
         callable_dict = {}

@@ -27,30 +27,41 @@ def get_unique_key(keys, window):
 
 
 class TaskManager:
+    """
+    TaskManager is responsible for managing the reduce tasks.
+    It is created whenever a new reduce operation is requested.
+    """
+
     def __init__(self, handler: Union[ReduceAsyncCallable, _ReduceBuilderClass]):
+        # A dictionary to store the task information
         self.tasks = {}
+        # A set to store the background tasks to keep a reference to them
         self.background_tasks = set()
+        # Handler for the reduce operation
         self.__reduce_handler = handler
 
     def get_tasks(self):
+        """
+        Returns the list of reduce tasks that are
+        currently being processed
+        """
         return self.tasks.values()
 
-    def build_eof_responses(self):
-        window_set = set()
-        # Extract the windows from the tasks
-        for unified_key in self.tasks.keys():
-            window_set.add(self.tasks[unified_key].window)
-        # Build the response
-        resps = []
-        for window in window_set:
-            resps.append(reduce_pb2.ReduceResponse(window=window.to_proto(), eof=True))
-        return resps
-
     async def stream_send_eof(self):
+        """
+        Sends EOF to input streams of all the reduce
+        tasks that are currently being processed.
+        This is called when the input grpc stream is closed.
+        """
         for unified_key in self.tasks:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
 
     async def create_task(self, req):
+        """
+        Creates a new reduce task for the given request.
+        Based on the request we compute a unique key, and then
+        it creates a new task or appends the request to the existing task.
+        """
         # if len of windows in request != 1, raise error
         if len(req.windows) != 1:
             raise UDFError("reduce create operation error: invalid number of windows")
@@ -60,6 +71,7 @@ class TaskManager:
         unified_key = get_unique_key(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
 
+        # If the task does not exist, create a new task
         if not result:
             niter = NonBlockingIterator()
             riter = niter.read_iterator()
@@ -77,6 +89,10 @@ class TaskManager:
         await result.iterator.put(d)
 
     async def append_task(self, req):
+        """
+        Appends the request to the existing window reduce task.
+        If the task does not exist, create it.
+        """
         if len(req.windows) != 1:
             raise UDFError("reduce create operation error: invalid number of windows")
         d = req.payload
@@ -91,7 +107,14 @@ class TaskManager:
     async def __invoke_reduce(
         self, keys: list[str], request_iterator: AsyncIterable[Datum], window: ReduceWindow
     ):
+        """
+        Invokes the UDF reduce handler with the given keys,
+        request iterator, and window. Returns the result of the
+        reduce operation.
+        """
         new_instance = self.__reduce_handler
+
+        # Convert the window to a datetime object
         start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, timezone.utc)
         end_dt = datetime.fromtimestamp(int(window.end.ToMilliseconds()) / 1e3, timezone.utc)
         interval_window = IntervalWindow(start_dt, end_dt)

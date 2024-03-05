@@ -67,7 +67,8 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         # Create a task manager instance
         task_manager = TaskManager(handler=self.__reduce_handler)
 
-        # Start iterating through the request iterator
+        # Start iterating through the request iterator and create tasks
+        # based on the operation type received.
         try:
             async for request in datum_iterator:
                 # check whether the request is an open or append operation
@@ -82,13 +83,18 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
             yield reduce_pb2.ReduceResponse()
+            raise e
 
         # send EOF to all the tasks once the request iterator is exhausted
+        # This will signal the tasks to stop reading the data on their
+        # respective iterators.
         await task_manager.stream_send_eof()
 
         # get the results from all the tasks
         res = task_manager.get_tasks()
         try:
+            # iterate through the tasks and yield the response
+            # once the task is completed.
             for task in res:
                 fut = task.future
                 await fut
@@ -99,6 +105,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
             yield reduce_pb2.ReduceResponse()
+            raise e
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

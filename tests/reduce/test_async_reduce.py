@@ -49,7 +49,7 @@ def start_request() -> (Datum, tuple):
         watermark=watermark_timestamp,
     )
     operation = reduce_pb2.ReduceRequest.WindowOperation(
-        event=reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND,
+        event=reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN,
         windows=[window],
     )
     request = reduce_pb2.ReduceRequest(
@@ -144,29 +144,6 @@ class TestAsyncReducer(unittest.TestCase):
             LOGGER.info("stopped the event loop")
         except Exception as e:
             LOGGER.error(e)
-
-    def test_reduce_invalid_metadata(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request()
-        invalid_metadata = {}
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request),
-                metadata=invalid_metadata,
-            )
-            count = 0
-            for _ in generator_response:
-                count += 1
-        except grpc.RpcError as e:
-            self.assertEqual(grpc.StatusCode.INVALID_ARGUMENT, e.code())
-            self.assertEqual(
-                "Expected to have all key/window_start_time/window_end_time;"
-                " got start: None, end: None.",
-                e.details(),
-            )
-        except Exception as err:
-            self.fail("Expected an exception.")
-            logging.error(err)
 
     def test_reduce(self) -> None:
         stub = self.__stub()

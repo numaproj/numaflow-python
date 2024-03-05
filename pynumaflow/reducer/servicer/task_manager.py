@@ -1,5 +1,6 @@
 import asyncio
-from typing import AsyncIterable, Union
+from typing import Union
+from collections.abc import AsyncIterable
 from pynumaflow.proto.reducer import reduce_pb2
 from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
 from pynumaflow._constants import (
@@ -14,6 +15,7 @@ from pynumaflow.reducer._dtypes import (
     Datum,
     _ReduceBuilderClass,
     ReduceAsyncCallable,
+    ReduceWindow,
 )
 
 
@@ -38,14 +40,11 @@ class TaskManager:
         # Build the response
         resps = []
         for window in window_set:
-            resps.append(
-                reduce_pb2.ReduceResponse(window=window.to_proto(), eof=True)
-                )
+            resps.append(reduce_pb2.ReduceResponse(window=window.to_proto(), eof=True))
         return resps
-    
+
     async def stream_send_eof(self):
         for unified_key in self.tasks:
-            _LOGGER.info(f"SENDING EOF")
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
 
     async def create_task(self, req):
@@ -54,14 +53,11 @@ class TaskManager:
         keys = d.keys()
         unified_key = get_unique_key(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
-        interval_window = IntervalWindow(req.windows[0].start, req.windows[0].end)
 
         if not result:
             niter = NonBlockingIterator()
             riter = niter.read_iterator()
-            task = asyncio.create_task(
-                self.__invoke_reduce(keys, riter, Metadata(interval_window=interval_window))
-            )
+            task = asyncio.create_task(self.__invoke_reduce(keys, riter, req.windows[0]))
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
             self.background_tasks.add(task)
@@ -81,14 +77,15 @@ class TaskManager:
         result = self.tasks.get(unified_key, None)
         if not result:
             await self.create_task(request)
-            return
-        await result.iterator.put(d)
-    
+        else:
+            await result.iterator.put(d)
 
     async def __invoke_reduce(
-            self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
+        self, keys: list[str], request_iterator: AsyncIterable[Datum], window: ReduceWindow
     ):
         new_instance = self.__reduce_handler
+        interval_window = IntervalWindow(window.start, window.end)
+        md = Metadata(interval_window=interval_window)
         # If the reduce handler is a class instance, create a new instance of it.
         # It is required for a new key to be processed by a
         # new instance of the reducer for a given window

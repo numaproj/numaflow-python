@@ -3,7 +3,7 @@ from asyncio import Task
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum, IntEnum
+from enum import IntEnum
 from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
 from warnings import warn
@@ -19,9 +19,10 @@ class WindowOperation(IntEnum):
     """
     Enumerate the type of Window operation received.
     """
-    OPEN = 0,
-    CLOSE = 1,
-    APPEND = 4,
+
+    OPEN = (0,)
+    CLOSE = (1,)
+    APPEND = (4,)
 
 
 @dataclass(init=False)
@@ -172,11 +173,11 @@ class Datum:
     _watermark: datetime
 
     def __init__(
-            self,
-            keys: list[str],
-            value: bytes,
-            event_time: datetime,
-            watermark: datetime,
+        self,
+        keys: list[str],
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -290,12 +291,7 @@ class ReduceRequest:
     _windows: list[ReduceWindow]
     _payload: Datum
 
-    def __init__(
-            self,
-            operation: WindowOperation,
-            windows: list[ReduceWindow],
-            payload: Datum
-    ):
+    def __init__(self, operation: WindowOperation, windows: list[ReduceWindow], payload: Datum):
         self._operation = operation
         self._windows = windows
         self._payload = payload
@@ -334,7 +330,7 @@ class Reducer(metaclass=ABCMeta):
 
     @abstractmethod
     async def handler(
-            self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
     ) -> Messages:
         """
         Implement this handler function which implements the ReduceCallable interface.

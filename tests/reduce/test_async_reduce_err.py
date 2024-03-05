@@ -36,11 +36,23 @@ def request_generator(count, request, resetkey: bool = False):
 
 def start_request() -> (Datum, tuple):
     event_time_timestamp, watermark_timestamp = get_time_args()
-
-    request = reduce_pb2.ReduceRequest(
+    window = reduce_pb2.Window(
+        start=mock_interval_window_start(),
+        end=mock_interval_window_end(),
+        slot="slot-0",
+    )
+    payload = reduce_pb2.ReduceRequest.Payload(
         value=mock_message(),
         event_time=event_time_timestamp,
         watermark=watermark_timestamp,
+    )
+    operation = reduce_pb2.ReduceRequest.WindowOperation(
+        event=reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND,
+        windows=[window],
+    )
+    request = reduce_pb2.ReduceRequest(
+        payload=payload,
+        operation=operation,
     )
     metadata = (
         (WIN_START_TIME, f"{mock_interval_window_start()}"),
@@ -126,7 +138,7 @@ class TestAsyncReducerError(unittest.TestCase):
         generator_response = None
         try:
             generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request), metadata=metadata
+                request_iterator=request_generator(count=10, request=request)
             )
             counter = 0
             for _ in generator_response:

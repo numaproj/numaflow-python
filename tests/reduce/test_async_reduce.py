@@ -192,10 +192,12 @@ class TestAsyncReducer(unittest.TestCase):
                     ),
                     r.result.value,
                 )
-                self.assertEqual(r.window.start.ToSeconds(), 1662998400)
-                self.assertEqual(r.window.end.ToSeconds(), 1662998460)
+                self.assertEqual(r.EOF, False)
             else:
+                self.assertEqual(r.EOF, True)
                 eof_count += 1
+            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
+            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
         # since there is only one key, the output count is 1
         self.assertEqual(1, count)
         self.assertEqual(1, eof_count)
@@ -212,6 +214,7 @@ class TestAsyncReducer(unittest.TestCase):
             print(e)
 
         count = 0
+        eof_count = 0
 
         # capture the output from the ReduceFn generator and assert.
         for r in generator_response:
@@ -225,9 +228,14 @@ class TestAsyncReducer(unittest.TestCase):
                     ),
                     r.result.value,
                 )
-                self.assertEqual(r.window.start.ToSeconds(), 1662998400)
-                self.assertEqual(r.window.end.ToSeconds(), 1662998460)
+                self.assertEqual(r.EOF, False)
+            else:
+                eof_count += 1
+                self.assertEqual(r.EOF, True)
+            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
+            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
         self.assertEqual(100, count)
+        self.assertEqual(100, eof_count)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:

@@ -8,7 +8,6 @@ from pynumaflow._constants import _LOGGER
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducer._dtypes import (
     Datum,
-    Metadata,
     ReduceAsyncCallable,
     _ReduceBuilderClass,
     ReduceRequest,
@@ -50,7 +49,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         # Event loop only keeps a weak reference, which can cause it to
         # get lost during execution.
         self.background_tasks = set()
-        # The reduce handler can be a function or a builder class instance.
+        # The Reduce handler can be a function or a builder class instance.
         self.__reduce_handler: Union[ReduceAsyncCallable, _ReduceBuilderClass] = handler
 
     async def ReduceFn(
@@ -79,7 +78,10 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                     # append the task data to the existing task
                     await task_manager.append_task(request)
         except Exception as e:
-            _LOGGER.critical(e.__str__())
+            _LOGGER.critical("Reduce Error", exc_info=True)
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(e.__str__())
+            yield reduce_pb2.ReduceResponse()
 
         # send EOF to all the tasks once the request iterator is exhausted
         await task_manager.stream_send_eof()
@@ -97,30 +99,6 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
             yield reduce_pb2.ReduceResponse()
-
-    async def __invoke_reduce(
-        self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
-    ):
-        new_instance = self.__reduce_handler
-        # If the reduce handler is a class instance, create a new instance of it.
-        # It is required for a new key to be processed by a
-        # new instance of the reducer for a given window
-        # Otherwise the function handler can be called directly
-        if isinstance(self.__reduce_handler, _ReduceBuilderClass):
-            new_instance = self.__reduce_handler.create()
-        try:
-            msgs = await new_instance(keys, request_iterator, md)
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
-
-        datum_responses = []
-        for msg in msgs:
-            datum_responses.append(
-                reduce_pb2.ReduceResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
-            )
-
-        return datum_responses
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

@@ -1,6 +1,9 @@
 import asyncio
+from datetime import datetime, timezone
 from typing import Union
 from collections.abc import AsyncIterable
+
+from pynumaflow.exceptions import UDFError
 from pynumaflow.proto.reducer import reduce_pb2
 from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
 from pynumaflow._constants import (
@@ -20,7 +23,7 @@ from pynumaflow.reducer._dtypes import (
 
 
 def get_unique_key(keys, window):
-    return f"{window.start}:{window.end}:{DELIMITER.join(keys)}"
+    return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}:{DELIMITER.join(keys)}"
 
 
 class TaskManager:
@@ -49,6 +52,9 @@ class TaskManager:
 
     async def create_task(self, req):
         # if len of windows in request != 1, raise error
+        if len(req.windows) != 1:
+            raise UDFError("reduce create operation error: invalid number of windows")
+
         d = req.payload
         keys = d.keys()
         unified_key = get_unique_key(keys, req.windows[0])
@@ -70,13 +76,15 @@ class TaskManager:
         # Put the request in the iterator
         await result.iterator.put(d)
 
-    async def append_task(self, request):
-        d = request.payload
+    async def append_task(self, req):
+        if len(req.windows) != 1:
+            raise UDFError("reduce create operation error: invalid number of windows")
+        d = req.payload
         keys = d.keys()
-        unified_key = get_unique_key(keys, request.windows[0])
+        unified_key = get_unique_key(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
         if not result:
-            await self.create_task(request)
+            await self.create_task(req)
         else:
             await result.iterator.put(d)
 
@@ -84,7 +92,9 @@ class TaskManager:
         self, keys: list[str], request_iterator: AsyncIterable[Datum], window: ReduceWindow
     ):
         new_instance = self.__reduce_handler
-        interval_window = IntervalWindow(window.start, window.end)
+        start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, timezone.utc)
+        end_dt = datetime.fromtimestamp(int(window.end.ToMilliseconds()) / 1e3, timezone.utc)
+        interval_window = IntervalWindow(start_dt, end_dt)
         md = Metadata(interval_window=interval_window)
         # If the reduce handler is a class instance, create a new instance of it.
         # It is required for a new key to be processed by a

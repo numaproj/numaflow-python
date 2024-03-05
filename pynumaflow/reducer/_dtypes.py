@@ -3,6 +3,7 @@ from asyncio import Task
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum, IntEnum
 from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
 from warnings import warn
@@ -12,6 +13,46 @@ from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
+
+
+class WindowOperation(IntEnum):
+    """
+    Enumerate the type of Window operation received.
+    """
+    OPEN = 0,
+    CLOSE = 1,
+    APPEND = 4,
+
+
+@dataclass(init=False)
+class ReduceWindow:
+    """Defines the start and end of the interval window for the event."""
+
+    __slots__ = ("_start", "_end", "_slot")
+
+    _start: datetime
+    _end: datetime
+    _slot: str
+
+    def __init__(self, start: datetime, end: datetime, slot: str = ""):
+        self._start = start
+        self._end = end
+        self._slot = slot
+
+    @property
+    def start(self):
+        """Returns the start point of the interval window."""
+        return self._start
+
+    @property
+    def end(self):
+        """Returns the end point of the interval window."""
+        return self._end
+
+    @property
+    def slot(self):
+        """Returns the slot from the window"""
+        return self._slot
 
 
 @dataclass(init=False)
@@ -131,11 +172,11 @@ class Datum:
     _watermark: datetime
 
     def __init__(
-        self,
-        keys: list[str],
-        value: bytes,
-        event_time: datetime,
-        watermark: datetime,
+            self,
+            keys: list[str],
+            value: bytes,
+            event_time: datetime,
+            watermark: datetime,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -211,11 +252,12 @@ class Metadata:
 class ReduceResult:
     """Defines the object to hold the result of reduce computation."""
 
-    __slots__ = ("_future", "_iterator", "_key")
+    __slots__ = ("_future", "_iterator", "_key", "_window")
 
     _future: Task
     _iterator: NonBlockingIterator
     _key: list[str]
+    _window: ReduceWindow
 
     @property
     def future(self):
@@ -231,6 +273,47 @@ class ReduceResult:
     def keys(self) -> list[str]:
         """Returns the keys of the partition."""
         return self._key
+
+    @property
+    def window(self) -> ReduceWindow:
+        """"""
+        return self._window
+
+
+@dataclass
+class ReduceRequest:
+    """Defines the object to hold a request for the reduce operation."""
+
+    __slots__ = ("_operation", "_windows", "_payload")
+
+    _operation: WindowOperation
+    _windows: list[ReduceWindow]
+    _payload: Datum
+
+    def __init__(
+            self,
+            operation: WindowOperation,
+            windows: list[ReduceWindow],
+            payload: Datum
+    ):
+        self._operation = operation
+        self._windows = windows
+        self._payload = payload
+
+    @property
+    def operation(self) -> WindowOperation:
+        """Returns the future result of computation."""
+        return self._operation
+
+    @property
+    def windows(self) -> list[ReduceWindow]:
+        """Returns the handle to the producer queue."""
+        return self._windows
+
+    @property
+    def payload(self) -> Datum:
+        """Returns the payload of the window."""
+        return self._payload
 
 
 ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
@@ -251,7 +334,7 @@ class Reducer(metaclass=ABCMeta):
 
     @abstractmethod
     async def handler(
-        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+            self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
     ) -> Messages:
         """
         Implement this handler function which implements the ReduceCallable interface.

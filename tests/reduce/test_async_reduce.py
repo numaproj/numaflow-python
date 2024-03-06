@@ -32,17 +32,29 @@ LOGGER = setup_logging(__name__)
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
-            request.keys.extend([f"key-{i}"])
+            request.payload.keys.extend([f"key-{i}"])
         yield request
 
 
 def start_request() -> (Datum, tuple):
     event_time_timestamp, watermark_timestamp = get_time_args()
-
-    request = reduce_pb2.ReduceRequest(
+    window = reduce_pb2.Window(
+        start=mock_interval_window_start(),
+        end=mock_interval_window_end(),
+        slot="slot-0",
+    )
+    payload = reduce_pb2.ReduceRequest.Payload(
         value=mock_message(),
         event_time=event_time_timestamp,
         watermark=watermark_timestamp,
+    )
+    operation = reduce_pb2.ReduceRequest.WindowOperation(
+        event=reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN,
+        windows=[window],
+    )
+    request = reduce_pb2.ReduceRequest(
+        payload=payload,
+        operation=operation,
     )
     metadata = (
         (WIN_START_TIME, f"{mock_interval_window_start()}"),
@@ -68,28 +80,20 @@ class ExampleClass(Reducer):
     async def handler(
         self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
     ) -> Messages:
-        interval_window = md.interval_window
         self.counter = 0
         async for _ in datums:
             self.counter += 1
-        msg = (
-            f"counter:{self.counter} interval_window_start:{interval_window.start} "
-            f"interval_window_end:{interval_window.end}"
-        )
+        msg = f"counter:{self.counter}"
         return Messages(Message(str.encode(msg), keys=keys))
 
 
 async def reduce_handler_func(
     keys: list[str], datums: AsyncIterable[Datum], md: Metadata
 ) -> Messages:
-    interval_window = md.interval_window
     counter = 0
     async for _ in datums:
         counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
+    msg = f"counter:{counter}"
     return Messages(Message(str.encode(msg), keys=keys))
 
 
@@ -141,54 +145,39 @@ class TestAsyncReducer(unittest.TestCase):
         except Exception as e:
             LOGGER.error(e)
 
-    def test_reduce_invalid_metadata(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request()
-        invalid_metadata = {}
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request),
-                metadata=invalid_metadata,
-            )
-            count = 0
-            for _ in generator_response:
-                count += 1
-        except grpc.RpcError as e:
-            self.assertEqual(grpc.StatusCode.INVALID_ARGUMENT, e.code())
-            self.assertEqual(
-                "Expected to have all key/window_start_time/window_end_time;"
-                " got start: None, end: None.",
-                e.details(),
-            )
-        except Exception as err:
-            self.fail("Expected an exception.")
-            logging.error(err)
-
     def test_reduce(self) -> None:
         stub = self.__stub()
         request, metadata = start_request()
         generator_response = None
         try:
             generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request), metadata=metadata
+                request_iterator=request_generator(count=10, request=request)
             )
         except grpc.RpcError as e:
             logging.error(e)
 
         # capture the output from the ReduceFn generator and assert.
         count = 0
+        eof_count = 0
         for r in generator_response:
-            count += 1
-            self.assertEqual(
-                bytes(
-                    "counter:10 interval_window_start:2022-09-12 16:00:00+00:00 "
-                    "interval_window_end:2022-09-12 16:01:00+00:00",
-                    encoding="utf-8",
-                ),
-                r.results[0].value,
-            )
+            if r.result.value:
+                count += 1
+                self.assertEqual(
+                    bytes(
+                        "counter:10",
+                        encoding="utf-8",
+                    ),
+                    r.result.value,
+                )
+                self.assertEqual(r.EOF, False)
+            else:
+                self.assertEqual(r.EOF, True)
+                eof_count += 1
+            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
+            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
         # since there is only one key, the output count is 1
         self.assertEqual(1, count)
+        self.assertEqual(1, eof_count)
 
     def test_reduce_with_multiple_keys(self) -> None:
         stub = self.__stub()
@@ -197,25 +186,33 @@ class TestAsyncReducer(unittest.TestCase):
         try:
             generator_response = stub.ReduceFn(
                 request_iterator=request_generator(count=100, request=request, resetkey=True),
-                metadata=metadata,
             )
         except grpc.RpcError as e:
             print(e)
 
         count = 0
+        eof_count = 0
 
         # capture the output from the ReduceFn generator and assert.
         for r in generator_response:
-            count += 1
-            self.assertEqual(
-                bytes(
-                    "counter:1 interval_window_start:2022-09-12 16:00:00+00:00 "
-                    "interval_window_end:2022-09-12 16:01:00+00:00",
-                    encoding="utf-8",
-                ),
-                r.results[0].value,
-            )
+            # Check for responses with
+            if r.result.value:
+                count += 1
+                self.assertEqual(
+                    bytes(
+                        "counter:1",
+                        encoding="utf-8",
+                    ),
+                    r.result.value,
+                )
+                self.assertEqual(r.EOF, False)
+            else:
+                eof_count += 1
+                self.assertEqual(r.EOF, True)
+            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
+            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
         self.assertEqual(100, count)
+        self.assertEqual(100, eof_count)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:

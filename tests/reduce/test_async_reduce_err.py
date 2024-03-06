@@ -34,13 +34,31 @@ def request_generator(count, request, resetkey: bool = False):
         yield request
 
 
-def start_request() -> (Datum, tuple):
+def start_request(multiple_window: False) -> (Datum, tuple):
     event_time_timestamp, watermark_timestamp = get_time_args()
-
-    request = reduce_pb2.ReduceRequest(
+    window = reduce_pb2.Window(
+        start=mock_interval_window_start(),
+        end=mock_interval_window_end(),
+        slot="slot-0",
+    )
+    payload = reduce_pb2.ReduceRequest.Payload(
         value=mock_message(),
         event_time=event_time_timestamp,
         watermark=watermark_timestamp,
+    )
+    operation = reduce_pb2.ReduceRequest.WindowOperation(
+        event=reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND,
+        windows=[window],
+    )
+    if multiple_window:
+        operation = reduce_pb2.ReduceRequest.WindowOperation(
+            event=reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND,
+            windows=[window, window],
+        )
+
+    request = reduce_pb2.ReduceRequest(
+        payload=payload,
+        operation=operation,
     )
     metadata = (
         (WIN_START_TIME, f"{mock_interval_window_start()}"),
@@ -122,17 +140,35 @@ class TestAsyncReducerError(unittest.TestCase):
 
     def test_reduce(self) -> None:
         stub = self.__stub()
-        request, metadata = start_request()
+        request, metadata = start_request(multiple_window=False)
         generator_response = None
         try:
             generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request), metadata=metadata
+                request_iterator=request_generator(count=10, request=request)
             )
             counter = 0
             for _ in generator_response:
                 counter += 1
         except Exception as err:
             self.assertTrue("Got a runtime error from reduce handler." in err.__str__())
+            return
+        self.fail("Expected an exception.")
+
+    def test_reduce_window_len(self) -> None:
+        stub = self.__stub()
+        request, metadata = start_request(multiple_window=True)
+        generator_response = None
+        try:
+            generator_response = stub.ReduceFn(
+                request_iterator=request_generator(count=10, request=request)
+            )
+            counter = 0
+            for _ in generator_response:
+                counter += 1
+        except Exception as err:
+            self.assertTrue(
+                "reduce create operation error: invalid number of windows" in err.__str__()
+            )
             return
         self.fail("Expected an exception.")
 

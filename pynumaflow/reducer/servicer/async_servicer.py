@@ -1,43 +1,43 @@
-import asyncio
-
-from datetime import datetime, timezone
 from collections.abc import AsyncIterable
 from typing import Union
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow._constants import (
-    WIN_START_TIME,
-    WIN_END_TIME,
-    STREAM_EOF,
-    DELIMITER,
-)
+from pynumaflow._constants import _LOGGER
+from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducer._dtypes import (
     Datum,
-    IntervalWindow,
-    Metadata,
     ReduceAsyncCallable,
     _ReduceBuilderClass,
+    ReduceRequest,
+    WindowOperation,
 )
-from pynumaflow.reducer._dtypes import ReduceResult
-from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
-from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.reducer.servicer.task_manager import TaskManager
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER
 
 
 async def datum_generator(
     request_iterator: AsyncIterable[reduce_pb2.ReduceRequest],
-) -> AsyncIterable[Datum]:
+) -> AsyncIterable[ReduceRequest]:
+    """
+    This function is used to create an async generator
+    from the gRPC request iterator.
+    It yields a ReduceRequest instance for each request received which is then
+    forwarded to the task manager.
+    """
     async for d in request_iterator:
-        datum = Datum(
-            keys=list(d.keys),
-            value=d.value,
-            event_time=d.event_time.ToDatetime(),
-            watermark=d.watermark.ToDatetime(),
+        reduce_request = ReduceRequest(
+            operation=d.operation.event,
+            windows=d.operation.windows,
+            payload=Datum(
+                keys=list(d.payload.keys),
+                value=d.payload.value,
+                event_time=d.payload.event_time.ToDatetime(),
+                watermark=d.payload.watermark.ToDatetime(),
+            ),
         )
-        yield datum
+        yield reduce_request
 
 
 class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
@@ -51,11 +51,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         self,
         handler: Union[ReduceAsyncCallable, _ReduceBuilderClass],
     ):
-        # Collection for storing strong references to all running tasks.
-        # Event loop only keeps a weak reference, which can cause it to
-        # get lost during execution.
-        self.background_tasks = set()
-        # The reduce handler can be a function or a builder class instance.
+        # The Reduce handler can be a function or a builder class instance.
         self.__reduce_handler: Union[ReduceAsyncCallable, _ReduceBuilderClass] = handler
 
     async def ReduceFn(
@@ -66,109 +62,72 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         """
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto reduce_pb2_grpc.py file.
+
+        The lifecycle of the reduce operation is managed by the task manager. Which is created
+        for each new grpc call.
+
+        Whenever a new request is received, the task manager invokes the required
+        operation based on the request type.
+        1) If the request is for a new keyed window, a new task is created.
+           If the request is for an existing keyed window, the data is
+           appended to the task.
+
+        2) Once the request iterator is exhausted, the task manager sends EOF to all
+        the tasks, to signal them to stop reading the data from their respective iterators.
+
+        3) The task manager then waits for the tasks to complete and
+        yields the response from each task
+
         """
-
-        start, end = None, None
-        for metadata_key, metadata_value in context.invocation_metadata():
-            if metadata_key == WIN_START_TIME:
-                start = metadata_value
-            elif metadata_key == WIN_END_TIME:
-                end = metadata_value
-        if not (start or end):
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details(
-                f"Expected to have all key/window_start_time/window_end_time; "
-                f"got start: {start}, end: {end}."
-            )
-            yield reduce_pb2.ReduceResponse(results=[])
-            return
-
-        start_dt = datetime.fromtimestamp(int(start) / 1e3, timezone.utc)
-        end_dt = datetime.fromtimestamp(int(end) / 1e3, timezone.utc)
-        interval_window = IntervalWindow(start=start_dt, end=end_dt)
-
+        # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
-        response_task = asyncio.create_task(
-            self.__async_reduce_handler(interval_window, datum_iterator)
-        )
+        # Create a task manager instance
+        # The task manager is used to manage lifecycle of the tasks
+        # required for the reduce operation.
+        task_manager = TaskManager(handler=self.__reduce_handler)
 
-        # Save a reference to the result of this function, to avoid a
-        # task disappearing mid-execution.
-        self.background_tasks.add(response_task)
-        response_task.add_done_callback(lambda t: self.background_tasks.remove(t))
-
-        await response_task
-        results_futures = response_task.result()
-
+        # Start iterating through the request iterator and create tasks
+        # based on the operation type received.
         try:
-            for fut in results_futures:
+            async for request in datum_iterator:
+                # check whether the request is an open or append operation
+                if request.operation is int(WindowOperation.OPEN):
+                    # create a new task for the open operation
+                    # and inserts the request data into the task
+                    await task_manager.create_task(request)
+                elif request.operation is int(WindowOperation.APPEND):
+                    # append the task data to the existing task
+                    # if the task does not exist, it will create a new task
+                    await task_manager.append_task(request)
+        except Exception as e:
+            _LOGGER.critical("Reduce Error", exc_info=True)
+            context.set_code(grpc.StatusCode.UNKNOWN)
+            context.set_details(e.__str__())
+            raise e
+
+        # send EOF to all the tasks once the request iterator is exhausted
+        # This will signal the tasks to stop reading the data on their
+        # respective iterators.
+        await task_manager.stream_send_eof()
+
+        # Get the list of tasks from the task manager
+        res = task_manager.get_tasks()
+        try:
+            # iterate through the tasks and yield the response
+            # from each of them once the task is completed.
+            for task in res:
+                fut = task.future
                 await fut
-                yield reduce_pb2.ReduceResponse(results=fut.result())
+                # For each message in the task result, yield the response
+                for msg in fut.result():
+                    yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+                # yield the EOF response once the task is completed for a keyed window
+                yield reduce_pb2.ReduceResponse(window=task.window, EOF=True)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
-            yield reduce_pb2.ReduceResponse(results=[])
-
-    async def __async_reduce_handler(self, interval_window, datum_iterator: AsyncIterable[Datum]):
-        callable_dict = {}
-        # iterate through all the values
-        async for d in datum_iterator:
-            keys = d.keys()
-            unified_key = DELIMITER.join(keys)
-            result = callable_dict.get(unified_key, None)
-
-            if not result:
-                niter = NonBlockingIterator()
-                riter = niter.read_iterator()
-                # schedule an async task for consumer
-                # returns a future that will give the results later.
-                task = asyncio.create_task(
-                    self.__invoke_reduce(keys, riter, Metadata(interval_window=interval_window))
-                )
-                # Save a reference to the result of this function, to avoid a
-                # task disappearing mid-execution.
-                self.background_tasks.add(task)
-                task.add_done_callback(lambda t: self.background_tasks.remove(t))
-                result = ReduceResult(task, niter, keys)
-
-                callable_dict[unified_key] = result
-
-            await result.iterator.put(d)
-
-        for unified_key in callable_dict:
-            await callable_dict[unified_key].iterator.put(STREAM_EOF)
-
-        tasks = []
-        for unified_key in callable_dict:
-            fut = callable_dict[unified_key].future
-            tasks.append(fut)
-
-        return tasks
-
-    async def __invoke_reduce(
-        self, keys: list[str], request_iterator: AsyncIterable[Datum], md: Metadata
-    ):
-        new_instance = self.__reduce_handler
-        # If the reduce handler is a class instance, create a new instance of it.
-        # It is required for a new key to be processed by a
-        # new instance of the reducer for a given window
-        # Otherwise the function handler can be called directly
-        if isinstance(self.__reduce_handler, _ReduceBuilderClass):
-            new_instance = self.__reduce_handler.create()
-        try:
-            msgs = await new_instance(keys, request_iterator, md)
-        except Exception as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
-
-        datum_responses = []
-        for msg in msgs:
-            datum_responses.append(
-                reduce_pb2.ReduceResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
-            )
-
-        return datum_responses
+            raise e
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

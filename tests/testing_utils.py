@@ -33,11 +33,19 @@ def mock_watermark():
 
 
 def mock_interval_window_start():
-    return 1662998400000
+    event_time_timestamp = _timestamp_pb2.Timestamp()
+    t = datetime.fromtimestamp(1662998400000 / 1e3, timezone.utc)
+    event_time_timestamp.FromDatetime(dt=t)
+    # t = datetime.fromtimestamp(1662998400000, timezone.utc)
+    return event_time_timestamp
 
 
 def mock_interval_window_end():
-    return 1662998460000
+    event_time_timestamp = _timestamp_pb2.Timestamp()
+    t = datetime.fromtimestamp(1662998460000 / 1e3, timezone.utc)
+    event_time_timestamp.FromDatetime(dt=t)
+    # t = datetime.fromtimestamp(1662998460000, timezone.utc)
+    return event_time_timestamp
 
 
 def mock_start_time():

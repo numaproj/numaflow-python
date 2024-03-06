@@ -9,6 +9,7 @@ from pynumaflow.reducer._dtypes import (
     IntervalWindow,
     Metadata,
     Datum,
+    ReduceWindow,
 )
 from tests.testing_utils import (
     mock_message,
@@ -103,6 +104,16 @@ class TestMetadata(unittest.TestCase):
         m = Metadata(interval_window=i)
         self.assertEqual(type(i), type(m.interval_window))
         self.assertEqual(i, m.interval_window)
+
+
+class TestReducerWindow(unittest.TestCase):
+    def test_create_window(self):
+        rw = ReduceWindow(start=mock_start_time(), end=mock_end_time(), slot="slot-0")
+        i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
+        self.assertEqual(rw.window, i)
+        self.assertEqual(rw.start, mock_start_time())
+        self.assertEqual(rw.end, mock_end_time())
+        self.assertEqual(rw.slot, "slot-0")
 
 
 class TestReducerClass(unittest.TestCase):

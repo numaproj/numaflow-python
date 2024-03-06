@@ -4,3 +4,7 @@ class NoPublicConstructorError(TypeError):
 
 class SocketError(Exception):
     """To raise an error while creating socket or setting its property"""
+
+
+class UDFError(Exception):
+    """To Raise an error while executing a UDF call"""

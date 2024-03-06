@@ -20,6 +20,12 @@ from pynumaflow.types import NumaflowServicerContext
 async def datum_generator(
     request_iterator: AsyncIterable[reduce_pb2.ReduceRequest],
 ) -> AsyncIterable[ReduceRequest]:
+    """
+    This function is used to create an async generator
+    from the gRPC request iterator.
+    It yields a ReduceRequest instance for each request received which is then
+    forwarded to the task manager.
+    """
     async for d in request_iterator:
         reduce_request = ReduceRequest(
             operation=d.operation.event,
@@ -56,11 +62,29 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         """
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto reduce_pb2_grpc.py file.
+
+        The lifecycle of the reduce operation is managed by the task manager. Which is created
+        for each new grpc call.
+
+        Whenever a new request is received, the task manager invokes the required
+        operation based on the request type.
+        1) If the request is for a new keyed window, a new task is created.
+           If the request is for an existing keyed window, the data is
+           appended to the task.
+
+        2) Once the request iterator is exhausted, the task manager sends EOF to all
+        the tasks, to signal them to stop reading the data from their respective iterators.
+
+        3) The task manager then waits for the tasks to complete and
+        yields the response from each task
+
         """
         # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
         # Create a task manager instance
+        # The task manager is used to manage lifecycle of the tasks
+        # required for the reduce operation.
         task_manager = TaskManager(handler=self.__reduce_handler)
 
         # Start iterating through the request iterator and create tasks
@@ -86,16 +110,18 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         # respective iterators.
         await task_manager.stream_send_eof()
 
-        # get the results from all the tasks
+        # Get the list of tasks from the task manager
         res = task_manager.get_tasks()
         try:
             # iterate through the tasks and yield the response
-            # once the task is completed.
+            # from each of them once the task is completed.
             for task in res:
                 fut = task.future
                 await fut
+                # For each message in the task result, yield the response
                 for msg in fut.result():
                     yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+                # yield the EOF response once the task is completed for a keyed window
                 yield reduce_pb2.ReduceResponse(window=task.window, EOF=True)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)

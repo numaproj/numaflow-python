@@ -18,6 +18,10 @@ Ms = TypeVar("Ms", bound="Messages")
 class WindowOperation(IntEnum):
     """
     Enumerate the type of Window operation received.
+    The operation can be one of the following:
+    - OPEN: A new window is opened.
+    - CLOSE: The window is closed.
+    - APPEND: The window is appended with new data.
     """
 
     OPEN = (0,)
@@ -219,12 +223,12 @@ class ReduceWindow:
 
     @property
     def start(self):
-        """Returns the start point of the interval window."""
+        """Returns the start timestamp of the interval window."""
         return self._window.start
 
     @property
     def end(self):
-        """Returns the end point of the interval window."""
+        """Returns the end timestamp of the interval window."""
         return self._window.end
 
     @property
@@ -257,7 +261,14 @@ class Metadata:
 
 @dataclass
 class ReduceResult:
-    """Defines the object to hold the result of reduce computation."""
+    """
+    Defines the object to hold the result of reduce computation.
+    It contains the following
+    1. Future: The async awaitable result of computation
+    2. Iterator: The handle to the input queue
+    3. Key: The keys of the partition
+    4. Window: The window of the reduce operation
+    """
 
     __slots__ = ("_future", "_iterator", "_key", "_window")
 
@@ -304,17 +315,27 @@ class ReduceRequest:
 
     @property
     def operation(self) -> WindowOperation:
-        """Returns the future result of computation."""
+        """
+        Returns the operation of the reduce request.
+        The operation can be one of the following:
+        - OPEN: A new window is opened.
+        - CLOSE: The window is closed.
+        - APPEND: The window is appended with new data.
+        """
         return self._operation
 
     @property
     def windows(self) -> list[ReduceWindow]:
-        """Returns the handle to the producer queue."""
+        """
+        Returns the windows of the reduce request.
+        """
         return self._windows
 
     @property
     def payload(self) -> Datum:
-        """Returns the payload of the window."""
+        """
+        Returns the payload of the reduce request.
+        """
         return self._payload
 
 

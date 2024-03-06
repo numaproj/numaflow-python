@@ -22,7 +22,7 @@ from pynumaflow.reducer._dtypes import (
 )
 
 
-def get_unique_key(keys, window):
+def build_unique_key_name(keys, window):
     return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}:{DELIMITER.join(keys)}"
 
 
@@ -70,7 +70,7 @@ class TaskManager:
 
         d = req.payload
         keys = d.keys()
-        unified_key = get_unique_key(keys, req.windows[0])
+        unified_key = build_unique_key_name(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
 
         # If the task does not exist, create a new task
@@ -99,7 +99,7 @@ class TaskManager:
             raise UDFError("reduce create operation error: invalid number of windows")
         d = req.payload
         keys = d.keys()
-        unified_key = get_unique_key(keys, req.windows[0])
+        unified_key = build_unique_key_name(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
         if not result:
             await self.create_task(req)

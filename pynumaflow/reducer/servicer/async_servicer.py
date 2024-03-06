@@ -94,15 +94,16 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                 # check whether the request is an open or append operation
                 if request.operation is int(WindowOperation.OPEN):
                     # create a new task for the open operation
+                    # and inserts the request data into the task
                     await task_manager.create_task(request)
                 elif request.operation is int(WindowOperation.APPEND):
                     # append the task data to the existing task
+                    # if the task does not exist, it will create a new task
                     await task_manager.append_task(request)
         except Exception as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
-            yield reduce_pb2.ReduceResponse()
             raise e
 
         # send EOF to all the tasks once the request iterator is exhausted
@@ -126,7 +127,6 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
-            yield reduce_pb2.ReduceResponse()
             raise e
 
     async def IsReady(

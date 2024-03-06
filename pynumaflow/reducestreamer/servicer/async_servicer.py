@@ -77,7 +77,6 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
-            yield reduce_pb2.ReduceResponse()
             raise e
 
         try:
@@ -85,7 +84,6 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
-            yield reduce_pb2.ReduceResponse()
             raise e
 
     async def IsReady(

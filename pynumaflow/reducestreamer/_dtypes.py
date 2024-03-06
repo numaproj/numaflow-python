@@ -266,7 +266,7 @@ class Message:
         value: bytes,
         keys: list[str] = None,
         tags: list[str] = None,
-        window: ReduceWindow = None,
+        # window: ReduceWindow = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -274,7 +274,7 @@ class Message:
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""
-        self._window = window or None
+        # self._window = window or None
 
     # returns the Message Object which will be dropped
     @classmethod
@@ -293,9 +293,9 @@ class Message:
     def tags(self) -> list[str]:
         return self._tags
 
-    @property
-    def window(self) -> ReduceWindow:
-        return self._window
+    # @property
+    # def window(self) -> ReduceWindow:
+    #     return self._window
 
 
 class Messages(Sequence[M]):

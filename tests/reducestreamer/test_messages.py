@@ -1,6 +1,6 @@
 import unittest
 
-from pynumaflow.reducer import Messages, Message, DROP
+from pynumaflow.reducestreamer import Messages, Message, DROP
 from tests.testing_utils import mock_message
 
 

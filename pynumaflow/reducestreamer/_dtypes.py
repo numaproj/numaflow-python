@@ -254,12 +254,11 @@ class Message:
         tags: []string tags for conditional forwarding (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags", "_window")
+    __slots__ = ("_value", "_keys", "_tags")
 
     _value: bytes
     _keys: list[str]
     _tags: list[str]
-    _window: ReduceWindow
 
     def __init__(
         self,

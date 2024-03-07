@@ -5,7 +5,7 @@ from collections.abc import AsyncIterable
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow.reducer import Reducer, Messages
 
-from pynumaflow.reducer._dtypes import (
+from pynumaflow.reducestreamer._dtypes import (
     IntervalWindow,
     Metadata,
     Datum,

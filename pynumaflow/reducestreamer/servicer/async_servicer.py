@@ -37,9 +37,9 @@ async def datum_generator(
         yield reduce_request
 
 
-def get_exception_traceback_str(exc: Exception) -> str:
+def get_exception_traceback_str(exc) -> str:
     file = io.StringIO()
-    traceback.print_exception(exc, file=file)
+    traceback.print_exception(exc, value=exc, tb=exc.__traceback__, file=file)
     return file.getvalue().rstrip()
 
 

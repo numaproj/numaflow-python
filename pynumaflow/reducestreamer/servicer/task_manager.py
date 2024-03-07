@@ -197,15 +197,14 @@ class TaskManager:
             # Put the exception in the global result queue
             await self.global_result_queue.put(e)
 
-        # send EOF to all the tasks once the request iterator is exhausted
-        # This will signal the tasks to stop reading the data on their
-        # respective iterators.
-        await self.stream_send_eof()
-
-        # get the list of reduce tasks that are currently being processed
-        res = self.get_tasks()
-
         try:
+            # send EOF to all the tasks once the request iterator is exhausted
+            # This will signal the tasks to stop reading the data on their
+            # respective iterators.
+            await self.stream_send_eof()
+
+            # get the list of reduce tasks that are currently being processed
+            res = self.get_tasks()
             # iterate through the tasks and wait for them to complete
             for task in res:
                 # Once this is done, we know that the task has written all the results
@@ -225,13 +224,13 @@ class TaskManager:
                 # Send an EOF message to the global result queue
                 # This will signal that window has been processed
                 await self.global_result_queue.put(task.window)
+
+            # Once all tasks are completed, senf EOF the global result queue
+            await self.global_result_queue.put(STREAM_EOF)
         except Exception as e:
             err_msg = "Reduce Streaming Error: %r" % e.__str__()
             _LOGGER.critical(err_msg, exc_info=True)
             await self.global_result_queue.put(e)
-
-        # Once all tasks are completed, senf EOF the global result queue
-        await self.global_result_queue.put(STREAM_EOF)
 
     async def consumer(
         self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, window

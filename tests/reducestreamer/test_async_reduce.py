@@ -18,7 +18,7 @@ from pynumaflow.reducestreamer import (
     Metadata,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
-from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
+from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,

@@ -10,7 +10,7 @@ from pynumaflow.reducestreamer import (
     ReduceStreamAsyncServer,
     ReduceStreamer,
 )
-from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
+from pynumaflow.shared.asynciter import NonBlockingIterator
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
@@ -31,7 +31,7 @@ class ReduceSum(ReduceStreamer):
         async for msg in datums:
             val = int(msg.value)
             self.counter += val
-            if self.counter >= 30:
+            if self.counter >= 100:
                 msg = f"{self.counter}"
                 await output.put(Message(str.encode(msg), keys=keys))
                 self.counter = 0

@@ -8,7 +8,7 @@ from pynumaflow.reducestreamer import (
     ReduceStreamAsyncServer,
     ReduceStreamer,
 )
-from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
+from pynumaflow.shared.asynciter import NonBlockingIterator
 
 
 class ReduceCounter(ReduceStreamer):

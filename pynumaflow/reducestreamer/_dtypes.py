@@ -6,7 +6,7 @@ from enum import IntEnum
 from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
 
-from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
+from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")

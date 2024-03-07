@@ -5,7 +5,7 @@ from collections.abc import AsyncIterable
 
 from pynumaflow.exceptions import UDFError
 from pynumaflow.proto.reducer import reduce_pb2
-from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
+from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import (
     STREAM_EOF,
     DELIMITER,

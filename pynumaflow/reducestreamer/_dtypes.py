@@ -342,7 +342,7 @@ class Messages(Sequence[M]):
 
 
 ReduceStreamAsyncCallable = Callable[
-    [list[str], AsyncIterable[Datum], NonBlockingIterator, ReduceWindow], None
+    [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None
 ]
 
 
@@ -365,7 +365,7 @@ class ReduceStreamer(metaclass=ABCMeta):
         keys: list[str],
         datums: AsyncIterable[Datum],
         output: AsyncIterable[Message],
-        md: ReduceWindow,
+        md: Metadata,
     ):
         """
         Implement this handler function which implements the ReduceStreamCallable interface.

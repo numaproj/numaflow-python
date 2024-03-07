@@ -5,6 +5,7 @@ from typing import Union
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow._constants import _LOGGER
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducestreamer._dtypes import (
     Datum,
@@ -66,7 +67,11 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
 
         try:
             async for msg in consumer:
-                if isinstance(msg, reduce_pb2.Window):
+                if isinstance(msg, Exception):
+                    err_msg = "ReduceFn Error: %r" % msg.__str__()
+                    _LOGGER.critical(err_msg)
+                    raise msg
+                elif isinstance(msg, reduce_pb2.Window):
                     yield reduce_pb2.ReduceResponse(window=msg, EOF=True)
                 else:
                     yield msg

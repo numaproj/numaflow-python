@@ -9,14 +9,17 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
-from pynumaflow.reducer import (
+from pynumaflow.reducestreamer import (
     Messages,
     Message,
     Datum,
+    ReduceStreamAsyncServer,
+    ReduceStreamer,
+    ReduceWindow,
     Metadata,
-    ReduceAsyncServer,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
@@ -30,7 +33,7 @@ LOGGER = setup_logging(__name__)
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
-            request.keys.extend([f"key-{i}"])
+            request.payload.keys.extend([f"key-{i}"])
         yield request
 
 
@@ -77,21 +80,44 @@ def startup_callable(loop):
     loop.run_forever()
 
 
-async def err_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
-    interval_window = md.interval_window
+class ExampleClass(ReduceStreamer):
+    def __init__(self, counter):
+        self.counter = counter
+
+    async def handler(
+        self,
+        keys: list[str],
+        datums: AsyncIterable[Datum],
+        output: NonBlockingIterator,
+        md: Metadata,
+    ):
+        # print(md.start)
+        async for _ in datums:
+            print("HANDL-", self.counter)
+            self.counter += 1
+            if self.counter > 2:
+                msg = f"counter:{self.counter}"
+                await output.put(Message(str.encode(msg), keys=keys))
+                self.counter = 0
+                raise RuntimeError("Got a runtime error from reduce handler.")
+        raise RuntimeError("Got a runtime error from reduce handler.")
+        print("HAND-2")
+        msg = f"counter:{self.counter}"
+        await output.put(Message(str.encode(msg), keys=keys))
+
+
+async def reduce_handler_func(
+    keys: list[str], datums: AsyncIterable[Datum], md: ReduceWindow
+) -> Messages:
     counter = 0
     async for _ in datums:
         counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
-    raise RuntimeError("Got a runtime error from reduce handler.")
-    return Messages(Message(str.encode(msg), keys=keys))
+    msg = f"counter:{counter}"
+    return Messages(Message(str.encode(msg), keys=keys, window=md))
 
 
-def NewAsyncReducer():
-    server_instance = ReduceAsyncServer(err_handler)
+def NewAsyncReduceStreamer():
+    server_instance = ReduceStreamAsyncServer(ExampleClass, init_args=(0,))
     udfs = server_instance.servicer
 
     return udfs
@@ -109,7 +135,7 @@ async def start_server(udfs):
     await server.wait_for_termination()
 
 
-class TestAsyncReducerError(unittest.TestCase):
+class TestAsyncReduceStreamerErr(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         global _loop
@@ -117,7 +143,7 @@ class TestAsyncReducerError(unittest.TestCase):
         _loop = loop
         _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
         _thread.start()
-        udfs = NewAsyncReducer()
+        udfs = NewAsyncReduceStreamer()
         asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
         while True:
             try:

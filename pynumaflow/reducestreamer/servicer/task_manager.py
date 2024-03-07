@@ -19,6 +19,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceStreamAsyncCallable,
     ReduceWindow,
     WindowOperation,
+    Metadata,
 )
 
 
@@ -79,19 +80,20 @@ class TaskManager:
             niter = NonBlockingIterator()
             riter = niter.read_iterator()
             res_queue = NonBlockingIterator()
+
             consumer = asyncio.create_task(
                 self.consumer(res_queue, self.result_queue, req.windows[0])
             )
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
             self.background_tasks.add(consumer)
-            consumer.add_done_callback(lambda t: self.background_tasks.remove(t))
+            consumer.add_done_callback(self.clean_background)
 
             task = asyncio.create_task(self.__invoke_reduce(keys, riter, res_queue, req.windows[0]))
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
             self.background_tasks.add(task)
-            task.add_done_callback(lambda t: self.background_tasks.remove(t))
+            task.add_done_callback(self.clean_background)
             result = ReduceResult(task, niter, keys, req.windows[0], res_queue, consumer)
 
             # Save the result of the reduce operation to the task list
@@ -114,6 +116,7 @@ class TaskManager:
         if not result:
             await self.create_task(req)
         else:
+            # print(result)
             await result.iterator.put(d)
 
     async def __invoke_reduce(
@@ -133,9 +136,8 @@ class TaskManager:
         # Convert the window to a datetime object
         start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, timezone.utc)
         end_dt = datetime.fromtimestamp(int(window.end.ToMilliseconds()) / 1e3, timezone.utc)
-        IntervalWindow(start_dt, end_dt)
-        # md = Metadata(interval_window=interval_window)
-        ReduceWindow(start=start_dt, end=end_dt, slot=window.slot)
+        interval_window = IntervalWindow(start_dt, end_dt)
+        md = Metadata(interval_window=interval_window)
         # If the reduce handler is a class instance, create a new instance of it.
         # It is required for a new key to be processed by a
         # new instance of the reducer for a given window
@@ -143,18 +145,11 @@ class TaskManager:
         if isinstance(self.__reduce_handler, _ReduceStreamBuilderClass):
             new_instance = self.__reduce_handler.create()
         try:
-            _ = await new_instance(keys, request_iterator, output, window)
+            _ = await new_instance(keys, request_iterator, output, md)
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
-        #
-        # datum_responses = []
-        # for msg in msgs:
-        #     datum_responses.append(
-        #         reduce_pb2.ReduceResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
-        #     )
-        #
-        # return datum_responses
+            await self.result_queue.put(err)
+            # raise err
 
     async def producer(self, request_iterator: AsyncIterable[reduce_pb2.ReduceRequest]):
         # Start iterating through the request iterator and create tasks
@@ -169,7 +164,8 @@ class TaskManager:
                     # append the task data to the existing task
                     await self.append_task(request)
         except Exception as e:
-            raise e
+            _LOGGER.critical("Reduce streaming error", exc_info=True)
+            await self.result_queue.put(e)
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
@@ -198,7 +194,8 @@ class TaskManager:
                 # print("RES", task.window)
                 await self.result_queue.put(task.window)
         except Exception as e:
-            raise e
+            await self.result_queue.put(e)
+            # raise e
 
         # Once all tasks are completed, close the consumer queue
         await self.result_queue.put(STREAM_EOF)
@@ -211,3 +208,7 @@ class TaskManager:
             res = reduce_pb2.ReduceResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
             out = reduce_pb2.ReduceResponse(result=res, window=window)
             await output_queue.put(out)
+
+    def clean_background(self, task):
+        # print("Clean", task)
+        self.background_tasks.remove(task)

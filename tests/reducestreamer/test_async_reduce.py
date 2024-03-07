@@ -17,6 +17,7 @@ from pynumaflow.reducestreamer import (
     ReduceStreamAsyncServer,
     ReduceStreamer,
     ReduceWindow,
+    Metadata,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
@@ -50,7 +51,7 @@ def start_request() -> (Datum, tuple):
         watermark=watermark_timestamp,
     )
     operation = reduce_pb2.ReduceRequest.WindowOperation(
-        event=reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN,
+        event=reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND,
         windows=[window],
     )
     request = reduce_pb2.ReduceRequest(
@@ -83,16 +84,17 @@ class ExampleClass(ReduceStreamer):
         keys: list[str],
         datums: AsyncIterable[Datum],
         output: NonBlockingIterator,
-        md: ReduceWindow,
+        md: Metadata,
     ):
+        # print(md.start)
         async for _ in datums:
             self.counter += 1
             if self.counter > 2:
                 msg = f"counter:{self.counter}"
-                await output.put(Message(str.encode(msg), keys=keys, window=md))
+                await output.put(Message(str.encode(msg), keys=keys))
                 self.counter = 0
         msg = f"counter:{self.counter}"
-        await output.put(Message(str.encode(msg), keys=keys, window=md))
+        await output.put(Message(str.encode(msg), keys=keys))
 
 
 async def reduce_handler_func(
@@ -140,7 +142,6 @@ class TestAsyncReduceStreamer(unittest.TestCase):
                     f = grpc.channel_ready_future(channel)
                     f.result(timeout=10)
                     if f.done():
-                        print("TYEI")
                         break
             except grpc.FutureTimeoutError as e:
                 LOGGER.error("error trying to connect to grpc server")
@@ -155,7 +156,6 @@ class TestAsyncReduceStreamer(unittest.TestCase):
             LOGGER.error(e)
 
     def test_reduce(self) -> None:
-        print("HERE")
         stub = self.__stub()
         request, metadata = start_request()
         generator_response = None

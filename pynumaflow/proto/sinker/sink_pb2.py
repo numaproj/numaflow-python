@@ -26,9 +26,9 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "sink_pb2", _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
     _globals["DESCRIPTOR"]._options = None
-    _globals[
-        "DESCRIPTOR"
-    ]._serialized_options = b"Z6github.com/numaproj/numaflow-go/pkg/apis/proto/sink/v1"
+    _globals["DESCRIPTOR"]._serialized_options = (
+        b"Z6github.com/numaproj/numaflow-go/pkg/apis/proto/sink/v1"
+    )
     _globals["_SINKREQUEST"]._serialized_start = 86
     _globals["_SINKREQUEST"]._serialized_end = 235
     _globals["_READYRESPONSE"]._serialized_start = 237

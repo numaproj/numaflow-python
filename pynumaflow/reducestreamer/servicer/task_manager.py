@@ -130,7 +130,7 @@ class TaskManager:
         If the task does not exist, create it.
         """
         if len(req.windows) != 1:
-            raise UDFError("reduce create operation error: invalid number of windows")
+            raise UDFError("reduce append operation error: invalid number of windows")
         d = req.payload
         keys = d.keys()
         unified_key = build_unique_key_name(keys, req.windows[0])

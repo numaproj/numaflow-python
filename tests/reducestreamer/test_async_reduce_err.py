@@ -91,7 +91,6 @@ class ExampleClass(ReduceStreamer):
     ):
         # print(md.start)
         async for _ in datums:
-            print("HANDL-", self.counter)
             self.counter += 1
             if self.counter > 2:
                 msg = f"counter:{self.counter}"
@@ -99,7 +98,6 @@ class ExampleClass(ReduceStreamer):
                 self.counter = 0
                 raise RuntimeError("Got a runtime error from reduce handler.")
         raise RuntimeError("Got a runtime error from reduce handler.")
-        print("HAND-2")
         msg = f"counter:{self.counter}"
         await output.put(Message(str.encode(msg), keys=keys))
 
@@ -199,9 +197,24 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
                 counter += 1
         except Exception as err:
             self.assertTrue(
+                "reduce append operation error: invalid number of windows" in err.__str__()
+            )
+            return
+
+        try:
+            request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+            generator_response = stub.ReduceFn(
+                request_iterator=request_generator(count=10, request=request)
+            )
+            counter = 0
+            for _ in generator_response:
+                counter += 1
+        except Exception as err:
+            self.assertTrue(
                 "reduce create operation error: invalid number of windows" in err.__str__()
             )
             return
+        self.fail("Expected an exception.")
         self.fail("Expected an exception.")
 
     def __stub(self):

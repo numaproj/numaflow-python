@@ -33,6 +33,11 @@ def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
             request.payload.keys.extend([f"key-{i}"])
+
+        if i % 2:
+            request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+        else:
+            request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND
         yield request
 
 

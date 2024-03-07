@@ -54,7 +54,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
     A new servicer instance is created and attached to the server.
     The server instance is returned.
     Args:
-        reduce_stream_handler: The reducer instance to be used for Reduce UDF
+        reduce_stream_handler: The reducer instance to be used for Reduce Streaming UDF
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -70,31 +70,36 @@ class ReduceStreamAsyncServer(NumaflowServer):
                 self.counter = counter
 
             async def handler(
-                self, keys: list[str], datums: AsyncIterable[Datum],
-                output: AsyncIterable[ReduceResult]
-                md: Metadata
-            ) -> Messages:
-                interval_window = md.interval_window
+                self,
+                keys: list[str],
+                datums: AsyncIterable[Datum],
+                output: NonBlockingIterator,
+                md: Metadata,
+            ):
                 async for _ in datums:
                     self.counter += 1
-                msg = (
-                    f"counter:{self.counter} interval_window_start:{interval_window.start} "
-                    f"interval_window_end:{interval_window.end}"
-                )
-                return Messages(Message(str.encode(msg), keys=keys))
+                    if self.counter > 20:
+                        msg = f"counter:{self.counter}"
+                        await output.put(Message(str.encode(msg), keys=keys))
+                        self.counter = 0
+                msg = f"counter:{self.counter}"
+                await output.put(Message(str.encode(msg), keys=keys))
 
-        async def reduce_handler(keys: list[str],
-                                datums: AsyncIterable[Datum],
-                                md: Metadata) -> Messages:
-            interval_window = md.interval_window
+        async def reduce_handler(
+                keys: list[str],
+                datums: AsyncIterable[Datum],
+                output: NonBlockingIterator,
+                md: Metadata,
+            ):
             counter = 0
             async for _ in datums:
                 counter += 1
-            msg = (
-                f"counter:{counter} interval_window_start:{interval_window.start} "
-                f"interval_window_end:{interval_window.end}"
-            )
-            return Messages(Message(str.encode(msg), keys=keys))
+                if counter > 20:
+                    msg = f"counter:{counter}"
+                    await output.put(Message(str.encode(msg), keys=keys))
+                    counter = 0
+            msg = f"counter:{counter}"
+            await output.put(Message(str.encode(msg), keys=keys))
 
         if __name__ == "__main__":
             invoke = os.getenv("INVOKE", "func_handler")

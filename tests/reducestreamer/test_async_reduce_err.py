@@ -10,12 +10,10 @@ from grpc.aio._server import Server
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.reducestreamer import (
-    Messages,
     Message,
     Datum,
     ReduceStreamAsyncServer,
     ReduceStreamer,
-    ReduceWindow,
     Metadata,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
@@ -107,13 +105,21 @@ class ExampleClass(ReduceStreamer):
 
 
 async def reduce_handler_func(
-    keys: list[str], datums: AsyncIterable[Datum], md: ReduceWindow
-) -> Messages:
+    keys: list[str],
+    datums: AsyncIterable[Datum],
+    output: NonBlockingIterator,
+    md: Metadata,
+):
     counter = 0
     async for _ in datums:
         counter += 1
+        if counter > 2:
+            msg = f"counter:{counter}"
+            await output.put(Message(str.encode(msg), keys=keys))
+            counter = 0
+    raise RuntimeError("Got a runtime error from reduce handler.")
     msg = f"counter:{counter}"
-    return Messages(Message(str.encode(msg), keys=keys, window=md))
+    await output.put(Message(str.encode(msg), keys=keys))
 
 
 def NewAsyncReduceStreamer():

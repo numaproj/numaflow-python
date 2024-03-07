@@ -23,7 +23,12 @@ from pynumaflow.reducestreamer._dtypes import (
 )
 
 
-def get_unique_key(keys, window):
+def build_unique_key_name(keys, window):
+    """
+    Builds a unique key name for the given keys and window.
+    The key name is used to identify the reduce task.
+    The format is: start_time:end_time:key1:key2:...
+    """
     return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}:{DELIMITER.join(keys)}"
 
 
@@ -42,8 +47,12 @@ class TaskManager:
         self.background_tasks = set()
         # Handler for the reduce operation
         self.__reduce_handler = handler
-        self.result_queue = NonBlockingIterator()
-        _LOGGER.info("MYDEBUG: TM CREATED FN")
+        # Queue to store the results of the reduce operation
+        # This queue is used to send the results to the client
+        # once the reduce operation is completed.
+        # This queue is also used to send the error/exceptions to the client
+        # if the reduce operation fails.
+        self.global_result_queue = NonBlockingIterator()
 
     def get_tasks(self):
         """
@@ -67,35 +76,46 @@ class TaskManager:
         Based on the request we compute a unique key, and then
         it creates a new task or appends the request to the existing task.
         """
-        _LOGGER.info("MYDEBUG: GOT CRE")
         # if len of windows in request != 1, raise error
         if len(req.windows) != 1:
             raise UDFError("reduce create operation error: invalid number of windows")
 
         d = req.payload
         keys = d.keys()
-        unified_key = get_unique_key(keys, req.windows[0])
+        unified_key = build_unique_key_name(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
 
         # If the task does not exist, create a new task
         if not result:
             niter = NonBlockingIterator()
             riter = niter.read_iterator()
+            # Create a new result queue for the current task
+            # We create a new result queue for each task, so that
+            # the results of the reduce operation can be sent to the
+            # the global result queue, which in turn sends the results
+            # to the client.
             res_queue = NonBlockingIterator()
 
+            # Create a new consumer task for the current, this will read from the
+            # result queue specicially for the current task and update the
+            # global result queue
             consumer = asyncio.create_task(
-                self.consumer(res_queue, self.result_queue, req.windows[0])
+                self.consumer(res_queue, self.global_result_queue, req.windows[0])
             )
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
             self.background_tasks.add(consumer)
             consumer.add_done_callback(self.clean_background)
 
+            # Create a new task for the reduce operation, this will invoke the
+            # reduce handler with the given keys, request iterator, and window.
             task = asyncio.create_task(self.__invoke_reduce(keys, riter, res_queue, req.windows[0]))
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
             self.background_tasks.add(task)
             task.add_done_callback(self.clean_background)
+
+            # Create a new ReduceResult object to store the task information
             result = ReduceResult(task, niter, keys, req.windows[0], res_queue, consumer)
 
             # Save the result of the reduce operation to the task list
@@ -113,7 +133,7 @@ class TaskManager:
             raise UDFError("reduce create operation error: invalid number of windows")
         d = req.payload
         keys = d.keys()
-        unified_key = get_unique_key(keys, req.windows[0])
+        unified_key = build_unique_key_name(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
         if not result:
             await self.create_task(req)
@@ -134,7 +154,6 @@ class TaskManager:
         reduce operation.
         """
         new_instance = self.__reduce_handler
-        _LOGGER.info("MYDEBUG: INVOKE RED")
 
         # Convert the window to a datetime object
         start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, timezone.utc)
@@ -149,73 +168,79 @@ class TaskManager:
             new_instance = self.__reduce_handler.create()
         try:
             _ = await new_instance(keys, request_iterator, output, md)
-            _LOGGER.info("MYDEBUG: DONE REQ")
+        # If there is an error in the reduce operation, log and
+        # then send the error to the result queue
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await self.result_queue.put(err)
-            # raise err
+            # Put the exception in the result queue
+            await self.global_result_queue.put(err)
 
     async def producer(self, request_iterator: AsyncIterable[reduce_pb2.ReduceRequest]):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
-        _LOGGER.info("MYDEBUG: IN PROD FN")
         try:
             async for request in request_iterator:
-                _LOGGER.info("MYDEBUG: GOT REQ")
                 # check whether the request is an open or append operation
                 if request.operation is int(WindowOperation.OPEN):
-                    # create a new task for the open operation
+                    # create a new task for the open operation and
+                    # put the request in the task iterator
                     await self.create_task(request)
                 elif request.operation is int(WindowOperation.APPEND):
                     # append the task data to the existing task
+                    # if the task does not exist, create a new task
                     await self.append_task(request)
+        # If there is an error in the reduce operation, log and
+        # then send the error to the result queue
         except Exception as e:
-            _LOGGER.critical("Reduce streaming error", exc_info=True)
-            await self.result_queue.put(e)
+            err_msg = "Reduce Streaming Error: %r" % e.__str__()
+            _LOGGER.critical(err_msg, exc_info=True)
+            # Put the exception in the global result queue
+            await self.global_result_queue.put(e)
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
         # respective iterators.
         await self.stream_send_eof()
 
-        # get the results from all the tasks
+        # get the list of reduce tasks that are currently being processed
         res = self.get_tasks()
 
-        _LOGGER.info("MYDEBUG: GERRE")
-
         try:
-            # iterate through the tasks and yield the response
-            # once the task is completed.
+            # iterate through the tasks and wait for them to complete
             for task in res:
-                _LOGGER.info("MYDEBUG: GERRE-0")
-
+                # Once this is done, we know that the task has written all the results
+                # to the local result queue
                 fut = task.future
                 await fut
-                _LOGGER.info("MYDEBUG: GERRE-1")
 
-                # con_future = task.consumer_future
-                # await con_future
-                # for msg in fut.result():
-                #     yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+                # Send an EOF message to the local result queue
+                # This will signal that the task has completed processing
                 await task.result_queue.put(STREAM_EOF)
-                _LOGGER.info("MYDEBUG: GERRE-2")
 
+                # Wait for the local queue to write
+                # all the results to the global result queue
                 con_future = task.consumer_future
                 await con_future
-                _LOGGER.info("MYDEBUG: GERRE-3")
 
-                # print("RES", task.window)
-                await self.result_queue.put(task.window)
+                # Send an EOF message to the global result queue
+                # This will signal that window has been processed
+                await self.global_result_queue.put(task.window)
         except Exception as e:
-            await self.result_queue.put(e)
-            # raise e
+            err_msg = "Reduce Streaming Error: %r" % e.__str__()
+            _LOGGER.critical(err_msg, exc_info=True)
+            await self.global_result_queue.put(e)
 
-        # Once all tasks are completed, close the consumer queue
-        await self.result_queue.put(STREAM_EOF)
+        # Once all tasks are completed, senf EOF the global result queue
+        await self.global_result_queue.put(STREAM_EOF)
 
     async def consumer(
         self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, window
     ):
+        """
+        This task is for given Reduce task.
+        This would from the local result queue for the task and then write
+        to the global result queue
+        """
         reader = input_queue.read_iterator()
         async for msg in reader:
             res = reduce_pb2.ReduceResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
@@ -223,6 +248,7 @@ class TaskManager:
             await output_queue.put(out)
 
     def clean_background(self, task):
-        # print("Clean", task)
-        _LOGGER.info("MYDEBUG: CLEAN")
+        """
+        Remove the task from the background tasks collection
+        """
         self.background_tasks.remove(task)

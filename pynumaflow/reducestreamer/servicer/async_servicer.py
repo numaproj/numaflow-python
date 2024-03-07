@@ -20,6 +20,7 @@ from pynumaflow.types import NumaflowServicerContext
 async def datum_generator(
     request_iterator: AsyncIterable[reduce_pb2.ReduceRequest],
 ) -> AsyncIterable[ReduceRequest]:
+    """Generate a ReduceRequest from a ReduceRequest proto message."""
     async for d in request_iterator:
         reduce_request = ReduceRequest(
             operation=d.operation.event,
@@ -56,36 +57,60 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto reduce_pb2_grpc.py file.
         """
-        _LOGGER.info("MYDEBUG: IN REDUCE FN")
         # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
         # Create a task manager instance
         task_manager = TaskManager(handler=self.__reduce_handler)
 
-        consumer = task_manager.result_queue.read_iterator()
+        # Create a consumer task to read from the result queue
+        # All the results from the reduce function will be sent to the result queue
+        # We will read from the result queue and send the results to the client
+        consumer = task_manager.global_result_queue.read_iterator()
+
+        # Create a producer task in the task manager, this would read from the datum iterator
+        # and then create the required tasks to process the data requests
+        # The results from these tasks are then sent to the result queue
         producer = asyncio.create_task(task_manager.producer(datum_iterator))
 
+        # Start the consumer task where we read from the result queue
+        # and send the results to the client
+        # The task manager can write the following to the result queue:
+        # 1. A reduce_pb2.ReduceResponse message
+        # This is the result of the reduce function, it contains the window and the
+        # result of the reduce function
+        # The result of the reduce function is a reduce_pb2.ReduceResponse message and can be
+        # directly sent to the client
+        #
+        # 2. An Exception
+        # Any exceptions that occur during the processing reduce function tasks are
+        # sent to the result queue. We then forward these exception to the client
+        #
+        # 3. A reduce_pb2.Window message
+        # This is a special message that indicates the end of the processing for a window
+        # When we get this message, we send an EOF message to the client
         try:
             async for msg in consumer:
-                _LOGGER.info("MYDEBUG: GOT MSG")
+                # If the message is an exception, we raise the exception
                 if isinstance(msg, Exception):
+                    # print(traceback.format_tb(msg.__traceback__))
                     err_msg = "ReduceFn Error: %r" % msg.__str__()
                     _LOGGER.critical(err_msg)
+                    context.set_code(grpc.StatusCode.UNKNOWN)
+                    context.set_details(err_msg.__str__())
                     raise msg
+                # If the message is a window, we send an EOF message to the
+                # client for the given window
                 elif isinstance(msg, reduce_pb2.Window):
                     yield reduce_pb2.ReduceResponse(window=msg, EOF=True)
+                # Else we send the result of the reduce function to the client
                 else:
                     yield msg
-                    # res = reduce_pb2.ReduceResponse.Result(
-                    #     keys=msg.keys, value=msg.value, tags=msg.tags
-                    # )
-                    # yield reduce_pb2.ReduceResponse(result=res, window=msg.window)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())
             raise e
-
+        # Wait for the producer task to finish for a clean exit
         try:
             await producer
         except Exception as e:

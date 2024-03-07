@@ -1,6 +1,5 @@
 from pynumaflow.reducestreamer._dtypes import (
     Message,
-    Messages,
     Datum,
     IntervalWindow,
     Metadata,
@@ -12,7 +11,6 @@ from pynumaflow.reducestreamer.async_server import ReduceStreamAsyncServer
 
 __all__ = [
     "Message",
-    "Messages",
     "Datum",
     "IntervalWindow",
     "Metadata",

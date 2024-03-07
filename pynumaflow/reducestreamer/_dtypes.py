@@ -1,18 +1,15 @@
 from abc import ABCMeta, abstractmethod
 from asyncio import Task
-from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
 from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
-from warnings import warn
 
 from pynumaflow.reducestreamer.servicer.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
-Ms = TypeVar("Ms", bound="Messages")
 
 
 class WindowOperation(IntEnum):
@@ -171,7 +168,7 @@ class Metadata:
 
 @dataclass
 class ReduceResult:
-    """Defines the object to hold the result of reduce computation."""
+    """Defines the object to hold the result of reduce streaming computation."""
 
     __slots__ = ("_future", "_iterator", "_key", "_window", "_result_queue", "_consumer_future")
 
@@ -199,16 +196,17 @@ class ReduceResult:
 
     @property
     def window(self) -> ReduceWindow:
-        """TODO"""
+        """Returns the window for the current reduce request"""
         return self._window
 
     @property
     def result_queue(self):
-        """TODO"""
+        """Returns the async queue used to write the output for the tasks"""
         return self._result_queue
 
     @property
     def consumer_future(self):
+        """Returns the async consumer task for the result queue"""
         return self._consumer_future
 
 
@@ -265,7 +263,6 @@ class Message:
         value: bytes,
         keys: list[str] = None,
         tags: list[str] = None,
-        # window: ReduceWindow = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -292,53 +289,6 @@ class Message:
     def tags(self) -> list[str]:
         return self._tags
 
-    # @property
-    # def window(self) -> ReduceWindow:
-    #     return self._window
-
-
-class Messages(Sequence[M]):
-    """
-    Class to define a list of Message objects.
-
-    Args:
-        messages: list of Message objects.
-    """
-
-    __slots__ = ("_messages",)
-
-    def __init__(self, *messages: M):
-        self._messages = list(messages) or []
-
-    def __str__(self) -> str:
-        return str(self._messages)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def __len__(self) -> int:
-        return len(self._messages)
-
-    def __iter__(self) -> Iterator[M]:
-        return iter(self._messages)
-
-    def __getitem__(self, index: int) -> M:
-        if isinstance(index, slice):
-            raise TypeError("Slicing is not supported for Messages")
-        return self._messages[index]
-
-    def append(self, message: Message) -> None:
-        self._messages.append(message)
-
-    def items(self) -> list[Message]:
-        warn(
-            "Using items is deprecated and will be removed in v0.5. "
-            "Iterate or index the Messages object instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._messages
-
 
 ReduceStreamAsyncCallable = Callable[
     [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None
@@ -363,7 +313,7 @@ class ReduceStreamer(metaclass=ABCMeta):
         self,
         keys: list[str],
         datums: AsyncIterable[Datum],
-        output: AsyncIterable[Message],
+        output: NonBlockingIterator,
         md: Metadata,
     ):
         """

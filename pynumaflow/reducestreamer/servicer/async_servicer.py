@@ -1,4 +1,6 @@
 import asyncio
+import io
+import traceback
 from collections.abc import AsyncIterable
 from typing import Union
 
@@ -33,6 +35,21 @@ async def datum_generator(
             ),
         )
         yield reduce_request
+
+
+def get_exception_traceback_str(exc: Exception) -> str:
+    file = io.StringIO()
+    traceback.print_exception(exc, file=file)
+    return file.getvalue().rstrip()
+
+
+async def handle_error(context: NumaflowServicerContext, e: Exception):
+    trace = get_exception_traceback_str(e)
+    _LOGGER.critical(trace)
+    _LOGGER.critical(e.__str__())
+    context.set_code(grpc.StatusCode.UNKNOWN)
+    context.set_details(e.__str__())
+    return context
 
 
 class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
@@ -93,11 +110,7 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, Exception):
-                    # print(traceback.format_tb(msg.__traceback__))
-                    err_msg = "ReduceFn Error: %r" % msg.__str__()
-                    _LOGGER.critical(err_msg)
-                    context.set_code(grpc.StatusCode.UNKNOWN)
-                    context.set_details(err_msg.__str__())
+                    await handle_error(context, msg)
                     raise msg
                 # If the message is a window, we send an EOF message to the
                 # client for the given window
@@ -107,15 +120,13 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
                 else:
                     yield msg
         except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(e.__str__())
+            await handle_error(context, e)
             raise e
         # Wait for the producer task to finish for a clean exit
         try:
             await producer
         except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(e.__str__())
+            await handle_error(context)
             raise e
 
     async def IsReady(

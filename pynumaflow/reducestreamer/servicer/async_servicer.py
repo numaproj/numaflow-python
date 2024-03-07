@@ -56,6 +56,7 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto reduce_pb2_grpc.py file.
         """
+        _LOGGER.info("MYDEBUG: IN REDUCE FN")
         # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
@@ -67,6 +68,7 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
 
         try:
             async for msg in consumer:
+                _LOGGER.info("MYDEBUG: GOT MSG")
                 if isinstance(msg, Exception):
                     err_msg = "ReduceFn Error: %r" % msg.__str__()
                     _LOGGER.critical(err_msg)

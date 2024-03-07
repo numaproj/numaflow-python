@@ -43,6 +43,7 @@ class TaskManager:
         # Handler for the reduce operation
         self.__reduce_handler = handler
         self.result_queue = NonBlockingIterator()
+        _LOGGER.info("MYDEBUG: TM CREATED FN")
 
     def get_tasks(self):
         """
@@ -66,6 +67,7 @@ class TaskManager:
         Based on the request we compute a unique key, and then
         it creates a new task or appends the request to the existing task.
         """
+        _LOGGER.info("MYDEBUG: GOT CRE")
         # if len of windows in request != 1, raise error
         if len(req.windows) != 1:
             raise UDFError("reduce create operation error: invalid number of windows")
@@ -132,6 +134,7 @@ class TaskManager:
         reduce operation.
         """
         new_instance = self.__reduce_handler
+        _LOGGER.info("MYDEBUG: INVOKE RED")
 
         # Convert the window to a datetime object
         start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, timezone.utc)
@@ -146,6 +149,7 @@ class TaskManager:
             new_instance = self.__reduce_handler.create()
         try:
             _ = await new_instance(keys, request_iterator, output, md)
+            _LOGGER.info("MYDEBUG: DONE REQ")
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             await self.result_queue.put(err)
@@ -154,8 +158,10 @@ class TaskManager:
     async def producer(self, request_iterator: AsyncIterable[reduce_pb2.ReduceRequest]):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
+        _LOGGER.info("MYDEBUG: IN PROD FN")
         try:
             async for request in request_iterator:
+                _LOGGER.info("MYDEBUG: GOT REQ")
                 # check whether the request is an open or append operation
                 if request.operation is int(WindowOperation.OPEN):
                     # create a new task for the open operation
@@ -175,21 +181,28 @@ class TaskManager:
         # get the results from all the tasks
         res = self.get_tasks()
 
+        _LOGGER.info("MYDEBUG: GERRE")
+
         try:
             # iterate through the tasks and yield the response
             # once the task is completed.
             for task in res:
+                _LOGGER.info("MYDEBUG: GERRE-0")
+
                 fut = task.future
                 await fut
+                _LOGGER.info("MYDEBUG: GERRE-1")
 
                 # con_future = task.consumer_future
                 # await con_future
                 # for msg in fut.result():
                 #     yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
                 await task.result_queue.put(STREAM_EOF)
+                _LOGGER.info("MYDEBUG: GERRE-2")
 
                 con_future = task.consumer_future
                 await con_future
+                _LOGGER.info("MYDEBUG: GERRE-3")
 
                 # print("RES", task.window)
                 await self.result_queue.put(task.window)
@@ -211,4 +224,5 @@ class TaskManager:
 
     def clean_background(self, task):
         # print("Clean", task)
+        _LOGGER.info("MYDEBUG: CLEAN")
         self.background_tasks.remove(task)

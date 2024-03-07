@@ -363,7 +363,7 @@ class ReduceStreamer(metaclass=ABCMeta):
         self,
         keys: list[str],
         datums: AsyncIterable[Datum],
-        output: AsyncIterable[Message],
+        output: NonBlockingIterator,
         md: Metadata,
     ):
         """

@@ -26,10 +26,15 @@ from pynumaflow.reducestreamer._dtypes import (
 def build_unique_key_name(keys, window):
     """
     Builds a unique key name for the given keys and window.
-    The key name is used to identify the reduce task.
+    The key name is used to identify the Reduce task.
     The format is: start_time:end_time:key1:key2:...
     """
     return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}:{DELIMITER.join(keys)}"
+
+
+def create_window_eof_response(window):
+    """Create a Reduce response with EOF=True for a given window"""
+    return reduce_pb2.ReduceResponse(window=window, EOF=True)
 
 
 class TaskManager:
@@ -83,10 +88,10 @@ class TaskManager:
         d = req.payload
         keys = d.keys()
         unified_key = build_unique_key_name(keys, req.windows[0])
-        result = self.tasks.get(unified_key, None)
+        curr_task = self.tasks.get(unified_key, None)
 
         # If the task does not exist, create a new task
-        if not result:
+        if not curr_task:
             niter = NonBlockingIterator()
             riter = niter.read_iterator()
             # Create a new result queue for the current task
@@ -116,15 +121,15 @@ class TaskManager:
             task.add_done_callback(self.clean_background)
 
             # Create a new ReduceResult object to store the task information
-            result = ReduceResult(task, niter, keys, req.windows[0], res_queue, consumer)
+            curr_task = ReduceResult(task, niter, keys, req.windows[0], res_queue, consumer)
 
             # Save the result of the reduce operation to the task list
-            self.tasks[unified_key] = result
+            self.tasks[unified_key] = curr_task
 
         # Put the request in the iterator
-        await result.iterator.put(d)
+        await curr_task.iterator.put(d)
 
-    async def append_task(self, req):
+    async def send_datum_to_task(self, req):
         """
         Appends the request to the existing window reduce task.
         If the task does not exist, create it.
@@ -188,7 +193,7 @@ class TaskManager:
                 elif request.operation is int(WindowOperation.APPEND):
                     # append the task data to the existing task
                     # if the task does not exist, create a new task
-                    await self.append_task(request)
+                    await self.send_datum_to_task(request)
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
         except Exception as e:
@@ -204,9 +209,8 @@ class TaskManager:
             await self.stream_send_eof()
 
             # get the list of reduce tasks that are currently being processed
-            res = self.get_tasks()
             # iterate through the tasks and wait for them to complete
-            for task in res:
+            for task in self.get_tasks():
                 # Once this is done, we know that the task has written all the results
                 # to the local result queue
                 fut = task.future
@@ -217,13 +221,14 @@ class TaskManager:
                 await task.result_queue.put(STREAM_EOF)
 
                 # Wait for the local queue to write
-                # all the results to the global result queue
+                # all the results of this task to the global result queue
                 con_future = task.consumer_future
                 await con_future
 
                 # Send an EOF message to the global result queue
                 # This will signal that window has been processed
-                await self.global_result_queue.put(task.window)
+                eof_window_msg = create_window_eof_response(window=task.window)
+                await self.global_result_queue.put(eof_window_msg)
 
             # Once all tasks are completed, senf EOF the global result queue
             await self.global_result_queue.put(STREAM_EOF)

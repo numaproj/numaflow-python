@@ -74,9 +74,6 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         Applies a reduce function to a datum stream.
         The pascal case function name comes from the proto reduce_pb2_grpc.py file.
         """
-        # Create an async iterator from the request iterator
-        datum_iterator = datum_generator(request_iterator=request_iterator)
-
         # Create a task manager instance
         task_manager = TaskManager(handler=self.__reduce_handler)
 
@@ -84,6 +81,9 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         # All the results from the reduce function will be sent to the result queue
         # We will read from the result queue and send the results to the client
         consumer = task_manager.global_result_queue.read_iterator()
+
+        # Create an async iterator from the request iterator
+        datum_iterator = datum_generator(request_iterator=request_iterator)
 
         # Create a producer task in the task manager, this would read from the datum iterator
         # and then create the required tasks to process the data requests
@@ -112,11 +112,8 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
                 if isinstance(msg, Exception):
                     await handle_error(context, msg)
                     raise msg
-                # If the message is a window, we send an EOF message to the
-                # client for the given window
-                elif isinstance(msg, reduce_pb2.Window):
-                    yield reduce_pb2.ReduceResponse(window=msg, EOF=True)
-                # Else we send the result of the reduce function to the client
+                # Send window EOF response or Window result response
+                # back to the client
                 else:
                     yield msg
         except Exception as e:

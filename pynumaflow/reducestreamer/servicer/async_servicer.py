@@ -103,7 +103,7 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         # Any exceptions that occur during the processing reduce function tasks are
         # sent to the result queue. We then forward these exception to the client
         #
-        # 3. A reduce_pb2.Window message
+        # 3. A reduce_pb2.ReduceResponse message with EOF=True
         # This is a special message that indicates the end of the processing for a window
         # When we get this message, we send an EOF message to the client
         try:

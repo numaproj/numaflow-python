@@ -6,9 +6,9 @@ This example is for numaflow-python contributors/developers. The example include
 
 1. Install [Poetry](https://python-poetry.org/docs/) before starting your test. Make sure you have the correct Python version.
 2. Push your code change to your branch.
-3. Update the `pynumaflow` dependency in `pyproject.toml` file with your (forked) repo url and your branch name. For example, `pynumaflow = {git = "https://github.com/chromevoid/numaflow-python", rev = "test-branch"}`
+3. Update the `pynumaflow` dependency in the `pyproject.toml` file with your (forked) repo url and your branch name. For example, `pynumaflow = {git = "https://github.com/chromevoid/numaflow-python", rev = "test-branch"}`
 4. Run `poetry update -vv` from this `developer_guide` folder. You should get a `poetry.lock` file.
-5. Update your `example.py` in the `Makefile` as needed.
+5. Update your `example.py` as/if needed.
 6. Run `make image` to build your image.
 7. Now you have the image with your customized example and your code change to test in a numaflow pipeline. Example pipeline `pipeline-numaflow.yaml` is also provided in this `developer_guide` folder. Please check [numaflow](https://numaflow.numaproj.io/) for more details.
 
@@ -35,27 +35,45 @@ Once you have confirmed that your changes pass local testing:
 1. Revert the `pyproject.toml` file to its previous state, i.e. before you updated it with your forked repo and branch
 2. Create a PR for your changes
 
-Once the PR has been merged it is important to update the pynumaflow dependency to point to the merged commit SHA. Thus,
-before you delete/leave your branch:
-
-1.
+Once the PR has been merged it is important that the pynumaflow dependency of the example images use the merged commit SHA
+as reference. Thus, before you delete/leave your branch, run:
 ```shell
 ./hack/update_examples.sh -u <commit-sha>
-```
-
-2.
-```shell
 ./hack/update_examples.sh -bp
 ```
 
-The above commands will update the pynumaflow dependency to the specified commit SHA, and build and push the image, respectively,
+The above commands will update the pynumaflow dependency to the specified commit SHA, and build, tag, and push the image, respectively,
 across all example directories. Since we do not want to flood the commit history with dependency updates, it is not necessary
-to create a second PR with these changes. Thus, although in the remote repository it will still show the old commit SHA
-the pipelines will be using the most up to date image.
+to create a second PR with these changes.
+
+It is not necessary as due to the commands above, the images will be running with the latest commit SHA, i.e. their
+pynumaflow dependency in the `pyproject.toml` will be
+`pynumaflow = {git = "https://github.com/numaproj/numaflow-python.git", rev = "latest-sha"}` while the repo itself will show
+`pynumaflow = "~<latest-version>"`. As a result, the server information will always print the correct SDK version in the logs, and
+the example images will always be using the latest commit SHA.
+
 
 ### Releasing
 
-In order to resolve the dependency drift issue mentioned above (what is actually being used vs what is displayed in the `pyproject.toml`
-files of the examples), everytime a new version of pynumaflow is released, i.e. a release branch is merged, a workflow will be
-triggered to update the `pyproject.toml` files to the newest version and then build, tag, and push the example images. This way,
-the latest version will always be shown, while the latest commit sha of that version will always be in use.
+Once a new release has been made, and its corresponding version tag exists on the remote repo, we want to update the dependency
+management files to reflect this new version:
+
+1. Update the root level `pyproject.toml` to the new version, by running the following in the root level directory:
+    ```shell
+    poetry version <version>
+    ```
+2. Then run:
+    ```shell
+    ./hack/update_examples.sh -r <version>
+    ```
+This will update the `pyproject.toml` files in all the example directories to depend on the latest version that
+was just released.
+3. Create a PR for these changes.
+
+Once your changes have been merged, similar to the deployment steps above, before deleting/leaving your branch, update
+the example images to use the merged commit SHA:
+
+```shell
+./hack/update_examples.sh -u <commit-sha>
+./hack/update_examples.sh -bp
+```

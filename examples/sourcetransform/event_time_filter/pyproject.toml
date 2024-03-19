@@ -8,7 +8,7 @@ packages = [{include = "mapt_event_time_filter"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.12"
-pynumaflow = {git = "https://github.com/numaproj/numaflow-python.git", rev = "df6afe6a178ff8172757ffd4d612f2965801378d"}
+pynumaflow = "~0.6.0"
 
 [build-system]
 requires = ["poetry-core"]

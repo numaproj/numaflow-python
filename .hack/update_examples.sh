@@ -1,12 +1,13 @@
 #!/bin/bash
 
 function show_help () {
-    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bp|--build-push | -bpe|--build-push-example <path> | -u|--update)"
+    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bp|--build-push | -bpe|--build-push-example <path> | -u|--update <commit-sha> | -r|--release <version>)"
     echo "  -h, --help                   Display help message and exit"
     echo "  -bp, --build-push            Build the Dockerfiles of all the examples and push them to the quay.io registry"
     echo "  -bpe, --build-push-example   Build the Dockerfile of the given example directory path, and push it to the quay.io registry"
     echo "  -t, --tag                    To be optionally used with -bpe or -bp. Specify the tag to build with. Default tag: stable"
-    echo "  -u, --update                 Update all of the examples to depend on the latest pynumaflow version's latest commit SHA"
+    echo "  -u, --update                 Update all of the examples to depend on the specified commit SHA"
+    echo "  -r, --release                Update all of the examples to depend on the specified version"
 }
 
 function traverse_examples () {
@@ -41,8 +42,10 @@ fi
 usingHelp=0
 usingBuildPush=0
 usingBuildPushExample=0
+usingSHA=0
 usingVersion=0
 usingTag=0
+sha=""
 version=""
 directoryPath=""
 tag="stable"
@@ -80,7 +83,18 @@ function handle_options () {
         ;;
       -u | --update)
         if [ -z "$2" ]; then
-          echo "Commit SHA or version not specified." >&2
+          echo "Commit SHA not specified." >&2
+          show_help
+          exit 1
+        fi
+
+        usingSHA=1
+        sha=$2
+        shift
+        ;;
+      -r | --release)
+        if [ -z "$2" ]; then
+          echo "Version not specified." >&2
           show_help
           exit 1
         fi
@@ -101,27 +115,31 @@ function handle_options () {
 
 handle_options "$@"
 
-if (( usingBuildPush + usingBuildPushExample + usingVersion + usingHelp > 1 )); then
-  echo "Only one of '-h', '-bp', '-bpe', or, '-u' is allowed at a time" >&2
+if (( usingBuildPush + usingBuildPushExample + usingSHA + usingHelp + usingVersion > 1 )); then
+  echo "Only one of '-h', '-bp', '-bpe', '-u', or '-r' is allowed at a time" >&2
   show_help
   exit 1
 fi
 
-if (( (usingTag + usingVersion + usingHelp > 1) || (usingTag && usingBuildPush + usingBuildPushExample == 0) )); then
+if (( (usingTag + usingSHA + usingHelp + usingVersion > 1) || (usingTag && usingBuildPush + usingBuildPushExample == 0) )); then
   echo "Can only use -t with -bp or -bpe" >&2
   show_help
   exit 1
 fi
 
+if [ -n "$sha" ]; then
+ echo "Using SHA: $sha"
+fi
+
 if [ -n "$version" ]; then
- echo "Will update to: $version"
+ echo "Using version: $version"
 fi
 
 if [ -n "$directoryPath" ]; then
  echo "Dockerfile path to use: $directoryPath"
 fi
 
-if [ -n "$tag" ] && (( ! usingVersion )) && (( ! usingHelp )); then
+if [ -n "$tag" ] && (( ! usingSHA )) && (( ! usingHelp )) && (( ! usingVersion )); then
  echo "Using tag: $tag"
 fi
 
@@ -133,8 +151,10 @@ elif (( usingBuildPushExample )); then
      echo "Error: failed to run make image-push in $directoryPath" >&2
      exit 1
    fi
+elif (( usingSHA )); then
+  traverse_examples "poetry add git+https://github.com/numaproj/numaflow-python.git@$sha"
 elif (( usingVersion )); then
-  traverse_examples "poetry add git+https://github.com/numaproj/numaflow-python.git@$version"
+  traverse_examples "poetry add pynumaflow@~$version"
 elif (( usingHelp )); then
   show_help
 fi

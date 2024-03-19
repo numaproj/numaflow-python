@@ -14,17 +14,17 @@ spec:
       udf:
         container:
           # split the incoming message by comma
-          image: quay.io/numaio/numaflow-python/map-flatmap:latest
+          image: quay.io/numaio/numaflow-python/map-flatmap:stable
     - name: cat
       udf:
         container:
           # simply forward the message
-          image: quay.io/numaio/numaflow-python/map-forward-message:latest
+          image: quay.io/numaio/numaflow-python/map-forward-message:stable
     - name: counter
       udf:
         container:
           # count the number of incoming messages
-          image: quay.io/numaio/numaflow-python/reduce-counter:latest
+          image: quay.io/numaio/numaflow-python/reduce-counter:stable
         groupBy:
           window:
             fixed:
@@ -36,7 +36,7 @@ spec:
       sink:
         udsink:
           container:
-            image: quay.io/numaio/numaflow-python/sink-log:latest
+            image: quay.io/numaio/numaflow-python/sink-log:stable
   edges:
     - from: in
       to: flatmap

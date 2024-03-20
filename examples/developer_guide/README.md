@@ -53,22 +53,18 @@ pynumaflow dependency in the `pyproject.toml` will be
 the example images will always be using the latest commit SHA.
 
 
-### Releasing
+### After Release
 
 Once a new release has been made, and its corresponding version tag exists on the remote repo, we want to update the dependency
 management files to reflect this new version:
 
-1. Update the root level `pyproject.toml` to the new version, by running the following in the root level directory:
-    ```shell
-    poetry version <version>
-    ```
-2. Then run:
-    ```shell
-    ./hack/update_examples.sh -r <version>
-    ```
-This will update the `pyproject.toml` files in all the example directories to depend on the latest version that
-was just released.
-3. Create a PR for these changes.
+```shell
+./hack/update_examples.sh -r <version>
+  ```
+
+This will update the `pyproject.toml` files in all the example directories as well as the one in the root directory,
+to depend on the specified version, i.e. the one just released. After running the above, create a PR for the changes
+that the script made.
 
 Once your changes have been merged, similar to the deployment steps above, before deleting/leaving your branch, update
 the example images to use the merged commit SHA:

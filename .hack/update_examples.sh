@@ -154,6 +154,7 @@ elif (( usingBuildPushExample )); then
 elif (( usingSHA )); then
   traverse_examples "poetry add git+https://github.com/numaproj/numaflow-python.git@$sha"
 elif (( usingVersion )); then
+  poetry version "$version"
   traverse_examples "poetry add pynumaflow@~$version"
 elif (( usingHelp )); then
   show_help

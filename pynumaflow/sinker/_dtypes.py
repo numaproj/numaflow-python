@@ -88,24 +88,34 @@ class Datum:
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
+        headers: the headers of the event.
     >>> # Example usage
     >>> from pynumaflow.sinker import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
+    >>> msg_headers = {"key1": "value1", "key2": "value2"}
     >>> msg_id = "test_id"
     >>> output_keys = ["test_key"]
-    >>> d = Datum(keys=output_keys, sink_msg_id=msg_id, value=payload, event_time=t1, watermark=t2)
+    >>> d = Datum(
+    ...       keys=output_keys,
+    ...       sink_msg_id=msg_id,
+    ...       value=payload,
+    ...       event_time=t1,
+    ...       watermark=t2,
+    ...       headers=msg_headers
+    ...    )
     """
 
-    __slots__ = ("_keys", "_id", "_value", "_event_time", "_watermark")
+    __slots__ = ("_keys", "_id", "_value", "_event_time", "_watermark", "_headers")
 
     _keys: list[str]
     _id: str
     _value: bytes
     _event_time: datetime
     _watermark: datetime
+    _headers: dict[str, str]
 
     def __init__(
         self,
@@ -114,6 +124,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
+        headers: dict[str, str] = None,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""
@@ -124,6 +135,7 @@ class Datum:
         if not isinstance(watermark, datetime):
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
+        self._headers = headers or {}
 
     def __str__(self):
         value_string = self._value.decode("utf-8")
@@ -131,7 +143,8 @@ class Datum:
             f"keys: {self._keys}, "
             f"id: {self._id}, value: {value_string}, "
             f"event_time: {str(self._event_time)}, "
-            f"watermark: {str(self._watermark)}"
+            f"watermark: {str(self._watermark)}, "
+            f"headers: {self._headers}"
         )
 
     def __repr__(self):
@@ -161,6 +174,11 @@ class Datum:
     def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark
+
+    @property
+    def headers(self) -> dict[str, str]:
+        """Returns the headers of the event."""
+        return self._headers
 
 
 class Sinker(metaclass=ABCMeta):

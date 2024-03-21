@@ -25,6 +25,7 @@ message SinkRequest {
   google.protobuf.Timestamp event_time = 3;
   google.protobuf.Timestamp watermark = 4;
   string id = 5;
+  map<string, string> headers = 6;
 }
 
 /**

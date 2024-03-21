@@ -124,26 +124,30 @@ class Datum:
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
+        headers: the headers of the event.
     >>> # Example usage
     >>> from pynumaflow.reducer import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
     >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
+    >>> msg_headers = {"key1": "value1", "key2": "value2"}
     >>> d = Datum(
     ...       keys=["test_key"],
     ...       value=payload,
     ...       event_time=t1,
     ...       watermark=t2,
+    ...       headers=msg_headers
     ...    )
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark")
+    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")
 
     _keys: list[str]
     _value: bytes
     _event_time: datetime
     _watermark: datetime
+    _headers: dict[str, str]
 
     def __init__(
         self,
@@ -151,6 +155,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
+        headers: dict[str, str] = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -160,6 +165,7 @@ class Datum:
         if not isinstance(watermark, datetime):
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
+        self._headers = headers or {}
 
     def keys(self) -> list[str]:
         """Returns the keys of the event"""
@@ -179,6 +185,11 @@ class Datum:
     def watermark(self) -> datetime:
         """Returns the watermark of the event."""
         return self._watermark
+
+    @property
+    def headers(self) -> dict[str, str]:
+        """Returns the headers of the event."""
+        return self._headers
 
 
 @dataclass(init=False)

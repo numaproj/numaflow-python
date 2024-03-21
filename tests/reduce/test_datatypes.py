@@ -27,8 +27,11 @@ class TestDatum(unittest.TestCase):
     def test_err_event_time(self):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
+        headers = {"key1": "value1", "key2": "value2"}
         with self.assertRaises(Exception) as context:
-            Datum(keys=TEST_KEYS, value=mock_message(), event_time=ts, watermark=ts)
+            Datum(
+                keys=TEST_KEYS, value=mock_message(), event_time=ts, watermark=ts, headers=headers
+            )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.event_time",
@@ -38,12 +41,14 @@ class TestDatum(unittest.TestCase):
     def test_err_watermark(self):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
+        headers = {"key1": "value1", "key2": "value2"}
         with self.assertRaises(Exception) as context:
             Datum(
                 keys=TEST_KEYS,
                 value=mock_message(),
                 event_time=mock_event_time(),
                 watermark=ts,
+                headers=headers,
             )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "

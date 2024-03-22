@@ -38,7 +38,7 @@ Once you have confirmed that your changes pass local testing:
 Once the PR has been merged it is important that the pynumaflow dependency of the example images use the merged commit SHA
 as reference. Thus, before you delete/leave your branch, run:
 ```shell
-./hack/update_examples.sh -u <commit-sha>
+./hack/update_examples.sh -us <commit-sha>
 ./hack/update_examples.sh -bp
 ```
 
@@ -59,7 +59,7 @@ Once a new release has been made, and its corresponding version tag exists on th
 management files to reflect this new version:
 
 ```shell
-./hack/update_examples.sh -r <version>
+./hack/update_examples.sh -uv <version>
   ```
 
 This will update the `pyproject.toml` files in all the example directories as well as the one in the root directory,
@@ -70,6 +70,6 @@ Once your changes have been merged, similar to the deployment steps above, befor
 the example images to use the merged commit SHA:
 
 ```shell
-./hack/update_examples.sh -u <commit-sha>
+./hack/update_examples.sh -us <commit-sha>
 ./hack/update_examples.sh -bp
 ```

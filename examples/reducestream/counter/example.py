@@ -26,6 +26,10 @@ class ReduceCounter(ReduceStreamer):
             self.counter += 1
             if self.counter > 10:
                 msg = f"counter:{self.counter}"
+                # NOTE: this is returning results because we have seen all the data
+                # use this only if you really need this feature because your next vertex
+                # will get both early result and final results and it should be able to
+                # handle both the scenarios.
                 await output.put(Message(str.encode(msg), keys=keys))
                 self.counter = 0
         msg = f"counter:{self.counter}"

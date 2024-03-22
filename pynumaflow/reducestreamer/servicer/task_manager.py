@@ -101,11 +101,11 @@ class TaskManager:
             # to the client.
             res_queue = NonBlockingIterator()
 
-            # Create a new consumer task for the current, this will read from the
-            # result queue specicially for the current task and update the
+            # Create a new write_to_global_queue task for the current, this will read from the
+            # result queue specifically for the current task and update the
             # global result queue
             consumer = asyncio.create_task(
-                self.consumer(res_queue, self.global_result_queue, req.windows[0])
+                self.write_to_global_queue(res_queue, self.global_result_queue, req.windows[0])
             )
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
@@ -113,7 +113,7 @@ class TaskManager:
             consumer.add_done_callback(self.clean_background)
 
             # Create a new task for the reduce operation, this will invoke the
-            # reduce handler with the given keys, request iterator, and window.
+            # Reduce handler with the given keys, request iterator, and window.
             task = asyncio.create_task(self.__invoke_reduce(keys, riter, res_queue, req.windows[0]))
             # Save a reference to the result of this function, to avoid a
             # task disappearing mid-execution.
@@ -180,7 +180,7 @@ class TaskManager:
             # Put the exception in the result queue
             await self.global_result_queue.put(err)
 
-    async def producer(self, request_iterator: AsyncIterable[reduce_pb2.ReduceRequest]):
+    async def process_input_stream(self, request_iterator: AsyncIterable[reduce_pb2.ReduceRequest]):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
         try:
@@ -237,7 +237,7 @@ class TaskManager:
             _LOGGER.critical(err_msg, exc_info=True)
             await self.global_result_queue.put(e)
 
-    async def consumer(
+    async def write_to_global_queue(
         self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, window
     ):
         """

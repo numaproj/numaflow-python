@@ -85,7 +85,8 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
-        # Create a process_input_stream task in the task manager, this would read from the datum iterator
+        # Create a process_input_stream task in the task manager,
+        # this would read from the datum iterator
         # and then create the required tasks to process the data requests
         # The results from these tasks are then sent to the result queue
         producer = asyncio.create_task(task_manager.process_input_stream(datum_iterator))

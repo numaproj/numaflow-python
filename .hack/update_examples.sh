@@ -1,14 +1,15 @@
 #!/bin/bash
 
 function show_help () {
-    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bp|--build-push | -bpe|--build-push-example <path> | -u|--update <commit-sha> | -r|--release <version>)"
+    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bp|--build-push | -bpe|--build-push-example <path> | -us|--update-sha <commit-sha> | -uv|--update-version <version>)"
     echo "  -h, --help                   Display help message and exit"
     echo "  -bp, --build-push            Build the Dockerfiles of all the examples and push them to the quay.io registry"
     echo "  -bpe, --build-push-example   Build the Dockerfile of the given example directory path, and push it to the quay.io registry"
     echo "  -t, --tag                    To be optionally used with -bpe or -bp. Specify the tag to build with. Default tag: stable"
-    echo "  -u, --update                 Update all of the examples to depend on the specified commit SHA"
-    echo "  -r, --release                Update all of the examples to depend on the specified version"
+    echo "  -us, --update-sha            Update all of the examples to depend on the specified commit SHA"
+    echo "  -uv, --update-version        Update all of the examples to depend on the specified version"
 }
+#update sha update version
 
 function traverse_examples () {
   find examples -name "pyproject.toml"  | while read -r line;
@@ -81,7 +82,7 @@ function handle_options () {
         tag=$2
         shift
         ;;
-      -u | --update)
+      -us | --update-sha)
         if [ -z "$2" ]; then
           echo "Commit SHA not specified." >&2
           show_help
@@ -92,7 +93,7 @@ function handle_options () {
         sha=$2
         shift
         ;;
-      -r | --release)
+      -uv | --update-version)
         if [ -z "$2" ]; then
           echo "Version not specified." >&2
           show_help
@@ -116,7 +117,7 @@ function handle_options () {
 handle_options "$@"
 
 if (( usingBuildPush + usingBuildPushExample + usingSHA + usingHelp + usingVersion > 1 )); then
-  echo "Only one of '-h', '-bp', '-bpe', '-u', or '-r' is allowed at a time" >&2
+  echo "Only one of '-h', '-bp', '-bpe', '-us', or '-uv' is allowed at a time" >&2
   show_help
   exit 1
 fi

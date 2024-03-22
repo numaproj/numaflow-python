@@ -12,9 +12,9 @@ This example is for numaflow-python contributors/developers. The example include
 6. Run `make image` to build your image.
 7. Now you have the image with your customized example and your code change to test in a numaflow pipeline. Example pipeline `pipeline-numaflow.yaml` is also provided in this `developer_guide` folder. Please check [numaflow](https://numaflow.numaproj.io/) for more details.
 
-Each example directory has a Makefile which can be used to build, tag, and push images. In most cases, the `image-push` target should be used.
-However, `buildx`, which is used to support multiple architectures, does not make a built image available locally. In the case that a developer
-wants this functionality, they can use the `image` target.
+Each example directory has a Makefile which can be used to build, tag, and push images.
+If you want to build the image and immediately push it to quay.io, use the `image-push` target.
+If you want to build a local image without pushing, use the `image` target.
 
 After making changes to the SDK, if you want to build all the example images at once, in the root directory you can run:
 ```shell
@@ -23,7 +23,7 @@ After making changes to the SDK, if you want to build all the example images at 
 The default tag is `stable`, but it is recommended you specify your own for testing purposes, as the Github Actions CI uses the `stable` tag. Note: do not forget to clean up testing tags
 in the registry, i.e. delete them, once you are done testing.
 
-You can alternatively build a specific example image by running the following in the root directory and providing the path to the Dockerfile (relative to root):
+You can alternatively build a specific example image by running the following in the root directory and providing the path to the Dockerfile:
 ```shell
 ./hack/update_examples.sh -bpe <path> -t <tag>
 ```

@@ -17,7 +17,7 @@ spec:
         args:
         - python
         - example.py
-        image: "quay.io/numaio/numaflow-python/even-odd:v0.5.0"
+        image: "quay.io/numaio/numaflow-python/even-odd:stable"
   - name: even-sink
     scale:
       min: 1

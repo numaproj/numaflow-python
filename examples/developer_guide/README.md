@@ -73,5 +73,5 @@ the example images will always be using the latest commit SHA.
 
 ### Adding a New Example
 
-If you add a new example, in order for it to be used by the Docker Publish workflow, add the path to
-the example to the `dockerfile_paths` matrix in `build-push.yaml`.
+If you add a new example, in order for it to be used by the Docker Publish workflow, add its path
+to the `dockerfile_paths` matrix in `build-push.yaml`.

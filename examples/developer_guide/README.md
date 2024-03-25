@@ -61,7 +61,7 @@ Once a new release has been made, and its corresponding version tag exists on th
   ```
 After running the above, create a PR for the changes that the script made.
 
-Once your changes have been merged, similar to the [Deployment](#deploying) section above, before deleting/leaving your branch, update
+Once your changes have been merged, similar to the deploying section above, before deleting/leaving your branch, update
 the example images to use the merged commit SHA:
 ```shell
 ./.hack/update_examples.sh -us <commit-sha>

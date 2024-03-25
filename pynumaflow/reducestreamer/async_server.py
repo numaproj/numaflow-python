@@ -1,4 +1,5 @@
 import inspect
+from typing import Optional
 
 import aiorun
 import grpc
@@ -25,13 +26,13 @@ from pynumaflow.shared.server import NumaflowServer, checkInstance, start_async_
 
 
 def get_handler(
-    reducer_handler: ReduceStreamCallable, init_args: tuple = (), init_kwargs: dict = None
+    reducer_handler: ReduceStreamCallable, init_args: tuple = (), init_kwargs: Optional[dict] = None
 ):
     """
     Get the correct handler type based on the arguments passed
     """
     if inspect.isfunction(reducer_handler):
-        if len(init_args) > 0 or len(init_kwargs) > 0:
+        if init_args or init_kwargs:
             # if the init_args or init_kwargs are passed, then the reduce_stream_handler
             # can only be of class ReduceStreamer type
             raise TypeError("Cannot pass function handler with init args or kwargs")
@@ -54,11 +55,16 @@ class ReduceStreamAsyncServer(NumaflowServer):
     A new servicer instance is created and attached to the server.
     The server instance is returned.
     Args:
-        reduce_stream_handler: The reducer instance to be used for Reduce Streaming UDF
+        reduce_stream_handler: The reducer instance to be used for
+                Reduce Streaming UDF
+        init_args: The arguments to be passed to the reduce_stream_handler
+        init_kwargs: The keyword arguments to be passed to the
+            reduce_stream_handler
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-                        defaults to number of processors x4
+        defaults to number of processors x4
+        server_info_file: The path to the server info file
     Example invocation:
         import os
         from collections.abc import AsyncIterable
@@ -126,16 +132,20 @@ class ReduceStreamAsyncServer(NumaflowServer):
         server_info_file=REDUCE_STREAM_SERVER_INFO_FILE_PATH,
     ):
         """
-        Create a new grpc Reduce Server instance.
+        Create a new grpc Reduce Streamer Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
         Args:
-        reducer_instance: The reducer instance to be used for Reduce UDF
-        sock_path: The UNIX socket path to be used for the server
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                        defaults to number of processors x4
-        server_type: The type of server to be used
+            reduce_stream_handler: The reducer instance to be used for
+                    Reduce Streaming UDF
+            init_args: The arguments to be passed to the reduce_stream_handler
+            init_kwargs: The keyword arguments to be passed to the
+                reduce_stream_handler
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+            defaults to number of processors x4
+            server_info_file: The path to the server info file
         """
         if init_kwargs is None:
             init_kwargs = {}

@@ -1,118 +1,25 @@
 from abc import ABCMeta, abstractmethod
 from asyncio import Task
-from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
 from typing import TypeVar, Callable, Union
 from collections.abc import AsyncIterable
-from warnings import warn
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
-Ms = TypeVar("Ms", bound="Messages")
 
 
 class WindowOperation(IntEnum):
     """
     Enumerate the type of Window operation received.
-    The operation can be one of the following:
-    - OPEN: A new window is opened.
-    - CLOSE: The window is closed.
-    - APPEND: The window is appended with new data.
     """
 
     OPEN = (0,)
     CLOSE = (1,)
     APPEND = (4,)
-
-
-@dataclass(init=False)
-class Message:
-    """
-    Basic datatype for data passing to the next vertex/vertices.
-
-    Args:
-        value: data in bytes
-        keys: []string keys for vertex (optional)
-        tags: []string tags for conditional forwarding (optional)
-    """
-
-    __slots__ = ("_value", "_keys", "_tags")
-
-    _value: bytes
-    _keys: list[str]
-    _tags: list[str]
-
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
-        """
-        Creates a Message object to send value to a vertex.
-        """
-        self._keys = keys or []
-        self._tags = tags or []
-        self._value = value or b""
-
-    # returns the Message Object which will be dropped
-    @classmethod
-    def to_drop(cls: type[M]) -> M:
-        return cls(b"", None, [DROP])
-
-    @property
-    def value(self) -> bytes:
-        return self._value
-
-    @property
-    def keys(self) -> list[str]:
-        return self._keys
-
-    @property
-    def tags(self) -> list[str]:
-        return self._tags
-
-
-class Messages(Sequence[M]):
-    """
-    Class to define a list of Message objects.
-
-    Args:
-        messages: list of Message objects.
-    """
-
-    __slots__ = ("_messages",)
-
-    def __init__(self, *messages: M):
-        self._messages = list(messages) or []
-
-    def __str__(self) -> str:
-        return str(self._messages)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def __len__(self) -> int:
-        return len(self._messages)
-
-    def __iter__(self) -> Iterator[M]:
-        return iter(self._messages)
-
-    def __getitem__(self, index: int) -> M:
-        if isinstance(index, slice):
-            raise TypeError("Slicing is not supported for Messages")
-        return self._messages[index]
-
-    def append(self, message: Message) -> None:
-        self._messages.append(message)
-
-    def items(self) -> list[Message]:
-        warn(
-            "Using items is deprecated and will be removed in v0.5. "
-            "Iterate or index the Messages object instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._messages
 
 
 @dataclass(init=False)
@@ -223,12 +130,12 @@ class ReduceWindow:
 
     @property
     def start(self):
-        """Returns the start timestamp of the interval window."""
+        """Returns the start point of the interval window."""
         return self._window.start
 
     @property
     def end(self):
-        """Returns the end timestamp of the interval window."""
+        """Returns the end point of the interval window."""
         return self._window.end
 
     @property
@@ -261,21 +168,16 @@ class Metadata:
 
 @dataclass
 class ReduceResult:
-    """
-    Defines the object to hold the result of reduce computation.
-    It contains the following
-    1. Future: The async awaitable result of computation
-    2. Iterator: The handle to the input queue
-    3. Key: The keys of the partition
-    4. Window: The window of the reduce operation
-    """
+    """Defines the object to hold the result of reduce streaming computation."""
 
-    __slots__ = ("_future", "_iterator", "_key", "_window")
+    __slots__ = ("_future", "_iterator", "_key", "_window", "_result_queue", "_consumer_future")
 
     _future: Task
     _iterator: NonBlockingIterator
     _key: list[str]
     _window: ReduceWindow
+    _result_queue: NonBlockingIterator
+    _consumer_future: Task
 
     @property
     def future(self):
@@ -294,8 +196,18 @@ class ReduceResult:
 
     @property
     def window(self) -> ReduceWindow:
-        """"""
+        """Returns the window for the current reduce request"""
         return self._window
+
+    @property
+    def result_queue(self):
+        """Returns the async queue used to write the output for the tasks"""
+        return self._result_queue
+
+    @property
+    def consumer_future(self):
+        """Returns the async consumer task for the result queue"""
+        return self._consumer_future
 
 
 @dataclass
@@ -315,36 +227,77 @@ class ReduceRequest:
 
     @property
     def operation(self) -> WindowOperation:
-        """
-        Returns the operation of the reduce request.
-        The operation can be one of the following:
-        - OPEN: A new window is opened.
-        - CLOSE: The window is closed.
-        - APPEND: The window is appended with new data.
-        """
+        """Returns the future result of computation."""
         return self._operation
 
     @property
     def windows(self) -> list[ReduceWindow]:
-        """
-        Returns the windows of the reduce request.
-        """
+        """Returns the handle to the producer queue."""
         return self._windows
 
     @property
     def payload(self) -> Datum:
-        """
-        Returns the payload of the reduce request.
-        """
+        """Returns the payload of the window."""
         return self._payload
 
 
-ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
-
-
-class Reducer(metaclass=ABCMeta):
+@dataclass(init=False)
+class Message:
     """
-    Provides an interface to write a Reducer
+    Basic datatype for data passing to the next vertex/vertices.
+
+    Args:
+        value: data in bytes
+        keys: []string keys for vertex (optional)
+        tags: []string tags for conditional forwarding (optional)
+    """
+
+    __slots__ = ("_value", "_keys", "_tags")
+
+    _value: bytes
+    _keys: list[str]
+    _tags: list[str]
+
+    def __init__(
+        self,
+        value: bytes,
+        keys: list[str] = None,
+        tags: list[str] = None,
+    ):
+        """
+        Creates a Message object to send value to a vertex.
+        """
+        self._keys = keys or []
+        self._tags = tags or []
+        self._value = value or b""
+        # self._window = window or None
+
+    # returns the Message Object which will be dropped
+    @classmethod
+    def to_drop(cls: type[M]) -> M:
+        return cls(b"", None, [DROP])
+
+    @property
+    def value(self) -> bytes:
+        return self._value
+
+    @property
+    def keys(self) -> list[str]:
+        return self._keys
+
+    @property
+    def tags(self) -> list[str]:
+        return self._tags
+
+
+ReduceStreamAsyncCallable = Callable[
+    [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None
+]
+
+
+class ReduceStreamer(metaclass=ABCMeta):
+    """
+    Provides an interface to write a ReduceStreamer
     which will be exposed over a gRPC server.
     """
 
@@ -357,17 +310,21 @@ class Reducer(metaclass=ABCMeta):
 
     @abstractmethod
     async def handler(
-        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
-    ) -> Messages:
+        self,
+        keys: list[str],
+        datums: AsyncIterable[Datum],
+        output: NonBlockingIterator,
+        md: Metadata,
+    ):
         """
-        Implement this handler function which implements the ReduceCallable interface.
+        Implement this handler function which implements the ReduceStreamCallable interface.
         """
         pass
 
 
-class _ReduceBuilderClass:
+class _ReduceStreamBuilderClass:
     """
-    Class to build a Reducer class instance.
+    Class to build a ReduceStreamer class instance.
     Used Internally
 
     Args:
@@ -376,17 +333,17 @@ class _ReduceBuilderClass:
         kwargs: the keyword arguments to be passed to the reducer class
     """
 
-    def __init__(self, reducer_class: type[Reducer], args: tuple, kwargs: dict):
-        self._reducer_class: type[Reducer] = reducer_class
+    def __init__(self, reducer_class: type[ReduceStreamer], args: tuple, kwargs: dict):
+        self._reducer_class: type[ReduceStreamer] = reducer_class
         self._args = args
         self._kwargs = kwargs
 
-    def create(self) -> Reducer:
+    def create(self) -> ReduceStreamer:
         """
-        Create a new Reducer instance.
+        Create a new ReduceStreamer instance.
         """
         return self._reducer_class(*self._args, **self._kwargs)
 
 
-# ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
-ReduceCallable = Union[ReduceAsyncCallable, type[Reducer]]
+# ReduceStreamCallable is a callable which can be used as a handler for the Reduce UDF.
+ReduceStreamCallable = Union[ReduceStreamAsyncCallable, type[ReduceStreamer]]

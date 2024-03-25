@@ -32,6 +32,15 @@ def build_unique_key_name(keys, window):
     return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}:{DELIMITER.join(keys)}"
 
 
+def build_window_hash(window):
+    """
+    Builds a hash for the given window.
+    The hash is used to identify the Reduce Window
+    The format is: start_time:end_time
+    """
+    return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}"
+
+
 def create_window_eof_response(window):
     """Create a Reduce response with EOF=True for a given window"""
     return reduce_pb2.ReduceResponse(window=window, EOF=True)
@@ -58,6 +67,21 @@ class TaskManager:
         # This queue is also used to send the error/exceptions to the client
         # if the reduce operation fails.
         self.global_result_queue = NonBlockingIterator()
+
+    def get_unique_windows(self):
+        """
+        Returns the unique windows that are currently being processed
+        """
+        # Dict to store unique windows
+        windows = dict()
+        # Iterate over all the tasks and add the windows
+        for task in self.tasks.values():
+            window_hash = build_window_hash(task.window)
+            window_found = windows.get(window_hash, None)
+            # if window not seen yet, add to the dict
+            if not window_found:
+                windows[window_hash] = task.window
+        return windows
 
     def get_tasks(self):
         """
@@ -143,7 +167,6 @@ class TaskManager:
         if not result:
             await self.create_task(req)
         else:
-            # print(result)
             await result.iterator.put(d)
 
     async def __invoke_reduce(
@@ -225,9 +248,14 @@ class TaskManager:
                 con_future = task.consumer_future
                 await con_future
 
+            # Once all tasks are completed, senf EOF to all windows that
+            # were processed in the Task Manager. We send a single
+            # EOF message per window.
+            current_windows = self.get_unique_windows()
+            for window in current_windows.values():
                 # Send an EOF message to the global result queue
                 # This will signal that window has been processed
-                eof_window_msg = create_window_eof_response(window=task.window)
+                eof_window_msg = create_window_eof_response(window=window)
                 await self.global_result_queue.put(eof_window_msg)
 
             # Once all tasks are completed, senf EOF the global result queue

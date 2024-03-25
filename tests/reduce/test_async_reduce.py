@@ -212,7 +212,7 @@ class TestAsyncReducer(unittest.TestCase):
             self.assertEqual(r.window.start.ToSeconds(), 1662998400)
             self.assertEqual(r.window.end.ToSeconds(), 1662998460)
         self.assertEqual(100, count)
-        self.assertEqual(100, eof_count)
+        self.assertEqual(1, eof_count)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:

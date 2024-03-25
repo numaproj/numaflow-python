@@ -26,7 +26,7 @@ This consistent tag name is used so that the tags in the [E2E test pipelines](ht
 updated each time an SDK change is made.
 
 The batch build and push command should only be used when you are confident of your changes, as it takes approximately 10-15 minutes run.
-Thus, when testing, it is recommended instead to build and push specific examples instead:
+Thus, when testing, it is recommended to build and push specific examples instead:
 ```shell
 ./.hack/update_examples.sh -bpe <path-to-dockerfile> -t <tag>
 ```
@@ -70,8 +70,3 @@ the example images to use the merged commit SHA:
 ```
 As a result, the correct SDK version will always be printed in the server information logs, and
 the example images will always be using the latest commit SHA.
-
-### Adding a New Example
-
-If you add a new example, in order for it to be used by the Docker Publish workflow, add its path
-to the `dockerfile_paths` matrix in `build-push.yaml`.

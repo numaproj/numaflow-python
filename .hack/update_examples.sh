@@ -9,7 +9,6 @@ function show_help () {
     echo "  -us, --update-sha            Update all of the examples to depend on the specified commit SHA"
     echo "  -uv, --update-version        Update all of the examples to depend on the specified version"
 }
-#update sha update version
 
 function traverse_examples () {
   find examples -name "pyproject.toml"  | while read -r line;
@@ -22,13 +21,11 @@ function traverse_examples () {
           continue
       fi
 
-      for command in "$@"
-      do
-        if ! $command; then
-          echo "Error: failed $command in $dir" >&2
-          exit 1
-        fi
-      done
+      command=$1
+      if ! $command; then
+        echo "Error: failed $command in $dir" >&2
+        exit 1
+      fi
 
       cd ~- || exit
   done

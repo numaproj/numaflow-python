@@ -25,7 +25,8 @@ The default tag is `stable`, but it is recommended you specify your own for test
 This consistent tag name is used so that the tags in the [E2E test pipelines](https://github.com/numaproj/numaflow/tree/main/test) do not need to be
 updated each time an SDK change is made.
 
-You can alternatively build and push a specific example image by running the following:
+The batch build and push command should only be used when you are confident of your changes, as it takes approximately 10-15 minutes run.
+Thus, when testing, it is recommended instead to build and push specific examples instead:
 ```shell
 ./.hack/update_examples.sh -bpe <path-to-dockerfile> -t <tag>
 ```
@@ -50,7 +51,7 @@ The above will update the `pynumaflow` dependencies to point to the specified co
 Since we do not want to flood the commit history with dependency updates, it is not necessary
 to create a second PR with these changes. It is not necessary, as the `pynumaflow` dependency of the images will be
 `pynumaflow = {git = "https://github.com/numaproj/numaflow-python.git", rev = "<latest-sha>"}`, while the repo itself will show
-`pynumaflow = "~<latest-version>"`.
+`pynumaflow = "~<latest-version>"`. Note that batch build and push takes approximately 10-15 minutes to finish executing.
 
 ### After Release
 
@@ -69,3 +70,8 @@ the example images to use the merged commit SHA:
 ```
 As a result, the correct SDK version will always be printed in the server information logs, and
 the example images will always be using the latest commit SHA.
+
+### Adding a New Example
+
+If you add a new example, in order for it to be used by the Docker Publish workflow, add the path to
+the example to the `dockerfile_paths` matrix in `build-push.yaml`.

@@ -23,6 +23,11 @@ def mock_watermark():
     return t
 
 
+def mock_headers():
+    headers = {"key1": "value1", "key2": "value2"}
+    return headers
+
+
 class TestDatum(unittest.TestCase):
     def test_err_event_time(self):
         ts = _timestamp_pb2.Timestamp()
@@ -34,6 +39,7 @@ class TestDatum(unittest.TestCase):
                 value=mock_message(),
                 event_time=ts,
                 watermark=ts,
+                headers=mock_headers(),
             )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
@@ -51,6 +57,7 @@ class TestDatum(unittest.TestCase):
                 value=mock_message(),
                 event_time=mock_event_time(),
                 watermark=ts,
+                headers=mock_headers(),
             )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
@@ -65,21 +72,25 @@ class TestDatum(unittest.TestCase):
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=mock_headers(),
         )
         self.assertEqual(mock_message(), d.value)
         self.assertEqual(
             "keys: ['test_key'], "
             "id: test_id_0, value: test_mock_message, "
-            "event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00",
+            "event_time: 2022-09-12 16:00:00+00:00, watermark: 2022-09-12 16:01:00+00:00, "
+            "headers: {'key1': 'value1', 'key2': 'value2'}",
             str(d),
         )
         self.assertEqual(
             "keys: ['test_key'], "
             "id: test_id_0, value: test_mock_message, "
             "event_time: 2022-09-12 16:00:00+00:00, "
-            "watermark: 2022-09-12 16:01:00+00:00",
+            "watermark: 2022-09-12 16:01:00+00:00, "
+            "headers: {'key1': 'value1', 'key2': 'value2'}",
             repr(d),
         )
+        self.assertEqual(mock_headers(), d.headers)
 
     def test_id(self):
         d = Datum(
@@ -88,6 +99,7 @@ class TestDatum(unittest.TestCase):
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=mock_headers(),
         )
         self.assertEqual("test_id_0", d.id)
 
@@ -98,6 +110,7 @@ class TestDatum(unittest.TestCase):
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=mock_headers(),
         )
         self.assertEqual(mock_event_time(), d.event_time)
 
@@ -108,6 +121,7 @@ class TestDatum(unittest.TestCase):
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=mock_headers(),
         )
         self.assertEqual(mock_watermark(), d.watermark)
 

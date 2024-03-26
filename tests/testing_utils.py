@@ -32,6 +32,11 @@ def mock_watermark():
     return t
 
 
+def mock_headers():
+    headers = {"key1": "value1", "key2": "value2"}
+    return headers
+
+
 def mock_interval_window_start():
     event_time_timestamp = _timestamp_pb2.Timestamp()
     t = datetime.fromtimestamp(1662998400000 / 1e3, timezone.utc)

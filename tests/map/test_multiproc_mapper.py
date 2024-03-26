@@ -15,6 +15,7 @@ from tests.testing_utils import (
     mock_event_time,
     mock_watermark,
     mock_message,
+    mock_headers,
 )
 
 
@@ -58,6 +59,7 @@ class TestMultiProcMethods(unittest.TestCase):
             value=mock_message(),
             event_time=event_time_timestamp,
             watermark=watermark_timestamp,
+            headers=mock_headers(),
         )
 
         method = self.test_server.invoke_unary_unary(
@@ -97,6 +99,7 @@ class TestMultiProcMethods(unittest.TestCase):
             value=mock_message(),
             event_time=event_time_timestamp,
             watermark=watermark_timestamp,
+            headers=mock_headers(),
         )
 
         method = self.test_server.invoke_unary_unary(

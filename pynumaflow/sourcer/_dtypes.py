@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Optional
 from collections.abc import AsyncIterable
 
 
@@ -54,17 +54,24 @@ class Message:
         offset: the offset of the datum.
         event_time: event time of the message, usually extracted from the payload.
         keys: []string keys for vertex (optional)
+        headers: dict of headers for the message (optional)
     """
 
-    __slots__ = ("_payload", "_offset", "_event_time", "_keys")
+    __slots__ = ("_payload", "_offset", "_event_time", "_keys", "_headers")
 
     _payload: bytes
     _offset: Offset
     _event_time: datetime
     _keys: list[str]
+    _headers: dict[str, str]
 
     def __init__(
-        self, payload: bytes, offset: Offset, event_time: datetime, keys: list[str] = None
+        self,
+        payload: bytes,
+        offset: Offset,
+        event_time: datetime,
+        keys: list[str] = None,
+        headers: Optional[dict[str, str]] = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -73,6 +80,7 @@ class Message:
         self._offset = offset
         self._event_time = event_time
         self._keys = keys or []
+        self._headers = headers or {}
 
     @property
     def payload(self) -> bytes:
@@ -89,6 +97,10 @@ class Message:
     @property
     def event_time(self) -> datetime:
         return self._event_time
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return self._headers
 
 
 @dataclass(init=False)

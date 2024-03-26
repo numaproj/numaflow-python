@@ -19,6 +19,7 @@ async def datum_generator(
             value=d.value,
             event_time=d.event_time.ToDatetime(),
             watermark=d.watermark.ToDatetime(),
+            headers=d.headers,
         )
         yield datum
 

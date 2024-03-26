@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.7.0a0 (2024-03-26)
+
+ * [5d99fb8](https://github.com/numaproj/numaflow-python/commit/5d99fb8e4639b4aafdcccb88148e3fd689c6aee8) feat: support headers for message (#138)
+ * [04914fa](https://github.com/numaproj/numaflow-python/commit/04914faeda80c8eea9652e4d0de5695ab175faac) fix: readme (#143)
+ * [b366e2f](https://github.com/numaproj/numaflow-python/commit/b366e2f82c74a76d7e8542119eb48e594cb7ee6e) feat: implement reduce streaming (#134)
+ * [c3f9c60](https://github.com/numaproj/numaflow-python/commit/c3f9c60a4918bb4bd0e37a8d2970e567bd3debcb)  feat: implement update script #102  (#137)
+ * [df6afe6](https://github.com/numaproj/numaflow-python/commit/df6afe6a178ff8172757ffd4d612f2965801378d) feat: add support for new reduce proto (#133)
+ * [39ec103](https://github.com/numaproj/numaflow-python/commit/39ec103b7a63191c48fa1a0c2f96cbe5db3d270e) feat: class based refactor for SDK (#129)
+
+### Contributors
+
+ * Abdullah Yildirim
+ * Sidhant Kohli
+ * Vigith Maurice
+ * Yashash H L
+
 ## v0.6.0 (2023-12-18)
 
  * [e6e1261](https://github.com/numaproj/numaflow-python/commit/e6e1261881104ddb5b4aac5868745f68c6d2763d) feat: adding partitions for user defined source (#124)

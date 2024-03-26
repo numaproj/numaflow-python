@@ -6,7 +6,7 @@ spec:
   sideInputs:
     - name: myticker
       container:
-        image: "quay.io/numaio/numaflow-python/sideinput-example:v0.7.0"
+        image: "quay.io/numaio/numaflow-python/sideinput-example:stable"
         imagePullPolicy: Always
       trigger:
         schedule: "*/2 * * * *"
@@ -21,7 +21,7 @@ spec:
     - name: si-log
       udf:
         container:
-          image: "quay.io/numaio/numaflow-python/udf-sideinput-example:v0.5.1"
+          image: "quay.io/numaio/numaflow-python/udf-sideinput-example:stable"
           imagePullPolicy: Always
       containerTemplate:
         env:

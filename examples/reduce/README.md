@@ -9,21 +9,21 @@ For creating a reducer UDF we can use two different approaches:
   ```python
     from numaflow import Reducer, ReduceAsyncServer
     class Example(Reducer):
-    def __init__(self, counter):
-        self.counter = counter
-
-    async def handler(
-        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
-    ) -> Messages:
-        interval_window = md.interval_window
-        self.counter = 0
-        async for _ in datums:
-            self.counter += 1
-        msg = (
-            f"counter:{self.counter} interval_window_start:{interval_window.start} "
-            f"interval_window_end:{interval_window.end}"
-        )
-        return Messages(Message(str.encode(msg), keys=keys))
+      def __init__(self, counter):
+          self.counter = counter
+    
+      async def handler(
+          self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+      ) -> Messages:
+          interval_window = md.interval_window
+          self.counter = 0
+          async for _ in datums:
+              self.counter += 1
+          msg = (
+              f"counter:{self.counter} interval_window_start:{interval_window.start} "
+              f"interval_window_end:{interval_window.end}"
+          )
+          return Messages(Message(str.encode(msg), keys=keys))
 
     if __name__ == "__main__":
     # Here we are using the class instance as the reducer_instance

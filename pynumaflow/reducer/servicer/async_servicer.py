@@ -123,8 +123,13 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                 # For each message in the task result, yield the response
                 for msg in fut.result():
                     yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+
+            # For each window processed by the ReduceFn send an EOF response
+            # We send one EOF per window
+            current_window = task_manager.get_unique_windows()
+            for window in current_window.values():
                 # yield the EOF response once the task is completed for a keyed window
-                yield reduce_pb2.ReduceResponse(window=task.window, EOF=True)
+                yield reduce_pb2.ReduceResponse(window=window, EOF=True)
         except Exception as e:
             context.set_code(grpc.StatusCode.UNKNOWN)
             context.set_details(e.__str__())

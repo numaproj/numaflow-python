@@ -5,7 +5,7 @@ from collections.abc import AsyncIterable
 
 from pynumaflow.exceptions import UDFError
 from pynumaflow.proto.reducer import reduce_pb2
-from pynumaflow.reducer.servicer.asynciter import NonBlockingIterator
+from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import (
     STREAM_EOF,
     DELIMITER,
@@ -23,7 +23,21 @@ from pynumaflow.reducer._dtypes import (
 
 
 def build_unique_key_name(keys, window):
+    """
+    Builds a unique key name for the given keys and window.
+    The key name is used to identify the Reduce task.
+    The format is: start_time:end_time:key1:key2:...
+    """
     return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}:{DELIMITER.join(keys)}"
+
+
+def build_window_hash(window):
+    """
+    Builds a hash for the given window.
+    The hash is used to identify the Reduce Window
+    The format is: start_time:end_time
+    """
+    return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}"
 
 
 class TaskManager:
@@ -48,6 +62,21 @@ class TaskManager:
         currently being processed
         """
         return self.tasks.values()
+
+    def get_unique_windows(self):
+        """
+        Returns the unique windows that are currently being processed
+        """
+        # Dict to store unique windows
+        windows = dict()
+        # Iterate over all the tasks and add the windows
+        for task in self.tasks.values():
+            window_hash = build_window_hash(task.window)
+            window_found = windows.get(window_hash, None)
+            # if window not seen yet, add to the dict
+            if not window_found:
+                windows[window_hash] = task.window
+        return windows
 
     async def stream_send_eof(self):
         """

@@ -17,7 +17,9 @@ class TestMessage(unittest.TestCase):
         offset = mock_offset()
         event_time = mock_event_time()
         headers = {"key1": "value1", "key2": "value2"}
-        msg = Message(payload=payload, offset=offset, keys=keys, event_time=event_time, headers=headers)
+        msg = Message(
+            payload=payload, offset=offset, keys=keys, event_time=event_time, headers=headers
+        )
         self.assertEqual(event_time, msg.event_time)
         self.assertEqual(payload, msg.payload)
         self.assertEqual(keys, msg.keys)

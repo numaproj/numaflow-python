@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union
+from typing import TypeVar, Callable, Union, Optional
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -138,7 +138,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: dict[str, str] = None,
+        headers: Optional[dict[str, str]] = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -173,7 +173,7 @@ class Datum:
     @property
     def headers(self) -> dict[str, str]:
         """Returns the headers of the event."""
-        return self._headers
+        return self._headers.copy()
 
 
 class Mapper(metaclass=ABCMeta):

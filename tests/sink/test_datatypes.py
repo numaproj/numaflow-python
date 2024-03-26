@@ -90,6 +90,7 @@ class TestDatum(unittest.TestCase):
             "headers: {'key1': 'value1', 'key2': 'value2'}",
             repr(d),
         )
+        self.assertEqual(mock_headers(), d.headers)
 
     def test_id(self):
         d = Datum(

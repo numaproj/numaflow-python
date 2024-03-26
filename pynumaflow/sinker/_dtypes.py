@@ -124,7 +124,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: dict[str, str] = None,
+        headers: Optional[dict[str, str]] = None,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""
@@ -178,7 +178,7 @@ class Datum:
     @property
     def headers(self) -> dict[str, str]:
         """Returns the headers of the event."""
-        return self._headers
+        return self._headers.copy()
 
 
 class Sinker(metaclass=ABCMeta):

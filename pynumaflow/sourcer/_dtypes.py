@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Optional
 from collections.abc import AsyncIterable
 
 
@@ -71,7 +71,7 @@ class Message:
         offset: Offset,
         event_time: datetime,
         keys: list[str] = None,
-        headers: dict[str, str] = None,
+        headers: Optional[dict[str, str]] = None,
     ):
         """
         Creates a Message object to send value to a vertex.

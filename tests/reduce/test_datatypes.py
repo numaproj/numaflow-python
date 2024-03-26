@@ -57,13 +57,16 @@ class TestDatum(unittest.TestCase):
         )
 
     def test_value(self):
+        test_headers = {"key1": "value1", "key2": "value2"}
         d = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=test_headers,
         )
         self.assertEqual(mock_message(), d.value)
+        self.assertEqual(test_headers, d.headers)
 
     def test_key(self):
         d = Datum(

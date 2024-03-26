@@ -1,3 +1,5 @@
+import uuid
+
 from collections.abc import AsyncIterable
 from datetime import datetime
 
@@ -37,10 +39,12 @@ class AsyncSource(Sourcer):
             return
 
         for x in range(datum.num_records):
+            headers = {"x-txn-id": str(uuid.uuid4())}
             yield Message(
                 payload=str(self.read_idx).encode(),
                 offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
                 event_time=datetime.now(),
+                headers=headers,
             )
             self.to_ack_set.add(str(self.read_idx))
             self.read_idx += 1

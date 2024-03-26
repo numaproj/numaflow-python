@@ -19,6 +19,7 @@ from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from tests.testing_utils import (
     mock_event_time,
     mock_watermark,
+    mock_headers,
     mock_message,
     get_time_args,
 )
@@ -121,6 +122,7 @@ class TestAsyncMapper(unittest.TestCase):
                 value=mock_message(),
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
+                headers=mock_headers(),
             )
 
             response = None
@@ -153,6 +155,7 @@ class TestAsyncMapper(unittest.TestCase):
             value=mock_message(),
             event_time=event_time_timestamp,
             watermark=watermark_timestamp,
+            headers=mock_headers(),
         )
         response = None
         try:
@@ -180,6 +183,7 @@ class TestAsyncMapper(unittest.TestCase):
             value=mock_message(),
             event_time=event_time_timestamp,
             watermark=watermark_timestamp,
+            headers=mock_headers(),
         )
 
         grpcException = None

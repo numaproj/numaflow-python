@@ -20,7 +20,9 @@ class UserDefinedSink(Sinker):
 def udsink_handler(datums: Iterator[Datum]) -> Responses:
     responses = Responses()
     for msg in datums:
-        _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
+        _LOGGER.info(
+            "User Defined Sink: Payload %s , Headers %s", msg.value.decode("utf-8"), msg.headers
+        )
         responses.append(Response.as_success(msg.id))
     return responses
 

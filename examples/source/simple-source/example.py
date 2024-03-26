@@ -1,3 +1,5 @@
+import uuid
+
 from collections.abc import Iterable
 from datetime import datetime
 
@@ -36,11 +38,14 @@ class SimpleSource(Sourcer):
         if self.to_ack_set:
             return
 
+        headers = {"x-txn-id": str(uuid.uuid4())}
+
         for x in range(datum.num_records):
             yield Message(
                 payload=str(self.read_idx).encode(),
                 offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
                 event_time=datetime.now(),
+                headers=headers,
             )
             self.to_ack_set.add(str(self.read_idx))
             self.read_idx += 1

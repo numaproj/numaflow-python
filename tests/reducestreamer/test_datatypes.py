@@ -21,6 +21,7 @@ from tests.testing_utils import (
 
 TEST_KEYS = ["test"]
 TEST_ID = "test_id"
+TEST_HEADERS = {"key1": "value1", "key2": "value2"}
 
 
 class TestDatum(unittest.TestCase):
@@ -28,7 +29,13 @@ class TestDatum(unittest.TestCase):
         ts = _timestamp_pb2.Timestamp()
         ts.GetCurrentTime()
         with self.assertRaises(Exception) as context:
-            Datum(keys=TEST_KEYS, value=mock_message(), event_time=ts, watermark=ts)
+            Datum(
+                keys=TEST_KEYS,
+                value=mock_message(),
+                event_time=ts,
+                watermark=ts,
+                headers=TEST_HEADERS,
+            )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
             "for Datum.event_time",
@@ -44,6 +51,7 @@ class TestDatum(unittest.TestCase):
                 value=mock_message(),
                 event_time=mock_event_time(),
                 watermark=ts,
+                headers=TEST_HEADERS,
             )
         self.assertEqual(
             "Wrong data type: <class 'google.protobuf.timestamp_pb2.Timestamp'> "
@@ -57,6 +65,7 @@ class TestDatum(unittest.TestCase):
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=TEST_HEADERS,
         )
         self.assertEqual(mock_message(), d.value)
 
@@ -75,8 +84,10 @@ class TestDatum(unittest.TestCase):
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
+            headers=TEST_HEADERS,
         )
         self.assertEqual(mock_event_time(), d.event_time)
+        self.assertEqual(TEST_HEADERS, d.headers)
 
     def test_watermark(self):
         d = Datum(
@@ -86,6 +97,7 @@ class TestDatum(unittest.TestCase):
             watermark=mock_watermark(),
         )
         self.assertEqual(mock_watermark(), d.watermark)
+        self.assertEqual({}, d.headers)
 
 
 class TestIntervalWindow(unittest.TestCase):

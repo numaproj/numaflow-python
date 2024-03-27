@@ -9,3 +9,7 @@ image-push:
 image:
 	docker build -t "quay.io/numaio/numaflow-python/even-odd:${TAG}" .
 	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/even-odd:${TAG}"; fi
+
+.PHONY: clean
+clean:
+	rm -rf ./dist

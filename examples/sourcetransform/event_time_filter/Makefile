@@ -9,3 +9,7 @@ image-push:
 image:
 	docker build -t "quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}" .
 	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}"; fi
+
+.PHONY: clean
+clean:
+	rm -rf ./dist

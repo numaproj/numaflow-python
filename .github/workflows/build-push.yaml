@@ -1,0 +1,52 @@
+name: Docker Publish
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - '*'
+
+jobs:
+  docker_publish:
+    # run it only on numaproj/numaflow-python repository
+    # forked repositories normally don't have the proper permission setup.
+    if: ${{ github.repository }} == "numaproj/numaflow-python"
+    name: Build, Tag, and Push Image
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # TODO: rewrite asyncio-reduce example using latest SDK version, as it is currently using old methods
+        # then add to example_directories matrix
+        example_directories: [
+          "examples/map/even_odd", "examples/map/flatmap", "examples/map/forward_message",
+          "examples/map/multiproc_map", "examples/mapstream/flatmap_stream", "examples/reduce/counter",
+          "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple-sideinput",
+          "examples/sideinput/simple-sideinput/udf", "examples/sink/async_log", "examples/sink/log",
+          "examples/source/async-source", "examples/source/simple-source", "examples/sourcetransform/event_time_filter"
+        ]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install poetry
+        run: |
+          pip install poetry
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Quay.io registry
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.NUMAIO_USERNAME }}
+          password: ${{ secrets.NUMAIO_PASSWORD }}
+      - name: Build, tag, and push images
+        run: |
+          ./hack/update_examples.sh --update ${{ matrix.example_directories }}
+          ./hack/update_examples.sh --build-push-example ${{ matrix.example_directories }}

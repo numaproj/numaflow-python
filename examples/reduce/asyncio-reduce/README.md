@@ -1,15 +1,15 @@
 #  Async-IO Examples
-`pynumaflow` supports only asyncio based Reduce UDFs because we found that the procedural Python is not able to handle 
+`pynumaflow` supports only asyncio based Reduce UDFs because we found that procedural Python is not able to handle 
 any substantial traffic. 
 
-The example can be used as a starter guide for writing asynchronous Reduce UDF using the famed asyncio builtin 
+This example can be used as a starter guide for writing an asynchronous Reduce UDF using the famed asyncio builtin 
 module.
 
 Asyncio is used as a foundation for multiple Python asynchronous frameworks that provide high-performance network and 
 webservers, database connection libraries, distributed task queues, etc. It is often a perfect fit for IO-bound and 
 high-level structured network code.
 
-We focus on writing UDFs in Python using `numaflow-python` sdk and `asyncio` library.
+We focus on writing UDFs in Python using the `numaflow-python` SDK and `asyncio` library.
 
 ### Scenario 1 - Using Async functions
 In the file [async_exec.py](async_exec.py), we have covered an example of a UDF for making HTTP requests in an async 
@@ -29,14 +29,11 @@ async def reduce_handler(key: str, datums: AsyncIterable[Datum], md: Metadata) -
     ...
 ```
 
-
-
 **Note**: If using the ```create_task``` ([Refer here](https://docs.python.org/3/library/asyncio-task.html#creating-tasks))  method for creating coroutines,
-It is important to save a reference to the result of this function, 
+it is important to save a reference to the result of this function, 
 to avoid a task disappearing mid-execution. The event loop only keeps weak references to tasks.
 A task that isn’t referenced elsewhere may get garbage collected at any time, even before it’s done.
 For reliable background tasks, gather them in a collection:
-
 
 ```python
 running_tasks = set()
@@ -45,9 +42,6 @@ task = asyncio.create_task(some_background_function())
 running_tasks.add(task)
 task.add_done_callback(lambda t: running_tasks.remove(t))
 ```
-
-
-
 
 **To compare the performance of the Async and the sequential implementation, we run and compare the results
 on the following scenarios on an HTTP server.**

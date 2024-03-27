@@ -1,3 +1,15 @@
+TAG ?= stable
+PUSH ?= false
+
+.PHONY: image-push
+image-push:
+	docker buildx build -t "quay.io/numaio/numaflow-python/<example-repo-name>:${TAG}" --platform linux/amd64,linux/arm64 . --push
+
 .PHONY: image
 image:
-	docker build --build-arg "ARCH=amd64" .
+	docker build -t "quay.io/numaio/numaflow-python/<example-repo-name>:${TAG}" .
+	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/<example-repo-name>:${TAG}"; fi
+
+.PHONY: clean
+clean:
+	rm -rf ./dist

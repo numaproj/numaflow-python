@@ -7,7 +7,7 @@ authors = ["Numaflow developers"]
 [tool.poetry.dependencies]
 python = ">=3.9, <3.12"
 aiorun = "^2023.7"
-pynumaflow = {git = "https://github.com/<YOUR_ID>/numaflow-python", rev = "<YOUR_BRANCH>"}
+pynumaflow = { path = "./dist/pynumaflow.tar.gz"}
 
 [tool.poetry.dev-dependencies]
 

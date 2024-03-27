@@ -1,6 +1,6 @@
 # SideInput Example
 
-An example that demonstrates how to write a `sideinput` function in python
+An example that demonstrates how to write a `sideinput` function in python.
 
 ### SideInput
 ```python
@@ -17,7 +17,7 @@ def my_handler() -> Response:
     # broadcast_message() is used to indicate that there is a broadcast
     return Response.broadcast_message(val.encode("utf-8"))
 ```
-After performing the retrieval/update for the side input value the user can choose to either broadcast the 
+After performing the retrieval/update for the side input value, the user can choose to either broadcast the 
 message to other side input vertices or drop the message. The side input message is not retried.
 
 For each side input there will be a file with the given path and after any update to the side input value the file will 

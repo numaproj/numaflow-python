@@ -10,7 +10,7 @@ This document explains the development process for the Numaflow Python SDK.
 4. Run `poetry update -vv` inside the example directory you used in the step above. This will create a `poetry.lock` file
 5. Update the `example.py` inside the same example directory if needed 
 6. Run `make image` inside the same example directory to build your image
-7. Now that you have the image with your customized example and code change, you can test it in a Numaflow pipeline. An example pipeline `pipeline-numaflow.yaml` is also provided in this `developer_guide` folder.
+7. Now that you have the image with your customized example and code change, you can test it in a Numaflow pipeline. Example pipelines, `pipeline.yaml`, are also provided in most of the example directories.
 Please check [Numaflow](https://numaflow.numaproj.io/) for more details
 
 Each example directory has a Makefile which can be used to build, tag, and push images.
@@ -41,7 +41,7 @@ After confirming that your changes pass local testing:
 1. Clean up testing artifacts (remove any `dist/` folders created, remove any test images on quay.io, etc.)
 2. Create a PR for your changes. Once your PR has been merged, a Github Actions workflow (Docker Publish) will be triggered, to build, tag (with `stable`), and push
 all example images. This ensures that all example images are using the most up-to-date version of the SDK, i.e. the one including your
-changes.
+changes
 
 ### Before Release
 

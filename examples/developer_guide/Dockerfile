@@ -39,7 +39,8 @@ RUN apt-get update \
 FROM builder AS udf
 
 WORKDIR $PYSETUP_PATH
-COPY ./pyproject.toml ./poetry.lock ./
+COPY dist/ ./dist/
+COPY pyproject.toml .
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
 
@@ -48,7 +49,7 @@ WORKDIR /app
 
 RUN chmod +x entry.sh
 
-ENTRYPOINT ["/app/entry.sh", "--"]
+ENTRYPOINT ["/dumb-init", "--"]
 CMD ["/app/entry.sh"]
 
 EXPOSE 5000

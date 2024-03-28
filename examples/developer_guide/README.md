@@ -5,11 +5,11 @@ This document explains the development process for the Numaflow Python SDK.
 ### Testing
 
 1. Install [Poetry](https://python-poetry.org/docs/) before starting your test. Make sure you have the correct Python version
-2. Push your code change to your remote branch
-3. Update the `pynumaflow` dependency in the `pyproject.toml` file with your (forked) repo url and branch name. For example, `pynumaflow = {git = "https://github.com/<github-username>/numaflow-python", rev = <branch-name>}`
-4. Run `poetry update -vv` from this `developer_guide` folder. You should get a `poetry.lock` file
-5. Update your `example.py` as/if needed
-6. Run `make image` to build your image
+2. Make your SDK changes
+3. Run `./.hack/update_examples.sh -u <example-directory-path>`. This command will create a tarball of the SDK, that includes your changes, in the directory of the example specified
+4. Run `poetry update -vv` inside the example directory you used in the step above. This will create a `poetry.lock` file
+5. Update the `example.py` inside the same example directory if needed 
+6. Run `make image` inside the same example directory to build your image
 7. Now that you have the image with your customized example and code change, you can test it in a Numaflow pipeline. An example pipeline `pipeline-numaflow.yaml` is also provided in this `developer_guide` folder.
 Please check [Numaflow](https://numaflow.numaproj.io/) for more details
 
@@ -17,56 +17,42 @@ Each example directory has a Makefile which can be used to build, tag, and push 
 If you want to build and tag the image and then immediately push it to quay.io, use the `image-push` target.
 If you want to build and tag a local image without pushing, use the `image` target.
 
-If you want to build and push all the example images at once, you can run:
+Everytime you make a new SDK change, make sure to create the `dist/` folder in the example directory you would like
+to test, by running:
 ```shell
-./.hack/update_examples.sh -bp -t <tag>
+./.hack/update_examples.sh -u <example-directory-path>
 ```
-The default tag is `stable`, but it is recommended you specify your own for testing purposes, as the Github Actions CI uses the `stable` tag.
-This consistent tag name is used so that the tags in the [E2E test pipelines](https://github.com/numaproj/numaflow/tree/main/test) do not need to be
-updated each time an SDK change is made.
+When you are no longer using the `dist/` folders you can run `make clean` in the root directory, as well as in any example directory
+in order to remove them.
 
-The batch build and push command should only be used when you are confident of your changes, as it takes approximately 10-15 minutes run.
-Thus, when testing, it is recommended to build and push specific examples instead:
+If you would like to build and push a specific example, you can do so by running (make sure that the `dist/` folder is present in the directory):
 ```shell
-./.hack/update_examples.sh -bpe <path-to-dockerfile> -t <tag>
+./.hack/update_examples.sh -bpe <example-directory-path> -t <tag>
 ```
 This is essentially equivalent to running `make image-push TAG=<tag>` in the example directory itself.
+The default tag is `stable`, but it is recommended you specify your own for testing purposes, as the Github Actions CI uses the `stable` tag.
+This consistent tag name is used so that the tags in the [E2E test pipelines](https://github.com/numaproj/numaflow/tree/main/test) do not need to be updated each time an SDK change is made.
 
 Note: before running the script, ensure that through the CLI, you are logged into quay.io.
 
 ### Deploying
 
 After confirming that your changes pass local testing:
-1. Clean up testing artifacts
-2. Revert the `pyproject.toml` file to its previous state, i.e. before you updated it with your forked repo and branch
-3. Create a PR for your changes
+1. Clean up testing artifacts (remove any `dist/` folders created, remove any test images on quay.io, etc.)
+2. Create a PR for your changes. Once your PR has been merged, a Github Actions workflow (Docker Publish) will be triggered, to build, tag (with `stable`), and push
+all example images. This ensures that all example images are using the most up-to-date version of the SDK, i.e. the one including your
+changes.
 
-Once the PR has been merged it is important that the `pynumaflow` dependency of the example images use your merged PR's commit SHA
-as reference. Thus, before you delete/leave your branch, run:
-```shell
-./.hack/update_examples.sh -us <commit-sha>
-./.hack/update_examples.sh -bp
-```
-The above will update the `pynumaflow` dependencies to point to the specified commit SHA, and build, tag, and push all example images.
-Since we do not want to flood the commit history with dependency updates, it is not necessary
-to create a second PR with these changes. It is not necessary, as the `pynumaflow` dependency of the images will be
-`pynumaflow = {git = "https://github.com/numaproj/numaflow-python.git", rev = "<latest-sha>"}`, while the repo itself will show
-`pynumaflow = "~<latest-version>"`. Note that batch build and push takes approximately 10-15 minutes to finish executing.
+### Before Release
 
-### After Release
-
-Once a new release has been made, and its corresponding version tag exists on the remote repo, we want to update the
-`pyproject.toml` files to reflect this new version:
-```shell
-./.hack/update_examples.sh -uv <version>
-  ```
-After running the above, create a PR for the changes that the script made.
-
-Once your changes have been merged, similar to the deploying section above, before deleting/leaving your branch, update
-the example images to use the merged commit SHA:
-```shell
-./.hack/update_examples.sh -us <commit-sha>
-./.hack/update_examples.sh -bp
-```
+Before releasing a new SDK version, make sure to update all references from the old version to the new one. For example,
+the version in the root `pyproject.toml` should be updated (for [reference](https://github.com/numaproj/numaflow-python/commit/6a720e7c56121a45b94aa929c6b720312dd9340a)), 
+which can be done by running `poetry version <new-version>`.
+After making these changes, create a PR. Once merged, it will trigger the Docker Publish workflow, and should be included in the release.
 As a result, the correct SDK version will always be printed in the server information logs, and
-the example images will always be using the latest commit SHA.
+the example images will always be using the latest changes (due to referencing the local SDK tarball that is built).
+
+### Adding a New Example
+
+If you add a new example, in order for it to be used by the Docker Publish workflow, add its path
+to the `example_directories` matrix in `build-push.yaml`.

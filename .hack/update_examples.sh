@@ -1,34 +1,11 @@
 #!/bin/bash
 
 function show_help () {
-    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bp|--build-push | -bpe|--build-push-example <path> | -us|--update-sha <commit-sha> | -uv|--update-version <version>)"
+    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bpe|--build-push-example <path> | -u|--update <path>)"
     echo "  -h, --help                   Display help message and exit"
-    echo "  -bp, --build-push            Build the Dockerfiles of all the examples and push them to the quay.io registry"
     echo "  -bpe, --build-push-example   Build the Dockerfile of the given example directory path, and push it to the quay.io registry"
-    echo "  -t, --tag                    To be optionally used with -bpe or -bp. Specify the tag to build with. Default tag: stable"
-    echo "  -us, --update-sha            Update all of the examples to depend on the specified commit SHA"
-    echo "  -uv, --update-version        Update all of the examples to depend on the specified version"
-}
-
-function traverse_examples () {
-  find examples -name "pyproject.toml"  | while read -r line;
-  do
-      dir="$(dirname "${line}")"
-      cd "$dir" || exit
-      # TODO: rewrite asyncio-reduce example using latest SDK version, as it is currently using old methods
-      if [ "$dir" == "examples/developer_guide" ] || [ "$dir" == examples/reduce/asyncio-reduce ]; then
-          cd ~- || exit
-          continue
-      fi
-
-      command=$1
-      if ! $command; then
-        echo "Error: failed $command in $dir" >&2
-        exit 1
-      fi
-
-      cd ~- || exit
-  done
+    echo "  -t, --tag                    To be optionally used with -bpe. Specify the tag to build with. Default tag: stable"
+    echo "  -u, --update                 Create a dist/ folder which contains a tarball of the SDK, in the specified example directory"
 }
 
 if [ $# -eq 0 ]; then
@@ -38,13 +15,9 @@ if [ $# -eq 0 ]; then
 fi
 
 usingHelp=0
-usingBuildPush=0
 usingBuildPushExample=0
-usingSHA=0
-usingVersion=0
+usingUpdate=0
 usingTag=0
-sha=""
-version=""
 directoryPath=""
 tag="stable"
 
@@ -53,9 +26,6 @@ function handle_options () {
     case "$1" in
       -h | --help)
         usingHelp=1
-        ;;
-      -bp | --build-push)
-        usingBuildPush=1
         ;;
       -bpe | --build-push-example)
         if [ -z "$2" ]; then
@@ -79,26 +49,15 @@ function handle_options () {
         tag=$2
         shift
         ;;
-      -us | --update-sha)
+      -u | --update)
         if [ -z "$2" ]; then
-          echo "Commit SHA not specified." >&2
+          echo "Directory path not specified." >&2
           show_help
           exit 1
         fi
 
-        usingSHA=1
-        sha=$2
-        shift
-        ;;
-      -uv | --update-version)
-        if [ -z "$2" ]; then
-          echo "Version not specified." >&2
-          show_help
-          exit 1
-        fi
-
-        usingVersion=1
-        version=$2
+        usingUpdate=1
+        directoryPath=$2
         shift
         ;;
       *)
@@ -113,47 +72,53 @@ function handle_options () {
 
 handle_options "$@"
 
-if (( usingBuildPush + usingBuildPushExample + usingSHA + usingHelp + usingVersion > 1 )); then
-  echo "Only one of '-h', '-bp', '-bpe', '-us', or '-uv' is allowed at a time" >&2
+if (( usingBuildPushExample + usingUpdate + usingHelp  > 1 )); then
+  echo "Only one of '-h', '-bpe', or '-u' is allowed at a time" >&2
   show_help
   exit 1
 fi
 
-if (( (usingTag + usingSHA + usingHelp + usingVersion > 1) || (usingTag && usingBuildPush + usingBuildPushExample == 0) )); then
-  echo "Can only use -t with -bp or -bpe" >&2
+if (( (usingTag + usingHelp + usingUpdate > 1) || (usingTag && usingBuildPushExample == 0) )); then
+  echo "Can only use -t with -bpe" >&2
   show_help
   exit 1
 fi
 
-if [ -n "$sha" ]; then
- echo "Using SHA: $sha"
-fi
-
-if [ -n "$version" ]; then
- echo "Using version: $version"
-fi
-
-if [ -n "$directoryPath" ]; then
- echo "Dockerfile path to use: $directoryPath"
-fi
-
-if [ -n "$tag" ] && (( ! usingSHA )) && (( ! usingHelp )) && (( ! usingVersion )); then
+if [ -n "$tag" ] && (( ! usingUpdate )) && (( ! usingHelp )); then
  echo "Using tag: $tag"
 fi
 
-if (( usingBuildPush )); then
-  traverse_examples "make image-push TAG=$tag"
-elif (( usingBuildPushExample )); then
+if (( usingBuildPushExample )); then
    cd "./$directoryPath" || exit
    if ! make image-push TAG="$tag"; then
      echo "Error: failed to run make image-push in $directoryPath" >&2
      exit 1
    fi
-elif (( usingSHA )); then
-  traverse_examples "poetry add git+https://github.com/numaproj/numaflow-python.git@$sha"
-elif (( usingVersion )); then
-  poetry version "$version"
-  traverse_examples "poetry add pynumaflow@~$version"
+elif (( usingUpdate )); then
+  if [ ! -d "$directoryPath" ]; then
+    echo "Error: the specified directory path does not exist" >&2
+    exit 1
+  fi
+
+  if [ -d dist ]; then
+    rm -rf ./dist
+  fi
+
+  if ! poetry build --format sdist; then
+    echo "Error: failed to build pynumaflow in $directoryPath" >&2
+    exit 1
+  fi
+
+  if ! mv dist/"$(ls dist)" dist/pynumaflow.tar.gz; then
+    echo "Error: failed to rename pynumaflow tarball in $directoryPath" >&2
+    exit 1
+  fi
+
+  if ! cp -r dist "$directoryPath"/; then
+    echo "Error: failed to copy over dist folder to $directoryPath" >&2
+    exit 1
+  fi
 elif (( usingHelp )); then
   show_help
 fi
+

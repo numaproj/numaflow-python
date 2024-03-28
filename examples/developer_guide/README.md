@@ -17,7 +17,7 @@ Each example directory has a Makefile which can be used to build, tag, and push 
 If you want to build and tag the image and then immediately push it to quay.io, use the `image-push` target.
 If you want to build and tag a local image without pushing, use the `image` target.
 
-Everytime you make a new SDK change, make sure to update the `dist/` folder in the example directory you would like
+Everytime you make a new SDK change, make sure to create the `dist/` folder in the example directory you would like
 to test, by running:
 ```shell
 ./.hack/update_examples.sh -u <example-directory-path>

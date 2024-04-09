@@ -3,7 +3,7 @@ from enum import Enum
 
 # Constants for using in the info-server
 # Specifies the minimum Numaflow version required by the current SDK version
-MINIMUM_NUMAFLOW_VERSION = ">= 1.2.0-0"
+MINIMUM_NUMAFLOW_VERSION = "1.2.0-0"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"
 

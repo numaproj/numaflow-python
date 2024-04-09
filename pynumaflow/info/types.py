@@ -40,6 +40,7 @@ class ServerInfo:
     Args:
         protocol: Protocol to use (UDS or TCP)
         language: Language used by the server(Python, Golang, Java)
+        minimum_client_version: lower bound for the supported Numaflow version
         version: Numaflow sdk version used by the server
         metadata: Any additional information to be provided (env vars)
     """

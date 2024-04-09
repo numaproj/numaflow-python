@@ -181,6 +181,7 @@ def start_multiproc_server(
     serv_info = ServerInfo(
         protocol=Protocol.TCP,
         language=Language.PYTHON,
+        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
         version=get_sdk_version(),
         metadata=get_metadata_env(envs=METADATA_ENVS),
     )
@@ -207,10 +208,10 @@ async def start_async_server(
     await server_async.start()
 
     # Add the server information to the server info file
-    # Here we just write the protocol and language information
     serv_info = ServerInfo(
         protocol=Protocol.UDS,
         language=Language.PYTHON,
+        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
         version=get_sdk_version(),
     )
     info_server_write(server_info=serv_info, info_file=server_info_file)

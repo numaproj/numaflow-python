@@ -43,8 +43,8 @@ class ServerInfo:
         metadata: Any additional information to be provided (env vars)
     """
 
-    protocol:               Protocol
-    language:               Language
+    protocol: Protocol
+    language: Language
     minimum_client_version: str
-    version:                str
-    metadata:               dict = field(default_factory=dict)
+    version: str
+    metadata: dict = field(default_factory=dict)

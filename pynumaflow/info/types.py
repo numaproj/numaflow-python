@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 # Constants for using in the info-server
+MINIMUM_CLIENT_VERSION = ">= 1.2.0-0"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"
 
@@ -42,7 +43,8 @@ class ServerInfo:
         metadata: Any additional information to be provided (env vars)
     """
 
-    protocol: Protocol
-    language: Language
-    version: str
-    metadata: dict = field(default_factory=dict)
+    protocol:               Protocol
+    language:               Language
+    minimum_client_version: str
+    version:                str
+    metadata:               dict = field(default_factory=dict)

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 # Constants for using in the info-server
-# Specify the minimum Numaflow version required by the latest SDK version
+# Specify the minimum Numaflow version required by the current SDK version
 MINIMUM_NUMAFLOW_VERSION = "1.2.0-0"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"

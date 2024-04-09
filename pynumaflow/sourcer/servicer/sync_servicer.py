@@ -63,7 +63,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
                     keys=msg.keys,
                     offset=msg.offset.as_dict,
                     event_time=event_time_timestamp,
-                    headers=msg.headers,
+                    headers=dict(msg.headers),
                 )
         except Exception as err:
             _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)

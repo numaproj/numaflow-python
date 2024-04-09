@@ -16,7 +16,7 @@ def datum_generator(request_iterator: Iterable[sink_pb2.SinkRequest]) -> Iterabl
             value=d.value,
             event_time=d.event_time.ToDatetime(),
             watermark=d.watermark.ToDatetime(),
-            headers=d.headers,
+            headers=dict(d.headers),
         )
         yield datum
 

@@ -40,7 +40,7 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
                 value=request.value,
                 event_time=request.event_time.ToDatetime(),
                 watermark=request.watermark.ToDatetime(),
-                headers=request.headers,
+                headers=dict(request.headers),
             ),
         ):
             yield mapstream_pb2.MapStreamResponse(result=res)

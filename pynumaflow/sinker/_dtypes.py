@@ -178,7 +178,7 @@ class Datum:
     @property
     def headers(self) -> dict[str, str]:
         """Returns the headers of the event."""
-        return self._headers.copy()
+        return self._headers
 
 
 class Sinker(metaclass=ABCMeta):

@@ -13,6 +13,7 @@ from pynumaflow.info.types import (
     Protocol,
     Language,
     METADATA_ENVS,
+    MINIMUM_NUMAFLOW_VERSION,
 )
 
 
@@ -26,6 +27,7 @@ class TestInfoServer(unittest.TestCase):
         self.serv_uds = ServerInfo(
             protocol=Protocol.UDS,
             language=Language.PYTHON,
+            minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
             version=get_sdk_version(),
             metadata=get_metadata_env(envs=METADATA_ENVS),
         )
@@ -43,6 +45,7 @@ class TestInfoServer(unittest.TestCase):
         self.assertEqual(file_data["metadata"]["CPU_LIMIT"], "3")
         self.assertEqual(file_data["protocol"], "uds")
         self.assertEqual(file_data["language"], "python")
+        self.assertEqual(file_data["minimum_numaflow_version"], MINIMUM_NUMAFLOW_VERSION)
 
     def test_metadata_env(self):
         test_file = "/tmp/test_info_server"

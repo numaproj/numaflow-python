@@ -3,7 +3,7 @@ from enum import Enum
 
 # Constants for using in the info-server
 # Specifies the minimum Numaflow version required by the current SDK version
-MINIMUM_CLIENT_VERSION = ">= 1.2.0-0"
+MINIMUM_NUMAFLOW_VERSION = ">= 1.2.0-0"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"
 
@@ -40,13 +40,13 @@ class ServerInfo:
     Args:
         protocol: Protocol to use (UDS or TCP)
         language: Language used by the server(Python, Golang, Java)
-        minimum_client_version: lower bound for the supported Numaflow version
+        minimum_numaflow_version: lower bound for the supported Numaflow version
         version: Numaflow sdk version used by the server
         metadata: Any additional information to be provided (env vars)
     """
 
     protocol: Protocol
     language: Language
-    minimum_client_version: str
+    minimum_numaflow_version: str
     version: str
     metadata: dict = field(default_factory=dict)

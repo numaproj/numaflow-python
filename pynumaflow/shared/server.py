@@ -19,7 +19,7 @@ from pynumaflow.info.types import (
     Protocol,
     Language,
     METADATA_ENVS,
-    MINIMUM_CLIENT_VERSION,
+    MINIMUM_NUMAFLOW_VERSION,
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.proto.sideinput import sideinput_pb2_grpc
@@ -49,7 +49,7 @@ def write_info_file(protocol: Protocol, info_file) -> None:
     serv_info = ServerInfo(
         protocol=protocol,
         language=Language.PYTHON,
-        minimum_client_version=MINIMUM_CLIENT_VERSION,
+        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
         version=get_sdk_version(),
     )
     info_server_write(server_info=serv_info, info_file=info_file)
@@ -72,7 +72,7 @@ def sync_server_start(
         server_info = ServerInfo(
             protocol=Protocol.UDS,
             language=Language.PYTHON,
-            minimum_client_version=MINIMUM_CLIENT_VERSION,
+            minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
             version=get_sdk_version(),
         )
     else:

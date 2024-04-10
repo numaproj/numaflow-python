@@ -38,7 +38,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                     value=request.value,
                     event_time=request.event_time.ToDatetime(),
                     watermark=request.watermark.ToDatetime(),
-                    headers=request.headers,
+                    headers=dict(request.headers),
                 ),
             )
         except Exception as e:

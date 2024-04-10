@@ -35,7 +35,7 @@ async def datum_generator(
                 value=d.payload.value,
                 event_time=d.payload.event_time.ToDatetime(),
                 watermark=d.payload.watermark.ToDatetime(),
-                headers=d.payload.headers,
+                headers=dict(d.payload.headers),
             ),
         )
         yield reduce_request

@@ -17,7 +17,7 @@ the example images will always be using the latest changes (due to referencing t
 This can be done via the Github UI. In the `Releases` section of the Python SDK repo, click `Draft a new release`. Create an appropriate tag for the new version and select it. Make 
 the title the same as the tag. Click `Generate release notes` so that all the changes made since the last release are documented. If there are any major features or breaking
 changes that you would like to highlight as part of the release, add those to the description as well. Then set the release as either pre-release or latest, depending
-on your situation. Finally, click `Publish release`, and your version tag will be the newest release on the repository (assuming that you chose `Set as the latest release`).
+on your situation. Finally, click `Publish release`, and your version tag will be the newest release on the repository.
 
 ### After Release
 

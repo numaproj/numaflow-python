@@ -62,22 +62,19 @@ def sync_server_start(
     server_info_file: str,
     server_options=None,
     udf_type: str = UDFType.Map,
-    add_info_server=True,
 ):
     """
     Utility function to start a sync grpc server instance.
     """
     # Add the server information to the server info file
-    if add_info_server:
-        server_info = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
-            version=get_sdk_version(),
-        )
-    else:
-        server_info = None
-    # Run a sync server instances
+    server_info = ServerInfo(
+        protocol=Protocol.UDS,
+        language=Language.PYTHON,
+        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
+        version=get_sdk_version(),
+    )
+
+    # Run a sync server instance
     _run_server(
         servicer=servicer,
         bind_address=bind_address,
@@ -96,7 +93,7 @@ def _run_server(
     server_options,
     udf_type: str,
     server_info_file,
-    server_info=None,
+    server_info,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -125,10 +122,7 @@ def _run_server(
     server.add_insecure_port(bind_address)
     # start the gRPC server
     server.start()
-
-    # Add the server information to the server info file if provided
-    if server_info and server_info_file:
-        info_server_write(server_info=server_info, info_file=server_info_file)
+    info_server_write(server_info=server_info, info_file=server_info_file)
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
     server.wait_for_termination()
@@ -181,6 +175,7 @@ def start_multiproc_server(
     serv_info = ServerInfo(
         protocol=Protocol.TCP,
         language=Language.PYTHON,
+        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
         version=get_sdk_version(),
         metadata=get_metadata_env(envs=METADATA_ENVS),
     )
@@ -207,10 +202,10 @@ async def start_async_server(
     await server_async.start()
 
     # Add the server information to the server info file
-    # Here we just write the protocol and language information
     serv_info = ServerInfo(
         protocol=Protocol.UDS,
         language=Language.PYTHON,
+        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
         version=get_sdk_version(),
     )
     info_server_write(server_info=serv_info, info_file=server_info_file)

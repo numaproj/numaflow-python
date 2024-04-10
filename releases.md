@@ -18,3 +18,8 @@ This can be done via the Github UI. In the `Releases` section of the Python SDK 
 the title the same as the tag. Click `Generate release notes` so that all the changes made since the last release are documented. If there are any major features or breaking
 changes that you would like to highlight as part of the release, add those to the description as well. Then set the release as either pre-release or latest, depending
 on your situation. Finally, click `Publish release`, and your version tag will be the newest release on the repository (assuming that you chose `Set as the latest release`).
+
+### After Release
+
+If the released version has backwards incompatible changes, i.e. it does not support older versions of the Numaflow platform,
+you must update the `MINIMUM_NUMAFLOW_VERSION` constant in the `pynumaflow/info/types.py` file to the minimum Numaflow version that is supported by your new SDK version. 

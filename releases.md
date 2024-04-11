@@ -13,7 +13,7 @@ After making these changes, create a PR. Once merged, it will trigger the Docker
 As a result, the correct SDK version will always be printed in the server information logs, and
 the example images will always be using the latest changes (due to referencing the local SDK tarball that is built).
 
-If the version to be released version has backwards incompatible changes, i.e. it does not support older versions of the Numaflow platform,
+If the version to be released has backwards incompatible changes, i.e. it does not support older versions of the Numaflow platform,
 you must update the `MINIMUM_NUMAFLOW_VERSION` constant in the `pynumaflow/info/types.py` file to the minimum Numaflow version that is supported by your new SDK version.
 Ensure that this change is merged and included in the release. 
 

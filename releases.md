@@ -9,7 +9,7 @@ Before releasing a new SDK version, make sure to update all references from the 
 the version in the root `pyproject.toml` should be updated (for [reference](https://github.com/numaproj/numaflow-python/commit/6a720e7c56121a45b94aa929c6b720312dd9340a)). The version in the root `pyproject.toml` 
 can be updated by running `poetry version <version-bump-rule | PEP440-string>`. The version bump rules that can be provided and their corresponding effects can be found [here](https://python-poetry.org/docs/cli/#version),
 in the `Poetry` documentation. A version number can also be directly specified instead, but it must follow the [PEP 440](https://peps.python.org/pep-0440/) specification.
-After making these changes, create a PR. Once merged, it will trigger the Docker Publish workflow, and should be included in the release.
+After making these changes, create a PR. Once merged, it will trigger the `Docker Publish` workflow, and should be included in the release.
 As a result, the correct SDK version will always be printed in the server information logs, and
 the example images will always be using the latest changes (due to referencing the local SDK tarball that is built).
 

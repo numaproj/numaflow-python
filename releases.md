@@ -2,7 +2,6 @@
 
 This document explains the release process for the Python SDK. You can find the most recent version under [Github Releases](https://github.com/numaproj/numaflow-python/releases).
 
-
 ### Before Release
 
 Before releasing a new SDK version, make sure to update all references from the old version to the new one. For example,

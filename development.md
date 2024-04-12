@@ -39,11 +39,11 @@ Note: before running the script, ensure that through the CLI, you are logged int
 
 After confirming that your changes pass local testing:
 1. Clean up testing artifacts (remove any `dist/` folders created, remove any test images on quay.io, etc.)
-2. Create a PR for your changes. Once your PR has been merged, a Github Actions workflow (Docker Publish) will be triggered, to build, tag (with `stable`), and push
+2. Create a PR for your changes. Once your PR has been merged, a Github Actions workflow (`Docker Publish`) will be triggered, to build, tag (with `stable`), and push
 all example images. This ensures that all example images are using the most up-to-date version of the SDK, i.e. the one including your
 changes
 
 ### Adding a New Example
 
-If you add a new example, in order for it to be used by the Docker Publish workflow, add its path
+If you add a new example, in order for it to be used by the `Docker Publish` workflow, add its path
 to the `example_directories` matrix in `.github/workflows/build-push.yaml`.

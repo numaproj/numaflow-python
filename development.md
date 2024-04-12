@@ -39,20 +39,11 @@ Note: before running the script, ensure that through the CLI, you are logged int
 
 After confirming that your changes pass local testing:
 1. Clean up testing artifacts (remove any `dist/` folders created, remove any test images on quay.io, etc.)
-2. Create a PR for your changes. Once your PR has been merged, a Github Actions workflow (Docker Publish) will be triggered, to build, tag (with `stable`), and push
+2. Create a PR for your changes. Once your PR has been merged, a Github Actions workflow (`Docker Publish`) will be triggered, to build, tag (with `stable`), and push
 all example images. This ensures that all example images are using the most up-to-date version of the SDK, i.e. the one including your
 changes
 
-### Before Release
-
-Before releasing a new SDK version, make sure to update all references from the old version to the new one. For example,
-the version in the root `pyproject.toml` should be updated (for [reference](https://github.com/numaproj/numaflow-python/commit/6a720e7c56121a45b94aa929c6b720312dd9340a)), 
-which can be done by running `poetry version <new-version>`.
-After making these changes, create a PR. Once merged, it will trigger the Docker Publish workflow, and should be included in the release.
-As a result, the correct SDK version will always be printed in the server information logs, and
-the example images will always be using the latest changes (due to referencing the local SDK tarball that is built).
-
 ### Adding a New Example
 
-If you add a new example, in order for it to be used by the Docker Publish workflow, add its path
-to the `example_directories` matrix in `build-push.yaml`.
+If you add a new example, in order for it to be used by the `Docker Publish` workflow, add its path
+to the `example_directories` matrix in `.github/workflows/build-push.yaml`.

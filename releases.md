@@ -25,5 +25,5 @@ This can be done via the Github UI.
 4. Click `Generate release notes` so that 
 all the changes made since the last release are documented. If there are any major features or breaking changes that you would like to highlight as part of the release, 
 add those to the description as well
-6. Select `Set as the latest release` or `Set as a pre-release`, depending on your situation
-7. Finally, click `Publish release`, and your version tag will be the newest release on the repository
+5. Select `Set as the latest release` or `Set as a pre-release`, depending on your situation
+6. Finally, click `Publish release`, and your version tag will be the newest release on the repository

@@ -26,5 +26,5 @@ This can be done via the Github UI.
 all the changes made since the last release are documented
 5. If there are any major features or breaking changes that you would like to highlight as part of the release, 
 add those to the description as well
-6. Set the release as either pre-release or latest, depending on your situation
+6. Select `Set as the latest release` or `Set as a pre-release`, depending on your situation
 7. Finally, click `Publish release`, and your version tag will be the newest release on the repository

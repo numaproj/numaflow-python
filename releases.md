@@ -20,10 +20,11 @@ the example images will always be using the latest changes (due to referencing t
 This can be done via the Github UI. 
 1. In the `Releases` section of the Python SDK repo, click `Draft a new release`
 2. Create a tag that has the same name as the version that you specified in the root 
-`pyproject.toml` prefixed with a `'v'`, and select it. Make the title the same as the tag 
-3. Click `Generate release notes` so that 
+`pyproject.toml` prefixed with a `'v'`, and select it
+3. Make the title the same as the tag 
+4. Click `Generate release notes` so that 
 all the changes made since the last release are documented
-4. If there are any major features or breaking changes that you would like to highlight as part of the release, 
+5. If there are any major features or breaking changes that you would like to highlight as part of the release, 
 add those to the description as well
-5. Set the release as either pre-release or latest, depending on your situation
-6. Finally, click `Publish release`, and your version tag will be the newest release on the repository
+6. Set the release as either pre-release or latest, depending on your situation
+7. Finally, click `Publish release`, and your version tag will be the newest release on the repository

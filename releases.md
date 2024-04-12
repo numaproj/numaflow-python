@@ -23,8 +23,7 @@ This can be done via the Github UI.
 `pyproject.toml`, prefix it with a `'v'`, and select it
 3. Make the title the same as the tag 
 4. Click `Generate release notes` so that 
-all the changes made since the last release are documented
-5. If there are any major features or breaking changes that you would like to highlight as part of the release, 
+all the changes made since the last release are documented. If there are any major features or breaking changes that you would like to highlight as part of the release, 
 add those to the description as well
 6. Select `Set as the latest release` or `Set as a pre-release`, depending on your situation
 7. Finally, click `Publish release`, and your version tag will be the newest release on the repository

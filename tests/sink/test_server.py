@@ -1,14 +1,25 @@
+import os
 import unittest
 from datetime import datetime, timezone
 from collections.abc import Iterator
+from unittest import mock
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
+from pynumaflow._constants import (
+    UD_CONTAINER_FALLBACK_SINK,
+    FALLBACK_SINK_SERVER_INFO_FILE_PATH,
+    FALLBACK_SINK_SOCK_PATH,
+)
 from pynumaflow.sinker import Responses, Datum, Response, SinkServer
 from pynumaflow.proto.sinker import sink_pb2
+
+
+def mockenv(**envvars):
+    return mock.patch.dict(os.environ, envvars)
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:
@@ -188,6 +199,12 @@ class TestServer(unittest.TestCase):
     def test_invalid_init(self):
         with self.assertRaises(TypeError):
             SinkServer()
+
+    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_FALLBACK_SINK)
+    def test_start_fallback_sink(self):
+        server = SinkServer(sinker_instance=udsink_handler)
+        self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
+        self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,11 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
+from pynumaflow._constants import (
+    UD_CONTAINER_FALLBACK_SINK,
+    FALLBACK_SINK_SOCK_PATH,
+    FALLBACK_SINK_SERVER_INFO_FILE_PATH,
+)
 from pynumaflow.sinker import (
     Datum,
 )
@@ -19,6 +24,7 @@ from tests.sink.test_server import (
     mock_message,
     mock_err_message,
     mock_fallback_message,
+    mockenv,
 )
 from tests.testing_utils import get_time_args
 
@@ -182,6 +188,12 @@ class TestAsyncSink(unittest.TestCase):
     def test_invalid_server_type(self) -> None:
         with self.assertRaises(TypeError):
             SinkAsyncServer()
+
+    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_FALLBACK_SINK)
+    def test_start_fallback_sink(self):
+        server = SinkAsyncServer(sinker_instance=udsink_handler)
+        self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
+        self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
 
 
 if __name__ == "__main__":

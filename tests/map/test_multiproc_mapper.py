@@ -1,6 +1,5 @@
 import os
 import unittest
-from unittest import mock
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -17,10 +16,6 @@ from tests.testing_utils import (
     mock_message,
     mock_headers,
 )
-
-
-def mockenv(**envvars):
-    return mock.patch.dict(os.environ, envvars)
 
 
 class TestMultiProcMethods(unittest.TestCase):

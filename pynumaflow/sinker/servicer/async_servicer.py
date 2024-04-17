@@ -5,6 +5,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.sinker._dtypes import Responses, Datum, Response
 from pynumaflow.sinker._dtypes import SyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
+from pynumaflow.sinker.servicer.utils import build_sink_response
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
@@ -64,9 +65,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 rspns.append(Response.as_failure(_datum.id, err_msg))
         responses = []
         for rspn in rspns:
-            responses.append(
-                sink_pb2.SinkResponse.Result(id=rspn.id, success=rspn.success, err_msg=rspn.err)
-            )
+            responses.append(build_sink_response(rspn))
         return responses
 
     async def IsReady(

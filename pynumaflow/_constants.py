@@ -17,6 +17,7 @@ SIDE_INPUT_SOCK_PATH = "/var/run/numaflow/sideinput.sock"
 SOURCE_SOCK_PATH = "/var/run/numaflow/source.sock"
 MULTIPROC_MAP_SOCK_PORT = 55551
 MULTIPROC_MAP_SOCK_ADDR = "0.0.0.0"
+FALLBACK_SINK_SOCK_PATH = "/var/run/numaflow/fb-sink.sock"
 
 # Server information file configs
 MAP_SERVER_INFO_FILE_PATH = "/var/run/numaflow/mapper-server-info"
@@ -27,6 +28,10 @@ SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sourcetransformer-
 SINK_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sinker-server-info"
 SIDE_INPUT_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sideinput-server-info"
 SOURCE_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sourcer-server-info"
+FALLBACK_SINK_SERVER_INFO_FILE_PATH = "/var/run/numaflow/fb-sinker-server-info"
+
+ENV_UD_CONTAINER_TYPE = "NUMAFLOW_UD_CONTAINER_TYPE"
+UD_CONTAINER_FALLBACK_SINK = "fb-udsink"
 
 # TODO: need to make sure the DATUM_KEY value is the same as
 # https://github.com/numaproj/numaflow-go/blob/main/pkg/function/configs.go#L6

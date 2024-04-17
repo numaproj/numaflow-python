@@ -18,6 +18,7 @@ from pynumaflow.sinker.async_server import SinkAsyncServer
 from tests.sink.test_server import (
     mock_message,
     mock_err_message,
+    mock_fallback_message,
 )
 from tests.testing_utils import get_time_args
 
@@ -29,25 +30,27 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
     async for msg in datums:
         if msg.value.decode("utf-8") == "test_mock_err_message":
             raise ValueError("test_mock_err_message")
-        print("User Defined Sink", msg.value.decode("utf-8"))
-        responses.append(Response.as_success(msg.id))
+        elif msg.value.decode("utf-8") == "test_mock_fallback_message":
+            responses.append(Response.as_fallback(msg.id))
+        else:
+            responses.append(Response.as_success(msg.id))
     return responses
 
 
-#
 def request_generator(count, request):
     for i in range(count):
         request.id = str(i)
         yield request
 
 
-#
-#
-def start_sink_streaming_request(err=False) -> (Datum, tuple):
+def start_sink_streaming_request(req_type="success") -> (Datum, tuple):
     event_time_timestamp, watermark_timestamp = get_time_args()
     value = mock_message()
-    if err:
+    if req_type == "err":
         value = mock_err_message()
+
+    if req_type == "fallback":
+        value = mock_fallback_message()
 
     request = sink_pb2.SinkRequest(
         value=value,
@@ -138,11 +141,11 @@ class TestAsyncSink(unittest.TestCase):
         # capture the output from the ReduceFn generator and assert.
         self.assertEqual(10, len(generator_response.results))
         for x in generator_response.results:
-            self.assertTrue(x.success)
+            self.assertEqual(x.status, sink_pb2.Status.SUCCESS)
 
     def test_sink_err(self) -> None:
         stub = self.__stub()
-        request = start_sink_streaming_request(err=True)
+        request = start_sink_streaming_request(req_type="err")
         # print(request)
         generator_response = None
         try:
@@ -154,9 +157,24 @@ class TestAsyncSink(unittest.TestCase):
 
         # capture the output from the ReduceFn generator and assert.
         for x in generator_response.results:
-            self.assertFalse(x.success)
+            self.assertEqual(x.status, sink_pb2.Status.FAILURE)
 
-        # since there is only one key, the output count is 1
+    def test_sink_fallback(self) -> None:
+        stub = self.__stub()
+        request = start_sink_streaming_request(req_type="fallback")
+        # print(request)
+        generator_response = None
+        try:
+            generator_response = stub.SinkFn(
+                request_iterator=request_generator(count=10, request=request)
+            )
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        # capture the output from the ReduceFn generator and assert.
+        self.assertEqual(10, len(generator_response.results))
+        for x in generator_response.results:
+            self.assertEqual(x.status, sink_pb2.Status.FALLBACK)
 
     def __stub(self):
         return sink_pb2_grpc.SinkStub(_channel)

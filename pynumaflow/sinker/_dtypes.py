@@ -19,21 +19,33 @@ class Response:
         id: the id of the event.
         success: boolean indicating whether the event was successfully processed.
         err: error message if the event was not successfully processed.
+        fallback: fallback is true if the message to be sent to the fallback sink.
     """
 
     id: str
     success: bool
     err: Optional[str]
+    fallback: bool
 
-    __slots__ = ("id", "success", "err")
+    __slots__ = ("id", "success", "err", "fallback")
 
+    # as_success creates a successful Response with the given id.
+    # The Success field is set to true.
     @classmethod
     def as_success(cls: type[R], id_: str) -> R:
-        return Response(id=id_, success=True, err=None)
+        return Response(id=id_, success=True, err=None, fallback=False)
 
+    # as_failure creates a failed Response with the given id and error message.
+    # The success field is set to false and the err field is set to the provided error message.
     @classmethod
     def as_failure(cls: type[R], id_: str, err_msg: str) -> R:
-        return Response(id=id_, success=False, err=err_msg)
+        return Response(id=id_, success=False, err=err_msg, fallback=False)
+
+    # as_fallback creates a Response with the fallback field set to true.
+    # This indicates that the message should be sent to the fallback sink.
+    @classmethod
+    def as_fallback(cls: type[R], id_: str) -> R:
+        return Response(id=id_, fallback=True, err=None, success=False)
 
 
 class Responses(Sequence[R]):

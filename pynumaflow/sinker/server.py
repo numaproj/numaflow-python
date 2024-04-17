@@ -10,6 +10,10 @@ from pynumaflow._constants import (
     _LOGGER,
     UDFType,
     SINK_SERVER_INFO_FILE_PATH,
+    ENV_UD_CONTAINER_TYPE,
+    UD_CONTAINER_FALLBACK_SINK,
+    FALLBACK_SINK_SOCK_PATH,
+    FALLBACK_SINK_SERVER_INFO_FILE_PATH,
 )
 
 from pynumaflow.shared.server import NumaflowServer, sync_server_start
@@ -72,6 +76,12 @@ class SinkServer(NumaflowServer):
                 grpc_server.start()
 
         """
+        # If the container type is fallback sink, then use the fallback sink address and path.
+        if os.getenv(ENV_UD_CONTAINER_TYPE, "") == UD_CONTAINER_FALLBACK_SINK:
+            _LOGGER.info("Using Fallback Sink")
+            sock_path = FALLBACK_SINK_SOCK_PATH
+            server_info_file = FALLBACK_SINK_SERVER_INFO_FILE_PATH
+
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
         self.max_message_size = max_message_size
@@ -83,7 +93,6 @@ class SinkServer(NumaflowServer):
             ("grpc.max_send_message_length", self.max_message_size),
             ("grpc.max_receive_message_length", self.max_message_size),
         ]
-
         self.servicer = SyncSinkServicer(sinker_instance)
 
     def start(self):

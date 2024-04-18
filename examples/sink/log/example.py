@@ -14,6 +14,8 @@ class UserDefinedSink(Sinker):
         for msg in datums:
             _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
             responses.append(Response.as_success(msg.id))
+        # if we are not able to write to sink and if we have a fallback sink configured
+        # we can use Response.as_fallback(msg.id)) to write the message to fallback sink
         return responses
 
 
@@ -24,6 +26,8 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
             "User Defined Sink: Payload %s , Headers %s", msg.value.decode("utf-8"), msg.headers
         )
         responses.append(Response.as_success(msg.id))
+        # if we are not able to write to sink and if we have a fallback sink configured
+        # we can use Response.as_fallback(msg.id)) to write the message to fallback sink
     return responses
 
 

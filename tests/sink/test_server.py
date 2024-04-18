@@ -1,14 +1,25 @@
+import os
 import unittest
 from datetime import datetime, timezone
 from collections.abc import Iterator
+from unittest import mock
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
+from pynumaflow._constants import (
+    UD_CONTAINER_FALLBACK_SINK,
+    FALLBACK_SINK_SERVER_INFO_FILE_PATH,
+    FALLBACK_SINK_SOCK_PATH,
+)
 from pynumaflow.sinker import Responses, Datum, Response, SinkServer
 from pynumaflow.proto.sinker import sink_pb2
+
+
+def mockenv(**envvars):
+    return mock.patch.dict(os.environ, envvars)
 
 
 def udsink_handler(datums: Iterator[Datum]) -> Responses:
@@ -16,6 +27,8 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
     for msg in datums:
         if "err" in msg.value.decode("utf-8"):
             results.append(Response.as_failure(msg.id, "mock sink message error"))
+        elif "fallback" in msg.value.decode("utf-8"):
+            results.append(Response.as_fallback(msg.id))
         else:
             results.append(Response.as_success(msg.id))
     return results
@@ -32,6 +45,11 @@ def mock_message():
 
 def mock_err_message():
     msg = bytes("test_mock_err_message", encoding="utf-8")
+    return msg
+
+
+def mock_fallback_message():
+    msg = bytes("test_mock_fallback_message", encoding="utf-8")
     return msg
 
 
@@ -91,6 +109,12 @@ class TestServer(unittest.TestCase):
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
             ),
+            sink_pb2.SinkRequest(
+                id="test_id_2",
+                value=mock_fallback_message(),
+                event_time=event_time_timestamp,
+                watermark=watermark_timestamp,
+            ),
         ]
 
         method = self.test_server.invoke_stream_unary(
@@ -103,16 +127,20 @@ class TestServer(unittest.TestCase):
 
         method.send_request(test_datums[0])
         method.send_request(test_datums[1])
+        method.send_request(test_datums[2])
         method.requests_closed()
 
         response, metadata, code, details = method.termination()
-        self.assertEqual(2, len(response.results))
+        self.assertEqual(3, len(response.results))
         self.assertEqual("test_id_0", response.results[0].id)
         self.assertEqual("test_id_1", response.results[1].id)
-        self.assertFalse(response.results[0].success)
-        self.assertFalse(response.results[1].success)
+        self.assertEqual("test_id_2", response.results[2].id)
+        self.assertEqual(response.results[0].status, sink_pb2.Status.FAILURE)
+        self.assertEqual(response.results[1].status, sink_pb2.Status.FAILURE)
+        self.assertEqual(response.results[2].status, sink_pb2.Status.FAILURE)
         self.assertTrue(response.results[0].err_msg)
         self.assertTrue(response.results[1].err_msg)
+        self.assertTrue(response.results[2].err_msg)
         self.assertEqual(code, StatusCode.OK)
 
     def test_forward_message(self):
@@ -134,6 +162,12 @@ class TestServer(unittest.TestCase):
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
             ),
+            sink_pb2.SinkRequest(
+                id="test_id_2",
+                value=mock_fallback_message(),
+                event_time=event_time_timestamp,
+                watermark=watermark_timestamp,
+            ),
         ]
 
         method = self.test_server.invoke_stream_unary(
@@ -146,21 +180,31 @@ class TestServer(unittest.TestCase):
 
         method.send_request(test_datums[0])
         method.send_request(test_datums[1])
+        method.send_request(test_datums[2])
         method.requests_closed()
 
         response, metadata, code, details = method.termination()
-        self.assertEqual(2, len(response.results))
+        self.assertEqual(3, len(response.results))
         self.assertEqual("test_id_0", response.results[0].id)
         self.assertEqual("test_id_1", response.results[1].id)
-        self.assertTrue(response.results[0].success)
-        self.assertFalse(response.results[1].success)
+        self.assertEqual("test_id_2", response.results[2].id)
+        self.assertEqual(response.results[0].status, sink_pb2.Status.SUCCESS)
+        self.assertEqual(response.results[1].status, sink_pb2.Status.FAILURE)
+        self.assertEqual(response.results[2].status, sink_pb2.Status.FALLBACK)
         self.assertEqual("", response.results[0].err_msg)
         self.assertEqual("mock sink message error", response.results[1].err_msg)
+        self.assertEqual("", response.results[2].err_msg)
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_init(self):
         with self.assertRaises(TypeError):
             SinkServer()
+
+    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_FALLBACK_SINK)
+    def test_start_fallback_sink(self):
+        server = SinkServer(sinker_instance=udsink_handler)
+        self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
+        self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
 
 
 if __name__ == "__main__":

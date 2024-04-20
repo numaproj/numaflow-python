@@ -4,6 +4,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.mapper._dtypes import MapAsyncHandlerCallable, MapSyncCallable
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
@@ -16,13 +17,13 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
     """
 
     def __init__(
-        self,
-        handler: MapAsyncHandlerCallable,
+            self,
+            handler: MapAsyncHandlerCallable,
     ):
         self.__map_handler: MapSyncCallable = handler
 
     async def MapFn(
-        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
+            self, request: map_pb2.MapRequest, context: NumaflowServicerContext
     ) -> map_pb2.MapResponse:
         """
         Applies a function to each datum element.
@@ -40,22 +41,24 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                     watermark=request.watermark.ToDatetime(),
                     headers=dict(request.headers),
                 ),
+                context
             )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            return map_pb2.MapResponse(results=[])
+        except (Exception, BaseException) as e:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, str(e))
+            return
 
         return map_pb2.MapResponse(results=res)
 
-    async def __invoke_map(self, keys: list[str], req: Datum):
+    async def __invoke_map(self, keys: list[str], req: Datum, context: NumaflowServicerContext):
         """
         Invokes the user defined function.
         """
         try:
             msgs = await self.__map_handler(keys, req)
-        except Exception as err:
+        except (Exception, BaseException) as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, str(err))
             raise err
         datums = []
         for msg in msgs:
@@ -64,7 +67,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
         return datums
 
     async def IsReady(
-        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

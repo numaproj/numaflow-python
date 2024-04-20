@@ -7,6 +7,8 @@ from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 
 import grpc
+import psutil
+
 from pynumaflow._constants import (
     _LOGGER,
     MULTIPROC_MAP_SOCK_ADDR,
@@ -26,6 +28,13 @@ from pynumaflow.proto.sideinput import sideinput_pb2_grpc
 from pynumaflow.proto.sinker import sink_pb2_grpc
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
+from pynumaflow.types import NumaflowServicerContext
+
+
+def terminate_on_stop():
+    _LOGGER.info("Terminating: Got exception")
+    p = psutil.Process(os.getpid())
+    p.terminate()
 
 
 class NumaflowServer(metaclass=ABCMeta):
@@ -56,12 +65,12 @@ def write_info_file(protocol: Protocol, info_file) -> None:
 
 
 def sync_server_start(
-    servicer,
-    bind_address: str,
-    max_threads: int,
-    server_info_file: str,
-    server_options=None,
-    udf_type: str = UDFType.Map,
+        servicer,
+        bind_address: str,
+        max_threads: int,
+        server_info_file: str,
+        server_options=None,
+        udf_type: str = UDFType.Map,
 ):
     """
     Utility function to start a sync grpc server instance.
@@ -87,13 +96,13 @@ def sync_server_start(
 
 
 def _run_server(
-    servicer,
-    bind_address: str,
-    threads_per_proc,
-    server_options,
-    udf_type: str,
-    server_info_file,
-    server_info,
+        servicer,
+        bind_address: str,
+        threads_per_proc,
+        server_options,
+        udf_type: str,
+        server_info_file=None,
+        server_info=None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -122,19 +131,21 @@ def _run_server(
     server.add_insecure_port(bind_address)
     # start the gRPC server
     server.start()
-    info_server_write(server_info=server_info, info_file=server_info_file)
+    # Add the server information to the server info file if provided
+    if server_info and server_info_file:
+        info_server_write(server_info=server_info, info_file=server_info_file)
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
     server.wait_for_termination()
 
 
 def start_multiproc_server(
-    max_threads: int,
-    servicer,
-    process_count: int,
-    server_info_file: str,
-    server_options=None,
-    udf_type: str = UDFType.Map,
+        max_threads: int,
+        servicer,
+        process_count: int,
+        server_info_file: str,
+        server_options=None,
+        udf_type: str = UDFType.Map,
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
@@ -188,11 +199,11 @@ def start_multiproc_server(
 
 
 async def start_async_server(
-    server_async: grpc.aio.Server,
-    sock_path: str,
-    max_threads: int,
-    cleanup_coroutines: list,
-    server_info_file: str,
+        server_async: grpc.aio.Server,
+        sock_path: str,
+        max_threads: int,
+        cleanup_coroutines: list,
+        server_info_file: str,
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.
@@ -256,3 +267,9 @@ def checkInstance(instance, callable_type) -> bool:
     except Exception as e:
         _LOGGER.error(e)
         return False
+
+
+def exit_on_error(context: NumaflowServicerContext, err:str):
+    context.set_code(grpc.StatusCode.UNKNOWN)
+    context.set_details(err)
+    terminate_on_stop()

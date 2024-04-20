@@ -34,18 +34,23 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
         The pascal case function name comes from the proto mapstream_pb2_grpc.py file.
         """
 
-        async for res in self.__invoke_map_stream(
-                list(request.keys),
-                Datum(
-                    keys=list(request.keys),
-                    value=request.value,
-                    event_time=request.event_time.ToDatetime(),
-                    watermark=request.watermark.ToDatetime(),
-                    headers=dict(request.headers),
-                ),
-                context
-        ):
-            yield mapstream_pb2.MapStreamResponse(result=res)
+        try:
+            async for res in self.__invoke_map_stream(
+                    list(request.keys),
+                    Datum(
+                        keys=list(request.keys),
+                        value=request.value,
+                        event_time=request.event_time.ToDatetime(),
+                        watermark=request.watermark.ToDatetime(),
+                        headers=dict(request.headers),
+                    ),
+                    context
+            ):
+                yield mapstream_pb2.MapStreamResponse(result=res)
+        except BaseException as err:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, str(err))
+            return
 
     async def __invoke_map_stream(self, keys: list[str], req: Datum, context: NumaflowServicerContext):
         try:

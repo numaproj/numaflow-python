@@ -3,6 +3,7 @@ import unittest
 from datetime import datetime, timezone
 from collections.abc import Iterator
 from unittest import mock
+from unittest.mock import patch
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
@@ -16,6 +17,7 @@ from pynumaflow._constants import (
 )
 from pynumaflow.sinker import Responses, Datum, Response, SinkServer
 from pynumaflow.proto.sinker import sink_pb2
+from tests.testing_utils import mock_terminate_on_stop
 
 
 def mockenv(**envvars):
@@ -63,6 +65,8 @@ def mock_watermark():
     return t
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.terminate", mock_terminate_on_stop)
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
         server = SinkServer(sinker_instance=udsink_handler)
@@ -131,17 +135,7 @@ class TestServer(unittest.TestCase):
         method.requests_closed()
 
         response, metadata, code, details = method.termination()
-        self.assertEqual(3, len(response.results))
-        self.assertEqual("test_id_0", response.results[0].id)
-        self.assertEqual("test_id_1", response.results[1].id)
-        self.assertEqual("test_id_2", response.results[2].id)
-        self.assertEqual(response.results[0].status, sink_pb2.Status.FAILURE)
-        self.assertEqual(response.results[1].status, sink_pb2.Status.FAILURE)
-        self.assertEqual(response.results[2].status, sink_pb2.Status.FAILURE)
-        self.assertTrue(response.results[0].err_msg)
-        self.assertTrue(response.results[1].err_msg)
-        self.assertTrue(response.results[2].err_msg)
-        self.assertEqual(code, StatusCode.OK)
+        self.assertEqual(StatusCode.UNKNOWN, code)
 
     def test_forward_message(self):
         event_time_timestamp = _timestamp_pb2.Timestamp()

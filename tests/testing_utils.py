@@ -89,3 +89,7 @@ def info_serv_is_ready(info_serv_data: str, eof: str = EOF):
         data = info_serv_data[:len_diff]
         return True, data
     return False, None
+
+
+def mock_terminate_on_stop(process):
+    print("Mock terminate ", process)

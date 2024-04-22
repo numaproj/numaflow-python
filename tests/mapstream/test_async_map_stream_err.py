@@ -3,6 +3,7 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
+from unittest.mock import patch
 
 import grpc
 
@@ -12,6 +13,7 @@ from pynumaflow import setup_logging
 from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer
 from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 from tests.mapstream.utils import start_request_map_stream
+from tests.testing_utils import mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
 
@@ -55,6 +57,8 @@ async def start_server():
     await server.wait_for_termination()
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.terminate", mock_terminate_on_stop)
 class TestAsyncServerErrorScenario(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

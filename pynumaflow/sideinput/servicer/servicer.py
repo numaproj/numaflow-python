@@ -1,10 +1,10 @@
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow._constants import (
     _LOGGER,
 )
 from pynumaflow.proto.sideinput import sideinput_pb2_grpc, sideinput_pb2
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.sideinput._dtypes import RetrieverCallable
 from pynumaflow.types import NumaflowServicerContext
 
@@ -26,12 +26,11 @@ class SideInputServicer(sideinput_pb2_grpc.SideInputServicer):
         # if there is an exception, we will mark all the responses as a failure
         try:
             rspn = self.__retrieve_handler()
-        except Exception as err:
+        except BaseException as err:
             err_msg = "RetrieveSideInputErr: %r" % err
             _LOGGER.critical(err_msg, exc_info=True)
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(err))
-            return sideinput_pb2.SideInputResponse(value=None, no_broadcast=True)
+            exit_on_error(context, str(err))
+            return
 
         return sideinput_pb2.SideInputResponse(value=rspn.value, no_broadcast=rspn.no_broadcast)
 

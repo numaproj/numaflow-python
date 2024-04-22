@@ -65,12 +65,12 @@ def write_info_file(protocol: Protocol, info_file) -> None:
 
 
 def sync_server_start(
-        servicer,
-        bind_address: str,
-        max_threads: int,
-        server_info_file: str,
-        server_options=None,
-        udf_type: str = UDFType.Map,
+    servicer,
+    bind_address: str,
+    max_threads: int,
+    server_info_file: str,
+    server_options=None,
+    udf_type: str = UDFType.Map,
 ):
     """
     Utility function to start a sync grpc server instance.
@@ -96,13 +96,13 @@ def sync_server_start(
 
 
 def _run_server(
-        servicer,
-        bind_address: str,
-        threads_per_proc,
-        server_options,
-        udf_type: str,
-        server_info_file=None,
-        server_info=None,
+    servicer,
+    bind_address: str,
+    threads_per_proc,
+    server_options,
+    udf_type: str,
+    server_info_file=None,
+    server_info=None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -140,12 +140,12 @@ def _run_server(
 
 
 def start_multiproc_server(
-        max_threads: int,
-        servicer,
-        process_count: int,
-        server_info_file: str,
-        server_options=None,
-        udf_type: str = UDFType.Map,
+    max_threads: int,
+    servicer,
+    process_count: int,
+    server_info_file: str,
+    server_options=None,
+    udf_type: str = UDFType.Map,
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
@@ -199,11 +199,11 @@ def start_multiproc_server(
 
 
 async def start_async_server(
-        server_async: grpc.aio.Server,
-        sock_path: str,
-        max_threads: int,
-        cleanup_coroutines: list,
-        server_info_file: str,
+    server_async: grpc.aio.Server,
+    sock_path: str,
+    max_threads: int,
+    cleanup_coroutines: list,
+    server_info_file: str,
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.

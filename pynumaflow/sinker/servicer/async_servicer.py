@@ -3,7 +3,7 @@ from collections.abc import AsyncIterable
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow.shared.server import exit_on_error
-from pynumaflow.sinker._dtypes import Responses, Datum, Response
+from pynumaflow.sinker._dtypes import Datum
 from pynumaflow.sinker._dtypes import SyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.servicer.utils import build_sink_response
@@ -61,7 +61,9 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
         return sink_pb2.SinkResponse(results=results)
 
-    async def __invoke_sink(self, datum_iterator: AsyncIterable[Datum], context: NumaflowServicerContext):
+    async def __invoke_sink(
+        self, datum_iterator: AsyncIterable[Datum], context: NumaflowServicerContext
+    ):
         try:
             rspns = await self.__sink_handler(datum_iterator)
         except BaseException as err:

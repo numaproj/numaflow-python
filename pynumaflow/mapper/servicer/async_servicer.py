@@ -1,4 +1,3 @@
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow.mapper._dtypes import Datum
@@ -17,13 +16,13 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
     """
 
     def __init__(
-            self,
-            handler: MapAsyncHandlerCallable,
+        self,
+        handler: MapAsyncHandlerCallable,
     ):
         self.__map_handler: MapSyncCallable = handler
 
     async def MapFn(
-            self, request: map_pb2.MapRequest, context: NumaflowServicerContext
+        self, request: map_pb2.MapRequest, context: NumaflowServicerContext
     ) -> map_pb2.MapResponse:
         """
         Applies a function to each datum element.
@@ -41,7 +40,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                     watermark=request.watermark.ToDatetime(),
                     headers=dict(request.headers),
                 ),
-                context
+                context,
             )
         except (Exception, BaseException) as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
@@ -67,7 +66,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
         return datums
 
     async def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

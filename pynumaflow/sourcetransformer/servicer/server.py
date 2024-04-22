@@ -1,7 +1,7 @@
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.sourcetransformer import Datum
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
 from pynumaflow.proto.sourcetransformer import transform_pb2
@@ -44,11 +44,10 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                     headers=dict(request.headers),
                 ),
             )
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(err))
-            return transform_pb2.SourceTransformResponse(results=[])
+            exit_on_error(context, str(err))
+            return
 
         datums = []
         for msgt in msgts:

@@ -31,8 +31,8 @@ from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 
-def terminate_on_stop():
-    _LOGGER.info("Terminating: Got exception")
+def terminate_on_stop(err):
+    _LOGGER.info("Terminating: Got exception %s", err)
     p = psutil.Process(os.getpid())
     p.terminate()
 
@@ -269,7 +269,7 @@ def checkInstance(instance, callable_type) -> bool:
         return False
 
 
-def exit_on_error(context: NumaflowServicerContext, err:str):
+def exit_on_error(context: NumaflowServicerContext, err: str):
     context.set_code(grpc.StatusCode.UNKNOWN)
     context.set_details(err)
-    terminate_on_stop()
+    terminate_on_stop(err)

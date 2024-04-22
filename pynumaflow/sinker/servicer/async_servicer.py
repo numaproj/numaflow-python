@@ -2,6 +2,7 @@ from collections.abc import AsyncIterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.sinker._dtypes import Responses, Datum, Response
 from pynumaflow.sinker._dtypes import SyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
@@ -50,19 +51,24 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         """
         # if there is an exception, we will mark all the responses as a failure
         datum_iterator = datum_generator(request_iterator=request_iterator)
-        results = await self.__invoke_sink(datum_iterator)
+        try:
+            results = await self.__invoke_sink(datum_iterator, context)
+        except BaseException as err:
+            err_msg = "UDSinkError: %r" % err
+            _LOGGER.critical(err_msg, exc_info=True)
+            exit_on_error(context, err_msg)
+            return
 
         return sink_pb2.SinkResponse(results=results)
 
-    async def __invoke_sink(self, datum_iterator: AsyncIterable[Datum]):
+    async def __invoke_sink(self, datum_iterator: AsyncIterable[Datum], context: NumaflowServicerContext):
         try:
             rspns = await self.__sink_handler(datum_iterator)
-        except Exception as err:
+        except BaseException as err:
             err_msg = "UDSinkError: %r" % err
             _LOGGER.critical(err_msg, exc_info=True)
-            rspns = Responses()
-            async for _datum in datum_iterator:
-                rspns.append(Response.as_failure(_datum.id, err_msg))
+            exit_on_error(context, err_msg)
+            raise err
         responses = []
         for rspn in rspns:
             responses.append(build_sink_response(rspn))

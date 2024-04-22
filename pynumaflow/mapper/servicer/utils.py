@@ -3,7 +3,7 @@ from pynumaflow.mapper._dtypes import MapSyncCallable
 
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.proto.mapper import map_pb2
-from pynumaflow.shared.server import terminate_on_stop
+from pynumaflow.shared.server import terminate_on_stop, exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
@@ -26,10 +26,8 @@ def _map_fn_util(
         )
     except (Exception, BaseException) as err:
         _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-        context.set_code(grpc.StatusCode.UNKNOWN)
-        context.set_details(str(err))
         # Terminate the current server process due to exception
-        terminate_on_stop()
+        exit_on_error(context, str(err))
         return
 
     datums = []

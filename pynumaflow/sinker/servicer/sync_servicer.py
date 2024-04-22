@@ -2,6 +2,7 @@ from collections.abc import Iterator, Iterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow._constants import _LOGGER
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.sinker._dtypes import Responses, Datum, Response
 from pynumaflow.sinker._dtypes import SyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
@@ -46,12 +47,11 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         datum_iterator = datum_generator(request_iterator)
         try:
             rspns = self.__sink_handler(datum_iterator)
-        except Exception as err:
+        except BaseException as err:
             err_msg = "UDSinkError: %r" % err
             _LOGGER.critical(err_msg, exc_info=True)
-            rspns = Responses()
-            for _datum in datum_iterator:
-                rspns.append(Response.as_failure(_datum.id, err_msg))
+            exit_on_error(context, err_msg)
+            return
 
         responses = []
         for rspn in rspns:

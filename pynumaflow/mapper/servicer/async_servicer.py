@@ -42,7 +42,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                 ),
                 context,
             )
-        except (Exception, BaseException) as e:
+        except BaseException as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             exit_on_error(context, str(e))
             return
@@ -55,7 +55,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
         """
         try:
             msgs = await self.__map_handler(keys, req)
-        except (Exception, BaseException) as err:
+        except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             exit_on_error(context, str(err))
             raise err

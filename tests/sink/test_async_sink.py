@@ -157,9 +157,7 @@ class TestAsyncSink(unittest.TestCase):
         request = start_sink_streaming_request(req_type="err")
         grpcException = None
         try:
-            stub.SinkFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
+            stub.SinkFn(request_iterator=request_generator(count=10, request=request))
         except grpc.RpcError as e:
             grpcException = e
             self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())

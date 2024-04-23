@@ -8,7 +8,10 @@ from pynumaflow._constants import _LOGGER
 
 
 def _map_fn_util(
-    __map_handler: MapSyncCallable, request: map_pb2.MapRequest, context: NumaflowServicerContext
+    __map_handler: MapSyncCallable,
+    request: map_pb2.MapRequest,
+    context: NumaflowServicerContext,
+    multiproc: bool,
 ) -> map_pb2.MapResponse:
     # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
     # we need to explicitly convert it to list
@@ -26,7 +29,7 @@ def _map_fn_util(
     except BaseException as err:
         _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
         # Terminate the current server process due to exception
-        exit_on_error(context, str(err))
+        exit_on_error(context, str(err), multiproc)
         return
 
     datums = []

@@ -16,7 +16,7 @@ SINK_SOCK_PATH = "/var/run/numaflow/sink.sock"
 SIDE_INPUT_SOCK_PATH = "/var/run/numaflow/sideinput.sock"
 SOURCE_SOCK_PATH = "/var/run/numaflow/source.sock"
 MULTIPROC_MAP_SOCK_PORT = 55551
-MULTIPROC_MAP_SOCK_ADDR = "0.0.0.0"
+MULTIPROC_MAP_SOCK_ADDR = "/var/run/numaflow/multiproc"
 FALLBACK_SINK_SOCK_PATH = "/var/run/numaflow/fb-sink.sock"
 
 # Server information file configs

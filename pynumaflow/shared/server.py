@@ -92,8 +92,8 @@ def _run_server(
     threads_per_proc,
     server_options,
     udf_type: str,
-    server_info_file=None,
-    server_info=None,
+    server_info_file: str = None,
+    server_info: ServerInfo = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -158,7 +158,7 @@ def start_multiproc_server(
         # unix:///var/run/numaflow/multiproc#serv_num.sock
         # -> unix:///var/run/numaflow/multiproc0.sock
         bind_address = f"unix://{MULTIPROC_MAP_SOCK_ADDR}{idx}.sock"
-        _LOGGER.info("Starting server on port: %s", bind_address)
+        _LOGGER.info("Starting server on: %s", bind_address)
         # NOTE: It is imperative that the worker subprocesses be forked before
         # any gRPC servers start up. See
         # https://github.com/grpc/grpc/issues/16001 for more details.
@@ -209,7 +209,7 @@ async def start_async_server(
 
     # Log the server start
     _LOGGER.info(
-        "New Async GRPC Server listening on: %s with max threads: %s",
+        "Async GRPC Server listening on: %s with max threads: %s",
         sock_path,
         max_threads,
     )

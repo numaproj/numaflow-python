@@ -5,6 +5,7 @@ import socket
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 import grpc
 from pynumaflow._constants import (
@@ -92,8 +93,8 @@ def _run_server(
     threads_per_proc,
     server_options,
     udf_type: str,
-    server_info_file: str = None,
-    server_info: ServerInfo = None,
+    server_info_file: Optional[str] = None,
+    server_info: Optional[ServerInfo] = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket

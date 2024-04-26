@@ -47,7 +47,7 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         try:
             rspns = self.__sink_handler(datum_iterator)
         except Exception as err:
-            err_msg = f"UDSinkError: {str(err)}"
+            err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
             rspns = Responses()
             for _datum in datum_iterator:

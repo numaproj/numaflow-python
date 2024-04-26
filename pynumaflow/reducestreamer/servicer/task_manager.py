@@ -220,7 +220,7 @@ class TaskManager:
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
         except Exception as e:
-            err_msg = "Reduce Streaming Error: %r" % e.__str__()
+            err_msg = f"Reduce Streaming Error: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)
             # Put the exception in the global result queue
             await self.global_result_queue.put(e)
@@ -261,7 +261,7 @@ class TaskManager:
             # Once all tasks are completed, senf EOF the global result queue
             await self.global_result_queue.put(STREAM_EOF)
         except Exception as e:
-            err_msg = "Reduce Streaming Error: %r" % e.__str__()
+            err_msg = f"Reduce Streaming Error: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)
             await self.global_result_queue.put(e)
 

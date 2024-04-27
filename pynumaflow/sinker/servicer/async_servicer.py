@@ -58,7 +58,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         try:
             rspns = await self.__sink_handler(datum_iterator)
         except Exception as err:
-            err_msg = "UDSinkError: %r" % err
+            err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
             rspns = Responses()
             async for _datum in datum_iterator:

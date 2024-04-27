@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.7.0a1 (2024-04-17)
+
+ * [0c2501b](https://github.com/numaproj/numaflow-python/commit/0c2501b5c3677eb736539a6797bfabd1c02259aa) feat: add fallback sink support (#157)
+ * [af095a1](https://github.com/numaproj/numaflow-python/commit/af095a1cf31a0da5841d07fee31fb0f1a5d58e47) fix: convert headers to dict before exposing to users (#151)
+
+### Contributors
+
+ * Sidhant Kohli
+ * Yashash H L
+
 ## v0.7.0a0 (2024-03-26)
 
  * [5d99fb8](https://github.com/numaproj/numaflow-python/commit/5d99fb8e4639b4aafdcccb88148e3fd689c6aee8) feat: support headers for message (#138)

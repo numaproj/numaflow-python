@@ -32,7 +32,16 @@ from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
 
 
-def terminate_on_stop(err, parent):
+def terminate_on_stop(err: str, parent: bool) -> None:
+    """
+    Terminate the current process by terminating the current proccess
+    or the parent process.
+
+    Args:
+        err (str): The exception that triggered the termination.
+        parent (bool): Whether the parent process should be terminated.
+
+    """
     _LOGGER.info("Terminating ppid: Got exception %s", err)
     p = psutil.Process(os.getpid())
     # If the parent flag is true, we exit from the parent process
@@ -270,6 +279,16 @@ def checkInstance(instance, callable_type) -> bool:
 
 
 def exit_on_error(context: NumaflowServicerContext, err: str, parent: bool = False):
+    """
+    Exit the process on an error.
+
+    Args:
+        context (NumaflowServicerContext): The gRPC context.
+        err (str): The error message.
+        parent (bool, optional): Whether this is the parent process.
+            Defaults to False.
+
+    """
     context.set_code(grpc.StatusCode.UNKNOWN)
     context.set_details(err)
     terminate_on_stop(err, parent)

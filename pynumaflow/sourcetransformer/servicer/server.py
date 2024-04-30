@@ -17,11 +17,10 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(
-        self,
-        handler: SourceTransformCallable,
-    ):
+    def __init__(self, handler: SourceTransformCallable, multiproc: bool = False):
         self.__transform_handler: SourceTransformCallable = handler
+        # This indicates whether the grpc server attached is multiproc or not
+        self.multiproc = multiproc
 
     def SourceTransformFn(
         self, request: transform_pb2.SourceTransformRequest, context: NumaflowServicerContext
@@ -46,7 +45,8 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             )
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            exit_on_error(context, str(err))
+            # Terminate the current server process due to exception
+            exit_on_error(context, str(err), parent=self.multiproc)
             return
 
         datums = []

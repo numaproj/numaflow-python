@@ -170,6 +170,8 @@ class TaskManager:
             msgs = await new_instance(keys, request_iterator, md)
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            # Send a context abort signal for the rpc, this is required for numa container to get
+            # the correct grpc error
             await asyncio.gather(
                 self.context.abort(grpc.StatusCode.UNKNOWN, details=repr(err)),
                 return_exceptions=True,

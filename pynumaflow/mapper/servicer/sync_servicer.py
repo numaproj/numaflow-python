@@ -15,6 +15,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
 
     def __init__(self, handler: MapSyncCallable, multiproc: bool = False):
         self.__map_handler: MapSyncCallable = handler
+        # This indicates whether the grpc server attached is multiproc or not
         self.multiproc = multiproc
 
     def MapFn(

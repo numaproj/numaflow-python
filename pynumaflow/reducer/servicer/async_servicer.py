@@ -105,6 +105,8 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                     await task_manager.append_task(request)
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
+            # Send a context abort signal for the rpc, this is required for numa container to get
+            # the correct grpc error
             await asyncio.gather(
                 context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
             )
@@ -125,8 +127,9 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                 await fut
 
                 # For each message in the task result, yield the response
-                for msg in fut.result():
-                    yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+                if fut.result():
+                    for msg in fut.result():
+                        yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
 
             # For each window processed by the ReduceFn send an EOF response
             # We send one EOF per window
@@ -136,6 +139,8 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                 yield reduce_pb2.ReduceResponse(window=window, EOF=True)
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
+            # Send a context abort signal for the rpc, this is required for numa container to get
+            # the correct grpc error
             await asyncio.gather(
                 context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
             )

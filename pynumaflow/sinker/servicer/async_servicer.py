@@ -67,7 +67,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         try:
             rspns = await self.__sink_handler(datum_iterator)
         except BaseException as err:
-            err_msg = "UDSinkError: %r" % err
+            err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
             exit_on_error(context, err_msg)
             raise err

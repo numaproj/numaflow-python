@@ -5,6 +5,7 @@ import socket
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
+from typing import Optional
 
 import grpc
 import psutil
@@ -105,8 +106,8 @@ def _run_server(
     threads_per_proc,
     server_options,
     udf_type: str,
-    server_info_file=None,
-    server_info=None,
+    server_info_file: Optional[str] = None,
+    server_info: Optional[ServerInfo] = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -155,7 +156,7 @@ def start_multiproc_server(
     Start N grpc servers in different processes where N = The number of CPUs or the
     value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
     is set to 2 * CPU count.
-    Each server will be bound to a different port, and we will create equal number of
+    Each server will be bound to a different UDS socket, and we will create equal number of
     workers to handle each server.
     On the client side there will be same number of connections as the number of servers.
     """
@@ -166,36 +167,31 @@ def start_multiproc_server(
         max_threads,
     )
     workers = []
-    server_ports = []
-    for _ in range(process_count):
-        # Find a port to bind to for each server, thus sending the port number = 0
-        # to the _reserve_port function so that kernel can find and return a free port
-        with _reserve_port(port_num=0) as port:
-            bind_address = f"{MULTIPROC_MAP_SOCK_ADDR}:{port}"
-            _LOGGER.info("Starting server on port: %s", port)
-            # NOTE: It is imperative that the worker subprocesses be forked before
-            # any gRPC servers start up. See
-            # https://github.com/grpc/grpc/issues/16001 for more details.
-            worker = multiprocessing.Process(
-                target=_run_server,
-                args=(servicer, bind_address, max_threads, server_options, udf_type),
-            )
-            worker.start()
-            workers.append(worker)
-            server_ports.append(port)
-
-    # Convert the available ports to a comma separated string
-    ports = ",".join(map(str, server_ports))
+    for idx in range(process_count):
+        # bind address is the UDS sock for each server to  bind to, it is in the format
+        # unix:///var/run/numaflow/multiproc#serv_num.sock
+        # -> unix:///var/run/numaflow/multiproc0.sock
+        bind_address = f"unix://{MULTIPROC_MAP_SOCK_ADDR}{idx}.sock"
+        _LOGGER.info("Starting server on: %s", bind_address)
+        # NOTE: It is imperative that the worker subprocesses be forked before
+        # any gRPC servers start up. See
+        # https://github.com/grpc/grpc/issues/16001 for more details.
+        worker = multiprocessing.Process(
+            target=_run_server,
+            args=(servicer, bind_address, max_threads, server_options, udf_type),
+        )
+        worker.start()
+        workers.append(worker)
 
     serv_info = ServerInfo(
-        protocol=Protocol.TCP,
+        protocol=Protocol.UDS,
         language=Language.PYTHON,
         minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
         version=get_sdk_version(),
         metadata=get_metadata_env(envs=METADATA_ENVS),
     )
-    # Add the PORTS metadata using the available ports
-    serv_info.metadata["SERV_PORTS"] = ports
+    # Add the MULTIPROC metadata using the number of servers to use
+    serv_info.metadata["MULTIPROC"] = str(process_count)
     info_server_write(server_info=serv_info, info_file=server_info_file)
 
     for worker in workers:
@@ -227,7 +223,7 @@ async def start_async_server(
 
     # Log the server start
     _LOGGER.info(
-        "New Async GRPC Server listening on: %s with max threads: %s",
+        "Async GRPC Server listening on: %s with max threads: %s",
         sock_path,
         max_threads,
     )

@@ -27,7 +27,7 @@ class SideInputServicer(sideinput_pb2_grpc.SideInputServicer):
         try:
             rspn = self.__retrieve_handler()
         except BaseException as err:
-            err_msg = "RetrieveSideInputErr: %r" % err
+            err_msg = f"RetrieveSideInputErr: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
             exit_on_error(context, str(err))
             return

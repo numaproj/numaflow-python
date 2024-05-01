@@ -48,7 +48,7 @@ async def start_server():
 
 
 # We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.terminate", mock_terminate_on_stop)
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncServerErrorScenario(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

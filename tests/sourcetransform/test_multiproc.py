@@ -22,7 +22,7 @@ from tests.testing_utils import (
 
 
 # We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.terminate", mock_terminate_on_stop)
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
         server = SourceTransformMultiProcServer(source_transform_instance=transform_handler)

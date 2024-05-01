@@ -15,7 +15,7 @@ from pynumaflow.reducer._dtypes import (
     WindowOperation,
 )
 from pynumaflow.reducer.servicer.task_manager import TaskManager
-from pynumaflow.shared.server import terminate_on_stop
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -110,7 +110,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             await asyncio.gather(
                 context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
             )
-            terminate_on_stop(err=repr(e), parent=False)
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
@@ -144,7 +144,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             await asyncio.gather(
                 context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
             )
-            terminate_on_stop(err=repr(e), parent=False)
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

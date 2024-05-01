@@ -110,7 +110,7 @@ async def start_server(udfs):
 
 # TODO: Check why terminating even after mocking
 # We are mocking the terminate function from the psutil to not exit the program during testing
-# @patch("psutil.Process.terminate", mock_terminate_on_stop)
+# @patch("psutil.Process.kill", mock_terminate_on_stop)
 # class TestAsyncReducerError(unittest.TestCase):
 #     @classmethod
 #     def setUpClass(cls) -> None:

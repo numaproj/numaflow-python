@@ -20,9 +20,9 @@ from tests.testing_utils import (
 
 
 # We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.terminate", mock_terminate_on_stop)
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestSyncMapper(unittest.TestCase):
-    # @patch("psutil.Process.terminate", mock_terminate_on_stop)
+    # @patch("psutil.Process.kill", mock_terminate_on_stop)
     def setUp(self) -> None:
         class_instance = ExampleMap()
         my_server = MapServer(mapper_instance=class_instance)

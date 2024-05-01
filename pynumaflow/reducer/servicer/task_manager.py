@@ -22,7 +22,7 @@ from pynumaflow.reducer._dtypes import (
     ReduceAsyncCallable,
     ReduceWindow,
 )
-from pynumaflow.shared.server import terminate_on_stop
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -176,7 +176,7 @@ class TaskManager:
                 self.context.abort(grpc.StatusCode.UNKNOWN, details=repr(err)),
                 return_exceptions=True,
             )
-            terminate_on_stop(err=repr(err), parent=False)
+            exit_on_error(err=repr(err), parent=False, context=self.context, update_context=False)
             return
 
         datum_responses = []

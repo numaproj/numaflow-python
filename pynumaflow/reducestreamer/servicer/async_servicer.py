@@ -16,7 +16,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceRequest,
 )
 from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
-from pynumaflow.shared.server import terminate_on_stop
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -117,7 +117,9 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
                         context.abort(grpc.StatusCode.UNKNOWN, details=repr(msg)),
                         return_exceptions=True,
                     )
-                    terminate_on_stop(repr(msg), parent=False)
+                    exit_on_error(
+                        err=repr(msg), parent=False, context=context, update_context=False
+                    )
                     return
                 # Send window EOF response or Window result response
                 # back to the client
@@ -126,9 +128,9 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         except BaseException as e:
             handle_error(context, e)
             await asyncio.gather(
-                context.abort(grpc.StatusCode.UNKNOWN, details=repr(msg)), return_exceptions=True
+                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
             )
-            terminate_on_stop(repr(e), parent=False)
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
             return
         # Wait for the process_input_stream task to finish for a clean exit
         try:
@@ -136,9 +138,9 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         except BaseException as e:
             handle_error(context, e)
             await asyncio.gather(
-                context.abort(grpc.StatusCode.UNKNOWN, details=repr(msg)), return_exceptions=True
+                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
             )
-            terminate_on_stop(repr(e), parent=False)
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
             return
 
     async def IsReady(

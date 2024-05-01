@@ -16,7 +16,7 @@ from tests.testing_utils import mock_terminate_on_stop
 
 
 # We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.terminate", mock_terminate_on_stop)
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestSyncSourcer(unittest.TestCase):
     def setUp(self) -> None:
         class_instance = SyncSourceError()

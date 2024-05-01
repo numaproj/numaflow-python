@@ -141,7 +141,7 @@ async def start_server(udfs):
 
 
 # We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.terminate", mock_terminate_on_stop)
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncReduceStreamerErr(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -173,7 +173,7 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
 
     # TODO: Check why terminating even after mocking
     # We are mocking the terminate function from the psutil to not exit the program during testing
-    # @patch("psutil.Process.terminate", mock_terminate_on_stop)
+    # @patch("psutil.Process.kill", mock_terminate_on_stop)
     # def test_reduce(self) -> None:
     #     stub = self.__stub()
     #     request, metadata = start_request(multiple_window=False)
@@ -198,7 +198,7 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
     #     self.fail("Expected an exception.")
 
     # TODO: Check why terminating even after mocking
-    # @patch("psutil.Process.terminate", mock_terminate_on_stop)
+    # @patch("psutil.Process.kill", mock_terminate_on_stop)
     # def test_reduce_window_len(self) -> None:
     #     stub = self.__stub()
     #     request, metadata = start_request(multiple_window=True)

@@ -47,13 +47,6 @@ async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
     return messages
 
 
-def request_generator(count, request, resetkey: bool = False):
-    for i in range(count):
-        if resetkey:
-            request.keys.extend([f"key-{i}"])
-        yield request
-
-
 _s: Server = None
 _channel = grpc.insecure_channel("unix:///tmp/async_map.sock")
 _loop = None

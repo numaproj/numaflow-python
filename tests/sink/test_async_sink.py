@@ -168,7 +168,6 @@ class TestAsyncSink(unittest.TestCase):
     def test_sink_fallback(self) -> None:
         stub = self.__stub()
         request = start_sink_streaming_request(req_type="fallback")
-        # print(request)
         generator_response = None
         try:
             generator_response = stub.SinkFn(

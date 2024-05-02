@@ -55,7 +55,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
                 yield source_pb2.ReadResponse(result=res)
         except BaseException as err:
             _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             return
 
     def __invoke_source_read_stream(self, req: ReadRequest, context: NumaflowServicerContext):
@@ -72,7 +72,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
                 )
         except BaseException as err:
             _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             raise err
 
     def AckFn(
@@ -90,7 +90,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
             self.__invoke_ack(ack_req=offsets, context=context)
         except BaseException as e:
             _LOGGER.critical("User-Defined Source AckError ", exc_info=True)
-            exit_on_error(context, str(e))
+            exit_on_error(context, repr(e))
             return
 
         return source_pb2.AckResponse()
@@ -103,7 +103,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
             self.__source_ack_handler(AckRequest(offsets=ack_req))
         except BaseException as err:
             _LOGGER.critical("AckFn Error", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             raise err
         return source_pb2.AckResponse.Result()
 
@@ -127,7 +127,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
             count = self.__source_pending_handler()
         except BaseException as err:
             _LOGGER.critical("PendingFn error", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             return
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
@@ -147,7 +147,7 @@ class SyncSourceServicer(source_pb2_grpc.SourceServicer):
             partitions = self.__source_partitions_handler()
         except BaseException as err:
             _LOGGER.critical("PartitionFn error", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             return
         resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
         return source_pb2.PartitionsResponse(result=resp)

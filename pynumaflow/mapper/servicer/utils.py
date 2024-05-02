@@ -29,7 +29,7 @@ def _map_fn_util(
     except BaseException as err:
         _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
         # Terminate the current server process due to exception
-        exit_on_error(context, str(err), multiproc)
+        exit_on_error(context, repr(err), multiproc)
         return
 
     datums = []

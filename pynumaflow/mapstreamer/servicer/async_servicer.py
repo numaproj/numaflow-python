@@ -49,7 +49,7 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
                 yield mapstream_pb2.MapStreamResponse(result=res)
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             return
 
     async def __invoke_map_stream(
@@ -62,7 +62,7 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
                 )
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            exit_on_error(context, str(err))
+            exit_on_error(context, repr(err))
             raise err
 
     async def IsReady(

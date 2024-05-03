@@ -1,9 +1,9 @@
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.mapper._dtypes import MapAsyncHandlerCallable, MapSyncCallable
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
@@ -40,22 +40,24 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                     watermark=request.watermark.ToDatetime(),
                     headers=dict(request.headers),
                 ),
+                context,
             )
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            return map_pb2.MapResponse(results=[])
+        except BaseException as e:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, repr(e))
+            return
 
         return map_pb2.MapResponse(results=res)
 
-    async def __invoke_map(self, keys: list[str], req: Datum):
+    async def __invoke_map(self, keys: list[str], req: Datum, context: NumaflowServicerContext):
         """
         Invokes the user defined function.
         """
         try:
             msgs = await self.__map_handler(keys, req)
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, repr(err))
             raise err
         datums = []
         for msg in msgs:

@@ -13,11 +13,10 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(
-        self,
-        handler: MapSyncCallable,
-    ):
+    def __init__(self, handler: MapSyncCallable, multiproc: bool = False):
         self.__map_handler: MapSyncCallable = handler
+        # This indicates whether the grpc server attached is multiproc or not
+        self.multiproc = multiproc
 
     def MapFn(
         self, request: map_pb2.MapRequest, context: NumaflowServicerContext
@@ -26,7 +25,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
         Applies a function to each datum element.
         The pascal case function name comes from the proto map_pb2_grpc.py file.
         """
-        return _map_fn_util(self.__map_handler, request, context)
+        return _map_fn_util(self.__map_handler, request, context, self.multiproc)
 
     def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

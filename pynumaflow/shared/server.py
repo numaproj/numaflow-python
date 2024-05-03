@@ -8,6 +8,8 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import grpc
+import psutil
+
 from pynumaflow._constants import (
     _LOGGER,
     MULTIPROC_MAP_SOCK_ADDR,
@@ -27,6 +29,7 @@ from pynumaflow.proto.sideinput import sideinput_pb2_grpc
 from pynumaflow.proto.sinker import sink_pb2_grpc
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
+from pynumaflow.types import NumaflowServicerContext
 
 
 class NumaflowServer(metaclass=ABCMeta):
@@ -254,3 +257,30 @@ def checkInstance(instance, callable_type) -> bool:
     except Exception as e:
         _LOGGER.error(e)
         return False
+
+
+def exit_on_error(
+    context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
+):
+    """
+    Exit the current/parent process on an error.
+
+    Args:
+        context (NumaflowServicerContext): The gRPC context.
+        err (str): The error message.
+        parent (bool, optional): Whether this is the parent process.
+            Defaults to False.
+        update_context(bool, optional) : Is there a need to update
+            the context with the error codes
+    """
+    if update_context:
+        context.set_code(grpc.StatusCode.UNKNOWN)
+        context.set_details(err)
+
+    p = psutil.Process(os.getpid())
+    # If the parent flag is true, we exit from the parent process
+    # Use this for Multiproc right now to exit from the parent fork
+    if parent:
+        p = psutil.Process(os.getppid())
+    _LOGGER.info("Killing process: Got exception %s", err)
+    p.kill()

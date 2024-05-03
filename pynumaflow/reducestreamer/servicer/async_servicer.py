@@ -16,6 +16,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceRequest,
 )
 from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -44,13 +45,12 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_error(context: NumaflowServicerContext, e: Exception):
+def handle_error(context: NumaflowServicerContext, e: BaseException):
     trace = get_exception_traceback_str(e)
     _LOGGER.critical(trace)
     _LOGGER.critical(e.__str__())
     context.set_code(grpc.StatusCode.UNKNOWN)
     context.set_details(e.__str__())
-    return context
 
 
 class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
@@ -111,22 +111,37 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         try:
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
-                if isinstance(msg, Exception):
-                    await handle_error(context, msg)
-                    raise msg
+                if isinstance(msg, BaseException):
+                    handle_error(context, msg)
+                    await asyncio.gather(
+                        context.abort(grpc.StatusCode.UNKNOWN, details=repr(msg)),
+                        return_exceptions=True,
+                    )
+                    exit_on_error(
+                        err=repr(msg), parent=False, context=context, update_context=False
+                    )
+                    return
                 # Send window EOF response or Window result response
                 # back to the client
                 else:
                     yield msg
-        except Exception as e:
-            await handle_error(context, e)
-            raise e
+        except BaseException as e:
+            handle_error(context, e)
+            await asyncio.gather(
+                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
+            )
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
+            return
         # Wait for the process_input_stream task to finish for a clean exit
         try:
             await producer
-        except Exception as e:
-            await handle_error(context)
-            raise e
+        except BaseException as e:
+            handle_error(context, e)
+            await asyncio.gather(
+                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
+            )
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
+            return
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

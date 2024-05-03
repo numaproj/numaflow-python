@@ -114,7 +114,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
-        self.servicer = SourceTransformServicer(handler=source_transform_instance)
+        self.servicer = SourceTransformServicer(handler=source_transform_instance, multiproc=True)
 
     def start(self):
         """

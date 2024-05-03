@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterable
 from typing import Union
 
@@ -14,6 +15,7 @@ from pynumaflow.reducer._dtypes import (
     WindowOperation,
 )
 from pynumaflow.reducer.servicer.task_manager import TaskManager
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -86,7 +88,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         # Create a task manager instance
         # The task manager is used to manage lifecycle of the tasks
         # required for the reduce operation.
-        task_manager = TaskManager(handler=self.__reduce_handler)
+        task_manager = TaskManager(handler=self.__reduce_handler, context=context)
 
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
@@ -101,11 +103,14 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                     # append the task data to the existing task
                     # if the task does not exist, it will create a new task
                     await task_manager.append_task(request)
-        except Exception as e:
+        except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(e.__str__())
-            raise e
+            # Send a context abort signal for the rpc, this is required for numa container to get
+            # the correct grpc error
+            await asyncio.gather(
+                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
+            )
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
@@ -120,9 +125,11 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             for task in res:
                 fut = task.future
                 await fut
+
                 # For each message in the task result, yield the response
-                for msg in fut.result():
-                    yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
+                if fut.result():
+                    for msg in fut.result():
+                        yield reduce_pb2.ReduceResponse(result=msg, window=task.window)
 
             # For each window processed by the ReduceFn send an EOF response
             # We send one EOF per window
@@ -130,10 +137,14 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             for window in current_window.values():
                 # yield the EOF response once the task is completed for a keyed window
                 yield reduce_pb2.ReduceResponse(window=window, EOF=True)
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(e.__str__())
-            raise e
+        except BaseException as e:
+            _LOGGER.critical("Reduce Error", exc_info=True)
+            # Send a context abort signal for the rpc, this is required for numa container to get
+            # the correct grpc error
+            await asyncio.gather(
+                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
+            )
+            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

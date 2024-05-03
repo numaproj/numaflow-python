@@ -2,6 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
+from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -22,6 +23,7 @@ from tests.testing_utils import (
     mock_headers,
     mock_message,
     get_time_args,
+    mock_terminate_on_stop,
 )
 
 LOGGER = setup_logging(__name__)
@@ -43,13 +45,6 @@ async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
     messages = Messages()
     messages.append(Message(str.encode(msg), keys=keys))
     return messages
-
-
-def request_generator(count, request, resetkey: bool = False):
-    for i in range(count):
-        if resetkey:
-            request.keys.extend([f"key-{i}"])
-        yield request
 
 
 _s: Server = None
@@ -80,6 +75,8 @@ async def start_server(udfs):
     await server.wait_for_termination()
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncMapper(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

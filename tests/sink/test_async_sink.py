@@ -3,6 +3,7 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
+from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -26,7 +27,7 @@ from tests.sink.test_server import (
     mock_fallback_message,
     mockenv,
 )
-from tests.testing_utils import get_time_args
+from tests.testing_utils import get_time_args, mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
 
@@ -90,6 +91,8 @@ async def start_server():
     await server.wait_for_termination()
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncSink(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -152,23 +155,19 @@ class TestAsyncSink(unittest.TestCase):
     def test_sink_err(self) -> None:
         stub = self.__stub()
         request = start_sink_streaming_request(req_type="err")
-        # print(request)
-        generator_response = None
+        grpcException = None
         try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
+            stub.SinkFn(request_iterator=request_generator(count=10, request=request))
         except grpc.RpcError as e:
+            grpcException = e
+            self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
             logging.error(e)
 
-        # capture the output from the ReduceFn generator and assert.
-        for x in generator_response.results:
-            self.assertEqual(x.status, sink_pb2.Status.FAILURE)
+        self.assertIsNotNone(grpcException)
 
     def test_sink_fallback(self) -> None:
         stub = self.__stub()
         request = start_sink_streaming_request(req_type="fallback")
-        # print(request)
         generator_response = None
         try:
             generator_response = stub.SinkFn(

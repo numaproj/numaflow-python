@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -14,9 +15,12 @@ from tests.testing_utils import (
     mock_watermark,
     mock_message,
     mock_new_event_time,
+    mock_terminate_on_stop,
 )
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestServer(unittest.TestCase):
     def setUp(self) -> None:
         server = SourceTransformServer(source_transform_instance=transform_handler)

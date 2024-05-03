@@ -2,6 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
+from unittest.mock import patch
 
 import grpc
 
@@ -16,6 +17,7 @@ from tests.source.utils import (
     ack_req_source_fn,
     AsyncSourceError,
 )
+from tests.testing_utils import mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
 
@@ -45,6 +47,8 @@ async def start_server():
     await server.wait_for_termination()
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncServerErrorScenario(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -74,6 +78,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             LOGGER.error(e)
 
     def test_read_error(self) -> None:
+        grpcException = None
         with grpc.insecure_channel(server_port) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = read_req_source_fn()
@@ -85,6 +90,12 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             except Exception as e:
                 self.assertTrue("Got a runtime error from read handler." in e.__str__())
                 return
+            except grpc.RpcError as e:
+                grpcException = e
+                self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+                print(e.details())
+
+        self.assertIsNotNone(grpcException)
         self.fail("Expected an exception.")
 
     def test_ack_error(self) -> None:

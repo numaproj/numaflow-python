@@ -1,8 +1,8 @@
 from collections.abc import AsyncIterable
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.sourcer._dtypes import ReadRequest
 from pynumaflow.sourcer._dtypes import Offset, AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
@@ -35,16 +35,21 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         Applies a Read function and returns a stream of datum responses.
         The pascal case function name comes from the proto source_pb2_grpc.py file.
         """
+        try:
+            async for res in self.__invoke_source_read_stream(
+                ReadRequest(
+                    num_records=request.request.num_records,
+                    timeout_in_ms=request.request.timeout_in_ms,
+                ),
+                context,
+            ):
+                yield source_pb2.ReadResponse(result=res)
+        except BaseException as err:
+            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
+            exit_on_error(context, str(err))
+            return
 
-        async for res in self.__invoke_source_read_stream(
-            ReadRequest(
-                num_records=request.request.num_records,
-                timeout_in_ms=request.request.timeout_in_ms,
-            )
-        ):
-            yield source_pb2.ReadResponse(result=res)
-
-    async def __invoke_source_read_stream(self, req: ReadRequest):
+    async def __invoke_source_read_stream(self, req: ReadRequest, context: NumaflowServicerContext):
         try:
             async for msg in self.__source_read_handler(req):
                 event_time_timestamp = _timestamp_pb2.Timestamp()
@@ -56,8 +61,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
                     event_time=event_time_timestamp,
                     headers=msg.headers,
                 )
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
+            exit_on_error(context, repr(err))
             raise err
 
     async def AckFn(
@@ -72,22 +78,23 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         for offset in request.request.offsets:
             offsets.append(Offset(offset.offset, offset.partition_id))
         try:
-            await self.__invoke_ack(ack_req=offsets)
-        except Exception as e:
-            context.set_code(grpc.StatusCode.UNKNOWN)
-            context.set_details(str(e))
-            raise e
+            await self.__invoke_ack(ack_req=offsets, context=context)
+        except BaseException as e:
+            _LOGGER.critical("AckFn Error", exc_info=True)
+            exit_on_error(context, repr(e))
+            return
 
         return source_pb2.AckResponse()
 
-    async def __invoke_ack(self, ack_req: list[Offset]):
+    async def __invoke_ack(self, ack_req: list[Offset], context: NumaflowServicerContext):
         """
         Invokes the Source Ack Function.
         """
         try:
             await self.__source_ack_handler(AckRequest(offsets=ack_req))
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("AckFn Error", exc_info=True)
+            exit_on_error(context, repr(err))
             raise err
         return source_pb2.AckResponse.Result()
 
@@ -109,9 +116,10 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         """
         try:
             count = await self.__source_pending_handler()
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("PendingFn Error", exc_info=True)
-            raise err
+            exit_on_error(context, repr(err))
+            return
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
 
@@ -123,8 +131,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         """
         try:
             partitions = await self.__source_partitions_handler()
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("PartitionsFn Error", exc_info=True)
-            raise err
+            exit_on_error(context, repr(err))
+            return
         resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
         return source_pb2.PartitionsResponse(result=resp)

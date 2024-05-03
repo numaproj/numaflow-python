@@ -183,8 +183,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         # Create a new async server instance and add the servicer to it
         server = grpc.aio.server()
         server.add_insecure_port(self.sock_path)
-        reduce_servicer = self.servicer
-        reduce_pb2_grpc.add_ReduceServicer_to_server(reduce_servicer, server)
+        reduce_pb2_grpc.add_ReduceServicer_to_server(self.servicer, server)
         await start_async_server(
             server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
         )

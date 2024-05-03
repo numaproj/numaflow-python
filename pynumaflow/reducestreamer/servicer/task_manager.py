@@ -198,7 +198,7 @@ class TaskManager:
             _ = await new_instance(keys, request_iterator, output, md)
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             # Put the exception in the result queue
             await self.global_result_queue.put(err)
@@ -219,11 +219,12 @@ class TaskManager:
                     await self.send_datum_to_task(request)
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
-        except Exception as e:
+        except BaseException as e:
             err_msg = f"Reduce Streaming Error: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)
             # Put the exception in the global result queue
             await self.global_result_queue.put(e)
+            return
 
         try:
             # send EOF to all the tasks once the request iterator is exhausted
@@ -260,7 +261,7 @@ class TaskManager:
 
             # Once all tasks are completed, senf EOF the global result queue
             await self.global_result_queue.put(STREAM_EOF)
-        except Exception as e:
+        except BaseException as e:
             err_msg = f"Reduce Streaming Error: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)
             await self.global_result_queue.put(e)

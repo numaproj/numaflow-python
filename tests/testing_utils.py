@@ -1,7 +1,11 @@
 import json
 from datetime import datetime, timezone
+
+from pynumaflow import setup_logging
 from pynumaflow.info.types import EOF
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+
+_LOGGER = setup_logging(__name__)
 
 
 def get_time_args() -> (datetime, datetime):
@@ -89,3 +93,7 @@ def info_serv_is_ready(info_serv_data: str, eof: str = EOF):
         data = info_serv_data[:len_diff]
         return True, data
     return False, None
+
+
+def mock_terminate_on_stop(process):
+    _LOGGER.info("Mock terminate %s", str(process))

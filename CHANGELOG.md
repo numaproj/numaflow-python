@@ -12,6 +12,15 @@
 
 ## v0.7.0a0 (2024-03-26)
 
+
+### Contributors
+
+
+## v0.7.0 (2024-05-03)
+
+ * [06a6fdc](https://github.com/numaproj/numaflow-python/commit/06a6fdcf437dda049a04c7d80218d131476547a1) feat: UDF container should crash on exceptions (#160)
+ * [0c2501b](https://github.com/numaproj/numaflow-python/commit/0c2501b5c3677eb736539a6797bfabd1c02259aa) feat: add fallback sink support (#157)
+ * [af095a1](https://github.com/numaproj/numaflow-python/commit/af095a1cf31a0da5841d07fee31fb0f1a5d58e47) fix: convert headers to dict before exposing to users (#151)
  * [5d99fb8](https://github.com/numaproj/numaflow-python/commit/5d99fb8e4639b4aafdcccb88148e3fd689c6aee8) feat: support headers for message (#138)
  * [04914fa](https://github.com/numaproj/numaflow-python/commit/04914faeda80c8eea9652e4d0de5695ab175faac) fix: readme (#143)
  * [b366e2f](https://github.com/numaproj/numaflow-python/commit/b366e2f82c74a76d7e8542119eb48e594cb7ee6e) feat: implement reduce streaming (#134)

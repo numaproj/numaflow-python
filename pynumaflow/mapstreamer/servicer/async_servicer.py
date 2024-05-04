@@ -103,13 +103,14 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
         try:
-            async for msg in self.__invoke_stream_batch(datum_iterator):
+            async for msg in self.__invoke_stream_batch(datum_iterator, context):
                 yield msg
         except Exception as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, repr(err))
             raise err
 
-    async def __invoke_stream_batch(self, datum_iterator: AsyncIterable[Datum]):
+    async def __invoke_stream_batch(self, datum_iterator: AsyncIterable[Datum], context: NumaflowServicerContext):
         try:
             async for msg in self.__map_stream_handler.handler_stream(datum_iterator):
                 yield mapstream_pb2.MapStreamResponse(
@@ -117,11 +118,7 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
                         keys=msg.keys, value=msg.value, tags=msg.tags
                     )
                 )
-        except Exception as err:
-            err_msg = "UDSinkError: %r" % err
-            _LOGGER.critical(err_msg, exc_info=True)
-
-            async for _datum in datum_iterator:
-                yield mapstream_pb2.MapStreamResponse(
-                    mapstream_pb2.MapStreamResponse.Result.as_failure(_datum.id, err_msg)
-                )
+        except BaseException as err:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, repr(err))
+            raise err

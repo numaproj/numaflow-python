@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -7,6 +8,7 @@ from grpc_testing import server_from_dictionary, strict_real_time
 from pynumaflow.proto.sideinput import sideinput_pb2
 
 from pynumaflow.sideinput import Response, SideInputServer
+from tests.testing_utils import mock_terminate_on_stop
 
 
 def retrieve_side_input_handler() -> Response:
@@ -27,6 +29,8 @@ def mock_message():
     return msg
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestServer(unittest.TestCase):
     """
     Test the SideInput grpc server

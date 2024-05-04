@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from typing import Union
 from collections.abc import AsyncIterable
 
+import grpc
+
 from pynumaflow.exceptions import UDFError
 from pynumaflow.proto.reducer import reduce_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -20,6 +22,8 @@ from pynumaflow.reducer._dtypes import (
     ReduceAsyncCallable,
     ReduceWindow,
 )
+from pynumaflow.shared.server import exit_on_error
+from pynumaflow.types import NumaflowServicerContext
 
 
 def build_unique_key_name(keys, window):
@@ -46,7 +50,11 @@ class TaskManager:
     It is created whenever a new reduce operation is requested.
     """
 
-    def __init__(self, handler: Union[ReduceAsyncCallable, _ReduceBuilderClass]):
+    def __init__(
+        self,
+        handler: Union[ReduceAsyncCallable, _ReduceBuilderClass],
+        context: NumaflowServicerContext,
+    ):
         # A dictionary to store the task information
         self.tasks = {}
         # Collection for storing strong references to all running tasks.
@@ -55,6 +63,8 @@ class TaskManager:
         self.background_tasks = set()
         # Handler for the reduce operation
         self.__reduce_handler = handler
+        # Servicer context from grpc, required to abort if error occurs
+        self.context = context
 
     def get_tasks(self):
         """
@@ -158,9 +168,16 @@ class TaskManager:
             new_instance = self.__reduce_handler.create()
         try:
             msgs = await new_instance(keys, request_iterator, md)
-        except Exception as err:
+        except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            raise err
+            # Send a context abort signal for the rpc, this is required for numa container to get
+            # the correct grpc error
+            await asyncio.gather(
+                self.context.abort(grpc.StatusCode.UNKNOWN, details=repr(err)),
+                return_exceptions=True,
+            )
+            exit_on_error(err=repr(err), parent=False, context=self.context, update_context=False)
+            return
 
         datum_responses = []
         for msg in msgs:

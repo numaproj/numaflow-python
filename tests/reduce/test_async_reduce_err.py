@@ -3,6 +3,7 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
+from unittest.mock import patch
 
 import grpc
 from grpc.aio._server import Server
@@ -22,6 +23,7 @@ from tests.testing_utils import (
     mock_interval_window_start,
     mock_interval_window_end,
     get_time_args,
+    mock_terminate_on_stop,
 )
 
 LOGGER = setup_logging(__name__)
@@ -97,6 +99,7 @@ def NewAsyncReducer():
     return udfs
 
 
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 async def start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
@@ -109,6 +112,9 @@ async def start_server(udfs):
     await server.wait_for_termination()
 
 
+# TODO: Check why terminating even after mocking
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncReducerError(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -139,20 +145,21 @@ class TestAsyncReducerError(unittest.TestCase):
             LOGGER.error(e)
 
     def test_reduce(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request(multiple_window=False)
-        generator_response = None
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
-            counter = 0
-            for _ in generator_response:
-                counter += 1
-        except Exception as err:
-            self.assertTrue("Got a runtime error from reduce handler." in err.__str__())
-            return
-        self.fail("Expected an exception.")
+        with grpc.insecure_channel("unix:///tmp/reduce_err.sock") as channel:
+            stub = reduce_pb2_grpc.ReduceStub(channel)
+            request, metadata = start_request(multiple_window=False)
+            generator_response = None
+            try:
+                generator_response = stub.ReduceFn(
+                    request_iterator=request_generator(count=1, request=request)
+                )
+                counter = 0
+                for _ in generator_response:
+                    counter += 1
+            except BaseException as err:
+                self.assertTrue("Got a runtime error from reduce handler." in err.__str__())
+                return
+            self.fail("Expected an exception.")
 
     def test_reduce_window_len(self) -> None:
         stub = self.__stub()
@@ -165,7 +172,7 @@ class TestAsyncReducerError(unittest.TestCase):
             counter = 0
             for _ in generator_response:
                 counter += 1
-        except Exception as err:
+        except BaseException as err:
             self.assertTrue(
                 "reduce create operation error: invalid number of windows" in err.__str__()
             )

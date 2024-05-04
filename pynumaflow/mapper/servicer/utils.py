@@ -1,14 +1,17 @@
-import grpc
 from pynumaflow.mapper._dtypes import MapSyncCallable
 
 from pynumaflow.mapper._dtypes import Datum
 from pynumaflow.proto.mapper import map_pb2
+from pynumaflow.shared.server import exit_on_error
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
 
 def _map_fn_util(
-    __map_handler: MapSyncCallable, request: map_pb2.MapRequest, context: NumaflowServicerContext
+    __map_handler: MapSyncCallable,
+    request: map_pb2.MapRequest,
+    context: NumaflowServicerContext,
+    multiproc: bool,
 ) -> map_pb2.MapResponse:
     # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
     # we need to explicitly convert it to list
@@ -23,11 +26,11 @@ def _map_fn_util(
                 headers=dict(request.headers),
             ),
         )
-    except Exception as err:
+    except BaseException as err:
         _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-        context.set_code(grpc.StatusCode.UNKNOWN)
-        context.set_details(str(err))
-        return map_pb2.MapResponse(results=[])
+        # Terminate the current server process due to exception
+        exit_on_error(context, repr(err), multiproc)
+        return
 
     datums = []
 

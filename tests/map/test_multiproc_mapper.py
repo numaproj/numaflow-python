@@ -1,5 +1,6 @@
 import os
 import unittest
+from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -15,9 +16,12 @@ from tests.testing_utils import (
     mock_watermark,
     mock_message,
     mock_headers,
+    mock_terminate_on_stop,
 )
 
 
+# We are mocking the terminate function from the psutil to not exit the program during testing
+@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestMultiProcMethods(unittest.TestCase):
     def setUp(self) -> None:
         my_server = MapMultiprocServer(mapper_instance=map_handler)

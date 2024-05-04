@@ -93,7 +93,7 @@ class MapMultiprocServer(NumaflowServer):
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
-        self.servicer = SyncMapServicer(handler=mapper_instance)
+        self.servicer = SyncMapServicer(handler=mapper_instance, multiproc=True)
 
     def start(self) -> None:
         """

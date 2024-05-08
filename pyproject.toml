@@ -20,7 +20,7 @@ classifiers = [
 repository = "https://github.com/numaproj/numaflow-python"
 
 [tool.poetry.dependencies]
-python = ">=3.9, <3.12"
+python = ">=3.9, <3.13"
 grpcio = "^1.48.1"
 grpcio-tools = "^1.48.1"
 google-cloud = "^0.34.0"

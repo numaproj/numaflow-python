@@ -1,4 +1,5 @@
 import inspect
+from typing import Optional
 
 import aiorun
 import grpc
@@ -21,10 +22,12 @@ from pynumaflow.reducer._dtypes import (
     Reducer,
 )
 
-from pynumaflow.shared.server import NumaflowServer, checkInstance, start_async_server
+from pynumaflow.shared.server import NumaflowServer, check_instance, start_async_server
 
 
-def get_handler(reducer_handler: ReduceCallable, init_args: tuple = (), init_kwargs: dict = None):
+def get_handler(
+    reducer_handler: ReduceCallable, init_args: tuple = (), init_kwargs: Optional[dict] = None
+):
     """
     Get the correct handler type based on the arguments passed
     """
@@ -35,13 +38,16 @@ def get_handler(reducer_handler: ReduceCallable, init_args: tuple = (), init_kwa
             raise TypeError("Cannot pass function handler with init args or kwargs")
         # return the function handler
         return reducer_handler
-    elif not checkInstance(reducer_handler, Reducer) and issubclass(reducer_handler, Reducer):
+    elif not check_instance(reducer_handler, Reducer) and issubclass(reducer_handler, Reducer):
         # if handler is type of Class Reducer, create a new instance of
         # a ReducerBuilderClass
         return _ReduceBuilderClass(reducer_handler, init_args, init_kwargs)
     else:
-        _LOGGER.error("Invalid Type: please provide the handler or the class name")
-        raise TypeError("Inavlid Type: please provide the handler or the class name")
+        _LOGGER.error(
+            _error_msg := f"Invalid Class Type {reducer_handler}: "
+            f"Please make sure the class type is passed, and it is a subclass of Reducer"
+        )
+        raise TypeError(_error_msg)
 
 
 class ReduceAsyncServer(NumaflowServer):

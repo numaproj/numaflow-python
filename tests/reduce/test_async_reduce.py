@@ -8,8 +8,8 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
-from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
+from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducer import (
     Messages,
     Message,
@@ -18,7 +18,6 @@ from pynumaflow.reducer import (
     ReduceAsyncServer,
     Reducer,
 )
-from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
@@ -26,7 +25,8 @@ from tests.testing_utils import (
     get_time_args,
 )
 
-LOGGER = setup_logging(__name__)
+logging.basicConfig(level=logging.DEBUG)
+LOGGER = logging.getLogger(__name__)
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -242,6 +242,13 @@ class TestAsyncReducer(unittest.TestCase):
         # signature
         with self.assertRaises(TypeError):
             ReduceAsyncServer(ExampleClass(0))
+
+        # Check that an invalid class is passed
+        class ExampleBadClass:
+            pass
+
+        with self.assertRaises(TypeError):
+            ReduceAsyncServer(reducer_handler=ExampleBadClass)
 
 
 if __name__ == "__main__":

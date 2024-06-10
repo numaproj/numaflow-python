@@ -245,7 +245,7 @@ def _reserve_port(port_num: int) -> Iterator[int]:
         sock.close()
 
 
-def checkInstance(instance, callable_type) -> bool:
+def check_instance(instance, callable_type) -> bool:
     """
     Check if the given instance is of the given callable_type.
     """

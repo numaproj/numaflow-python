@@ -198,6 +198,14 @@ class MapStreamer(metaclass=ABCMeta):
         """
         pass
 
+    @abstractmethod
+    async def handler_stream(self, datum: AsyncIterable[Datum]) -> AsyncIterable[Message]:
+        """
+        Implement this handler function which implements the MapSyncCallable interface.
+        """
+        pass
+
 
 MapStreamAsyncCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
+MapStreamAsyncBatchCallable = Callable[[AsyncIterable[Datum]], AsyncIterable[Message]]
 MapStreamCallable = Union[MapStreamer, MapStreamAsyncCallable]

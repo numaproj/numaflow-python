@@ -10,6 +10,23 @@ from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER
 
 
+async def datum_generator(
+    request_iterator: AsyncIterable[mapstream_pb2.MapStreamRequest],
+) -> AsyncIterable[Datum]:
+    # i = 0
+    async for d in request_iterator:
+        # print(f"Loop {i} -- {d=}")
+        # i += 1
+        datum = Datum(
+            keys=list(d.keys),
+            value=d.value,
+            event_time=d.event_time.ToDatetime(),
+            watermark=d.watermark.ToDatetime(),
+            headers=dict(d.headers),
+        )
+        yield datum
+
+
 class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
     """
     This class is used to create a new grpc Map Stream Servicer instance.
@@ -73,3 +90,35 @@ class AsyncMapStreamServicer(mapstream_pb2_grpc.MapStreamServicer):
         The pascal case function name comes from the proto mapstream_pb2_grpc.py file.
         """
         return mapstream_pb2.ReadyResponse(ready=True)
+
+    async def MapStreamBatchFn(
+        self,
+        request_iterator: AsyncIterable[mapstream_pb2.MapStreamRequest],
+        context: NumaflowServicerContext,
+    ) -> AsyncIterable[mapstream_pb2.MapStreamResponse]:
+        """
+        Applies a sink function to a list of datum elements.
+        The pascal case function name comes from the proto sink_pb2_grpc.py file.
+        """
+        datum_iterator = datum_generator(request_iterator=request_iterator)
+
+        try:
+            async for msg in self.__invoke_stream_batch(datum_iterator, context):
+                yield msg
+        except Exception as err:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, repr(err))
+            raise err
+
+    async def __invoke_stream_batch(self, datum_iterator: AsyncIterable[Datum], context: NumaflowServicerContext):
+        try:
+            async for msg in self.__map_stream_handler.handler_stream(datum_iterator):
+                yield mapstream_pb2.MapStreamResponse(
+                    result=mapstream_pb2.MapStreamResponse.Result(
+                        keys=msg.keys, value=msg.value, tags=msg.tags
+                    )
+                )
+        except BaseException as err:
+            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            exit_on_error(context, repr(err))
+            raise err

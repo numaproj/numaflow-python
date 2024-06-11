@@ -1,0 +1,81 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: simple-pipeline
+spec:
+  vertices:
+    - name: in
+      scale:
+        disabled: true
+      source:
+        generator:
+          # How many messages to generate in the duration.
+          rpu: 10
+          duration: 10s
+          # Optional, size of each generated message, defaults to 10.
+          msgSize: 10
+    - name: even-or-odd
+      metadata:
+        annotations:
+          numaflow.numaproj.io/map-stream: "true"
+      limits:
+        readBatchSize: 20
+      scale:
+        disabled: true
+      # limits:
+      #   readBatchSize: 1
+      udf:
+        container:
+          imagePullPolicy: Never
+          image: "quay.io/numaio/numaflow-python/map-batch-stream:stable"
+          # command: ["python"]
+          # args:
+          # - -m
+          # - demo_pipeline.stream_wait_udf
+          env:
+          - name: MAX_THREADS
+            value: "1"
+          - name: PYTHONUNBUFFERED
+            value: "1"
+          - name: SLEEP_TIME_SEC
+            value: "10"
+    - name: even-sink
+      scale:
+        min: 1
+      sink:
+        # A simple log printing sink
+        log: {}
+    - name: odd-sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+    - name: number-sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+      
+  edges:
+    - from: in
+      to: even-or-odd
+    - from: even-or-odd
+      to: even-sink
+      conditions:
+        tags:
+          values:
+            - even-tag
+    - from: even-or-odd
+      to: odd-sink
+      conditions:
+        tags:
+          operator: or
+          values:
+            - odd-tag
+    - from: even-or-odd
+      to: number-sink
+      conditions:
+        tags:
+          values:
+            - grouped
+

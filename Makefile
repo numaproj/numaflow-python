@@ -36,4 +36,4 @@ proto:
 	python3 -m grpc_tools.protoc -I=pynumaflow/proto/sourcer --python_out=pynumaflow/proto/sourcer --grpc_python_out=pynumaflow/proto/sourcer  pynumaflow/proto/sourcer/*.proto
 
 
-	sed -i '' 's/^\(import.*_pb2\)/from . \1/' pynumaflow/proto/*/*.py
+	sed -i  's/^\(import.*_pb2\)/from . \1/' pynumaflow/proto/*/*.py

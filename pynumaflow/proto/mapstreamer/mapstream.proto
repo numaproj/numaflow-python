@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package = "github.com/numaproj/numaflow-go/pkg/apis/proto/mapstream/v1";
+
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -10,6 +12,8 @@ service MapStream {
   // MapStreamFn applies a function to each request element and returns a stream.
   rpc MapStreamFn(MapStreamRequest) returns (stream MapStreamResponse);
 
+  rpc MapStreamBatchFn(stream MapStreamRequest) returns (stream MapStreamResponse);
+  
   // IsReady is the heartbeat endpoint for gRPC.
   rpc IsReady(google.protobuf.Empty) returns (ReadyResponse);
 }

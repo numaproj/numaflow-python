@@ -20,6 +20,11 @@ class MapStreamStub(object):
             request_serializer=mapstream__pb2.MapStreamRequest.SerializeToString,
             response_deserializer=mapstream__pb2.MapStreamResponse.FromString,
         )
+        self.MapStreamBatchFn = channel.stream_stream(
+            "/mapstream.v1.MapStream/MapStreamBatchFn",
+            request_serializer=mapstream__pb2.MapStreamRequest.SerializeToString,
+            response_deserializer=mapstream__pb2.MapStreamResponse.FromString,
+        )
         self.IsReady = channel.unary_unary(
             "/mapstream.v1.MapStream/IsReady",
             request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -36,6 +41,12 @@ class MapStreamServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
+    def MapStreamBatchFn(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
     def IsReady(self, request, context):
         """IsReady is the heartbeat endpoint for gRPC."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -47,6 +58,11 @@ def add_MapStreamServicer_to_server(servicer, server):
     rpc_method_handlers = {
         "MapStreamFn": grpc.unary_stream_rpc_method_handler(
             servicer.MapStreamFn,
+            request_deserializer=mapstream__pb2.MapStreamRequest.FromString,
+            response_serializer=mapstream__pb2.MapStreamResponse.SerializeToString,
+        ),
+        "MapStreamBatchFn": grpc.stream_stream_rpc_method_handler(
+            servicer.MapStreamBatchFn,
             request_deserializer=mapstream__pb2.MapStreamRequest.FromString,
             response_serializer=mapstream__pb2.MapStreamResponse.SerializeToString,
         ),
@@ -83,6 +99,35 @@ class MapStream(object):
             request,
             target,
             "/mapstream.v1.MapStream/MapStreamFn",
+            mapstream__pb2.MapStreamRequest.SerializeToString,
+            mapstream__pb2.MapStreamResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def MapStreamBatchFn(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_stream(
+            request_iterator,
+            target,
+            "/mapstream.v1.MapStream/MapStreamBatchFn",
             mapstream__pb2.MapStreamRequest.SerializeToString,
             mapstream__pb2.MapStreamResponse.FromString,
             options,

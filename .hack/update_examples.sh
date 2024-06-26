@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function show_help () {
-    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bpe|--build-push-example <path> | -u|--update <path>)"
+    echo "Usage: $0 [-h|--help | -t|--tag <tag>] (-bpe|--build-push-example <path>)"
     echo "  -h, --help                   Display help message and exit"
     echo "  -bpe, --build-push-example   Build the Dockerfile of the given example directory path, and push it to the quay.io registry"
     echo "  -t, --tag                    To be optionally used with -bpe. Specify the tag to build with. Default tag: stable"

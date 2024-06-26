@@ -1,15 +1,20 @@
 TAG ?= stable
 PUSH ?= false
 
+.PHONY: update
+update:
+	poetry update -vv
+
 .PHONY: image-push
-image-push:
-	docker buildx build -t "quay.io/numaio/numaflow-python/reduce-counter:${TAG}" --platform linux/amd64,linux/arm64 . --push
+image-push: update
+	cd ../../../ && docker buildx build \
+	-f examples/reduce/counter/Dockerfile \
+	-t "quay.io/numaio/numaflow-python/reduce-counter:${TAG}" \
+	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
-image:
-	docker build -t "quay.io/numaio/numaflow-python/reduce-counter:${TAG}" .
+image: update
+	cd ../../../ && docker build \
+	-f examples/reduce/counter/Dockerfile \
+	-t "quay.io/numaio/numaflow-python/reduce-counter:${TAG}" .
 	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/reduce-counter:${TAG}"; fi
-
-.PHONY: clean
-clean:
-	rm -rf ./dist

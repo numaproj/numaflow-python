@@ -72,12 +72,14 @@ exclude = '''
 [tool.ruff]
 line-length = 100
 src = ["pynumaflow", "tests", "examples"]
-select = ["E", "F", "UP"]
 target-version = "py39"
 show-fixes = true
-show-source = true
 extend-exclude = [
     "*_pb2.py",
     "*_pb2*.py",
     "*.pyi"
 ]
+output-format = "full"
+[tool.ruff.lint]
+select = ["E", "F", "UP"]
+

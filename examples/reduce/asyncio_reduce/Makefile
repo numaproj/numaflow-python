@@ -1,11 +1,16 @@
 TAG ?= stable
 PUSH ?= false
+REPO = "quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}"
+
+.PHONY: update
+update:
+	poetry update -vv
 
 .PHONY: image-push
-image-push:
-	docker buildx build -t "quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}" --platform linux/amd64,linux/arm64 . --push
+image-push: update
+	docker buildx build -t ${REPO} --platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
-image:
-	docker build -t "quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}" .
-	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}"; fi
+image: update
+	docker build -t ${REPO} .
+	@if [ "$(PUSH)" = "true" ]; then docker push ${REPO}; fi

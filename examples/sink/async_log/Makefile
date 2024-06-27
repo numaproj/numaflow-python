@@ -1,5 +1,6 @@
 TAG ?= stable
 PUSH ?= false
+REPO = "quay.io/numaio/numaflow-python/async-sink-log:${TAG}"
 
 .PHONY: update
 update:
@@ -9,12 +10,12 @@ update:
 image-push: update
 	cd ../../../ && docker buildx build \
 	-f examples/sink/async_log/Dockerfile \
-	-t "quay.io/numaio/numaflow-python/async-sink-log:${TAG}" \
+	-t ${REPO} \
 	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
 image: update
 	cd ../../../ && docker build \
 	-f examples/sink/async_log/Dockerfile \
-	-t "quay.io/numaio/numaflow-python/async-sink-log:${TAG}" .
-	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/async-sink-log:${TAG}"; fi
+	-t ${REPO} .
+	@if [ "$(PUSH)" = "true" ]; then docker push ${REPO}; fi

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.3 (2024-06-27)
+
+
+### Contributors
+
+
 ## v0.7.2 (2024-06-10)
 
  * [225e8b0](https://github.com/numaproj/numaflow-python/commit/225e8b0cce2cee6a982f2a23d1645066642ef80a) fix: udf type in multiproc source transformer (#171)

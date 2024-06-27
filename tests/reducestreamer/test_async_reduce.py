@@ -274,6 +274,13 @@ class TestAsyncReduceStreamer(unittest.TestCase):
         with self.assertRaises(TypeError):
             ReduceStreamAsyncServer(ExampleClass(0))
 
+        # Check that an invalid class is passed
+        class ExampleBadClass:
+            pass
+
+        with self.assertRaises(TypeError):
+            ReduceStreamAsyncServer(reduce_stream_handler=ExampleBadClass)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

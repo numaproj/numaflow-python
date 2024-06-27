@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.7.2 (2024-06-10)
+
+ * [225e8b0](https://github.com/numaproj/numaflow-python/commit/225e8b0cce2cee6a982f2a23d1645066642ef80a) fix: udf type in multiproc source transformer (#171)
+
+### Contributors
+
+ * Sidhant Kohli
+
+## v0.7.1 (2024-05-30)
+
+ * [06a6fdc](https://github.com/numaproj/numaflow-python/commit/06a6fdcf437dda049a04c7d80218d131476547a1) feat: UDF container should crash on exceptions (#160)
+
+### Contributors
+
+ * Sidhant Kohli
+
 ## v0.7.0a1 (2024-04-17)
 
  * [0c2501b](https://github.com/numaproj/numaflow-python/commit/0c2501b5c3677eb736539a6797bfabd1c02259aa) feat: add fallback sink support (#157)

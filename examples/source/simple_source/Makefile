@@ -1,7 +1,7 @@
 TAG ?= stable
 PUSH ?= false
-REPO = quay.io/numaio/numaflow-python/even-odd:${TAG}
-DOCKER_FILE_PATH = examples/map/even_odd/Dockerfile
+REPO = quay.io/numaio/numaflow-python/simple-source:${TAG}
+DOCKER_FILE_PATH = examples/source/simple_source/Dockerfile
 
 .PHONY: update
 update:
@@ -11,7 +11,7 @@ update:
 image-push: update
 	cd ../../../ && docker buildx build \
 	-f ${DOCKER_FILE_PATH} \
-	-t {REPO} \
+	-t ${REPO} \
 	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image

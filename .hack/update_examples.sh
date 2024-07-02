@@ -84,4 +84,3 @@ if (( usingBuildPushExample )); then
 elif (( usingHelp )); then
   show_help
 fi
-

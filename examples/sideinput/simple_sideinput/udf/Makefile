@@ -1,6 +1,7 @@
 TAG ?= stable
 PUSH ?= false
-REPO = "quay.io/numaio/numaflow-python/udf-sideinput-example:${TAG}"
+REPO = quay.io/numaio/numaflow-python/udf-sideinput-example:${TAG}
+DOCKER_FILE_PATH = examples/sideinput/simple_sideinput/udf/Dockerfile
 
 .PHONY: update
 update:
@@ -9,13 +10,13 @@ update:
 .PHONY: image-push
 image-push: update
 	cd ../../../../ && docker buildx build \
-	-f examples/sideinput/simple_sideinput/udf/Dockerfile \
+	-f ${DOCKER_FILE_PATH} \
 	-t ${REPO} \
 	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
 image: update
 	cd ../../../../ && docker build \
-	-f examples/sideinput/simple_sideinput/udf/Dockerfile \
+	-f ${DOCKER_FILE_PATH} \
 	-t ${REPO} .
 	@if [ "$(PUSH)" = "true" ]; then docker push ${REPO}; fi

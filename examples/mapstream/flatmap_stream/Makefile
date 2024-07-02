@@ -1,6 +1,7 @@
 TAG ?= stable
 PUSH ?= false
-REPO = "quay.io/numaio/numaflow-python/map-flatmap-stream:${TAG}"
+REPO = quay.io/numaio/numaflow-python/map-flatmap-stream:${TAG}
+DOCKER_FILE_PATH = examples/mapstream/flatmap_stream/Dockerfile
 
 .PHONY: update
 update:
@@ -9,13 +10,13 @@ update:
 .PHONY: image-push
 image-push: update
 	cd ../../../ && docker buildx build \
-	-f examples/mapstream/flatmap_stream/Dockerfile \
+	-f ${DOCKER_FILE_PATH} \
 	-t ${REPO} \
 	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
 image: update
 	cd ../../../ && docker build \
-	-f examples/mapstream/flatmap_stream/Dockerfile \
+	-f ${DOCKER_FILE_PATH} \
 	-t ${REPO} .
 	@if [ "$(PUSH)" = "true" ]; then docker push ${REPO}; fi

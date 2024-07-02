@@ -1,6 +1,7 @@
 TAG ?= stable
 PUSH ?= false
-REPO = "quay.io/numaio/numaflow-python/multiproc:${TAG}"
+REPO = quay.io/numaio/numaflow-python/multiproc:${TAG}
+DOCKER_FILE_PATH = examples/map/multiproc_map/Dockerfile
 
 .PHONY: update
 update:
@@ -9,13 +10,13 @@ update:
 .PHONY: image-push
 image-push: update
 	cd ../../../ && docker buildx build \
-	-f examples/map/multiproc_map/Dockerfile \
+	-f ${DOCKER_FILE_PATH} \
 	-t ${REPO} \
 	 --platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
 image: update
 	cd ../../../ && docker build \
-	-f examples/map/multiproc_map/Dockerfile \
+	-f ${DOCKER_FILE_PATH} \
 	-t ${REPO} .
 	@if [ "$(PUSH)" = "true" ]; then docker push ${REPO}; fi

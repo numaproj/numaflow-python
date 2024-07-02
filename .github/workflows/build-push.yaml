@@ -8,8 +8,7 @@ on:
 
 jobs:
   docker_publish:
-    # run it only on numaproj/numaflow-python repository
-    # forked repositories normally don't have the proper permission setup.
+    # run workflow only on numaproj/numaflow-python repository
     if: ${{ github.repository }} == "numaproj/numaflow-python"
     name: Build, Tag, and Push Image
     runs-on: ubuntu-latest

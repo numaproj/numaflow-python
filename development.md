@@ -17,7 +17,7 @@ If you want to build and tag a local image without pushing, use the `image` targ
 
 If you would like to build and push a specific example, you can do so by running:
 ```shell
-./.hack/update_examples.sh -bpe <example-directory-path> -t <tag>
+./hack/update_examples.sh -bpe <example-directory-path> -t <tag>
 ```
 This is essentially equivalent to running `make image-push TAG=<tag>` in the example directory itself.
 The default tag is `stable`, but it is recommended you specify your own for testing purposes, as the Github Actions CI uses the `stable` tag.

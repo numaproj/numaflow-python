@@ -17,6 +17,7 @@ SIDE_INPUT_SOCK_PATH = "/var/run/numaflow/sideinput.sock"
 SOURCE_SOCK_PATH = "/var/run/numaflow/source.sock"
 MULTIPROC_MAP_SOCK_ADDR = "/var/run/numaflow/multiproc"
 FALLBACK_SINK_SOCK_PATH = "/var/run/numaflow/fb-sink.sock"
+BATCH_MAP_SOCK_PATH = "/var/run/numaflow/batchmap.sock"
 
 # Server information file configs
 MAP_SERVER_INFO_FILE_PATH = "/var/run/numaflow/mapper-server-info"
@@ -28,6 +29,7 @@ SINK_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sinker-server-info"
 SIDE_INPUT_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sideinput-server-info"
 SOURCE_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sourcer-server-info"
 FALLBACK_SINK_SERVER_INFO_FILE_PATH = "/var/run/numaflow/fb-sinker-server-info"
+BATCH_MAP_SERVER_INFO_FILE_PATH = "/var/run/numaflow/batchmapper-server-info"
 
 ENV_UD_CONTAINER_TYPE = "NUMAFLOW_UD_CONTAINER_TYPE"
 UD_CONTAINER_FALLBACK_SINK = "fb-udsink"

@@ -2,7 +2,8 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional, Awaitable
+from typing import TypeVar, Callable, Union, Optional
+from collections.abc import Awaitable
 from warnings import warn
 
 from pynumaflow._constants import DROP

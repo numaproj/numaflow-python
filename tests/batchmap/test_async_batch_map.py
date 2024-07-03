@@ -16,12 +16,8 @@ from pynumaflow.batchmapper import (
     BatchResponse,
     BatchMapAsyncServer,
 )
-from pynumaflow.proto.batchmapper import batchmap_pb2, batchmap_pb2_grpc
+from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
 from tests.batchmap.utils import start_request, request_generator
-from tests.testing_utils import (
-    mock_message,
-    get_time_args,
-)
 
 LOGGER = setup_logging(__name__)
 

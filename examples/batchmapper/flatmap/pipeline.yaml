@@ -11,7 +11,7 @@ spec:
       source:
         # A self data generating source
         generator:
-          rpu: 2300
+          rpu: 1500
           duration: 1s
     - name: batch-flatmap
       metadata:

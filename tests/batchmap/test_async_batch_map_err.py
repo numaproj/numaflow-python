@@ -9,8 +9,8 @@ import grpc
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.batchmapper import BatchResponses, BatchResponse
-from pynumaflow.batchmapper import Message, Datum, BatchMapAsyncServer
+from pynumaflow.batchmapper import BatchResponses
+from pynumaflow.batchmapper import Datum, BatchMapAsyncServer
 from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
 from tests.batchmap.utils import start_request
 from tests.testing_utils import mock_terminate_on_stop
@@ -18,6 +18,7 @@ from tests.testing_utils import mock_terminate_on_stop
 LOGGER = setup_logging(__name__)
 
 raise_error = False
+
 
 def request_generator(count, request, resetkey: bool = False):
     for i in range(count):
@@ -121,7 +122,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             for _ in generator_response:
                 counter += 1
         except Exception as err:
-            self.assertTrue("batchMapFn: mismatch between length of batch requests and responses" in err.__str__())
+            self.assertTrue(
+                "batchMapFn: mismatch between length of batch requests and responses"
+                in err.__str__()
+            )
             return
         self.fail("Expected an exception.")
 

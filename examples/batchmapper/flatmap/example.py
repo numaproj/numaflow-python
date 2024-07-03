@@ -1,5 +1,11 @@
-from pynumaflow.batchmapper import Messages, Message, Datum, BatchMapper, BatchMapper, BatchMapAsyncServer, \
-    BatchResponses, BatchResponse
+from pynumaflow.batchmapper import (
+    Message,
+    Datum,
+    BatchMapper,
+    BatchMapAsyncServer,
+    BatchResponses,
+    BatchResponse,
+)
 
 
 class Flatmap(BatchMapper):

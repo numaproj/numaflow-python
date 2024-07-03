@@ -35,7 +35,6 @@ def startup_callable(loop):
 
 
 class ExampleClass(BatchMapper):
-
     async def handler(
         self,
         datums: list[Datum],

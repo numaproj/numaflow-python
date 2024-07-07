@@ -212,7 +212,8 @@ async def start_async_server(
     info_server_write(server_info=serv_info, info_file=server_info_file)
 
     # Log the server start
-    _LOGGER.info(
+    # _LOGGER.info(
+    print(
         "Async GRPC Server listening on: %s with max threads: %s",
         sock_path,
         max_threads,

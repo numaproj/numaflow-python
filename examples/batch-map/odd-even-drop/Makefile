@@ -1,0 +1,15 @@
+TAG ?= stable
+PUSH ?= false
+
+.PHONY: image-push
+image-push:
+	docker buildx build -t "quay.io/numaio/numaflow-python/batch-map/odd-even-drop:${TAG}" --platform linux/amd64,linux/arm64 . --push
+
+.PHONY: image
+image:
+	docker build -t "quay.io/numaio/numaflow-python/batch-map/odd-even-drop:${TAG}" .
+	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/batch-map/odd-even-drop:${TAG}"; fi
+
+.PHONY: clean
+clean:
+	rm -rf ./dist

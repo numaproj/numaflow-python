@@ -1,0 +1,73 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: simple-pipeline
+spec:
+  vertices:
+    - name: in
+      scale:
+        disabled: true
+      source:
+        generator:
+          # How many messages to generate in the duration.
+          rpu: 10
+          duration: 1s
+          msgSize: 1000
+
+    - name: even-or-odd-batch-stream
+      metadata:
+        annotations:
+          numaflow.numaproj.io/batch-map: "true"
+      limits:
+        # This determinates number of messages per batch
+        readBatchSize: 50
+      scale:
+        disabled: true
+      udf:
+        container:
+          image: "quay.io/numaio/numaflow-python/batch-map/odd-even-drop:stable"
+          env:
+          - name: MAX_THREADS
+            value: "1"
+          - name: PYTHONUNBUFFERED
+            value: "1"
+
+    # A simple outputs to demonstrate routing per message and the grouped data
+    - name: even-sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+    - name: odd-sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+    - name: number-sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+      
+  edges:
+    - from: in
+      to: even-or-odd-batch-stream
+    - from: even-or-odd-batch-stream
+      to: even-sink
+      conditions:
+        tags:
+          values:
+            - even-tag
+    - from: even-or-odd-batch-stream
+      to: odd-sink
+      conditions:
+        tags:
+          operator: or
+          values:
+            - odd-tag
+    - from: even-or-odd-batch-stream
+      to: number-sink
+      conditions:
+        tags:
+          values:
+            - grouped

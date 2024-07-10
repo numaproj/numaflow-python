@@ -39,12 +39,13 @@ RUN apt-get update \
 FROM builder AS udsink
 
 WORKDIR $PYSETUP_PATH
-COPY dist/ ./dist/
-COPY pyproject.toml .
+COPY ./ ./
+
+WORKDIR $PYSETUP_PATH/examples/sink/log
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
 
-ADD . /app
+COPY examples/sink/log /app
 WORKDIR /app
 
 RUN chmod +x entry.sh

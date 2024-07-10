@@ -39,12 +39,13 @@ RUN apt-get update \
 FROM builder AS udf
 
 WORKDIR $PYSETUP_PATH
-COPY dist/ ./dist/
-COPY pyproject.toml .
+COPY ./ ./
+
+WORKDIR $PYSETUP_PATH/examples/sideinput/simple_sideinput/udf
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
 
-ADD . /app
+COPY examples/sideinput/simple_sideinput/udf /app
 WORKDIR /app
 
 RUN chmod +x entry.sh

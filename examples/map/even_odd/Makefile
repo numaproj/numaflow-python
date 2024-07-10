@@ -11,7 +11,7 @@ update:
 image-push: update
 	cd ../../../ && docker buildx build \
 	-f ${DOCKER_FILE_PATH} \
-	-t {IMAGE_REGISTRY} \
+	-t ${IMAGE_REGISTRY} \
 	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image

@@ -2,7 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
-from typing import AsyncIterable
+from collections.abc import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2

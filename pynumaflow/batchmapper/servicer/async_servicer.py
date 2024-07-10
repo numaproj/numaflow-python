@@ -14,7 +14,8 @@ from pynumaflow._constants import _LOGGER, STREAM_EOF
 
 
 async def datum_generator(
-        request_iterator: AsyncIterable[batchmap_pb2.BatchMapRequest]) -> AsyncIterable[Datum]:
+    request_iterator: AsyncIterable[batchmap_pb2.BatchMapRequest],
+) -> AsyncIterable[Datum]:
     """
     This function is used to create an async generator
     from the gRPC request iterator.
@@ -42,25 +43,21 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
     """
 
     def __init__(
-            self,
-            handler: BatchMapCallable,
+        self,
+        handler: BatchMapCallable,
     ):
         self.background_tasks = set()
         self.__batch_map_handler: BatchMapCallable = handler
 
     async def BatchMapFn(
-            self,
-            request_iterator: AsyncIterable[batchmap_pb2.BatchMapRequest],
-            context: NumaflowServicerContext,
+        self,
+        request_iterator: AsyncIterable[batchmap_pb2.BatchMapRequest],
+        context: NumaflowServicerContext,
     ) -> batchmap_pb2.BatchMapResponse:
         """
         Applies a batch map function to a datum stream in streaming mode.
         The pascal case function name comes from the proto batchmap_pb2_grpc.py file.
         """
-
-        request_counter = 0
-        req_lock = asyncio.Lock()
-
         # Create an async iterator from the request iterator
         datum_iterator = datum_generator(request_iterator=request_iterator)
 
@@ -71,7 +68,6 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
             # If the number of responses received does not align with the request batch size,
             # we will not be able to process the data correctly.
             # This should be marked as an error and raised to the user.
-            print("Mismatch", request_counter, " ", len(responses))
             if len(responses) != request_counter:
                 err_msg = "batchMapFn: mismatch between length of batch requests and responses"
                 raise Exception(err_msg)
@@ -98,8 +94,8 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
 
     async def invoke_batch_map(self, datum_iterator: AsyncIterable[Datum]):
         """
-            # iterate over the incoming requests, and keep sending to the user code
-            # once all messages have been sent, we wait for the responses
+        # iterate over the incoming requests, and keep sending to the user code
+        # once all messages have been sent, we wait for the responses
         """
         # create a message queue to send to the user code
         niter = NonBlockingIterator()
@@ -126,7 +122,7 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
         return task.result(), req_count
 
     async def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> batchmap_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.

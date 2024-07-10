@@ -2,9 +2,9 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional, AsyncIterable
+from typing import TypeVar, Callable, Union, Optional
+from collections.abc import AsyncIterable
 from collections.abc import Awaitable
-from warnings import warn
 
 from pynumaflow._constants import DROP
 
@@ -94,13 +94,13 @@ class Datum:
     _id: str
 
     def __init__(
-            self,
-            id: str,
-            keys: list[str],
-            value: bytes,
-            event_time: datetime,
-            watermark: datetime,
-            headers: Optional[dict[str, str]] = None,
+        self,
+        id: str,
+        keys: list[str],
+        value: bytes,
+        event_time: datetime,
+        watermark: datetime,
+        headers: Optional[dict[str, str]] = None,
     ):
         self._id = id
         self._keys = keys or list()

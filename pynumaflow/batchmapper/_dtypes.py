@@ -2,14 +2,13 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional
+from typing import TypeVar, Callable, Union, Optional, AsyncIterable
 from collections.abc import Awaitable
 from warnings import warn
 
 from pynumaflow._constants import DROP
 
 M = TypeVar("M", bound="Message")
-Ms = TypeVar("Ms", bound="Messages")
 B = TypeVar("B", bound="BatchResponse")
 Bs = TypeVar("Bs", bound="BatchResponses")
 
@@ -57,49 +56,6 @@ class Message:
         return self._tags
 
 
-class Messages(Sequence[M]):
-    """
-    Class to define a list of Message objects.
-
-    Args:
-        messages: list of Message objects.
-    """
-
-    __slots__ = ("_messages",)
-
-    def __init__(self, *messages: M):
-        self._messages = list(messages) or []
-
-    def __str__(self) -> str:
-        return str(self._messages)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def __len__(self) -> int:
-        return len(self._messages)
-
-    def __iter__(self) -> Iterator[M]:
-        return iter(self._messages)
-
-    def __getitem__(self, index: int) -> M:
-        if isinstance(index, slice):
-            raise TypeError("Slicing is not supported for Messages")
-        return self._messages[index]
-
-    def append(self, message: Message) -> None:
-        self._messages.append(message)
-
-    def items(self) -> list[Message]:
-        warn(
-            "Using items is deprecated and will be removed in v0.5. "
-            "Iterate or index the Messages object instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._messages
-
-
 @dataclass(init=False)
 class Datum:
     """
@@ -138,13 +94,13 @@ class Datum:
     _id: str
 
     def __init__(
-        self,
-        id: str,
-        keys: list[str],
-        value: bytes,
-        event_time: datetime,
-        watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
+            self,
+            id: str,
+            keys: list[str],
+            value: bytes,
+            event_time: datetime,
+            watermark: datetime,
+            headers: Optional[dict[str, str]] = None,
     ):
         self._id = id
         self._keys = keys or list()
@@ -207,6 +163,10 @@ class BatchResponse:
     @classmethod
     def new_batch_response(cls: type[B], id_: str) -> B:
         return BatchResponse(_id=id_, messages=[])
+
+    @classmethod
+    def new_batch_response_with_msgs(cls: type[B], id_: str, msgs: list[M]) -> B:
+        return BatchResponse(_id=id_, messages=msgs)
 
     def append(self, message: Message) -> None:
         self.messages.append(message)
@@ -271,12 +231,12 @@ class BatchMapper(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, datums: list[Datum]) -> BatchResponses:
+    async def handler(self, datums: AsyncIterable[Datum]) -> BatchResponses:
         """
         Implement this handler function which implements the BatchMapAsyncCallable interface.
         """
         pass
 
 
-BatchMapAsyncCallable = Callable[[list[Datum]], Awaitable[BatchResponses]]
+BatchMapAsyncCallable = Callable[[AsyncIterable[Datum]], Awaitable[BatchResponses]]
 BatchMapCallable = Union[BatchMapper, BatchMapAsyncCallable]

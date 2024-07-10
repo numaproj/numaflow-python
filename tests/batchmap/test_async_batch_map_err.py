@@ -29,10 +29,10 @@ def request_generator(count, request, resetkey: bool = False):
         yield request
 
 
-# This handler mimics the scenario where map stream UDF throws a runtime error.
+# This handler mimics the scenario where batch map UDF throws a runtime error.
 async def err_handler(datums: list[Datum]) -> BatchResponses:
     if raise_error:
-        raise RuntimeError("Got a runtime error from map stream handler.")
+        raise RuntimeError("Got a runtime error from batch map handler.")
     batch_responses = BatchResponses()
     return batch_responses
 
@@ -106,7 +106,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             for _ in generator_response:
                 counter += 1
         except Exception as err:
-            self.assertTrue("Got a runtime error from map stream handler." in err.__str__())
+            self.assertTrue("Got a runtime error from batch map handler." in err.__str__())
             return
         self.fail("Expected an exception.")
 

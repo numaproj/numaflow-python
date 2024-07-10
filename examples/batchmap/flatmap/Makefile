@@ -1,4 +1,4 @@
-TAG ?= v1
+TAG ?= v4
 PUSH ?= true
 
 .PHONY: image-push

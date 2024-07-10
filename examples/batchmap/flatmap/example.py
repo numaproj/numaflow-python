@@ -1,3 +1,5 @@
+from typing import AsyncIterable
+
 from pynumaflow.batchmapper import (
     Message,
     Datum,
@@ -16,10 +18,10 @@ class Flatmap(BatchMapper):
 
     async def handler(
         self,
-        datums: list[Datum],
+        datums: AsyncIterable[Datum],
     ) -> BatchResponses:
         batch_responses = BatchResponses()
-        for datum in datums:
+        async for datum in datums:
             val = datum.value
             _ = datum.event_time
             _ = datum.watermark

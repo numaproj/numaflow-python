@@ -2,6 +2,7 @@ import asyncio
 import logging
 import threading
 import unittest
+from typing import AsyncIterable
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -37,10 +38,10 @@ def startup_callable(loop):
 class ExampleClass(BatchMapper):
     async def handler(
         self,
-        datums: list[Datum],
+        datums: AsyncIterable[Datum],
     ) -> BatchResponses:
         batch_responses = BatchResponses()
-        for datum in datums:
+        async for datum in datums:
             val = datum.value
             _ = datum.event_time
             _ = datum.watermark

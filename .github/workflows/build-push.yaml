@@ -23,7 +23,8 @@ jobs:
           "examples/map/multiproc_map", "examples/mapstream/flatmap_stream", "examples/reduce/counter",
           "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple-sideinput",
           "examples/sideinput/simple-sideinput/udf", "examples/sink/async_log", "examples/sink/log",
-          "examples/source/async-source", "examples/source/simple-source", "examples/sourcetransform/event_time_filter"
+          "examples/source/async-source", "examples/source/simple-source", "examples/sourcetransform/event_time_filter",
+          "examples/batchmap/flatmap"
         ]
 
     steps:

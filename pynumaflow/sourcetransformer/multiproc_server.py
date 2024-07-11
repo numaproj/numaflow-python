@@ -33,13 +33,14 @@ class SourceTransformMultiProcServer(NumaflowServer):
         server_info_file=SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH,
     ):
         """
-        Create a new grpc Source Transformer Server instance.
+        Create a new grpc Source Transformer Multiproc Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
         Args:
             source_transform_instance: The source transformer instance to be used for
             Source Transformer UDF
             sock_path: The UNIX socket path to be used for the server
+            server_count: The number of grpc server instances to be forked for multiproc
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
                             defaults to number of processors x4
@@ -93,7 +94,8 @@ class SourceTransformMultiProcServer(NumaflowServer):
                 return messages
 
             if __name__ == "__main__":
-                grpc_server = SourceTransformServer(my_handler)
+                grpc_server = SourceTransformMultiProcServer(source_transform_instance=my_handler
+                                                            ,server_count = 2)
                 grpc_server.start()
         """
         self.sock_path = f"unix://{sock_path}"
@@ -110,7 +112,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
             ("grpc.so_reuseaddr", 1),
         ]
         # Set the number of processes to be spawned to the number of CPUs or
-        # the value of the env var NUM_CPU_MULTIPROC defined by the user
+        # the value of the parameter server_count defined by the user
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
@@ -118,8 +120,10 @@ class SourceTransformMultiProcServer(NumaflowServer):
 
     def start(self):
         """
-        Starts the Multiproc gRPC server on the given TCP sockets
-        with given max threads.
+        Starts the N grpc servers gRPC serves on the with
+        given max threads.
+        where N = The number of CPUs or the value of the parameter server_count
+        defined by the user. The max value is capped to 2 * CPU count.
         """
         start_multiproc_server(
             max_threads=self.max_threads,

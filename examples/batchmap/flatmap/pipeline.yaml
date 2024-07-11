@@ -22,7 +22,7 @@ spec:
         min: 1
       udf:
         container:
-          image: quay.io/kohlisid/numaflow-python/batch-map-flatmap:v4
+          image: quay.io/kohlisid/numaflow-python/batch-map-flatmap:v6
           imagePullPolicy: Always
     - name: sink
       scale:

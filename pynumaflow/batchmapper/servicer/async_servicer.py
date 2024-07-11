@@ -19,8 +19,8 @@ async def datum_generator(
     """
     This function is used to create an async generator
     from the gRPC request iterator.
-    It yields a ReduceRequest instance for each request received which is then
-    forwarded to the task manager.
+    It yields a Datum instance for each request received which is then
+    forwarded to the UDF.
     """
     async for d in request_iterator:
         request = Datum(
@@ -36,7 +36,7 @@ async def datum_generator(
 
 class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
     """
-    This class is used to create a new grpc Map Stream Servicer instance.
+    This class is used to create a new grpc Batch Map Servicer instance.
     It implements the BatchMapServicer interface from the proto
     batchmap_pb2_grpc.py file.
     Provides the functionality for the required rpc methods.
@@ -55,7 +55,7 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
         context: NumaflowServicerContext,
     ) -> batchmap_pb2.BatchMapResponse:
         """
-        Applies a batch map function to a datum stream in streaming mode.
+        Applies a batch map function to a BatchMapRequest stream in a batching mode.
         The pascal case function name comes from the proto batchmap_pb2_grpc.py file.
         """
         # Create an async iterator from the request iterator
@@ -82,6 +82,7 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
                         )
                     )
 
+                # send the response for a given ID back to the stream
                 yield batchmap_pb2.BatchMapResponse(id=batch_response.id(), results=single_req_resp)
 
         except BaseException as err:
@@ -113,12 +114,14 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
             await niter.put(datum)
             req_count += 1
 
-        # once all messages have been exhausted, send an EOF to indicate stop of execution
+        # once all messages have been exhausted, send an EOF to indicate end of messages
+        # to the UDF
         await niter.put(STREAM_EOF)
 
-        # wait for the responses
+        # wait for all the responses
         await task
 
+        # return the result from the UDF, along with the request_counter
         return task.result(), req_count
 
     async def IsReady(

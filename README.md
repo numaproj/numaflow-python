@@ -95,7 +95,7 @@ This could be an alternative to creating multiple replicas of the same UDF conta
 
 Thus this server type is useful for UDFs which are CPU intensive.
 ```
-grpc_server = MapMultiProcServer(handler)
+grpc_server = MapMultiProcServer(mapper_instance=handler, server_count=2)
 ```
 
 #### Currently Supported Server Types for each functionality

@@ -39,7 +39,7 @@ class Flatmap(BatchMapper):
 
 if __name__ == "__main__":
     """
-    This example shows how to use the Flatmap mapper.
+    This example shows how to use the Batch Map Flatmap.
     We use a class as handler, but a function can be used as well.
     """
     grpc_server = BatchMapAsyncServer(Flatmap())

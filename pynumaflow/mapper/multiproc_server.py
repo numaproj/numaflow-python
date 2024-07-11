@@ -66,9 +66,7 @@ class MapMultiprocServer(NumaflowServer):
                     return messages
 
             if __name__ == "__main__":
-                # To set the env server_count value set the env variable
-                # NUM_CPU_MULTIPROC="N"
-                server_count = int(os.getenv("NUM_CPU_MULTIPROC", "2"))
+                server_count = 2
                 prime_class = PrimeMap()
                 # Server count is the number of server processes to start
                 grpc_server = MapMultiprocServer(prime_class, server_count=server_count)
@@ -89,7 +87,7 @@ class MapMultiprocServer(NumaflowServer):
             ("grpc.so_reuseaddr", 1),
         ]
         # Set the number of processes to be spawned to the number of CPUs or
-        # the value of the env var NUM_CPU_MULTIPROC defined by the user
+        # the value of the parameter server_count defined by the user
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
@@ -99,9 +97,8 @@ class MapMultiprocServer(NumaflowServer):
         """
         Starts the N grpc servers gRPC serves on the with
         given max threads.
-        where N = The number of CPUs or the
-        value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
-        is set to 2 * CPU count.
+        where N = The number of CPUs or the value of the parameter server_count
+        defined by the user. The max value is capped to 2 * CPU count.
         """
 
         # Start the multiproc server

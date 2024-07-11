@@ -67,21 +67,6 @@ class Datum:
         watermark: the watermark of the event.
         headers: the headers of the event.
         id: the unique ID for this request
-
-    >>> # Example usage
-    >>> from pynumaflow.mapstreamer import Datum
-    >>> from datetime import datetime, timezone
-    >>> payload = bytes("test_mock_message", encoding="utf-8")
-    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
-    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> msg_headers = {"key1": "value1", "key2": "value2"}
-    >>> d = Datum(
-    ...       keys=["test_key"],
-    ...       value=payload,
-    ...       event_time=t1,
-    ...       watermark=t2,
-    ...       headers=msg_headers,
-    ...    )
     """
 
     __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers", "_id")
@@ -158,8 +143,6 @@ class BatchResponse:
 
     __slots__ = ("_id", "messages")
 
-    # as_success creates a successful Response with the given id.
-    # The Success field is set to true.
     @classmethod
     def new_batch_response(cls: type[B], id_: str) -> B:
         return BatchResponse(_id=id_, messages=[])

@@ -18,7 +18,7 @@ from pynumaflow.shared.server import NumaflowServer, start_async_server
 
 class BatchMapAsyncServer(NumaflowServer):
     """
-    Class for a new Map Stream Server instance.
+    Class for a new Batch Map Async Server instance.
     """
 
     def __init__(
@@ -41,7 +41,30 @@ class BatchMapAsyncServer(NumaflowServer):
                             defaults to number of processors x4
 
         Example invocation:
-           TODO(map-batch): add example here
+         class Flatmap(BatchMapper):
+            async def handler(
+                self,
+                datums: AsyncIterable[Datum],
+            ) -> BatchResponses:
+                batch_responses = BatchResponses()
+                async for datum in datums:
+                    val = datum.value
+                    _ = datum.event_time
+                    _ = datum.watermark
+                    strs = val.decode("utf-8").split(",")
+                    batch_response = BatchResponse.new_batch_response(datum.id)
+                    if len(strs) == 0:
+                        batch_response.append(Message.to_drop())
+                    else:
+                        for s in strs:
+                            batch_response.append(Message(str.encode(s)))
+                    batch_responses.append(batch_response)
+
+                return batch_responses
+
+        if __name__ == "__main__":
+            grpc_server = BatchMapAsyncServer(Flatmap())
+            grpc_server.start()
         """
         self.batch_mapper_instance: BatchMapCallable = batch_mapper_instance
         self.sock_path = f"unix://{sock_path}"
@@ -58,7 +81,7 @@ class BatchMapAsyncServer(NumaflowServer):
 
     def start(self):
         """
-        Starter function for the Async Map Stream server, we need a separate caller
+        Starter function for the Async Batch Map server, we need a separate caller
         to the aexec so that all the async coroutines can be started from a single context
         """
         aiorun.run(self.aexec(), use_uvloop=True)

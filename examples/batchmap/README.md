@@ -26,7 +26,7 @@ datums, with each item corresponding to the response for one request datum.
 
 To clarify, let's say we have three data items:
 
-```json lines
+```
 data_1 = {"name": "John", "age": 25}
 data_2 = {"name": "Jane", "age": 30}
 data_3 = {"name": "Bob", "age": 45}

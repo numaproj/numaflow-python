@@ -15,7 +15,7 @@ spec:
     - name: flatmap
       udf:
         container:
-          image: "quay.io/numaio/numaflow-python/map-flatmap:stable"
+          image: quay.io/numaio/numaflow-python/map-flatmap:stable
           env:
             - name: PYTHONDEBUG
               value: "true"

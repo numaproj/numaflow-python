@@ -21,7 +21,7 @@ spec:
             args:
             - python
             - example.py
-            image: "quay.io/numaio/numaflow-python/sink-log:stable"
+            image: quay.io/numaio/numaflow-python/sink-log:stable
             imagePullPolicy: Always
             env:
               - name: PYTHONDEBUG

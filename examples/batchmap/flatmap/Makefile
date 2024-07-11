@@ -1,5 +1,5 @@
-TAG ?= v6
-PUSH ?= true
+TAG ?= stable
+PUSH ?= false
 
 .PHONY: image-push
 image-push:
@@ -7,8 +7,8 @@ image-push:
 
 .PHONY: image
 image:
-	docker build -t "quay.io/kohlisid/numaflow-python/batch-map-flatmap:${TAG}" .
-	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/kohlisid/numaflow-python/batch-map-flatmap:${TAG}"; fi
+	docker build -t "quay.io/numaio/numaflow-python/batch-map-flatmap:${TAG}" .
+	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/batch-map-flatmap:${TAG}"; fi
 
 .PHONY: clean
 clean:

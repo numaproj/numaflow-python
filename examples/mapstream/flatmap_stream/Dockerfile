@@ -14,9 +14,10 @@ ENV PYTHONFAULTHANDLER=1 \
   POETRY_HOME="/opt/poetry" \
   POETRY_VIRTUALENVS_IN_PROJECT=true \
   POETRY_NO_INTERACTION=1 \
-  PYSETUP_PATH="/opt/pysetup" \
-  VENV_PATH="/opt/pysetup/.venv"
+  PYSETUP_PATH="/opt/pysetup"
 
+ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/mapstream/flatmap_stream"
+ENV VENV_PATH="$EXAMPLE_PATH/.venv"
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 
 RUN apt-get update \
@@ -41,16 +42,13 @@ FROM builder AS udf
 WORKDIR $PYSETUP_PATH
 COPY ./ ./
 
-WORKDIR $PYSETUP_PATH/examples/mapstream/flatmap_stream
+WORKDIR $EXAMPLE_PATH
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
-
-COPY examples/mapstream/flatmap_stream /app
-WORKDIR /app
 
 RUN chmod +x entry.sh
 
 ENTRYPOINT ["/dumb-init", "--"]
-CMD ["/app/entry.sh"]
+CMD ["sh", "-c", "$EXAMPLE_PATH/entry.sh"]
 
 EXPOSE 5000

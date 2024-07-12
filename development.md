@@ -14,7 +14,7 @@ Please check [Numaflow](https://numaflow.numaproj.io/) for more details
 Each example directory has a Makefile which can be used to build, tag, and push images.
 If you want to build and tag the image and then immediately push it to quay.io, use the `image-push` target.
 If you want to build and tag a local image without pushing, use the `image` target. When testing, ensure that you use
-an appropriate tag for your image, and that you modify the example `pipeline.yaml` to use this tag.
+an appropriate tag for your image (`make image TAG=<tag>`), and that you modify the example `pipeline.yaml` to use this tag.
 
 If you would like to build and push a specific example, you can do so by running:
 ```shell

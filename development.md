@@ -6,14 +6,15 @@ This document explains the development process for the Numaflow Python SDK.
 
 1. Install [Poetry](https://python-poetry.org/docs/) before starting your test. Make sure you have the correct Python version
 2. Make your SDK changes
-3. Update the `example.py` inside the same example directory if needed 
+3. Update the `example.py` file inside the desired example directory if needed 
 4. Run `make image` inside the same example directory to build your image
 5. Now that you have the image with your customized example and code change, you can test it in a Numaflow pipeline. Example pipelines, `pipeline.yaml`, are also provided in most of the example directories.
 Please check [Numaflow](https://numaflow.numaproj.io/) for more details
 
 Each example directory has a Makefile which can be used to build, tag, and push images.
 If you want to build and tag the image and then immediately push it to quay.io, use the `image-push` target.
-If you want to build and tag a local image without pushing, use the `image` target.
+If you want to build and tag a local image without pushing, use the `image` target. When testing, ensure that you use
+an appropriate tag for your image, and that you modify the example `pipeline.yaml` to use this tag.
 
 If you would like to build and push a specific example, you can do so by running:
 ```shell

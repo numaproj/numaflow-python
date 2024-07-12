@@ -21,7 +21,7 @@ If you would like to build and push a specific example, you can do so by running
 ./hack/update_examples.sh -bpe <example-directory-path> -t <tag>
 ```
 This is essentially equivalent to running `make image-push TAG=<tag>` in the example directory itself.
-The default tag is `stable`, it is recommended you specify your own for testing purposes, as the Github Actions CI uses the `stable` tag.
+The default tag is `stable`, but it is recommended you specify your own for testing purposes, as the Github Actions CI uses the `stable` tag.
 This consistent tag name is used so that the tags in the [E2E test pipelines](https://github.com/numaproj/numaflow/tree/main/test) do not need to be updated each time an SDK change is made.
 
 Note: before running the script, ensure that through the CLI, you are logged into quay.io.

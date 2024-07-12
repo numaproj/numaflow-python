@@ -1,14 +1,10 @@
 name: Docker Publish
 
-#on:
-#  push:
-#    branches: [ main ]
-#    tags:
-#      - '*'
-
 on:
-  pull_request:
+  push:
     branches: [ main ]
+    tags:
+      - '*'
 
 jobs:
   docker_publish:

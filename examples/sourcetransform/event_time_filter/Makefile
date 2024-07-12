@@ -19,4 +19,4 @@ image: update
 	cd ../../../ && docker build \
 	-f ${DOCKER_FILE_PATH} \
 	-t ${IMAGE_REGISTRY} .
-	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}"; fi
+	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}:${TAG}; fi

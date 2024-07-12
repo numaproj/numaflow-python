@@ -5,6 +5,10 @@ on:
     branches: [ main ]
     tags:
       - '*'
+  pull_request:
+    branches: [ main ]
+    tags:
+      - '*'
 
 jobs:
   docker_publish:

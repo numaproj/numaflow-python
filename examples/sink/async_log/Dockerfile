@@ -16,7 +16,7 @@ ENV PYTHONFAULTHANDLER=1 \
   POETRY_NO_INTERACTION=1 \
   PYSETUP_PATH="/opt/pysetup"
 
-ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/examples/sink/async_log"
+ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/sink/async_log"
 ENV VENV_PATH="$EXAMPLE_PATH/.venv"
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
 

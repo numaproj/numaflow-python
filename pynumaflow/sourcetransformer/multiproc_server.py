@@ -1,5 +1,3 @@
-import os
-
 from pynumaflow.sourcetransformer.servicer.server import SourceTransformServicer
 
 from pynumaflow.shared.server import start_multiproc_server
@@ -7,10 +5,11 @@ from pynumaflow.shared.server import start_multiproc_server
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     SOURCE_TRANSFORMER_SOCK_PATH,
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     UDFType,
     _PROCESS_COUNT,
     SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
 )
 
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
@@ -29,7 +28,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         server_count: int = _PROCESS_COUNT,
         sock_path=SOURCE_TRANSFORMER_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         server_info_file=SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH,
     ):
         """
@@ -43,7 +42,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
             server_count: The number of grpc server instances to be forked for multiproc
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
-                            defaults to number of processors x4
+                            defaults to 4 and max capped at 16
 
         Example invocation:
             import datetime
@@ -99,7 +98,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
                 grpc_server.start()
         """
         self.sock_path = f"unix://{sock_path}"
-        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
 

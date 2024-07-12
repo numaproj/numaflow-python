@@ -26,7 +26,7 @@ class Flatmap(BatchMapper):
             _ = datum.event_time
             _ = datum.watermark
             strs = val.decode("utf-8").split(",")
-            batch_response = BatchResponse.new_batch_response(datum.id)
+            batch_response = BatchResponse.from_id(datum.id)
             if len(strs) == 0:
                 batch_response.append(Message.to_drop())
             else:

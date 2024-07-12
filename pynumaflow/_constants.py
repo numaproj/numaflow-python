@@ -45,7 +45,10 @@ DELIMITER = ":"
 DROP = "U+005C__DROP__"
 
 _PROCESS_COUNT = os.cpu_count()
-MAX_THREADS = int(os.getenv("MAX_THREADS", "4"))
+# Cap max value to 16
+MAX_NUM_THREADS = 16
+# If NUM_THREADS_DEFAULT env is not set default to 4
+NUM_THREADS_DEFAULT = int(os.getenv("MAX_THREADS", "4"))
 
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):

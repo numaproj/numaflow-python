@@ -49,7 +49,7 @@ Each Datum has a unique ID tag, which will be used by Numaflow to ensure correct
 
 ```python
 async for datum in datums:
-    batch_response = BatchResponse.new_batch_response(datum.id)
+    batch_response = BatchResponse.from_id(datum.id)
 ```
 
 

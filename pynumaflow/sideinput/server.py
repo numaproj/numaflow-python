@@ -1,16 +1,16 @@
-import os
 from pynumaflow.shared import NumaflowServer
 from pynumaflow.shared.server import sync_server_start
 from pynumaflow.sideinput._dtypes import RetrieverCallable
 from pynumaflow.sideinput.servicer.servicer import SideInputServicer
 from pynumaflow._constants import (
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     MAX_MESSAGE_SIZE,
     SIDE_INPUT_SOCK_PATH,
     _LOGGER,
     UDFType,
     SIDE_INPUT_DIR_PATH,
     SIDE_INPUT_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
 )
 
 
@@ -54,12 +54,12 @@ class SideInputServer(NumaflowServer):
         side_input_instance: RetrieverCallable,
         sock_path=SIDE_INPUT_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         side_input_dir_path=SIDE_INPUT_DIR_PATH,
         server_info_file=SIDE_INPUT_SERVER_INFO_FILE_PATH,
     ):
         self.sock_path = f"unix://{sock_path}"
-        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
 

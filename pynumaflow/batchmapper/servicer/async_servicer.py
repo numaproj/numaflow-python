@@ -83,7 +83,7 @@ class AsyncBatchMapServicer(batchmap_pb2_grpc.BatchMapServicer):
                     )
 
                 # send the response for a given ID back to the stream
-                yield batchmap_pb2.BatchMapResponse(id=batch_response.id(), results=single_req_resp)
+                yield batchmap_pb2.BatchMapResponse(id=batch_response.id, results=single_req_resp)
 
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)

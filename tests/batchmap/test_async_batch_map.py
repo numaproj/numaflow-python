@@ -22,7 +22,6 @@ from tests.batchmap.utils import start_request, request_generator
 
 LOGGER = setup_logging(__name__)
 
-
 listen_addr = "unix:///tmp/batch_map.sock"
 
 _s: Server = None
@@ -46,7 +45,7 @@ class ExampleClass(BatchMapper):
             _ = datum.event_time
             _ = datum.watermark
             strs = val.decode("utf-8").split(",")
-            batch_response = BatchResponse.new_batch_response(datum.id)
+            batch_response = BatchResponse.from_id(datum.id)
             if len(strs) == 0:
                 batch_response.append(Message.to_drop())
             else:
@@ -58,15 +57,15 @@ class ExampleClass(BatchMapper):
 
 
 async def handler(
-    datums: list[Datum],
+    datums: AsyncIterable[Datum],
 ) -> BatchResponses:
     batch_responses = BatchResponses()
-    for datum in datums:
+    async for datum in datums:
         val = datum.value
         _ = datum.event_time
         _ = datum.watermark
         strs = val.decode("utf-8").split(",")
-        batch_response = BatchResponse.new_batch_response(datum.id)
+        batch_response = BatchResponse.from_id(datum.id)
         if len(strs) == 0:
             batch_response.append(Message.to_drop())
         else:
@@ -166,6 +165,19 @@ class TestAsyncBatchMapper(unittest.TestCase):
                 logging.error(e)
 
             self.assertTrue(response.ready)
+
+    def test_max_threads(self):
+        # max cap at 16
+        server = BatchMapAsyncServer(batch_mapper_instance=handler, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = BatchMapAsyncServer(batch_mapper_instance=handler, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = BatchMapAsyncServer(batch_mapper_instance=handler)
+        self.assertEqual(server.max_threads, 4)
 
     def __stub(self):
         return batchmap_pb2_grpc.BatchMapStub(_channel)

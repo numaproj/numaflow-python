@@ -30,7 +30,9 @@ class Message:
     _keys: list[str]
     _tags: list[str]
 
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
+    def __init__(
+        self, value: bytes, keys: Optional[list[str]] = None, tags: Optional[list[str]] = None
+    ):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -144,11 +146,11 @@ class BatchResponse:
     __slots__ = ("_id", "messages")
 
     @classmethod
-    def new_batch_response(cls: type[B], id_: str) -> B:
+    def from_id(cls: type[B], id_: str) -> B:
         return BatchResponse(_id=id_, messages=[])
 
     @classmethod
-    def new_batch_response_with_msgs(cls: type[B], id_: str, msgs: list[M]) -> B:
+    def with_msgs(cls: type[B], id_: str, msgs: list[M]) -> B:
         return BatchResponse(_id=id_, messages=msgs)
 
     def append(self, message: Message) -> None:
@@ -157,6 +159,7 @@ class BatchResponse:
     def items(self) -> list[Message]:
         return self.messages
 
+    @property
     def id(self) -> str:
         return self._id
 
@@ -187,8 +190,6 @@ class BatchResponses(Sequence[B]):
         return iter(self._responses)
 
     def __getitem__(self, index: int) -> M:
-        if isinstance(index, slice):
-            raise TypeError("Slicing is not supported for BatchResponses")
         return self._responses[index]
 
     def append(self, response: BatchResponse) -> None:

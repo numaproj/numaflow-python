@@ -1,14 +1,13 @@
-import os
-
 import aiorun
 import grpc
 
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     _LOGGER,
     BATCH_MAP_SOCK_PATH,
     BATCH_MAP_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
 )
 from pynumaflow.batchmapper._dtypes import BatchMapCallable
 from pynumaflow.batchmapper.servicer.async_servicer import AsyncBatchMapServicer
@@ -26,7 +25,7 @@ class BatchMapAsyncServer(NumaflowServer):
         batch_mapper_instance: BatchMapCallable,
         sock_path=BATCH_MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         server_info_file=BATCH_MAP_SERVER_INFO_FILE_PATH,
     ):
         """
@@ -38,7 +37,7 @@ class BatchMapAsyncServer(NumaflowServer):
             sock_path: The UNIX socket path to be used for the server
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
-                            defaults to number of processors x4
+                            defaults to 4 and max capped at 16
 
         Example invocation:
          class Flatmap(BatchMapper):
@@ -52,7 +51,7 @@ class BatchMapAsyncServer(NumaflowServer):
                     _ = datum.event_time
                     _ = datum.watermark
                     strs = val.decode("utf-8").split(",")
-                    batch_response = BatchResponse.new_batch_response(datum.id)
+                    batch_response = BatchResponse.from_id(datum.id)
                     if len(strs) == 0:
                         batch_response.append(Message.to_drop())
                     else:
@@ -68,7 +67,7 @@ class BatchMapAsyncServer(NumaflowServer):
         """
         self.batch_mapper_instance: BatchMapCallable = batch_mapper_instance
         self.sock_path = f"unix://{sock_path}"
-        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
 

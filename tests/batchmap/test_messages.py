@@ -12,15 +12,15 @@ class TestBatchResponse(unittest.TestCase):
         return Message(value=value)
 
     def test_init(self):
-        batch_response = BatchResponse.new_batch_response(TEST_ID)
-        self.assertEqual(batch_response.id(), TEST_ID)
+        batch_response = BatchResponse.from_id(TEST_ID)
+        self.assertEqual(batch_response.id, TEST_ID)
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             BatchResponse()
 
     def test_append(self):
-        batch_response = BatchResponse.new_batch_response(TEST_ID)
+        batch_response = BatchResponse.from_id(TEST_ID)
         self.assertEqual(0, len(batch_response.items()))
         batch_response.append(self.mock_message_object())
         self.assertEqual(1, len(batch_response.items()))
@@ -32,7 +32,7 @@ class TestBatchResponse(unittest.TestCase):
             mock_message(),
             mock_message(),
         ]
-        msgs = BatchResponse.new_batch_response_with_msgs(TEST_ID, mock_obj)
+        msgs = BatchResponse.with_msgs(TEST_ID, mock_obj)
         self.assertEqual(len(mock_obj), len(msgs.items()))
         self.assertEqual(mock_obj[0], msgs.items()[0])
 

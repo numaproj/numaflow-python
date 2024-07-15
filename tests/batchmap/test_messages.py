@@ -18,9 +18,12 @@ class TestBatchResponses(unittest.TestCase):
         batch_responses.append(batch_response1)
         batch_responses.append(batch_response2)
         self.assertEqual(2, len(batch_responses))
-        # test slicing
+        # test indexing
         self.assertEqual(batch_responses[0].id, TEST_ID)
         self.assertEqual(batch_responses[1].id, TEST_ID + "2")
+        # test slicing
+        resp = batch_responses[0:1]
+        self.assertEqual(resp[0].id, TEST_ID)
 
 
 class TestBatchResponse(unittest.TestCase):

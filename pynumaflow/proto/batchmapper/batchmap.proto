@@ -11,12 +11,12 @@ service BatchMap {
 
   // BatchMapFn is a bi-directional streaming rpc which applies a
   // Map function on each BatchMapRequest element of the stream and then returns streams
-  // back MapResponse elements.
+  // back BatchMapResponse elements.
   rpc BatchMapFn(stream BatchMapRequest) returns (stream BatchMapResponse);
 }
 
 /**
- * MapRequest represents a request element.
+ * BatchMapRequest represents a request element.
  */
 message BatchMapRequest {
   repeated string keys = 1;
@@ -29,7 +29,7 @@ message BatchMapRequest {
 }
 
 /**
- * MapResponse represents a response element.
+ * BatchMapResponse represents a response element.
  */
 message BatchMapResponse {
   message Result {

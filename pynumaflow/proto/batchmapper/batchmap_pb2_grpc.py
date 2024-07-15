@@ -39,7 +39,7 @@ class BatchMapServicer(object):
     def BatchMapFn(self, request_iterator, context):
         """BatchMapFn is a bi-directional streaming rpc which applies a
         Map function on each BatchMapRequest element of the stream and then returns streams
-        back MapResponse elements.
+        back BatchMapResponse elements.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")

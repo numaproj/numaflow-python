@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "map-flatmap"
-version = "0.2.4"
+name = "batch-map-flatmap"
+version = "0.1.0"
 description = ""
 authors = ["Numaflow developers"]
 
 [tool.poetry.dependencies]
 python = "~3.10"
-pynumaflow = { path = "./dist/pynumaflow.tar.gz"}
+pynumaflow = { path = "../../../"}
 
 [tool.poetry.dev-dependencies]
 

@@ -1,8 +1,26 @@
 import unittest
 
-from pynumaflow.batchmapper import Message, DROP, BatchResponse
+from pynumaflow.batchmapper import Message, DROP, BatchResponse, BatchResponses
 from tests.batchmap.test_datatypes import TEST_ID
 from tests.testing_utils import mock_message
+
+
+class TestBatchResponses(unittest.TestCase):
+    @staticmethod
+    def mock_message_object():
+        value = mock_message()
+        return Message(value=value)
+
+    def test_init(self):
+        batch_responses = BatchResponses()
+        batch_response1 = BatchResponse.from_id(TEST_ID)
+        batch_response2 = BatchResponse.from_id(TEST_ID + "2")
+        batch_responses.append(batch_response1)
+        batch_responses.append(batch_response2)
+        self.assertEqual(2, len(batch_responses))
+        # test slicing
+        self.assertEqual(batch_responses[0].id, TEST_ID)
+        self.assertEqual(batch_responses[1].id, TEST_ID + "2")
 
 
 class TestBatchResponse(unittest.TestCase):

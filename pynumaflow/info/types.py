@@ -22,6 +22,14 @@ EOF = "U+005C__END__"
 # Format - (key, env_var)
 METADATA_ENVS = [("CPU_LIMIT", "NUMAFLOW_CPU_LIMIT")]
 
+# Metadata keys
+
+# MAP_MODE_METADATA field is used in metadata to indicate which map mode is enabled
+MAP_MODE_METADATA = "MAP_MODE"
+# MULTIPROC_METADATA is the field used to indicate that Multiproc map mode is enabled
+# The value contains the number of servers spawned.
+MULTIPROC_METADATA = "MULTIPROC"
+
 SI = TypeVar("SI", bound="ServerInfo")
 
 
@@ -42,9 +50,6 @@ class Language(str, Enum):
     GO = "go"
     PYTHON = "python"
     JAVA = "java"
-
-
-MAP_MODE_METADATA = "MAP_MODE"
 
 
 class MapMode(str, Enum):

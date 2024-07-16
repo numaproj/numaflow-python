@@ -170,6 +170,20 @@ class TestAsyncSourcer(unittest.TestCase):
     def __stub(self):
         return source_pb2_grpc.SourceStub(_channel)
 
+    def test_max_threads(self):
+        class_instance = AsyncSource()
+        # max cap at 16
+        server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = SourceAsyncServer(sourcer_instance=class_instance)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

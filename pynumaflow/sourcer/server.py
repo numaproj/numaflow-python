@@ -1,12 +1,11 @@
-import os
-
 from pynumaflow._constants import (
     SOURCE_SOCK_PATH,
     MAX_MESSAGE_SIZE,
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     _LOGGER,
     UDFType,
     SOURCE_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
 )
 from pynumaflow.shared.server import NumaflowServer, sync_server_start
 from pynumaflow.sourcer._dtypes import SourceCallable
@@ -23,7 +22,7 @@ class SourceServer(NumaflowServer):
         sourcer_instance: SourceCallable,
         sock_path=SOURCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         server_info_file=SOURCE_SERVER_INFO_FILE_PATH,
     ):
         """
@@ -35,7 +34,7 @@ class SourceServer(NumaflowServer):
             sock_path: The UNIX socket path to be used for the server
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
-                            defaults to number of processors x4
+                            defaults to 4 and max capped at 16
 
         Example invocation:
             from collections.abc import Iterable
@@ -101,7 +100,7 @@ class SourceServer(NumaflowServer):
                 grpc_server.start()
         """
         self.sock_path = f"unix://{sock_path}"
-        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
 

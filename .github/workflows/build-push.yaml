@@ -20,9 +20,10 @@ jobs:
         example_directories: [
           "examples/map/even_odd", "examples/map/flatmap", "examples/map/forward_message",
           "examples/map/multiproc_map", "examples/mapstream/flatmap_stream", "examples/reduce/counter",
-          "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple_sideinput",
-          "examples/sideinput/simple_sideinput/udf", "examples/sink/async_log", "examples/sink/log",
-          "examples/source/async_source", "examples/source/simple_source", "examples/sourcetransform/event_time_filter"
+          "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple-sideinput",
+          "examples/sideinput/simple-sideinput/udf", "examples/sink/async_log", "examples/sink/log",
+          "examples/source/async-source", "examples/source/simple-source", "examples/sourcetransform/event_time_filter",
+          "examples/batchmap/flatmap"
         ]
 
     steps:

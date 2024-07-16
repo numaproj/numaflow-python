@@ -138,6 +138,19 @@ class TestServer(unittest.TestCase):
         with self.assertRaises(TypeError):
             SourceTransformServer()
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = SourceTransformServer(source_transform_instance=transform_handler, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = SourceTransformServer(source_transform_instance=transform_handler, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = SourceTransformServer(source_transform_instance=transform_handler)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     unittest.main()

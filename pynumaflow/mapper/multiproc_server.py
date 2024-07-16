@@ -1,12 +1,11 @@
-import os
-
 from pynumaflow._constants import (
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     MAX_MESSAGE_SIZE,
     MAP_SOCK_PATH,
     UDFType,
     _PROCESS_COUNT,
     MAP_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
 )
 from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
@@ -27,7 +26,7 @@ class MapMultiprocServer(NumaflowServer):
         server_count: int = _PROCESS_COUNT,
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         server_info_file=MAP_SERVER_INFO_FILE_PATH,
     ):
         """
@@ -40,7 +39,7 @@ class MapMultiprocServer(NumaflowServer):
             sock_path: The UNIX socket path to be used for the server
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
-                        defaults to number of processors x4
+                        defaults to 4 and max capped at 16
 
         Example invocation:
             import math
@@ -66,9 +65,7 @@ class MapMultiprocServer(NumaflowServer):
                     return messages
 
             if __name__ == "__main__":
-                # To set the env server_count value set the env variable
-                # NUM_CPU_MULTIPROC="N"
-                server_count = int(os.getenv("NUM_CPU_MULTIPROC", "2"))
+                server_count = 2
                 prime_class = PrimeMap()
                 # Server count is the number of server processes to start
                 grpc_server = MapMultiprocServer(prime_class, server_count=server_count)
@@ -76,7 +73,7 @@ class MapMultiprocServer(NumaflowServer):
 
         """
         self.sock_path = f"unix://{sock_path}"
-        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
 
@@ -89,7 +86,7 @@ class MapMultiprocServer(NumaflowServer):
             ("grpc.so_reuseaddr", 1),
         ]
         # Set the number of processes to be spawned to the number of CPUs or
-        # the value of the env var NUM_CPU_MULTIPROC defined by the user
+        # the value of the parameter server_count defined by the user
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
@@ -99,9 +96,8 @@ class MapMultiprocServer(NumaflowServer):
         """
         Starts the N grpc servers gRPC serves on the with
         given max threads.
-        where N = The number of CPUs or the
-        value of the env var NUM_CPU_MULTIPROC defined by the user. The max value
-        is set to 2 * CPU count.
+        where N = The number of CPUs or the value of the parameter server_count
+        defined by the user. The max value is capped to 2 * CPU count.
         """
 
         # Start the multiproc server

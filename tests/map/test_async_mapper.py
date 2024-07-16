@@ -219,6 +219,19 @@ class TestAsyncMapper(unittest.TestCase):
     def __stub(self):
         return map_pb2_grpc.MapStub(_channel)
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = MapAsyncServer(mapper_instance=async_map_handler, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = MapAsyncServer(mapper_instance=async_map_handler, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = MapAsyncServer(mapper_instance=async_map_handler)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

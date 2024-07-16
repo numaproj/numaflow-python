@@ -83,7 +83,6 @@ class ServerInfo:
             language=Language.PYTHON,
             minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
             version=get_sdk_version(),
-            # Add the MAP_MODE metadata to the server info for the correct map mode
             metadata=dict(),
         )
         return serv_info

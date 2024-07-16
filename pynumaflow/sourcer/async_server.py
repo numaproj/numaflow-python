@@ -131,10 +131,15 @@ class SourceAsyncServer(NumaflowServer):
         # same thread as the event loop so that all the async calls are made in the
         # same context
         # Create a new async server instance and add the servicer to it
-        server = grpc.aio.server()
+        server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
         source_servicer = self.servicer
         source_pb2_grpc.add_SourceServicer_to_server(source_servicer, server)
+        # Start the async server
         await start_async_server(
-            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+            server_async=server,
+            sock_path=self.sock_path,
+            max_threads=self.max_threads,
+            cleanup_coroutines=list(),
+            server_info_file=self.server_info_file,
         )

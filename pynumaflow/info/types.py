@@ -1,5 +1,15 @@
+import logging
+import os
 from dataclasses import dataclass, field
 from enum import Enum
+from importlib.metadata import version
+from typing import TypeVar
+
+from pynumaflow import setup_logging
+
+_LOGGER = setup_logging(__name__)
+if os.getenv("PYTHONDEBUG"):
+    _LOGGER.setLevel(logging.DEBUG)
 
 # Constants for using in the info-server
 # Specify the minimum Numaflow version required by the current SDK version
@@ -11,6 +21,8 @@ EOF = "U+005C__END__"
 # These need to be accessed in the client using the same key.
 # Format - (key, env_var)
 METADATA_ENVS = [("CPU_LIMIT", "NUMAFLOW_CPU_LIMIT")]
+
+SI = TypeVar("SI", bound="ServerInfo")
 
 
 class Protocol(str, Enum):
@@ -32,6 +44,19 @@ class Language(str, Enum):
     JAVA = "java"
 
 
+MAP_MODE_METADATA = "MAP_MODE"
+
+
+class MapMode(str, Enum):
+    """
+    Enumerate Map Mode to be enabled
+    """
+
+    UnaryMap = "unary-map"
+    StreamMap = "stream-map"
+    BatchMap = "batch-map"
+
+
 @dataclass
 class ServerInfo:
     """
@@ -50,3 +75,28 @@ class ServerInfo:
     minimum_numaflow_version: str
     version: str
     metadata: dict = field(default_factory=dict)
+
+    @classmethod
+    def get_default_server_info(cls) -> SI:
+        serv_info = ServerInfo(
+            protocol=Protocol.UDS,
+            language=Language.PYTHON,
+            minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
+            version=get_sdk_version(),
+            # Add the MAP_MODE metadata to the server info for the correct map mode
+            metadata=dict(),
+        )
+        return serv_info
+
+
+def get_sdk_version() -> str:
+    """
+    Return the pynumaflow SDK version
+    """
+    try:
+        return version("pynumaflow")
+    except Exception as e:
+        # Adding this to handle the case for local test/CI where pynumaflow
+        # will not be installed as a package
+        _LOGGER.error("Could not read SDK version %r", e, exc_info=True)
+        return ""

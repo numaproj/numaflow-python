@@ -16,13 +16,10 @@ from pynumaflow._constants import (
     UDFType,
 )
 from pynumaflow.exceptions import SocketError
-from pynumaflow.info.server import get_sdk_version, write as info_server_write, get_metadata_env
+from pynumaflow.info.server import write as info_server_write, get_metadata_env
 from pynumaflow.info.types import (
     ServerInfo,
-    Protocol,
-    Language,
     METADATA_ENVS,
-    MINIMUM_NUMAFLOW_VERSION,
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.proto.sideinput import sideinput_pb2_grpc
@@ -46,37 +43,22 @@ class NumaflowServer(metaclass=ABCMeta):
         pass
 
 
-def write_info_file(protocol: Protocol, info_file) -> None:
-    """
-    Write the server info file to the given path.
-    """
-    serv_info = ServerInfo(
-        protocol=protocol,
-        language=Language.PYTHON,
-        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
-        version=get_sdk_version(),
-    )
-    info_server_write(server_info=serv_info, info_file=info_file)
-
-
 def sync_server_start(
     servicer,
     bind_address: str,
     max_threads: int,
     server_info_file: str,
     server_options=None,
+    server_info: Optional[ServerInfo] = None,
     udf_type: str = UDFType.Map,
 ):
     """
     Utility function to start a sync grpc server instance.
     """
-    # Add the server information to the server info file
-    server_info = ServerInfo(
-        protocol=Protocol.UDS,
-        language=Language.PYTHON,
-        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
-        version=get_sdk_version(),
-    )
+    if server_info is None:
+        # Add the server information to the server info file
+        # if not provided
+        server_info = ServerInfo.get_default_server_info()
 
     # Run a sync server instance
     _run_server(
@@ -139,6 +121,7 @@ def start_multiproc_server(
     servicer,
     process_count: int,
     server_info_file: str,
+    server_info: Optional[ServerInfo] = None,
     server_options=None,
     udf_type: str = UDFType.Map,
 ):
@@ -173,16 +156,12 @@ def start_multiproc_server(
         worker.start()
         workers.append(worker)
 
-    serv_info = ServerInfo(
-        protocol=Protocol.UDS,
-        language=Language.PYTHON,
-        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
-        version=get_sdk_version(),
-        metadata=get_metadata_env(envs=METADATA_ENVS),
-    )
+    if server_info is None:
+        server_info = ServerInfo.get_default_server_info()
+    server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
     # Add the MULTIPROC metadata using the number of servers to use
-    serv_info.metadata["MULTIPROC"] = str(process_count)
-    info_server_write(server_info=serv_info, info_file=server_info_file)
+    server_info.metadata["MULTIPROC"] = str(process_count)
+    info_server_write(server_info=server_info, info_file=server_info_file)
 
     for worker in workers:
         worker.join()
@@ -194,6 +173,7 @@ async def start_async_server(
     max_threads: int,
     cleanup_coroutines: list,
     server_info_file: str,
+    server_info: Optional[ServerInfo] = None,
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.
@@ -202,14 +182,11 @@ async def start_async_server(
     """
     await server_async.start()
 
+    if server_info is None:
+        # Create the server info file if not provided
+        server_info = ServerInfo.get_default_server_info()
     # Add the server information to the server info file
-    serv_info = ServerInfo(
-        protocol=Protocol.UDS,
-        language=Language.PYTHON,
-        minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
-        version=get_sdk_version(),
-    )
-    info_server_write(server_info=serv_info, info_file=server_info_file)
+    info_server_write(server_info=server_info, info_file=server_info_file)
 
     # Log the server start
     _LOGGER.info(

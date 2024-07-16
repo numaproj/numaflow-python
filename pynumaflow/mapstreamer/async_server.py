@@ -3,6 +3,11 @@ import os
 import aiorun
 import grpc
 
+from pynumaflow.info.types import (
+    ServerInfo,
+    MAP_MODE_METADATA,
+    MapMode,
+)
 from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
 from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
 
@@ -114,13 +119,23 @@ class MapStreamAsyncServer(NumaflowServer):
         # same thread as the event loop so that all the async calls are made in the
         # same context
         # Create a new async server instance and add the servicer to it
-        server = grpc.aio.server()
+        server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
         mapstream_pb2_grpc.add_MapStreamServicer_to_server(
             self.servicer,
             server,
         )
         _LOGGER.info("Starting Map Stream Server")
+        serv_info = ServerInfo.get_default_server_info()
+        # Add the MAP_MODE metadata to the server info for the correct map mode
+        serv_info.metadata[MAP_MODE_METADATA] = str(MapMode.StreamMap)
+
+        # Start the async server
         await start_async_server(
-            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+            server_async=server,
+            sock_path=self.sock_path,
+            max_threads=self.max_threads,
+            cleanup_coroutines=list(),
+            server_info_file=self.server_info_file,
+            server_info=serv_info,
         )

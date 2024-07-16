@@ -12,9 +12,6 @@ spec:
           duration: 1s
     - name: batch-flatmap
       partitions: 2
-      metadata:
-        annotations:
-          numaflow.numaproj.io/batch-map: "true"
       scale:
         min: 1
       udf:

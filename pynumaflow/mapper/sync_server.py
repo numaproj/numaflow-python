@@ -1,4 +1,3 @@
-import os
 
 from pynumaflow.info.types import (
     ServerInfo,

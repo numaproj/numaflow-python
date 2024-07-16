@@ -8,7 +8,7 @@ packages = [{include = "mapt_event_time_filter"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.12"
-pynumaflow = { path = "./dist/pynumaflow.tar.gz"}
+pynumaflow = { path = "../../../"}
 
 [build-system]
 requires = ["poetry-core"]

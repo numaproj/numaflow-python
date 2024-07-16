@@ -1,7 +1,7 @@
 TAG ?= stable
 PUSH ?= false
-IMAGE_REGISTRY = quay.io/numaio/numaflow-python/map-flatmap:${TAG}
-DOCKER_FILE_PATH = examples/map/flatmap/Dockerfile
+IMAGE_REGISTRY = quay.io/numaio/numaflow-python/async-source:${TAG}
+DOCKER_FILE_PATH = examples/source/async_source/Dockerfile
 
 .PHONY: update
 update:

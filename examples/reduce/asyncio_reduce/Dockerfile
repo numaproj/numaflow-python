@@ -39,8 +39,7 @@ RUN apt-get update \
 FROM builder AS udf
 
 WORKDIR $PYSETUP_PATH
-COPY dist/ ./dist/
-COPY pyproject.toml .
+COPY pyproject.toml ./
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
 

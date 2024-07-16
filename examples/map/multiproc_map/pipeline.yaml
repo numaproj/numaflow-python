@@ -15,7 +15,8 @@ spec:
     - name: mult
       udf:
         container:
-          image: "quay.io/numaio/numaflow-python/multiproc:stable"
+          image: quay.io/numaio/numaflow-python/multiproc:stable
+          imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG
               value: "true"

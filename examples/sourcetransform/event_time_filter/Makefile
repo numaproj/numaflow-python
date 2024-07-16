@@ -1,15 +1,22 @@
 TAG ?= stable
 PUSH ?= false
+IMAGE_REGISTRY = quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}
+DOCKER_FILE_PATH = examples/sourcetransform/event_time_filter/Dockerfile
+
+.PHONY: update
+update:
+	poetry update -vv
 
 .PHONY: image-push
-image-push:
-	docker buildx build -t "quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}" --platform linux/amd64,linux/arm64 . --push
+image-push: update
+	cd ../../../ && docker buildx build \
+	-f ${DOCKER_FILE_PATH} \
+	-t ${IMAGE_REGISTRY} \
+	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
-image:
-	docker build -t "quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}" .
-	@if [ "$(PUSH)" = "true" ]; then docker push "quay.io/numaio/numaflow-python/mapt-event-time-filter:${TAG}"; fi
-
-.PHONY: clean
-clean:
-	rm -rf ./dist
+image: update
+	cd ../../../ && docker build \
+	-f ${DOCKER_FILE_PATH} \
+	-t ${IMAGE_REGISTRY} .
+	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}:${TAG}; fi

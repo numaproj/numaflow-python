@@ -250,6 +250,19 @@ class TestAsyncReducer(unittest.TestCase):
         with self.assertRaises(TypeError):
             ReduceAsyncServer(reducer_handler=ExampleBadClass)
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = ReduceAsyncServer(reducer_handler=ExampleClass, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = ReduceAsyncServer(reducer_handler=ExampleClass, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = ReduceAsyncServer(reducer_handler=ExampleClass)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

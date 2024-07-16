@@ -143,6 +143,19 @@ class TestSyncSourcer(unittest.TestCase):
         response, metadata, code, details = method.termination()
         self.assertEqual(response.result.partitions, mock_partitions())
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = SourceServer(sourcer_instance=SyncSource(), max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = SourceServer(sourcer_instance=SyncSource(), max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = SourceServer(sourcer_instance=SyncSource())
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     unittest.main()

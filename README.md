@@ -47,6 +47,7 @@ pre-commit install
     - [Map](https://github.com/numaproj/numaflow-python/tree/main/examples/map)
     - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/examples/reduce)
     - [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/examples/mapstream)
+    - [Batch Map](https://github.com/numaproj/numaflow-python/tree/main/examples/batchmap)
 - [Implement User Defined Sinks](https://github.com/numaproj/numaflow-python/tree/main/examples/sink)
 - [Implement User Defined SideInputs](https://github.com/numaproj/numaflow-python/tree/main/examples/sideinput)
 
@@ -95,7 +96,7 @@ This could be an alternative to creating multiple replicas of the same UDF conta
 
 Thus this server type is useful for UDFs which are CPU intensive.
 ```
-grpc_server = MapMultiProcServer(handler)
+grpc_server = MapMultiProcServer(mapper_instance=handler, server_count=2)
 ```
 
 #### Currently Supported Server Types for each functionality
@@ -111,6 +112,8 @@ These are the class names for the server types supported by each of the function
         - ReduceAsyncServer
     - MapStream
         - MapStreamAsyncServer
+    - BatchMap
+      - BatchMapAsyncServer
     - Source Transform
         - SourceTransformServer
         - SourceTransformMultiProcServer
@@ -147,6 +150,8 @@ The list of base handler classes for each of the functionalities is given below 
         - MapStreamer
     - Source Transform
         - SourceTransformer
+    - Batch Map
+      - BatchMapper
 - UDSource
     - Sourcer
 - UDSink

@@ -114,7 +114,7 @@ class MapMultiprocServer(NumaflowServer):
         # Add the MULTIPROC metadata using the number of servers to use
         server_info.metadata[MULTIPROC_METADATA] = str(self._process_count)
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        server_info.metadata[MAP_MODE_METADATA] = str(MapMode.UnaryMap)
+        server_info.metadata[MAP_MODE_METADATA] = MapMode.UnaryMap
 
         # Start the multiproc server
         start_multiproc_server(

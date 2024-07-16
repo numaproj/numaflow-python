@@ -14,7 +14,7 @@ from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     NUM_THREADS_DEFAULT,
     _LOGGER,
-    MAP_STREAM_SERVER_INFO_FILE_PATH,
+    MAP_SERVER_INFO_FILE_PATH,
     MAX_NUM_THREADS,
 )
 
@@ -34,7 +34,7 @@ class MapStreamAsyncServer(NumaflowServer):
         sock_path=MAP_STREAM_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,
-        server_info_file=MAP_STREAM_SERVER_INFO_FILE_PATH,
+        server_info_file=MAP_SERVER_INFO_FILE_PATH,
     ):
         """
         Create a new grpc Async Map Stream Server instance.
@@ -127,7 +127,7 @@ class MapStreamAsyncServer(NumaflowServer):
         _LOGGER.info("Starting Map Stream Server")
         serv_info = ServerInfo.get_default_server_info()
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        serv_info.metadata[MAP_MODE_METADATA] = str(MapMode.StreamMap)
+        serv_info.metadata[MAP_MODE_METADATA] = MapMode.StreamMap
 
         # Start the async server
         await start_async_server(

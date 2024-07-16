@@ -105,7 +105,7 @@ class MapAsyncServer(NumaflowServer):
 
         serv_info = ServerInfo.get_default_server_info()
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        serv_info.metadata[MAP_MODE_METADATA] = str(MapMode.UnaryMap)
+        serv_info.metadata[MAP_MODE_METADATA] = MapMode.UnaryMap
 
         # Start the async server
         await start_async_server(

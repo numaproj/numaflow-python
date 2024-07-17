@@ -10,7 +10,7 @@ from pynumaflow._constants import (
 )
 from pynumaflow.info.types import (
     ServerInfo,
-    MAP_MODE_METADATA,
+    MAP_MODE_KEY,
     MapMode,
 )
 from pynumaflow.mapper._dtypes import MapAsyncCallable
@@ -105,7 +105,7 @@ class MapAsyncServer(NumaflowServer):
 
         serv_info = ServerInfo.get_default_server_info()
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        serv_info.metadata[MAP_MODE_METADATA] = MapMode.UnaryMap
+        serv_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 
         # Start the async server
         await start_async_server(

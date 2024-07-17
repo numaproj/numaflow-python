@@ -20,7 +20,7 @@ from pynumaflow.info.server import write as info_server_write, get_metadata_env
 from pynumaflow.info.types import (
     ServerInfo,
     METADATA_ENVS,
-    MULTIPROC_METADATA,
+    MULTIPROC_KEY,
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.proto.sideinput import sideinput_pb2_grpc
@@ -161,7 +161,7 @@ def start_multiproc_server(
         server_info = ServerInfo.get_default_server_info()
     server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
     # Add the MULTIPROC metadata using the number of servers to use
-    server_info.metadata[MULTIPROC_METADATA] = str(process_count)
+    server_info.metadata[MULTIPROC_KEY] = str(process_count)
     info_server_write(server_info=server_info, info_file=server_info_file)
 
     for worker in workers:

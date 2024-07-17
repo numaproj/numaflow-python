@@ -3,7 +3,7 @@ import grpc
 
 from pynumaflow.info.types import (
     ServerInfo,
-    MAP_MODE_METADATA,
+    MAP_MODE_KEY,
     MapMode,
 )
 from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
@@ -127,7 +127,7 @@ class MapStreamAsyncServer(NumaflowServer):
         _LOGGER.info("Starting Map Stream Server")
         serv_info = ServerInfo.get_default_server_info()
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        serv_info.metadata[MAP_MODE_METADATA] = MapMode.StreamMap
+        serv_info.metadata[MAP_MODE_KEY] = MapMode.StreamMap
 
         # Start the async server
         await start_async_server(

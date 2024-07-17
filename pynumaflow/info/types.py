@@ -24,11 +24,11 @@ METADATA_ENVS = [("CPU_LIMIT", "NUMAFLOW_CPU_LIMIT")]
 
 # Metadata keys
 
-# MAP_MODE_METADATA field is used in metadata to indicate which map mode is enabled
-MAP_MODE_METADATA = "MAP_MODE"
-# MULTIPROC_METADATA is the field used to indicate that Multiproc map mode is enabled
+# MAP_MODE_KEY is used in the server info object's metadata to indicate which map mode is enabled
+MAP_MODE_KEY = "MAP_MODE"
+# MULTIPROC_KEY is the field used to indicate that Multiproc map mode is enabled
 # The value contains the number of servers spawned.
-MULTIPROC_METADATA = "MULTIPROC"
+MULTIPROC_KEY = "MULTIPROC"
 
 SI = TypeVar("SI", bound="ServerInfo")
 

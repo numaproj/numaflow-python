@@ -11,9 +11,9 @@ from pynumaflow.info.server import get_metadata_env
 from pynumaflow.info.types import (
     ServerInfo,
     METADATA_ENVS,
-    MAP_MODE_METADATA,
+    MAP_MODE_KEY,
     MapMode,
-    MULTIPROC_METADATA,
+    MULTIPROC_KEY,
 )
 from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
@@ -112,9 +112,9 @@ class MapMultiprocServer(NumaflowServer):
         server_info = ServerInfo.get_default_server_info()
         server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
         # Add the MULTIPROC metadata using the number of servers to use
-        server_info.metadata[MULTIPROC_METADATA] = str(self._process_count)
+        server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        server_info.metadata[MAP_MODE_METADATA] = MapMode.UnaryMap
+        server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 
         # Start the multiproc server
         start_multiproc_server(

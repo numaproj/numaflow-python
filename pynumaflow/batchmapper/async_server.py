@@ -11,7 +11,7 @@ from pynumaflow._constants import (
 )
 from pynumaflow.batchmapper._dtypes import BatchMapCallable
 from pynumaflow.batchmapper.servicer.async_servicer import AsyncBatchMapServicer
-from pynumaflow.info.types import ServerInfo, MAP_MODE_METADATA, MapMode
+from pynumaflow.info.types import ServerInfo, MAP_MODE_KEY, MapMode
 from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
 from pynumaflow.shared.server import NumaflowServer, start_async_server
 
@@ -104,7 +104,7 @@ class BatchMapAsyncServer(NumaflowServer):
         _LOGGER.info("Starting Batch Map Server")
         serv_info = ServerInfo.get_default_server_info()
         # Add the MAP_MODE metadata to the server info for the correct map mode
-        serv_info.metadata[MAP_MODE_METADATA] = MapMode.BatchMap
+        serv_info.metadata[MAP_MODE_KEY] = MapMode.BatchMap
 
         # Start the async server
         await start_async_server(

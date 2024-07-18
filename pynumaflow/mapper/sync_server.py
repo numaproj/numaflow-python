@@ -1,3 +1,8 @@
+from pynumaflow.info.types import (
+    ServerInfo,
+    MAP_MODE_KEY,
+    MapMode,
+)
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
 
 from pynumaflow._constants import (
@@ -100,6 +105,11 @@ class MapServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
+
+        serv_info = ServerInfo.get_default_server_info()
+        # Add the MAP_MODE metadata to the server info for the correct map mode
+        serv_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
+
         # Start the server
         sync_server_start(
             servicer=self.servicer,
@@ -108,4 +118,5 @@ class MapServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Map,
+            server_info=serv_info,
         )

@@ -115,9 +115,13 @@ class SinkAsyncServer(NumaflowServer):
         # same thread as the event loop so that all the async calls are made in the
         # same context
         # Create a new server instance, add the servicer to it and start the server
-        server = grpc.aio.server()
+        server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
         sink_pb2_grpc.add_SinkServicer_to_server(self.servicer, server)
         await start_async_server(
-            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+            server_async=server,
+            sock_path=self.sock_path,
+            max_threads=self.max_threads,
+            cleanup_coroutines=list(),
+            server_info_file=self.server_info_file,
         )

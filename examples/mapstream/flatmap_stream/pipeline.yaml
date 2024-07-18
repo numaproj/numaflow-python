@@ -13,9 +13,6 @@ spec:
           rpu: 10
           duration: 1s
     - name: flatmap
-      metadata:
-        annotations:
-          numaflow.numaproj.io/map-stream: "true"
       limits:
         readBatchSize: 1
       udf:

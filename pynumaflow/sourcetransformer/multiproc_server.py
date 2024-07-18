@@ -131,4 +131,5 @@ class SourceTransformMultiProcServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.SourceTransformer,
+            server_info=None,
         )

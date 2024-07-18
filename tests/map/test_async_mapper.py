@@ -10,6 +10,7 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
+from pynumaflow._constants import MAX_MESSAGE_SIZE
 from pynumaflow.mapper import (
     Datum,
     Messages,
@@ -64,7 +65,11 @@ def new_async_mapper():
 
 
 async def start_server(udfs):
-    server = grpc.aio.server()
+    _server_options = [
+        ("grpc.max_send_message_length", MAX_MESSAGE_SIZE),
+        ("grpc.max_receive_message_length", MAX_MESSAGE_SIZE),
+    ]
+    server = grpc.aio.server(options=_server_options)
     map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     listen_addr = "unix:///tmp/async_map.sock"
     server.add_insecure_port(listen_addr)

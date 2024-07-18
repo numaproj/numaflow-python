@@ -7,6 +7,14 @@ from pynumaflow._constants import (
     MAP_SERVER_INFO_FILE_PATH,
     MAX_NUM_THREADS,
 )
+from pynumaflow.info.server import get_metadata_env
+from pynumaflow.info.types import (
+    ServerInfo,
+    METADATA_ENVS,
+    MAP_MODE_KEY,
+    MapMode,
+    MULTIPROC_KEY,
+)
 from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
 from pynumaflow.shared.server import (
@@ -100,6 +108,14 @@ class MapMultiprocServer(NumaflowServer):
         defined by the user. The max value is capped to 2 * CPU count.
         """
 
+        # Create the server info file
+        server_info = ServerInfo.get_default_server_info()
+        server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
+        # Add the MULTIPROC metadata using the number of servers to use
+        server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
+        # Add the MAP_MODE metadata to the server info for the correct map mode
+        server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
+
         # Start the multiproc server
         start_multiproc_server(
             max_threads=self.max_threads,
@@ -108,4 +124,5 @@ class MapMultiprocServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Map,
+            server_info=server_info,
         )

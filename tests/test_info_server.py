@@ -4,14 +4,11 @@ from unittest import mock
 
 from tests.testing_utils import read_info_server
 from pynumaflow.info.server import (
-    get_sdk_version,
     write as info_server_write,
     get_metadata_env,
 )
 from pynumaflow.info.types import (
     ServerInfo,
-    Protocol,
-    Language,
     METADATA_ENVS,
     MINIMUM_NUMAFLOW_VERSION,
 )
@@ -24,13 +21,8 @@ def mockenv(**envvars):
 class TestInfoServer(unittest.TestCase):
     @mockenv(NUMAFLOW_CPU_LIMIT="3")
     def setUp(self) -> None:
-        self.serv_uds = ServerInfo(
-            protocol=Protocol.UDS,
-            language=Language.PYTHON,
-            minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
-            version=get_sdk_version(),
-            metadata=get_metadata_env(envs=METADATA_ENVS),
-        )
+        self.serv_uds = ServerInfo.get_default_server_info()
+        self.serv_uds.metadata = get_metadata_env(envs=METADATA_ENVS)
 
     def test_empty_write_info(self):
         test_file = "/tmp/test_info_server"

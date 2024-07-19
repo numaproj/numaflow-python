@@ -200,6 +200,19 @@ class TestServer(unittest.TestCase):
         self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
         self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = SinkServer(sinker_instance=udsink_handler, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = SinkServer(sinker_instance=udsink_handler, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = SinkServer(sinker_instance=udsink_handler)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     unittest.main()

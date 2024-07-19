@@ -1,0 +1,21 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: async-source
+spec:
+  vertices:
+    - name: in
+      source:
+        udsource:
+          container:
+            # A simple user-defined async source
+            image: quay.io/numaio/numaflow-python/async-source:stable
+            imagePullPolicy: Always
+      limits:
+        readBatchSize: 2
+    - name: out
+      sink:
+        log: {}
+  edges:
+    - from: in
+      to: out

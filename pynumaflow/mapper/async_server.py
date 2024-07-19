@@ -1,13 +1,17 @@
-import os
-
 import aiorun
 import grpc
 
 from pynumaflow._constants import (
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     MAX_MESSAGE_SIZE,
     MAP_SOCK_PATH,
     MAP_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
+)
+from pynumaflow.info.types import (
+    ServerInfo,
+    MAP_MODE_KEY,
+    MapMode,
 )
 from pynumaflow.mapper._dtypes import MapAsyncCallable
 from pynumaflow.mapper.servicer.async_servicer import AsyncMapServicer
@@ -26,7 +30,7 @@ class MapAsyncServer(NumaflowServer):
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-                        defaults to number of processors x4
+                        defaults to 4 and max capped at 16
 
     Example invocation:
         from pynumaflow.mapper import Messages, Message, Datum, MapAsyncServer
@@ -50,7 +54,7 @@ class MapAsyncServer(NumaflowServer):
         mapper_instance: MapAsyncCallable,
         sock_path=MAP_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         server_info_file=MAP_SERVER_INFO_FILE_PATH,
     ):
         """
@@ -62,10 +66,10 @@ class MapAsyncServer(NumaflowServer):
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-                     defaults to number of processors x4
+                     defaults to 4 and max capped at 16
         """
         self.sock_path = f"unix://{sock_path}"
-        self.max_threads = min(max_threads, int(os.getenv("MAX_THREADS", "4")))
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
 
@@ -95,15 +99,20 @@ class MapAsyncServer(NumaflowServer):
         # same thread as the event loop so that all the async calls are made in the
         # same context
 
-        server_new = grpc.aio.server()
+        server_new = grpc.aio.server(options=self._server_options)
         server_new.add_insecure_port(self.sock_path)
         map_pb2_grpc.add_MapServicer_to_server(self.servicer, server_new)
 
+        serv_info = ServerInfo.get_default_server_info()
+        # Add the MAP_MODE metadata to the server info for the correct map mode
+        serv_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
+
         # Start the async server
         await start_async_server(
-            server_new,
-            self.sock_path,
-            self.max_threads,
-            self._server_options,
-            self.server_info_file,
+            server_async=server_new,
+            sock_path=self.sock_path,
+            max_threads=self.max_threads,
+            cleanup_coroutines=list(),
+            server_info_file=self.server_info_file,
+            server_info=serv_info,
         )

@@ -10,10 +10,11 @@ from pynumaflow.reducestreamer.servicer.async_servicer import AsyncReduceStreamS
 
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
-    MAX_THREADS,
+    NUM_THREADS_DEFAULT,
     _LOGGER,
     REDUCE_STREAM_SOCK_PATH,
     REDUCE_STREAM_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
 )
 
 from pynumaflow.reducestreamer._dtypes import (
@@ -66,7 +67,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-        defaults to number of processors x4
+        defaults to 4 and max capped at 16
         server_info_file: The path to the server info file
     Example invocation:
         import os
@@ -131,7 +132,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         init_kwargs: dict = None,
         sock_path=REDUCE_STREAM_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
-        max_threads=MAX_THREADS,
+        max_threads=NUM_THREADS_DEFAULT,
         server_info_file=REDUCE_STREAM_SERVER_INFO_FILE_PATH,
     ):
         """
@@ -147,7 +148,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
             sock_path: The UNIX socket path to be used for the server
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
-            defaults to number of processors x4
+            defaults to 4 and max capped at 16
             server_info_file: The path to the server info file
         """
         if init_kwargs is None:
@@ -155,7 +156,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         self.reduce_stream_handler = get_handler(reduce_stream_handler, init_args, init_kwargs)
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
-        self.max_threads = max_threads
+        self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.server_info_file = server_info_file
 
         self._server_options = [
@@ -184,9 +185,13 @@ class ReduceStreamAsyncServer(NumaflowServer):
         # same thread as the event loop so that all the async calls are made in the
         # same context
         # Create a new async server instance and add the servicer to it
-        server = grpc.aio.server()
+        server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
         reduce_pb2_grpc.add_ReduceServicer_to_server(self.servicer, server)
         await start_async_server(
-            server, self.sock_path, self.max_threads, self._server_options, self.server_info_file
+            server_async=server,
+            sock_path=self.sock_path,
+            max_threads=self.max_threads,
+            cleanup_coroutines=list(),
+            server_info_file=self.server_info_file,
         )

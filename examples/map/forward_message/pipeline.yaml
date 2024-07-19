@@ -17,7 +17,8 @@ spec:
         args:
         - python
         - example.py
-        image: "quay.io/numaio/numaflow-python/map-forward-message:stable"
+        image: quay.io/numaio/numaflow-python/map-forward-message:stable
+        imagePullPolicy: Always
   - name: log-output
     sink:
       log: {}

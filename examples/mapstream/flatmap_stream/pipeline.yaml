@@ -13,14 +13,11 @@ spec:
           rpu: 10
           duration: 1s
     - name: flatmap
-      metadata:
-        annotations:
-          numaflow.numaproj.io/map-stream: "true"
       limits:
         readBatchSize: 1
       udf:
         container:
-          image: "quay.io/numaio/numaflow-python/map-flatmap-stream:stable"
+          image: quay.io/numaio/numaflow-python/map-flatmap-stream:stable
           imagePullPolicy: Always
           env:
             - name: PYTHONDEBUG

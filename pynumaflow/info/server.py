@@ -1,5 +1,4 @@
 import os
-from importlib.metadata import version
 from typing import Any
 
 from pynumaflow import setup_logging
@@ -10,19 +9,6 @@ import logging
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
-
-
-def get_sdk_version() -> str:
-    """
-    Return the pynumaflow SDK version
-    """
-    try:
-        return version("pynumaflow")
-    except Exception as e:
-        # Adding this to handle the case for local test/CI where pynumaflow
-        # will not be installed as a package
-        _LOGGER.error("Could not read SDK version %r", e, exc_info=True)
-        return ""
 
 
 def write(server_info: ServerInfo, info_file: str):

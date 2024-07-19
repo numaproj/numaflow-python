@@ -149,6 +149,19 @@ class TestSyncMapper(unittest.TestCase):
         with self.assertRaises(TypeError):
             MapServer()
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = MapServer(mapper_instance=map_handler, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = MapServer(mapper_instance=map_handler, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = MapServer(mapper_instance=map_handler)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     unittest.main()

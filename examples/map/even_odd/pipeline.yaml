@@ -17,7 +17,8 @@ spec:
         args:
         - python
         - example.py
-        image: "quay.io/numaio/numaflow-python/even-odd:stable"
+        image: quay.io/numaio/numaflow-python/even-odd:stable
+        imagePullPolicy: Always
   - name: even-sink
     scale:
       min: 1

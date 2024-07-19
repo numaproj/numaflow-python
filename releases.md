@@ -13,7 +13,7 @@ the version in the root `pyproject.toml` should be updated (for [reference](http
 you must update the `MINIMUM_NUMAFLOW_VERSION` constant in the `pynumaflow/info/types.py` file to the minimum Numaflow version that is supported by your new SDK version
 3. After making these changes, create a PR. Once merged, it will trigger the `Docker Publish` workflow, and should be included in the release.
 As a result, the correct SDK version will always be printed in the server information logs, and
-the example images will always be using the latest changes (due to referencing the local SDK tarball that is built)
+the example images will always be using the latest changes (due to the local references)
 
 ### How to Release
 

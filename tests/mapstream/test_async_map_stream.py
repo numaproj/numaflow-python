@@ -133,6 +133,19 @@ class TestAsyncMapStreamer(unittest.TestCase):
     def __stub(self):
         return mapstream_pb2_grpc.MapStreamStub(_channel)
 
+    def test_max_threads(self):
+        # max cap at 16
+        server = MapStreamAsyncServer(map_stream_instance=async_map_stream_handler, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = MapStreamAsyncServer(map_stream_instance=async_map_stream_handler, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = MapStreamAsyncServer(map_stream_instance=async_map_stream_handler)
+        self.assertEqual(server.max_threads, 4)
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

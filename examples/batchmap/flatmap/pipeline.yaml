@@ -1,0 +1,30 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: flatmap
+spec:
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        generator:
+          rpu: 500
+          duration: 1s
+    - name: batch-flatmap
+      partitions: 2
+      scale:
+        min: 1
+      udf:
+        container:
+          image: quay.io/numaio/numaflow-python/batch-map-flatmap:stable
+          imagePullPolicy: Always
+    - name: sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+  edges:
+    - from: in
+      to: batch-flatmap
+    - from: batch-flatmap
+      to: sink

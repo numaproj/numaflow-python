@@ -13,7 +13,7 @@ if os.getenv("PYTHONDEBUG"):
 
 # Constants for using in the info-server
 # Specify the minimum Numaflow version required by the current SDK version
-MINIMUM_NUMAFLOW_VERSION = "1.2.0-rc4"
+MINIMUM_NUMAFLOW_VERSION = "1.3.0-rc1"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"
 

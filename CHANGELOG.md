@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.8.0 (2024-08-19)
+
+ * [921b7c0](https://github.com/numaproj/numaflow-python/commit/921b7c069d726799ccdfc2f3b2ec3a1ebc27669b) feat: batch-map implementation (#177)
+ * [61195e5](https://github.com/numaproj/numaflow-python/commit/61195e5a60145c1ebfe7d0a1ab38a652c5512c50) fix: modify Dockerfiles to fix failing image builds (#180)
+
+### Contributors
+
+ * Abdullah Yildirim
+ * Sidhant Kohli
+
+## v0.7.3 (2024-06-27)
+
+
+### Contributors
+
+
 ## v0.7.2 (2024-06-10)
 
  * [225e8b0](https://github.com/numaproj/numaflow-python/commit/225e8b0cce2cee6a982f2a23d1645066642ef80a) fix: udf type in multiproc source transformer (#171)

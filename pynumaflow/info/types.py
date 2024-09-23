@@ -12,7 +12,7 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 # Minimum version of Numaflow required by the current SDK version
-# To update this value, please follow MINIMUM_NUMAFLOW_VERSION in
+# To update this value, please follow the instructions for MINIMUM_NUMAFLOW_VERSION in
 # https://github.com/numaproj/numaflow-rs/blob/main/src/shared.rs
 MINIMUM_NUMAFLOW_VERSION = "1.3.0-z"
 # Need to keep consistent with all SDKs and client

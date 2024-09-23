@@ -11,9 +11,10 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-# Constants for using in the info-server
-# Specify the minimum Numaflow version required by the current SDK version
-MINIMUM_NUMAFLOW_VERSION = "1.3.0-rc1"
+# Minimum version of Numaflow required by the current SDK version
+# To update this value, please follow the instructions for MINIMUM_NUMAFLOW_VERSION in
+# https://github.com/numaproj/numaflow-rs/blob/main/src/shared.rs
+MINIMUM_NUMAFLOW_VERSION = "1.3.0-z"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"
 
@@ -50,6 +51,7 @@ class Language(str, Enum):
     GO = "go"
     PYTHON = "python"
     JAVA = "java"
+    RUST = "rust"
 
 
 class MapMode(str, Enum):
@@ -69,7 +71,7 @@ class ServerInfo:
     sdk version, language, metadata to the client.
     Args:
         protocol: Protocol to use (UDS or TCP)
-        language: Language used by the server(Python, Golang, Java)
+        language: Language used by the server(Python, Golang, Java, Rust)
         minimum_numaflow_version: lower bound for the supported Numaflow version
         version: Numaflow sdk version used by the server
         metadata: Any additional information to be provided (env vars)

@@ -51,6 +51,7 @@ class Language(str, Enum):
     GO = "go"
     PYTHON = "python"
     JAVA = "java"
+    RUST = "rust"
 
 
 class MapMode(str, Enum):
@@ -70,7 +71,7 @@ class ServerInfo:
     sdk version, language, metadata to the client.
     Args:
         protocol: Protocol to use (UDS or TCP)
-        language: Language used by the server(Python, Golang, Java)
+        language: Language used by the server(Python, Golang, Java, Rust)
         minimum_numaflow_version: lower bound for the supported Numaflow version
         version: Numaflow sdk version used by the server
         metadata: Any additional information to be provided (env vars)

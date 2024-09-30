@@ -10,7 +10,6 @@ from pynumaflow.info.server import (
 from pynumaflow.info.types import (
     ServerInfo,
     METADATA_ENVS,
-    MINIMUM_NUMAFLOW_VERSION,
 )
 
 

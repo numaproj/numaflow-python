@@ -1,4 +1,4 @@
-from info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
+from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow._constants import (
     SOURCE_SOCK_PATH,
     MAX_MESSAGE_SIZE,

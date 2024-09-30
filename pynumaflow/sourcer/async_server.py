@@ -1,7 +1,7 @@
 import aiorun
 import grpc
 
-from info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
+from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sourcer.servicer.async_servicer import AsyncSourceServicer
 
 from pynumaflow._constants import (

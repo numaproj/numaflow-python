@@ -1,4 +1,4 @@
-from info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
+from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.sourcetransformer.servicer.server import SourceTransformServicer
 
 from pynumaflow.shared.server import start_multiproc_server

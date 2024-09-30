@@ -4,7 +4,7 @@ from typing import Optional
 import aiorun
 import grpc
 
-from info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
+from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.proto.reducer import reduce_pb2_grpc
 
 from pynumaflow.reducer.servicer.async_servicer import AsyncReduceServicer

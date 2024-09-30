@@ -112,7 +112,6 @@ class MapServer(NumaflowServer):
         serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
         # Add the MAP_MODE metadata to the server info for the correct map mode
         serv_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
-
         # Start the server
         sync_server_start(
             servicer=self.servicer,

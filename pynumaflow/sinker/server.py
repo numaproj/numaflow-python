@@ -1,6 +1,6 @@
 import os
 
-from info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
+from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
 
 from pynumaflow._constants import (

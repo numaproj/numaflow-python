@@ -1,4 +1,4 @@
-from info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
+from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.shared import NumaflowServer
 from pynumaflow.shared.server import sync_server_start
 from pynumaflow.sideinput._dtypes import RetrieverCallable

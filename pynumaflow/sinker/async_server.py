@@ -3,7 +3,7 @@ import os
 import aiorun
 import grpc
 
-from info.types import ContainerType, ServerInfo, MINIMUM_NUMAFLOW_VERSION
+from pynumaflow.info.types import ContainerType, ServerInfo, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sinker.servicer.async_servicer import AsyncSinkServicer
 from pynumaflow.proto.sinker import sink_pb2_grpc
 

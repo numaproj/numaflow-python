@@ -4,6 +4,7 @@ from typing import Optional
 import aiorun
 import grpc
 
+from info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.proto.reducer import reduce_pb2_grpc
 
 from pynumaflow.reducer.servicer.async_servicer import AsyncReduceServicer
@@ -172,6 +173,9 @@ class ReduceAsyncServer(NumaflowServer):
         server.add_insecure_port(self.sock_path)
         reduce_servicer = self.servicer
         reduce_pb2_grpc.add_ReduceServicer_to_server(reduce_servicer, server)
+
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Reducer]
         # Start the async server
         await start_async_server(
             server_async=server,
@@ -179,4 +183,5 @@ class ReduceAsyncServer(NumaflowServer):
             max_threads=self.max_threads,
             cleanup_coroutines=list(),
             server_info_file=self.server_info_file,
+            serv_info=serv_info
         )

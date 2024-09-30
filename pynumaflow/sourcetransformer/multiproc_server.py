@@ -1,3 +1,4 @@
+from info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.sourcetransformer.servicer.server import SourceTransformServicer
 
 from pynumaflow.shared.server import start_multiproc_server
@@ -124,6 +125,9 @@ class SourceTransformMultiProcServer(NumaflowServer):
         where N = The number of CPUs or the value of the parameter server_count
         defined by the user. The max value is capped to 2 * CPU count.
         """
+
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sourcetransformer]
         start_multiproc_server(
             max_threads=self.max_threads,
             servicer=self.servicer,
@@ -131,5 +135,5 @@ class SourceTransformMultiProcServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.SourceTransformer,
-            server_info=None,
+            server_info=serv_info,
         )

@@ -11,10 +11,6 @@ _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
-# Minimum version of Numaflow required by the current SDK version
-# To update this value, please follow the instructions for MINIMUM_NUMAFLOW_VERSION in
-# https://github.com/numaproj/numaflow-rs/blob/main/src/shared.rs
-MINIMUM_NUMAFLOW_VERSION = "1.3.0-z"
 # Need to keep consistent with all SDKs and client
 EOF = "U+005C__END__"
 
@@ -48,10 +44,7 @@ class Language(str, Enum):
     Enumerate Numaflow SDK language.
     """
 
-    GO = "go"
     PYTHON = "python"
-    JAVA = "java"
-    RUST = "rust"
 
 
 class MapMode(str, Enum):
@@ -64,6 +57,38 @@ class MapMode(str, Enum):
     BatchMap = "batch-map"
 
 
+class ContainerType(str, Enum):
+    """
+    Enumerate Numaflow container type.
+    """
+
+    Sourcer = "sourcer"
+    Sourcetransformer = "sourcetransformer"
+    Sinker = "sinker"
+    Mapper = "mapper"
+    Reducer = "reducer"
+    Reducestreamer = "reducestreamer"
+    Sessionreducer = "sessionreducer"
+    Sideinput = "sideinput"
+    Fbsinker = "fb-sinker"
+
+
+# Minimum version of Numaflow required by the current SDK version
+# To update this value, please follow the instructions for MINIMUM_NUMAFLOW_VERSION in
+# https://github.com/numaproj/numaflow-rs/blob/main/src/shared.rs
+MINIMUM_NUMAFLOW_VERSION = {
+    ContainerType.Sourcer: "1.3.0-z",
+    ContainerType.Sourcetransformer: "1.3.0-z",
+    ContainerType.Sinker: "1.3.0-z",
+    ContainerType.Mapper: "1.3.0-z",
+    ContainerType.Reducer: "1.3.0-z",
+    ContainerType.Reducestreamer: "1.3.0-z",
+    ContainerType.Sessionreducer: "1.3.0-z",
+    ContainerType.Sideinput: "1.3.0-z",
+    ContainerType.Fbsinker: "1.3.0-z"
+}
+
+
 @dataclass
 class ServerInfo:
     """
@@ -71,7 +96,7 @@ class ServerInfo:
     sdk version, language, metadata to the client.
     Args:
         protocol: Protocol to use (UDS or TCP)
-        language: Language used by the server(Python, Golang, Java, Rust)
+        language: Language used by the server, in our case, it's Python
         minimum_numaflow_version: lower bound for the supported Numaflow version
         version: Numaflow sdk version used by the server
         metadata: Any additional information to be provided (env vars)
@@ -88,7 +113,9 @@ class ServerInfo:
         serv_info = ServerInfo(
             protocol=Protocol.UDS,
             language=Language.PYTHON,
-            minimum_numaflow_version=MINIMUM_NUMAFLOW_VERSION,
+            # on the platform end, if minimum_numaflow_version is empty,
+            # by default, the version compatibility check is skipped.
+            minimum_numaflow_version="",
             version=get_sdk_version(),
             metadata=dict(),
         )

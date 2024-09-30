@@ -5,6 +5,8 @@ from pynumaflow.info.types import (
     ServerInfo,
     MAP_MODE_KEY,
     MapMode,
+    MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
 )
 from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
 from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
@@ -126,6 +128,7 @@ class MapStreamAsyncServer(NumaflowServer):
         )
         _LOGGER.info("Starting Map Stream Server")
         serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
         # Add the MAP_MODE metadata to the server info for the correct map mode
         serv_info.metadata[MAP_MODE_KEY] = MapMode.StreamMap
 

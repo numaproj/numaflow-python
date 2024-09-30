@@ -1,6 +1,6 @@
 import os
 
-
+from info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
 
 from pynumaflow._constants import (
@@ -106,6 +106,8 @@ class SinkServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sinker]
         # Start the server
         sync_server_start(
             servicer=self.servicer,
@@ -114,4 +116,5 @@ class SinkServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Sink,
+            serv_info=serv_info
         )

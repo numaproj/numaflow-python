@@ -2,6 +2,8 @@ from pynumaflow.info.types import (
     ServerInfo,
     MAP_MODE_KEY,
     MapMode,
+    MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
 )
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
 
@@ -107,6 +109,7 @@ class MapServer(NumaflowServer):
         )
 
         serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
         # Add the MAP_MODE metadata to the server info for the correct map mode
         serv_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 

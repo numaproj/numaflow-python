@@ -127,7 +127,9 @@ class SourceTransformMultiProcServer(NumaflowServer):
         """
 
         serv_info = ServerInfo.get_default_server_info()
-        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sourcetransformer]
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[
+            ContainerType.Sourcetransformer
+        ]
         start_multiproc_server(
             max_threads=self.max_threads,
             servicer=self.servicer,

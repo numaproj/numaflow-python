@@ -146,5 +146,5 @@ class SourceAsyncServer(NumaflowServer):
             max_threads=self.max_threads,
             cleanup_coroutines=list(),
             server_info_file=self.server_info_file,
-            serv_info=serv_info
+            serv_info=serv_info,
         )

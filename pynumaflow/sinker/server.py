@@ -116,5 +116,5 @@ class SinkServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Sink,
-            serv_info=serv_info
+            serv_info=serv_info,
         )

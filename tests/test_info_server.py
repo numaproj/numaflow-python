@@ -37,7 +37,7 @@ class TestInfoServer(unittest.TestCase):
         self.assertEqual(file_data["metadata"]["CPU_LIMIT"], "3")
         self.assertEqual(file_data["protocol"], "uds")
         self.assertEqual(file_data["language"], "python")
-        self.assertEqual(file_data["minimum_numaflow_version"], MINIMUM_NUMAFLOW_VERSION)
+        self.assertEqual(file_data["minimum_numaflow_version"], "")
 
     def test_metadata_env(self):
         test_file = "/tmp/test_info_server"

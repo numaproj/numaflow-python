@@ -136,5 +136,5 @@ class SourceServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.Source,
-            serv_info=serv_info
+            serv_info=serv_info,
         )

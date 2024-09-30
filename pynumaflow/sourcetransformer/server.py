@@ -114,7 +114,9 @@ class SourceTransformServer(NumaflowServer):
             self.max_threads,
         )
         serv_info = ServerInfo.get_default_server_info()
-        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sourcetransformer]
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[
+            ContainerType.Sourcetransformer
+        ]
         # Start the sync server
         sync_server_start(
             servicer=self.servicer,

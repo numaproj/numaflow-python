@@ -11,7 +11,13 @@ from pynumaflow._constants import (
 )
 from pynumaflow.batchmapper._dtypes import BatchMapCallable
 from pynumaflow.batchmapper.servicer.async_servicer import AsyncBatchMapServicer
-from pynumaflow.info.types import ServerInfo, MAP_MODE_KEY, MapMode, MINIMUM_NUMAFLOW_VERSION, ContainerType
+from pynumaflow.info.types import (
+    ServerInfo,
+    MAP_MODE_KEY,
+    MapMode,
+    MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
+)
 from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
 from pynumaflow.shared.server import NumaflowServer, start_async_server
 

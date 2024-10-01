@@ -1,8 +1,7 @@
 import uuid
-
-from collections.abc import AsyncIterable
 from datetime import datetime
 
+from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.sourcer import (
     ReadRequest,
     Message,
@@ -29,7 +28,7 @@ class AsyncSource(Sourcer):
         self.to_ack_set = set()
         self.read_idx = 0
 
-    async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
+    async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
         """
         read_handler is used to read the data from the source and send the data forward
         for each read request we process num_records and increment the read_idx to indicate that
@@ -40,11 +39,13 @@ class AsyncSource(Sourcer):
 
         for x in range(datum.num_records):
             headers = {"x-txn-id": str(uuid.uuid4())}
-            yield Message(
-                payload=str(self.read_idx).encode(),
-                offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
-                event_time=datetime.now(),
-                headers=headers,
+            await output.put(
+                Message(
+                    payload=str(self.read_idx).encode(),
+                    offset=Offset.offset_with_default_partition_id(str(self.read_idx).encode()),
+                    event_time=datetime.now(),
+                    headers=headers,
+                )
             )
             self.to_ack_set.add(str(self.read_idx))
             self.read_idx += 1
@@ -54,8 +55,7 @@ class AsyncSource(Sourcer):
         The ack handler is used acknowledge the offsets that have been read, and remove them
         from the to_ack_set
         """
-        for offset in ack_request.offset:
-            self.to_ack_set.remove(str(offset.offset, "utf-8"))
+        self.to_ack_set.remove(str(ack_request.offset.offset, "utf-8"))
 
     async def pending_handler(self) -> PendingResponse:
         """

@@ -9,8 +9,8 @@ spec:
         udsource:
           container:
             # A simple user-defined async source
-            image: quay.io/numaio/numaflow-python/async-source:stable
-            imagePullPolicy: Always
+            image: quay.io/numaio/numaflow-python/async-source:testsv2
+#            imagePullPolicy: Always
       limits:
         readBatchSize: 2
     - name: out

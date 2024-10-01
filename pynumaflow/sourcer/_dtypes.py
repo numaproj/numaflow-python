@@ -6,6 +6,8 @@ from datetime import datetime
 from typing import Callable, Optional
 from collections.abc import AsyncIterable
 
+from pynumaflow.shared.asynciter import NonBlockingIterator
+
 
 @dataclass(init=False)
 class Offset:
@@ -147,25 +149,25 @@ class ReadRequest:
 class AckRequest:
     """
     Class for defining the request for acknowledging datum.
-    It takes a list of offsets that need to be acknowledged.
+    It takes an offset that need to be acknowledged.
     Args:
-        offsets: the offsets to be acknowledged.
+        offset: the offset to be acknowledged.
     >>> # Example usage
     >>> from pynumaflow.sourcer import AckRequest, Offset
     >>> offset = Offset(offset=b"123", partition_id="0")
     >>> ack_request = AckRequest(offsets=[offset, offset])
     """
 
-    __slots__ = ("_offsets",)
-    _offsets: list[Offset]
+    __slots__ = ("_offset",)
+    _offset: Offset
 
-    def __init__(self, offsets: list[Offset]):
-        self._offsets = offsets
+    def __init__(self, offset: Offset):
+        self._offset = offset
 
     @property
-    def offset(self) -> list[Offset]:
+    def offset(self) -> Offset:
         """Returns the offsets to be acknowledged."""
-        return self._offsets
+        return self._offset
 
 
 @dataclass(init=False)
@@ -232,7 +234,7 @@ class Sourcer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
+    async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
         """
         Implement this handler function which implements the SourceReadCallable interface.
         read_handler is used to read the data from the source and send the data forward

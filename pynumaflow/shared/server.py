@@ -1,7 +1,9 @@
 import contextlib
+import io
 import multiprocessing
 import os
 import socket
+import traceback
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -262,3 +264,17 @@ def exit_on_error(
         p = psutil.Process(os.getppid())
     _LOGGER.info("Killing process: Got exception %s", err)
     p.kill()
+
+
+def handle_error(context: NumaflowServicerContext, e: BaseException):
+    trace = get_exception_traceback_str(e)
+    _LOGGER.critical(trace)
+    _LOGGER.critical(e.__str__())
+    context.set_code(grpc.StatusCode.UNKNOWN)
+    context.set_details(e.__str__())
+
+
+def get_exception_traceback_str(exc) -> str:
+    file = io.StringIO()
+    traceback.print_exception(exc, value=exc, tb=exc.__traceback__, file=file)
+    return file.getvalue().rstrip()

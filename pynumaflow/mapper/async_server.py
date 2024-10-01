@@ -12,6 +12,8 @@ from pynumaflow.info.types import (
     ServerInfo,
     MAP_MODE_KEY,
     MapMode,
+    MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
 )
 from pynumaflow.mapper._dtypes import MapAsyncCallable
 from pynumaflow.mapper.servicer.async_servicer import AsyncMapServicer
@@ -104,6 +106,7 @@ class MapAsyncServer(NumaflowServer):
         map_pb2_grpc.add_MapServicer_to_server(self.servicer, server_new)
 
         serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
         # Add the MAP_MODE metadata to the server info for the correct map mode
         serv_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 

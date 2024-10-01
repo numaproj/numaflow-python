@@ -11,6 +11,7 @@ from pynumaflow.info.types import (
     ServerInfo,
     METADATA_ENVS,
     MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
 )
 
 
@@ -22,6 +23,7 @@ class TestInfoServer(unittest.TestCase):
     @mockenv(NUMAFLOW_CPU_LIMIT="3")
     def setUp(self) -> None:
         self.serv_uds = ServerInfo.get_default_server_info()
+        self.serv_uds.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sourcer]
         self.serv_uds.metadata = get_metadata_env(envs=METADATA_ENVS)
 
     def test_empty_write_info(self):
@@ -37,7 +39,7 @@ class TestInfoServer(unittest.TestCase):
         self.assertEqual(file_data["metadata"]["CPU_LIMIT"], "3")
         self.assertEqual(file_data["protocol"], "uds")
         self.assertEqual(file_data["language"], "python")
-        self.assertEqual(file_data["minimum_numaflow_version"], MINIMUM_NUMAFLOW_VERSION)
+        self.assertEqual(file_data["minimum_numaflow_version"], "1.3.0-z")
 
     def test_metadata_env(self):
         test_file = "/tmp/test_info_server"

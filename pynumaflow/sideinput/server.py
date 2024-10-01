@@ -1,3 +1,4 @@
+from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.shared import NumaflowServer
 from pynumaflow.shared.server import sync_server_start
 from pynumaflow.sideinput._dtypes import RetrieverCallable
@@ -84,6 +85,9 @@ class SideInputServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
+
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sideinput]
         # Start the server
         sync_server_start(
             servicer=side_input_servicer,
@@ -92,4 +96,5 @@ class SideInputServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.SideInput,
+            serv_info=serv_info,
         )

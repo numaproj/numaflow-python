@@ -1,5 +1,7 @@
 import aiorun
 import grpc
+
+from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sourcer.servicer.async_servicer import AsyncSourceServicer
 
 from pynumaflow._constants import (
@@ -134,6 +136,9 @@ class SourceAsyncServer(NumaflowServer):
         server.add_insecure_port(self.sock_path)
         source_servicer = self.servicer
         source_pb2_grpc.add_SourceServicer_to_server(source_servicer, server)
+
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sourcer]
         # Start the async server
         await start_async_server(
             server_async=server,
@@ -141,4 +146,5 @@ class SourceAsyncServer(NumaflowServer):
             max_threads=self.max_threads,
             cleanup_coroutines=list(),
             server_info_file=self.server_info_file,
+            serv_info=serv_info,
         )

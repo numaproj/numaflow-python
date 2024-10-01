@@ -3,6 +3,7 @@ import os
 import aiorun
 import grpc
 
+from pynumaflow.info.types import ContainerType, ServerInfo, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sinker.servicer.async_servicer import AsyncSinkServicer
 from pynumaflow.proto.sinker import sink_pb2_grpc
 
@@ -118,10 +119,13 @@ class SinkAsyncServer(NumaflowServer):
         server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
         sink_pb2_grpc.add_SinkServicer_to_server(self.servicer, server)
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sinker]
         await start_async_server(
             server_async=server,
             sock_path=self.sock_path,
             max_threads=self.max_threads,
             cleanup_coroutines=list(),
             server_info_file=self.server_info_file,
+            serv_info=serv_info,
         )

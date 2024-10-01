@@ -1,3 +1,4 @@
+from pynumaflow.info.types import ContainerType, MINIMUM_NUMAFLOW_VERSION, ServerInfo
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     SOURCE_TRANSFORMER_SOCK_PATH,
@@ -112,6 +113,10 @@ class SourceTransformServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
+        serv_info = ServerInfo.get_default_server_info()
+        serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[
+            ContainerType.Sourcetransformer
+        ]
         # Start the sync server
         sync_server_start(
             servicer=self.servicer,
@@ -120,4 +125,5 @@ class SourceTransformServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.SourceTransformer,
+            serv_info=serv_info,
         )

@@ -14,6 +14,8 @@ from pynumaflow.info.types import (
     MAP_MODE_KEY,
     MapMode,
     MULTIPROC_KEY,
+    MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
 )
 from pynumaflow.mapper._dtypes import MapSyncCallable
 from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
@@ -110,6 +112,7 @@ class MapMultiprocServer(NumaflowServer):
 
         # Create the server info file
         server_info = ServerInfo.get_default_server_info()
+        server_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
         server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
         # Add the MULTIPROC metadata using the number of servers to use
         server_info.metadata[MULTIPROC_KEY] = str(self._process_count)

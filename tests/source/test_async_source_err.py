@@ -80,7 +80,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             LOGGER.error(e)
 
     def test_read_error(self) -> None:
-        grpcException = None
+        grpc_exception = None
         with grpc.insecure_channel(server_port) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = read_req_source_fn()
@@ -89,17 +89,17 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 generator_response = stub.ReadFn(
                     request_iterator=request_generator(1, request, "read")
                 )
-                for r in generator_response:
-                    print(r)
+                for _ in generator_response:
+                    pass
             except BaseException as e:
                 self.assertTrue("Got a runtime error from read handler." in e.__str__())
                 return
             except grpc.RpcError as e:
-                grpcException = e
+                grpc_exception = e
                 self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
                 print(e.details())
 
-        self.assertIsNotNone(grpcException)
+        self.assertIsNotNone(grpc_exception)
         self.fail("Expected an exception.")
 
     def test_ack_error(self) -> None:

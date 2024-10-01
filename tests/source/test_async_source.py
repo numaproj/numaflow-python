@@ -17,12 +17,10 @@ from tests.source.utils import (
     ack_req_source_fn,
     mock_partitions,
     AsyncSource,
+    mock_offset,
 )
 
 LOGGER = setup_logging(__name__)
-
-# if set to true, map handler will raise a `ValueError` exception.
-raise_error_from_map = False
 
 server_port = "unix:///tmp/async_source.sock"
 
@@ -63,13 +61,6 @@ def request_generator(count, request, req_type, resetkey: bool = False):
         elif req_type == "ack":
             yield source_pb2.AckRequest(handshake=source_pb2.Handshake(sot=True))
             yield source_pb2.AckRequest(request=request)
-        # if resetkey:
-        #     request.payload.keys.extend([f"key-{i}"])
-        #
-        # if i % 2:
-        #     request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
-        # else:
-        #     request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.APPEND
 
 
 class TestAsyncSourcer(unittest.TestCase):
@@ -115,30 +106,42 @@ class TestAsyncSourcer(unittest.TestCase):
                 logging.error(e)
 
             counter = 0
+            first = True
             # capture the output from the ReadFn generator and assert.
             for r in generator_response:
                 counter += 1
-                print("R ", r)
-            #     self.assertEqual(
-            #         bytes("payload:test_mock_message", encoding="utf-8"),
-            #         r.result.payload,
-            #     )
-            #     self.assertEqual(
-            #         ["test_key"],
-            #         r.result.keys,
-            #     )
-            #     self.assertEqual(
-            #         mock_offset().offset,
-            #         r.result.offset.offset,
-            #     )
-            #     self.assertEqual(
-            #         mock_offset().partition_id,
-            #         r.result.offset.partition_id,
-            #     )
-            # """Assert that the generator was called 10 times in the stream"""
-            # self.assertEqual(10, counter)
+                if first:
+                    self.assertEqual(True, r.handshake.sot)
+                    first = False
+                    continue
 
-            print(counter)
+                if r.status.eot:
+                    last = True
+                    continue
+
+                self.assertEqual(
+                    bytes("payload:test_mock_message", encoding="utf-8"),
+                    r.result.payload,
+                )
+                self.assertEqual(
+                    ["test_key"],
+                    r.result.keys,
+                )
+                self.assertEqual(
+                    mock_offset().offset,
+                    r.result.offset.offset,
+                )
+                self.assertEqual(
+                    mock_offset().partition_id,
+                    r.result.offset.partition_id,
+                )
+
+            self.assertFalse(first)
+            self.assertTrue(last)
+
+            # Assert that the generator was called 12
+            # (10 data messages + handshake + eot) times in the stream
+            self.assertEqual(12, counter)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel(server_port) as channel:
@@ -162,12 +165,18 @@ class TestAsyncSourcer(unittest.TestCase):
             except grpc.RpcError as e:
                 print(e)
 
-            responses = []
+            count = 0
+            first = True
             for r in response:
-                responses.append(r)
+                count += 1
+                if first:
+                    self.assertEqual(True, r.handshake.sot)
+                    first = False
+                    continue
+                self.assertTrue(r.result.success)
 
-            self.assertEqual(len(responses), 2)
-            # TODO(source-stream): add exact check with handshake etc
+            self.assertEqual(count, 2)
+            self.assertFalse(first)
 
     def test_pending(self) -> None:
         with grpc.insecure_channel(server_port) as channel:

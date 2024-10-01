@@ -15,24 +15,6 @@ from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF
 
 
-# async def read_datum_generator(
-#         request_iterator: AsyncIterable[source_pb2.ReadRequest],
-# ) -> AsyncIterable[ReadRequest]:
-#     """
-#     This function is used to create an async generator
-#     from the gRPC request iterator.
-#     It yields a Datum instance for each request received which is then
-#     forwarded to the UDF.
-#     """
-#     async for d in request_iterator:
-#         _LOGGER.info("d %s", d)
-#         request = ReadRequest(
-#             num_records=d.request.num_records,
-#             timeout_in_ms=d.request.timeout_in_ms,
-#         )
-#         yield request
-
-
 class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
     """
     This class is used to create a new grpc Source servicer instance.
@@ -122,7 +104,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             exit_on_error(context, str(err))
 
     async def invoke_read(self, req, niter):
-        # TODO(source-stream): check with this timeout
+        # TODO(source-stream): check with this timeout in ms
         try:
             await self.__source_read_handler(
                 ReadRequest(
@@ -143,9 +125,6 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         """
         Applies an Ack function in User Defined Source
         """
-        # proto repeated field(offsets) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-
         try:
             need_handshake = True
             async for req in request_iterator:

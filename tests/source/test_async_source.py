@@ -53,13 +53,15 @@ async def start_server(udfs):
     await server.wait_for_termination()
 
 
-def request_generator(count, request, req_type, resetkey: bool = False):
+def request_generator(count, request, req_type, send_handshake: bool = True):
     for i in range(count):
         if req_type == "read":
-            yield source_pb2.ReadRequest(handshake=source_pb2.Handshake(sot=True))
+            if send_handshake:
+                yield source_pb2.ReadRequest(handshake=source_pb2.Handshake(sot=True))
             yield source_pb2.ReadRequest(request=request)
         elif req_type == "ack":
-            yield source_pb2.AckRequest(handshake=source_pb2.Handshake(sot=True))
+            if send_handshake:
+                yield source_pb2.AckRequest(handshake=source_pb2.Handshake(sot=True))
             yield source_pb2.AckRequest(request=request)
 
 

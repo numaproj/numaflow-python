@@ -102,6 +102,29 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         self.assertIsNotNone(grpc_exception)
         self.fail("Expected an exception.")
 
+    def test_read_handshake_error(self) -> None:
+        grpc_exception = None
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = read_req_source_fn()
+            generator_response = None
+            try:
+                generator_response = stub.ReadFn(
+                    request_iterator=request_generator(1, request, "read", False)
+                )
+                for _ in generator_response:
+                    pass
+            except BaseException as e:
+                self.assertTrue("ReadFn: expected handshake message" in e.__str__())
+                return
+            except grpc.RpcError as e:
+                grpc_exception = e
+                self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+                print(e.details())
+
+        self.assertIsNotNone(grpc_exception)
+        self.fail("Expected an exception.")
+
     def test_ack_error(self) -> None:
         with grpc.insecure_channel(server_port) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
@@ -112,6 +135,22 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                     pass
             except BaseException as e:
                 self.assertTrue("Got a runtime error from ack handler." in e.__str__())
+                return
+            except grpc.RpcError as e:
+                self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+                print(e.details())
+        self.fail("Expected an exception.")
+
+    def test_ack_no_handshake_error(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = ack_req_source_fn()
+            try:
+                resp = stub.AckFn(request_iterator=request_generator(1, request, "ack", False))
+                for _ in resp:
+                    pass
+            except BaseException as e:
+                self.assertTrue("AckFn: expected handshake message" in e.__str__())
                 return
             except grpc.RpcError as e:
                 self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())

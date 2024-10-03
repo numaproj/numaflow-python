@@ -8,7 +8,7 @@ spec:
       source:
         udsource:
           container:
-            # A simple user-defined source for e2e testing
+            # A simple user-defined async source
             image: quay.io/numaio/numaflow-python/simple-source:stable
             imagePullPolicy: Always
       limits:

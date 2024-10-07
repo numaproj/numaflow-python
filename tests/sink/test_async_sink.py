@@ -44,13 +44,7 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
     return responses
 
 
-def request_generator(count, request):
-    for i in range(count):
-        request.id = str(i)
-        yield request
-
-
-def start_sink_streaming_request(req_type="success") -> (Datum, tuple):
+def start_sink_streaming_request(_id: str, req_type) -> (Datum, tuple):
     event_time_timestamp, watermark_timestamp = get_time_args()
     value = mock_message()
     if req_type == "err":
@@ -59,12 +53,20 @@ def start_sink_streaming_request(req_type="success") -> (Datum, tuple):
     if req_type == "fallback":
         value = mock_fallback_message()
 
-    request = sink_pb2.SinkRequest(
-        value=value,
-        event_time=event_time_timestamp,
-        watermark=watermark_timestamp,
+    request = sink_pb2.SinkRequest.Request(
+        value=value, event_time=event_time_timestamp, watermark=watermark_timestamp, id=_id
     )
-    return request
+    return sink_pb2.SinkRequest(request=request)
+
+
+def request_generator(count, req_type="success", session=1):
+    yield sink_pb2.SinkRequest(handshake=sink_pb2.Handshake(sot=True))
+
+    for j in range(session):
+        for i in range(count):
+            yield start_sink_streaming_request(str(i), req_type)
+
+        yield sink_pb2.SinkRequest(status=sink_pb2.SinkRequest.Status(eot=True))
 
 
 _s: Server = None
@@ -137,49 +139,61 @@ class TestAsyncSink(unittest.TestCase):
 
     def test_sink(self) -> None:
         stub = self.__stub()
-        request = start_sink_streaming_request()
-        print(request)
         generator_response = None
         try:
             generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, request=request)
+                request_iterator=request_generator(count=10, req_type="success", session=1)
             )
+            handshake = next(generator_response)
+            # assert that handshake response is received.
+            self.assertTrue(handshake.handshake.sot)
+            cnt = 0
+            for r in generator_response:
+                # capture the output from the SinkFn generator and assert.
+                self.assertEqual(r.result.status, sink_pb2.Status.SUCCESS)
+                cnt += 1
+            # 10 sink responses
+            self.assertEqual(10, cnt)
         except grpc.RpcError as e:
             logging.error(e)
-
-        # capture the output from the ReduceFn generator and assert.
-        self.assertEqual(10, len(generator_response.results))
-        for x in generator_response.results:
-            self.assertEqual(x.status, sink_pb2.Status.SUCCESS)
 
     def test_sink_err(self) -> None:
         stub = self.__stub()
-        request = start_sink_streaming_request(req_type="err")
-        grpcException = None
+        grpc_exception = None
         try:
-            stub.SinkFn(request_iterator=request_generator(count=10, request=request))
+            generator_response = stub.SinkFn(
+                request_iterator=request_generator(count=10, req_type="err")
+            )
+            for _ in generator_response:
+                pass
+        except BaseException as e:
+            self.assertTrue("UDSinkError: ValueError('test_mock_err_message')" in e.__str__())
+            return
         except grpc.RpcError as e:
-            grpcException = e
+            grpc_exception = e
             self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
-            logging.error(e)
+            print(e.details())
 
-        self.assertIsNotNone(grpcException)
+        self.assertIsNotNone(grpc_exception)
 
     def test_sink_fallback(self) -> None:
         stub = self.__stub()
-        request = start_sink_streaming_request(req_type="fallback")
-        generator_response = None
         try:
             generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, request=request)
+                request_iterator=request_generator(count=10, req_type="fallback", session=1)
             )
+            cnt = 0
+            handshake = next(generator_response)
+            # assert that handshake response is received.
+            self.assertTrue(handshake.handshake.sot)
+            for r in generator_response:
+                # capture the output from the SinkFn generator and assert.
+                self.assertEqual(r.result.status, sink_pb2.Status.FALLBACK)
+                cnt += 1
+            # 10 sink responses
+            self.assertEqual(10, cnt)
         except grpc.RpcError as e:
             logging.error(e)
-
-        # capture the output from the ReduceFn generator and assert.
-        self.assertEqual(10, len(generator_response.results))
-        for x in generator_response.results:
-            self.assertEqual(x.status, sink_pb2.Status.FALLBACK)
 
     def __stub(self):
         return sink_pb2_grpc.SinkStub(_channel)

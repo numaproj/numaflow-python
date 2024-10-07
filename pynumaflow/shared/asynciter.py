@@ -8,8 +8,8 @@ class NonBlockingIterator:
 
     __slots__ = "_queue"
 
-    def __init__(self):
-        self._queue = asyncio.Queue()
+    def __init__(self, size=0):
+        self._queue = asyncio.Queue(maxsize=size)
 
     async def read_iterator(self):
         item = await self._queue.get()

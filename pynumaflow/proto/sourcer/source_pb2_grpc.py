@@ -15,12 +15,12 @@ class SourceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.ReadFn = channel.unary_stream(
+        self.ReadFn = channel.stream_stream(
             "/source.v1.Source/ReadFn",
             request_serializer=source__pb2.ReadRequest.SerializeToString,
             response_deserializer=source__pb2.ReadResponse.FromString,
         )
-        self.AckFn = channel.unary_unary(
+        self.AckFn = channel.stream_stream(
             "/source.v1.Source/AckFn",
             request_serializer=source__pb2.AckRequest.SerializeToString,
             response_deserializer=source__pb2.AckResponse.FromString,
@@ -45,21 +45,24 @@ class SourceStub(object):
 class SourceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def ReadFn(self, request, context):
+    def ReadFn(self, request_iterator, context):
         """Read returns a stream of datum responses.
-        The size of the returned ReadResponse is less than or equal to the num_records specified in ReadRequest.
-        If the request timeout is reached on server side, the returned ReadResponse will contain all the datum that have been read (which could be an empty list).
+        The size of the returned responses is less than or equal to the num_records specified in each ReadRequest.
+        If the request timeout is reached on the server side, the returned responses will contain all the datum that have been read (which could be an empty list).
+        The server will continue to read and respond to subsequent ReadRequests until the client closes the stream.
+        Once it has sent all the datum, the server will send a ReadResponse with the end of transmission flag set to true.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
-    def AckFn(self, request, context):
-        """AckFn acknowledges a list of datum offsets.
+    def AckFn(self, request_iterator, context):
+        """AckFn acknowledges a stream of datum offsets.
         When AckFn is called, it implicitly indicates that the datum stream has been processed by the source vertex.
         The caller (numa) expects the AckFn to be successful, and it does not expect any errors.
         If there are some irrecoverable errors when the callee (UDSource) is processing the AckFn request,
         then it is best to crash because there are no other retry mechanisms possible.
+        Clients sends n requests and expects n responses.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -86,12 +89,12 @@ class SourceServicer(object):
 
 def add_SourceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "ReadFn": grpc.unary_stream_rpc_method_handler(
+        "ReadFn": grpc.stream_stream_rpc_method_handler(
             servicer.ReadFn,
             request_deserializer=source__pb2.ReadRequest.FromString,
             response_serializer=source__pb2.ReadResponse.SerializeToString,
         ),
-        "AckFn": grpc.unary_unary_rpc_method_handler(
+        "AckFn": grpc.stream_stream_rpc_method_handler(
             servicer.AckFn,
             request_deserializer=source__pb2.AckRequest.FromString,
             response_serializer=source__pb2.AckResponse.SerializeToString,
@@ -122,7 +125,7 @@ class Source(object):
 
     @staticmethod
     def ReadFn(
-        request,
+        request_iterator,
         target,
         options=(),
         channel_credentials=None,
@@ -133,8 +136,8 @@ class Source(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.unary_stream(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
             "/source.v1.Source/ReadFn",
             source__pb2.ReadRequest.SerializeToString,
@@ -151,7 +154,7 @@ class Source(object):
 
     @staticmethod
     def AckFn(
-        request,
+        request_iterator,
         target,
         options=(),
         channel_credentials=None,
@@ -162,8 +165,8 @@ class Source(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
             "/source.v1.Source/AckFn",
             source__pb2.AckRequest.SerializeToString,

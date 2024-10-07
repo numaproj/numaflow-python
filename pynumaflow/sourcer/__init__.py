@@ -9,7 +9,6 @@ from pynumaflow.sourcer._dtypes import (
     Sourcer,
 )
 from pynumaflow.sourcer.async_server import SourceAsyncServer
-from pynumaflow.sourcer.server import SourceServer
 
 __all__ = [
     "Message",
@@ -19,7 +18,6 @@ __all__ = [
     "Offset",
     "PartitionsResponse",
     "get_default_partitions",
-    "SourceServer",
     "Sourcer",
     "SourceAsyncServer",
 ]

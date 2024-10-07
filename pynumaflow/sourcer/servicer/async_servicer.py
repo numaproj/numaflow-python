@@ -1,14 +1,71 @@
+import asyncio
 from collections.abc import AsyncIterable
+
+import grpc
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
+from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import exit_on_error, handle_error
 from pynumaflow.sourcer._dtypes import ReadRequest
-from pynumaflow.sourcer._dtypes import Offset, AckRequest, SourceCallable
+from pynumaflow.sourcer._dtypes import AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER
+from pynumaflow._constants import _LOGGER, STREAM_EOF
+
+
+async def _handle_exception(context, exception):
+    """Handle exceptions by updating the context and exiting."""
+    handle_error(context, exception)
+    await asyncio.gather(
+        context.abort(grpc.StatusCode.UNKNOWN, details=repr(exception)), return_exceptions=True
+    )
+    exit_on_error(err=repr(exception), parent=False, context=context, update_context=False)
+
+
+def _create_read_handshake_response():
+    """Create a handshake response for the Read function."""
+    return source_pb2.ReadResponse(
+        status=source_pb2.ReadResponse.Status(
+            eot=False, code=source_pb2.ReadResponse.Status.SUCCESS
+        ),
+        handshake=source_pb2.Handshake(sot=True),
+    )
+
+
+def _create_ack_handshake_response():
+    """Create a handshake response for the Ack function."""
+    return source_pb2.AckResponse(
+        result=source_pb2.AckResponse.Result(success=_empty_pb2.Empty()),
+        handshake=source_pb2.Handshake(sot=True),
+    )
+
+
+def _create_read_response(response):
+    """Create a read response from the handler result."""
+    event_time_timestamp = _timestamp_pb2.Timestamp()
+    event_time_timestamp.FromDatetime(dt=response.event_time)
+    result = source_pb2.ReadResponse.Result(
+        payload=response.payload,
+        keys=response.keys,
+        offset=response.offset.as_dict,
+        event_time=event_time_timestamp,
+        headers=response.headers,
+    )
+    status = source_pb2.ReadResponse.Status(eot=False, code=source_pb2.ReadResponse.Status.SUCCESS)
+    return source_pb2.ReadResponse(result=result, status=status)
+
+
+def _create_eot_response():
+    """Create an end-of-transmission response."""
+    status = source_pb2.ReadResponse.Status(eot=True, code=source_pb2.ReadResponse.Status.SUCCESS)
+    return source_pb2.ReadResponse(status=status)
+
+
+def _create_ack_response():
+    """Create an acknowledgement response."""
+    return source_pb2.AckResponse(result=source_pb2.AckResponse.Result(success=_empty_pb2.Empty()))
 
 
 class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
@@ -19,84 +76,98 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
     """
 
     def __init__(self, source_handler: SourceCallable):
+        self.background_tasks = set()
         self.source_handler = source_handler
-        self.__source_read_handler = source_handler.read_handler
-        self.__source_ack_handler = source_handler.ack_handler
-        self.__source_pending_handler = source_handler.pending_handler
-        self.__source_partitions_handler = source_handler.partitions_handler
+        self.__initialize_handlers()
         self.cleanup_coroutines = []
+
+    def __initialize_handlers(self):
+        """Initialize handler methods from the provided source handler."""
+        self.__source_read_handler = self.source_handler.read_handler
+        self.__source_ack_handler = self.source_handler.ack_handler
+        self.__source_pending_handler = self.source_handler.pending_handler
+        self.__source_partitions_handler = self.source_handler.partitions_handler
 
     async def ReadFn(
         self,
-        request: source_pb2.ReadRequest,
+        request_iterator: AsyncIterable[source_pb2.ReadRequest],
         context: NumaflowServicerContext,
     ) -> AsyncIterable[source_pb2.ReadResponse]:
         """
-        Applies a Read function and returns a stream of datum responses.
-        The pascal case function name comes from the proto source_pb2_grpc.py file.
+        Handles the Read function, processing incoming requests and sending responses.
         """
         try:
-            async for res in self.__invoke_source_read_stream(
-                ReadRequest(
-                    num_records=request.request.num_records,
-                    timeout_in_ms=request.request.timeout_in_ms,
-                ),
-                context,
-            ):
-                yield source_pb2.ReadResponse(result=res)
-        except BaseException as err:
-            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            exit_on_error(context, str(err))
-            return
+            # The first message to be received should be a valid handshake
+            req = await request_iterator.__anext__()
+            if not _is_valid_handshake(req):
+                raise Exception("ReadFn: expected handshake message")
+            yield _create_read_handshake_response()
 
-    async def __invoke_source_read_stream(self, req: ReadRequest, context: NumaflowServicerContext):
-        try:
-            async for msg in self.__source_read_handler(req):
-                event_time_timestamp = _timestamp_pb2.Timestamp()
-                event_time_timestamp.FromDatetime(dt=msg.event_time)
-                yield source_pb2.ReadResponse.Result(
-                    payload=msg.payload,
-                    keys=msg.keys,
-                    offset=msg.offset.as_dict,
-                    event_time=event_time_timestamp,
-                    headers=msg.headers,
-                )
+            # process the incoming read requests on the stream
+            async for req in request_iterator:
+                # create an iterator to be provided to the user function where the responses will
+                # be streamed
+                niter = NonBlockingIterator()
+                riter = niter.read_iterator()
+                task = asyncio.create_task(self.__invoke_read(req, niter))
+                # Save a reference to the result of this function, to avoid a
+                # task disappearing mid-execution.
+                self.background_tasks.add(task)
+                task.add_done_callback(self.clean_background)
+
+                async for resp in riter:
+                    if isinstance(resp, BaseException):
+                        await _handle_exception(context, resp)
+                        return
+
+                    yield _create_read_response(resp)
+
+                # ensure that the task has completed
+                await task
+                # send an eot to signal all messages have been processed.
+                yield _create_eot_response()
         except BaseException as err:
-            _LOGGER.critical("User-Defined Source ReadError ", exc_info=True)
-            exit_on_error(context, repr(err))
-            raise err
+            _LOGGER.critical("User-Defined Source ReadFn error", exc_info=True)
+            exit_on_error(context, str(err))
+
+    async def __invoke_read(self, req, niter):
+        """Invoke the read handler and manage the iterator."""
+        try:
+            await self.__source_read_handler(
+                ReadRequest(
+                    num_records=req.request.num_records, timeout_in_ms=req.request.timeout_in_ms
+                ),
+                niter,
+            )
+            # Put an EOF to the iterator to indicate that we have completed the processing the
+            # requests from the user handler
+            await niter.put(STREAM_EOF)
+        except BaseException as err:
+            _LOGGER.critical("User-Defined Source ReadFn error", exc_info=True)
+            await niter.put(err)
 
     async def AckFn(
-        self, request: source_pb2.AckRequest, context: NumaflowServicerContext
-    ) -> source_pb2.AckResponse:
+        self,
+        request_iterator: AsyncIterable[source_pb2.AckRequest],
+        context: NumaflowServicerContext,
+    ) -> AsyncIterable[source_pb2.AckResponse]:
         """
-        Applies an Ack function in User Defined Source
-        """
-        # proto repeated field(offsets) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
-        offsets = []
-        for offset in request.request.offsets:
-            offsets.append(Offset(offset.offset, offset.partition_id))
-        try:
-            await self.__invoke_ack(ack_req=offsets, context=context)
-        except BaseException as e:
-            _LOGGER.critical("AckFn Error", exc_info=True)
-            exit_on_error(context, repr(e))
-            return
-
-        return source_pb2.AckResponse()
-
-    async def __invoke_ack(self, ack_req: list[Offset], context: NumaflowServicerContext):
-        """
-        Invokes the Source Ack Function.
+        Handles the Ack function for user-defined source.
         """
         try:
-            await self.__source_ack_handler(AckRequest(offsets=ack_req))
+            # The first message to be received should be a valid handshake
+            req = await request_iterator.__anext__()
+            if not _is_valid_handshake(req):
+                raise Exception("AckFn: expected handshake message")
+            yield _create_ack_handshake_response()
+
+            # process the incoming Ack requests
+            async for req in request_iterator:
+                await self.__source_ack_handler(AckRequest(req.request.offset))
+                yield _create_ack_response()
         except BaseException as err:
-            _LOGGER.critical("AckFn Error", exc_info=True)
+            _LOGGER.critical("User-Defined Source AckFn error", exc_info=True)
             exit_on_error(context, repr(err))
-            raise err
-        return source_pb2.AckResponse.Result()
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
@@ -137,3 +208,14 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             return
         resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
         return source_pb2.PartitionsResponse(result=resp)
+
+    def clean_background(self, task):
+        """
+        Remove the task from the background tasks collection
+        """
+        self.background_tasks.remove(task)
+
+
+def _is_valid_handshake(req):
+    """Check if the handshake message is valid."""
+    return req.handshake and req.handshake.sot

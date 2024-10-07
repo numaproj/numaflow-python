@@ -96,5 +96,5 @@ class SideInputServer(NumaflowServer):
             server_info_file=self.server_info_file,
             server_options=self._server_options,
             udf_type=UDFType.SideInput,
-            serv_info=serv_info,
+            server_info=serv_info,
         )

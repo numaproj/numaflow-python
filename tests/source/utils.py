@@ -1,4 +1,6 @@
-from collections.abc import AsyncIterable, Iterable
+from collections.abc import Iterable
+
+from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.sourcer import ReadRequest, Message
 from pynumaflow.sourcer._dtypes import (
@@ -21,13 +23,15 @@ def mock_partitions() -> list[int]:
 
 
 class AsyncSource(Sourcer):
-    async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
+    async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
         payload = b"payload:test_mock_message"
         keys = ["test_key"]
         offset = mock_offset()
         event_time = mock_event_time()
         for i in range(10):
-            yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+            await output.put(
+                Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+            )
 
     async def ack_handler(self, ack_request: AckRequest):
         return
@@ -66,21 +70,23 @@ def read_req_source_fn() -> ReadRequest:
     return request
 
 
-def ack_req_source_fn() -> AckRequest:
+def ack_req_source_fn():
     msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)
-    request = source_pb2.AckRequest.Request(offsets=[msg, msg])
+    request = source_pb2.AckRequest.Request(offset=msg)
     return request
 
 
 class AsyncSourceError(Sourcer):
     # This handler mimics the scenario where map stream UDF throws a runtime error.
-    async def read_handler(self, datum: ReadRequest) -> AsyncIterable[Message]:
+    async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
         payload = b"payload:test_mock_message"
         keys = ["test_key"]
         offset = mock_offset()
         event_time = mock_event_time()
-        for i in range(10):
-            yield Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+        for i in range(datum.num_records):
+            await output.put(
+                Message(payload=payload, keys=keys, offset=offset, event_time=event_time)
+            )
         raise RuntimeError("Got a runtime error from read handler.")
 
     async def ack_handler(self, ack_request: AckRequest):

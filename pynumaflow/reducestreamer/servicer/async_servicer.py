@@ -1,13 +1,10 @@
 import asyncio
-import io
-import traceback
 from collections.abc import AsyncIterable
 from typing import Union
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow._constants import _LOGGER
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducestreamer._dtypes import (
     Datum,
@@ -16,7 +13,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceRequest,
 )
 from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import exit_on_error, handle_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -37,20 +34,6 @@ async def datum_generator(
             ),
         )
         yield reduce_request
-
-
-def get_exception_traceback_str(exc) -> str:
-    file = io.StringIO()
-    traceback.print_exception(exc, value=exc, tb=exc.__traceback__, file=file)
-    return file.getvalue().rstrip()
-
-
-def handle_error(context: NumaflowServicerContext, e: BaseException):
-    trace = get_exception_traceback_str(e)
-    _LOGGER.critical(trace)
-    _LOGGER.critical(e.__str__())
-    context.set_code(grpc.StatusCode.UNKNOWN)
-    context.set_details(e.__str__())
 
 
 class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):

@@ -13,17 +13,14 @@ from pynumaflow.sourcer import (
     SourceAsyncServer,
 )
 from tests.source.utils import (
-    mock_offset,
     read_req_source_fn,
     ack_req_source_fn,
     mock_partitions,
     AsyncSource,
+    mock_offset,
 )
 
 LOGGER = setup_logging(__name__)
-
-# if set to true, map handler will raise a `ValueError` exception.
-raise_error_from_map = False
 
 server_port = "unix:///tmp/async_source.sock"
 
@@ -54,6 +51,18 @@ async def start_server(udfs):
     _s = server
     await server.start()
     await server.wait_for_termination()
+
+
+def request_generator(count, request, req_type, send_handshake: bool = True):
+    for i in range(count):
+        if req_type == "read":
+            if send_handshake:
+                yield source_pb2.ReadRequest(handshake=source_pb2.Handshake(sot=True))
+            yield source_pb2.ReadRequest(request=request)
+        elif req_type == "ack":
+            if send_handshake:
+                yield source_pb2.AckRequest(handshake=source_pb2.Handshake(sot=True))
+            yield source_pb2.AckRequest(request=request)
 
 
 class TestAsyncSourcer(unittest.TestCase):
@@ -92,14 +101,26 @@ class TestAsyncSourcer(unittest.TestCase):
             request = read_req_source_fn()
             generator_response = None
             try:
-                generator_response = stub.ReadFn(request=source_pb2.ReadRequest(request=request))
+                generator_response = stub.ReadFn(
+                    request_iterator=request_generator(1, request, "read")
+                )
             except grpc.RpcError as e:
                 logging.error(e)
 
             counter = 0
+            first = True
             # capture the output from the ReadFn generator and assert.
             for r in generator_response:
                 counter += 1
+                if first:
+                    self.assertEqual(True, r.handshake.sot)
+                    first = False
+                    continue
+
+                if r.status.eot:
+                    last = True
+                    continue
+
                 self.assertEqual(
                     bytes("payload:test_mock_message", encoding="utf-8"),
                     r.result.payload,
@@ -116,8 +137,13 @@ class TestAsyncSourcer(unittest.TestCase):
                     mock_offset().partition_id,
                     r.result.offset.partition_id,
                 )
-            """Assert that the generator was called 10 times in the stream"""
-            self.assertEqual(10, counter)
+
+            self.assertFalse(first)
+            self.assertTrue(last)
+
+            # Assert that the generator was called 12
+            # (10 data messages + handshake + eot) times in the stream
+            self.assertEqual(12, counter)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel(server_port) as channel:
@@ -137,11 +163,22 @@ class TestAsyncSourcer(unittest.TestCase):
             stub = source_pb2_grpc.SourceStub(channel)
             request = ack_req_source_fn()
             try:
-                response = stub.AckFn(request=source_pb2.AckRequest(request=request))
+                response = stub.AckFn(request_iterator=request_generator(1, request, "ack"))
             except grpc.RpcError as e:
                 print(e)
 
-            self.assertEqual(response, source_pb2.AckResponse())
+            count = 0
+            first = True
+            for r in response:
+                count += 1
+                if first:
+                    self.assertEqual(True, r.handshake.sot)
+                    first = False
+                    continue
+                self.assertTrue(r.result.success)
+
+            self.assertEqual(count, 2)
+            self.assertFalse(first)
 
     def test_pending(self) -> None:
         with grpc.insecure_channel(server_port) as channel:

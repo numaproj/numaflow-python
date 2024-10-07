@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import io
 import multiprocessing
@@ -278,3 +279,12 @@ def get_exception_traceback_str(exc) -> str:
     file = io.StringIO()
     traceback.print_exception(exc, value=exc, tb=exc.__traceback__, file=file)
     return file.getvalue().rstrip()
+
+
+async def handle_exception(context, exception):
+    """Handle exceptions by updating the context and exiting."""
+    handle_error(context, exception)
+    await asyncio.gather(
+        context.abort(grpc.StatusCode.UNKNOWN, details=repr(exception)), return_exceptions=True
+    )
+    exit_on_error(err=repr(exception), parent=False, context=context, update_context=False)

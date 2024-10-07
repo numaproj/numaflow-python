@@ -25,36 +25,63 @@ FAILURE: Status
 FALLBACK: Status
 
 class SinkRequest(_message.Message):
-    __slots__ = ("keys", "value", "event_time", "watermark", "id", "headers")
+    __slots__ = ("request", "status", "handshake")
 
-    class HeadersEntry(_message.Message):
-        __slots__ = ("key", "value")
-        KEY_FIELD_NUMBER: _ClassVar[int]
+    class Request(_message.Message):
+        __slots__ = ("keys", "value", "event_time", "watermark", "id", "headers")
+
+        class HeadersEntry(_message.Message):
+            __slots__ = ("key", "value")
+            KEY_FIELD_NUMBER: _ClassVar[int]
+            VALUE_FIELD_NUMBER: _ClassVar[int]
+            key: str
+            value: str
+            def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+        KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: str
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
-    KEYS_FIELD_NUMBER: _ClassVar[int]
-    VALUE_FIELD_NUMBER: _ClassVar[int]
-    EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
-    WATERMARK_FIELD_NUMBER: _ClassVar[int]
-    ID_FIELD_NUMBER: _ClassVar[int]
-    HEADERS_FIELD_NUMBER: _ClassVar[int]
-    keys: _containers.RepeatedScalarFieldContainer[str]
-    value: bytes
-    event_time: _timestamp_pb2.Timestamp
-    watermark: _timestamp_pb2.Timestamp
-    id: str
-    headers: _containers.ScalarMap[str, str]
+        EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
+        WATERMARK_FIELD_NUMBER: _ClassVar[int]
+        ID_FIELD_NUMBER: _ClassVar[int]
+        HEADERS_FIELD_NUMBER: _ClassVar[int]
+        keys: _containers.RepeatedScalarFieldContainer[str]
+        value: bytes
+        event_time: _timestamp_pb2.Timestamp
+        watermark: _timestamp_pb2.Timestamp
+        id: str
+        headers: _containers.ScalarMap[str, str]
+        def __init__(
+            self,
+            keys: _Optional[_Iterable[str]] = ...,
+            value: _Optional[bytes] = ...,
+            event_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
+            watermark: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
+            id: _Optional[str] = ...,
+            headers: _Optional[_Mapping[str, str]] = ...,
+        ) -> None: ...
+
+    class Status(_message.Message):
+        __slots__ = ("eot",)
+        EOT_FIELD_NUMBER: _ClassVar[int]
+        eot: bool
+        def __init__(self, eot: bool = ...) -> None: ...
+    REQUEST_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
+    request: SinkRequest.Request
+    status: SinkRequest.Status
+    handshake: Handshake
     def __init__(
         self,
-        keys: _Optional[_Iterable[str]] = ...,
-        value: _Optional[bytes] = ...,
-        event_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
-        watermark: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
-        id: _Optional[str] = ...,
-        headers: _Optional[_Mapping[str, str]] = ...,
+        request: _Optional[_Union[SinkRequest.Request, _Mapping]] = ...,
+        status: _Optional[_Union[SinkRequest.Status, _Mapping]] = ...,
+        handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
     ) -> None: ...
+
+class Handshake(_message.Message):
+    __slots__ = ("sot",)
+    SOT_FIELD_NUMBER: _ClassVar[int]
+    sot: bool
+    def __init__(self, sot: bool = ...) -> None: ...
 
 class ReadyResponse(_message.Message):
     __slots__ = ("ready",)
@@ -63,7 +90,7 @@ class ReadyResponse(_message.Message):
     def __init__(self, ready: bool = ...) -> None: ...
 
 class SinkResponse(_message.Message):
-    __slots__ = ("results",)
+    __slots__ = ("result", "handshake")
 
     class Result(_message.Message):
         __slots__ = ("id", "status", "err_msg")
@@ -79,8 +106,12 @@ class SinkResponse(_message.Message):
             status: _Optional[_Union[Status, str]] = ...,
             err_msg: _Optional[str] = ...,
         ) -> None: ...
-    RESULTS_FIELD_NUMBER: _ClassVar[int]
-    results: _containers.RepeatedCompositeFieldContainer[SinkResponse.Result]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
+    result: SinkResponse.Result
+    handshake: Handshake
     def __init__(
-        self, results: _Optional[_Iterable[_Union[SinkResponse.Result, _Mapping]]] = ...
+        self,
+        result: _Optional[_Union[SinkResponse.Result, _Mapping]] = ...,
+        handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
     ) -> None: ...

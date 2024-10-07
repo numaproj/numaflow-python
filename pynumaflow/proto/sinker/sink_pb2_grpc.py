@@ -15,7 +15,7 @@ class SinkStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SinkFn = channel.stream_unary(
+        self.SinkFn = channel.stream_stream(
             "/sink.v1.Sink/SinkFn",
             request_serializer=sink__pb2.SinkRequest.SerializeToString,
             response_deserializer=sink__pb2.SinkResponse.FromString,
@@ -45,7 +45,7 @@ class SinkServicer(object):
 
 def add_SinkServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "SinkFn": grpc.stream_unary_rpc_method_handler(
+        "SinkFn": grpc.stream_stream_rpc_method_handler(
             servicer.SinkFn,
             request_deserializer=sink__pb2.SinkRequest.FromString,
             response_serializer=sink__pb2.SinkResponse.SerializeToString,
@@ -77,7 +77,7 @@ class Sink(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.stream_unary(
+        return grpc.experimental.stream_stream(
             request_iterator,
             target,
             "/sink.v1.Sink/SinkFn",

@@ -1,69 +1,104 @@
-# from collections.abc import Iterator, Iterable
-#
-# from google.protobuf import empty_pb2 as _empty_pb2
-# from pynumaflow._constants import _LOGGER
-# from pynumaflow.shared.server import exit_on_error
-# from pynumaflow.sinker._dtypes import Datum
-# from pynumaflow.sinker._dtypes import SyncSinkCallable
-# from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
-# from pynumaflow.sinker.servicer.utils import build_sink_response
-# from pynumaflow.types import NumaflowServicerContext
-#
-#
-# def datum_generator(request_iterator: Iterable[sink_pb2.SinkRequest]) -> Iterable[Datum]:
-#     for d in request_iterator:
-#         datum = Datum(
-#             keys=list(d.keys),
-#             sink_msg_id=d.id,
-#             value=d.value,
-#             event_time=d.event_time.ToDatetime(),
-#             watermark=d.watermark.ToDatetime(),
-#             headers=dict(d.headers),
-#         )
-#         yield datum
-#
-#
-# class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
-#     """
-#     This class is used to create a new grpc Sink servicer instance.
-#     It implements the SinkServicer interface from the proto sink.proto file.
-#     Provides the functionality for the required rpc methods.
-#     """
-#
-#     def __init__(
-#         self,
-#         handler: SyncSinkCallable,
-#     ):
-#         self.__sink_handler: SyncSinkCallable = handler
-#
-#     def SinkFn(
-#         self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
-#     ) -> sink_pb2.SinkResponse:
-#         """
-#         Applies a sink function to a list of datum elements.
-#         The pascal case function name comes from the proto sink_pb2_grpc.py file.
-#         """
-#         # if there is an exception, we will mark all the responses as a failure
-#         datum_iterator = datum_generator(request_iterator)
-#         try:
-#             rspns = self.__sink_handler(datum_iterator)
-#         except BaseException as err:
-#             err_msg = f"UDSinkError: {repr(err)}"
-#             _LOGGER.critical(err_msg, exc_info=True)
-#             exit_on_error(context, err_msg)
-#             return
-#
-#         responses = []
-#         for rspn in rspns:
-#             responses.append(build_sink_response(rspn))
-#
-#         return sink_pb2.SinkResponse(results=responses)
-#
-#     def IsReady(
-#         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-#     ) -> sink_pb2.ReadyResponse:
-#         """
-#         IsReady is the heartbeat endpoint for gRPC.
-#         The pascal case function name comes from the proto sink_pb2_grpc.py file.
-#         """
-#         return sink_pb2.ReadyResponse(ready=True)
+from collections.abc import Iterable
+
+from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
+from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.servicer import is_valid_handshake
+from pynumaflow.shared.synciter import SyncIterator
+from pynumaflow.shared.thread_with_return import ThreadWithReturnValue
+from pynumaflow.sinker._dtypes import SyncSinkCallable
+from pynumaflow.sinker.servicer.utils import (
+    datum_from_sink_req,
+    _create_read_handshake_response,
+    build_sink_resp_results,
+)
+from pynumaflow.types import NumaflowServicerContext
+
+
+class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
+    """
+    This class is used to create a new grpc Sink servicer instance.
+    It implements the SinkServicer interface from the proto sink.proto file.
+    Provides the functionality for the required rpc methods.
+    """
+
+    def __init__(self, handler: SyncSinkCallable):
+        self.handler: SyncSinkCallable = handler
+
+    def SinkFn(
+        self, request_iterator: Iterable[sink_pb2.SinkRequest], context: NumaflowServicerContext
+    ) -> Iterable[sink_pb2.SinkResponse]:
+        """
+        Applies a sink function to datum elements.
+        """
+
+        try:
+            # The first message to be received should be a valid handshake
+            req = next(request_iterator)
+            if not is_valid_handshake(req):
+                raise Exception("SinkFn: expected handshake message")
+            yield _create_read_handshake_response()
+
+            threads = []
+            # cur_task is used to track the thread processing
+            # the current batch of messages.
+            cur_task = None
+            # Use a queue backed to handle request batches
+            req_queue = SyncIterator()
+
+            # iterate of the incoming messages ot the sink
+            for d in request_iterator:
+                # if we do not have any active thread currently processing the batch
+                # we need to create one and call the User function for processing the same.
+                if cur_task is None:
+                    # Use a queue to handle request batches
+                    req_queue = SyncIterator()
+                    cur_task = ThreadWithReturnValue(
+                        target=self._invoke_sink, args=(req_queue, context)
+                    )
+                    cur_task.start()
+                    threads.append(cur_task)
+
+                # when we have end of transmission message, we need to stop the processing the
+                # current batch and wait for the next batch of messages.
+                # We will also wait for the current task to finish processing the current batch.
+                # We mark the current task as None to indicate that we are
+                # ready to process the next batch.
+                if d.status and d.status.eot:
+                    req_queue.put(STREAM_EOF)
+                    ret = cur_task.join()
+                    for resp in ret:
+                        yield sink_pb2.SinkResponse(result=resp)
+                    cur_task = None
+                    continue
+
+                # if we have a valid message, we will add it to the request queue for processing.
+                datum = datum_from_sink_req(d)
+                req_queue.put(datum)
+
+            # Joining the remaining threads
+            for thread in threads:
+                thread.join()
+        except BaseException as err:
+            # Handle exceptions
+            err_msg = f"UDSinkError: {repr(err)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            exit_on_error(context, err_msg)
+            return
+
+    def _invoke_sink(self, request_queue: SyncIterator, context: NumaflowServicerContext):
+        try:
+            # Invoke the handler function with the request queue
+            rspns = self.handler(request_queue.read_iterator())
+            return build_sink_resp_results(rspns)
+        except BaseException as err:
+            err_msg = f"UDSinkError: {repr(err)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            exit_on_error(context, err_msg)
+            raise err
+
+    def IsReady(self, request, context: NumaflowServicerContext) -> sink_pb2.ReadyResponse:
+        """
+        IsReady is the heartbeat endpoint for gRPC.
+        """
+        return sink_pb2.ReadyResponse(ready=True)

@@ -7,34 +7,14 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.shared.server import exit_on_error
 from pynumaflow.shared.servicer import is_valid_handshake
 from pynumaflow.sinker._dtypes import Datum, AsyncSinkCallable
-from pynumaflow.sinker._dtypes import SyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
-from pynumaflow.sinker.servicer.utils import build_sink_response
+from pynumaflow.sinker.servicer.utils import (
+    datum_from_sink_req,
+    _create_read_handshake_response,
+    build_sink_resp_results,
+)
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF
-
-
-async def datum_generator(
-    request_iterator: AsyncIterable[sink_pb2.SinkRequest],
-) -> AsyncIterable[Datum]:
-    async for d in request_iterator:
-        datum = Datum(
-            keys=list(d.request.keys),
-            sink_msg_id=d.request.id,
-            value=d.request.value,
-            event_time=d.request.event_time.ToDatetime(),
-            watermark=d.request.watermark.ToDatetime(),
-            headers=dict(d.request.headers),
-        )
-        yield datum
-
-
-def _create_read_handshake_response():
-    """Create a handshake response for the Sink function."""
-    return sink_pb2.SinkResponse(
-        result=sink_pb2.SinkResponse.Result(status=sink_pb2.SUCCESS),
-        handshake=sink_pb2.Handshake(sot=True),
-    )
 
 
 class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
@@ -46,7 +26,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
     def __init__(
         self,
-        handler: SyncSinkCallable,
+        handler: AsyncSinkCallable,
     ):
         self.background_tasks = set()
         self.__sink_handler: AsyncSinkCallable = handler
@@ -66,7 +46,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             req = await request_iterator.__anext__()
             if not is_valid_handshake(req):
                 raise Exception("ReadFn: expected handshake message")
-            await context.write(_create_read_handshake_response())
+            yield _create_read_handshake_response()
 
             # cur_task is used to track the task (coroutine) processing
             # the current batch of messages.
@@ -91,18 +71,14 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 if d.status and d.status.eot:
                     await req_queue.put(STREAM_EOF)
                     await cur_task
+                    ret = cur_task.result()
+                    for r in ret:
+                        yield sink_pb2.SinkResponse(result=r)
                     cur_task = None
                     continue
 
                 # if we have a valid message, we will add it to the request queue for processing.
-                datum = Datum(
-                    keys=list(d.request.keys),
-                    sink_msg_id=d.request.id,
-                    value=d.request.value,
-                    event_time=d.request.event_time.ToDatetime(),
-                    watermark=d.request.watermark.ToDatetime(),
-                    headers=dict(d.request.headers),
-                )
+                datum = datum_from_sink_req(d)
                 await req_queue.put(datum)
         except BaseException as err:
             # if there is an exception, we will mark all the responses as a failure
@@ -117,10 +93,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         try:
             # invoke the user function with the request queue
             rspns = await self.__sink_handler(request_queue)
-            # for each response, we will write the response back from the rpc.
-            for rspn in rspns:
-                sink_rsp = build_sink_response(rspn)
-                await context.write(sink_pb2.SinkResponse(result=sink_rsp))
+            return build_sink_resp_results(rspns)
         except BaseException as err:
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)

@@ -140,6 +140,7 @@ class TestAsyncSink(unittest.TestCase):
     def test_sink(self) -> None:
         stub = self.__stub()
         generator_response = None
+        grpc_exception = None
         try:
             generator_response = stub.SinkFn(
                 request_iterator=request_generator(count=10, req_type="success", session=1)
@@ -156,6 +157,9 @@ class TestAsyncSink(unittest.TestCase):
             self.assertEqual(10, cnt)
         except grpc.RpcError as e:
             logging.error(e)
+            grpc_exception = e
+
+        self.assertIsNone(grpc_exception)
 
     def test_sink_err(self) -> None:
         stub = self.__stub()

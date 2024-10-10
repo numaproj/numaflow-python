@@ -1,5 +1,6 @@
 from collections.abc import Iterable
 
+
 from pynumaflow._constants import _LOGGER, STREAM_EOF
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.shared.server import exit_on_error
@@ -38,8 +39,6 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
             if not is_valid_handshake(req):
                 raise Exception("SinkFn: expected handshake message")
             yield _create_read_handshake_response()
-
-            threads = []
             # cur_task is used to track the thread processing
             # the current batch of messages.
             cur_task = None
@@ -57,7 +56,6 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
                         target=self._invoke_sink, args=(req_queue, context)
                     )
                     cur_task.start()
-                    threads.append(cur_task)
 
                 # when we have end of transmission message, we need to stop the processing the
                 # current batch and wait for the next batch of messages.
@@ -76,9 +74,6 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 datum = datum_from_sink_req(d)
                 req_queue.put(datum)
 
-            # Joining the remaining threads
-            for thread in threads:
-                thread.join()
         except BaseException as err:
             # Handle exceptions
             err_msg = f"UDSinkError: {repr(err)}"

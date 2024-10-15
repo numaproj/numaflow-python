@@ -43,9 +43,28 @@ Side input spec:
 ```yaml
 spec:
   sideInputs:
-    - name: vertex
-      udf:
-        container:
-          ....
-      sideInputs:
-        - myticker
+    - name: myticker
+      container:
+        image: "quay.io/numaio/numaflow-python/sideinput-example:stable"
+        imagePullPolicy: Always
+      trigger:
+        schedule: "*/2 * * * *"
+
+```
+
+Vertex spec for the UDF vertex:
+```yaml
+      vertices:
+        .....
+        - name: si-log
+          udf:
+            container:
+              image: "quay.io/numaio/numaflow-python/udf-sideinput-example:stable"
+              imagePullPolicy: Always
+          containerTemplate:
+            env:
+              - name: NUMAFLOW_DEBUG
+                value: "true" # DO NOT forget the double quotes!!!
+          sideInputs:
+            - myticker
+```

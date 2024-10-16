@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package = "github.com/numaproj/numaflow-go/pkg/apis/proto/sink/v1";
+
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -26,14 +28,11 @@ message SinkRequest {
     string id = 5;
     map<string, string> headers = 6;
   }
-  message Status {
-    bool eot = 1;
-  }
   // Required field indicating the request.
   Request request = 1;
   // Required field indicating the status of the request.
   // If eot is set to true, it indicates the end of transmission.
-  Status status = 2;
+  TransmissionStatus status = 2;
   // optional field indicating the handshake message.
   optional Handshake handshake = 3;
 }
@@ -51,6 +50,13 @@ message Handshake {
  */
 message ReadyResponse {
   bool ready = 1;
+}
+
+/**
+ * TransmissionStatus is the status of the transmission.
+ */
+message TransmissionStatus {
+  bool eot = 1;
 }
 
 /*
@@ -76,4 +82,5 @@ message SinkResponse {
   }
   Result result = 1;
   optional Handshake handshake = 2;
+  optional TransmissionStatus status = 3;
 }

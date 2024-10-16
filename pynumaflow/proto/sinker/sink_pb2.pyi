@@ -58,22 +58,16 @@ class SinkRequest(_message.Message):
             id: _Optional[str] = ...,
             headers: _Optional[_Mapping[str, str]] = ...,
         ) -> None: ...
-
-    class Status(_message.Message):
-        __slots__ = ("eot",)
-        EOT_FIELD_NUMBER: _ClassVar[int]
-        eot: bool
-        def __init__(self, eot: bool = ...) -> None: ...
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     request: SinkRequest.Request
-    status: SinkRequest.Status
+    status: TransmissionStatus
     handshake: Handshake
     def __init__(
         self,
         request: _Optional[_Union[SinkRequest.Request, _Mapping]] = ...,
-        status: _Optional[_Union[SinkRequest.Status, _Mapping]] = ...,
+        status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...,
         handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
     ) -> None: ...
 
@@ -89,8 +83,14 @@ class ReadyResponse(_message.Message):
     ready: bool
     def __init__(self, ready: bool = ...) -> None: ...
 
+class TransmissionStatus(_message.Message):
+    __slots__ = ("eot",)
+    EOT_FIELD_NUMBER: _ClassVar[int]
+    eot: bool
+    def __init__(self, eot: bool = ...) -> None: ...
+
 class SinkResponse(_message.Message):
-    __slots__ = ("result", "handshake")
+    __slots__ = ("result", "handshake", "status")
 
     class Result(_message.Message):
         __slots__ = ("id", "status", "err_msg")
@@ -108,10 +108,13 @@ class SinkResponse(_message.Message):
         ) -> None: ...
     RESULT_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
     result: SinkResponse.Result
     handshake: Handshake
+    status: TransmissionStatus
     def __init__(
         self,
         result: _Optional[_Union[SinkResponse.Result, _Mapping]] = ...,
         handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
+        status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...,
     ) -> None: ...

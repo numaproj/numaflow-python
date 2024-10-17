@@ -215,26 +215,6 @@ class Sinker(metaclass=ABCMeta):
         pass
 
 
-@dataclass
-class EndOfStreamTransmission:
-    """
-    Basic datatype for UDSink response.
-
-    Args:
-    """
-
-    eos: bool
-    __slots__ = "eos"
-
-    @classmethod
-    def as_completed(cls):
-        return EndOfStreamTransmission(eos=True)
-
-    @classmethod
-    def as_failure(cls):
-        return EndOfStreamTransmission(eos=False)
-
-
 # SyncSinkCallable is a callable which can be used as a handler for the Synchronous UDSink.
 SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
 SyncSinkCallable = Union[Sinker, SinkHandlerCallable]

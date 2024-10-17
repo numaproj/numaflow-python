@@ -110,9 +110,3 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         The pascal case function name comes from the proto sink_pb2_grpc.py file.
         """
         return sink_pb2.ReadyResponse(ready=True)
-
-    def clean_background(self, task):
-        """
-        Remove the task from the background tasks collection
-        """
-        self.background_tasks.remove(task)

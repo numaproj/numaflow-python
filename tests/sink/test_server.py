@@ -89,6 +89,44 @@ class TestServer(unittest.TestCase):
         self.assertEqual(expected, response)
         self.assertEqual(code, StatusCode.OK)
 
+    def test_udsink_err_handshake(self):
+        server = SinkServer(sinker_instance=err_udsink_handler)
+        my_servicer = server.servicer
+        services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        test_datums = [
+            sink_pb2.SinkRequest(
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_0",
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                )
+            ),
+            sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
+        ]
+
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(
+                sink_pb2.DESCRIPTOR.services_by_name["Sink"].methods_by_name["SinkFn"]
+            ),
+            invocation_metadata={},
+            timeout=1,
+        )
+
+        method.send_request(test_datums[0])
+
+        metadata, code, details = method.termination()
+        print("HERE", details)
+        self.assertTrue("UDSinkError: Exception('SinkFn: expected handshake message')" in details)
+        self.assertEqual(StatusCode.UNKNOWN, code)
+
     def test_udsink_err(self):
         server = SinkServer(sinker_instance=err_udsink_handler)
         my_servicer = server.servicer

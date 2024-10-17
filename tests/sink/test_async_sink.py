@@ -59,8 +59,9 @@ def start_sink_streaming_request(_id: str, req_type) -> (Datum, tuple):
     return sink_pb2.SinkRequest(request=request)
 
 
-def request_generator(count, req_type="success", session=1):
-    yield sink_pb2.SinkRequest(handshake=sink_pb2.Handshake(sot=True))
+def request_generator(count, req_type="success", session=1, handshake=True):
+    if handshake:
+        yield sink_pb2.SinkRequest(handshake=sink_pb2.Handshake(sot=True))
 
     for j in range(session):
         for i in range(count):
@@ -177,6 +178,25 @@ class TestAsyncSink(unittest.TestCase):
                 pass
         except BaseException as e:
             self.assertTrue("UDSinkError: ValueError('test_mock_err_message')" in e.__str__())
+            return
+        except grpc.RpcError as e:
+            grpc_exception = e
+            self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+            print(e.details())
+
+        self.assertIsNotNone(grpc_exception)
+
+    def test_sink_err_handshake(self) -> None:
+        stub = self.__stub()
+        grpc_exception = None
+        try:
+            generator_response = stub.SinkFn(
+                request_iterator=request_generator(count=10, req_type="success", handshake=False)
+            )
+            for _ in generator_response:
+                pass
+        except BaseException as e:
+            self.assertTrue("ReadFn: expected handshake message" in e.__str__())
             return
         except grpc.RpcError as e:
             grpc_exception = e

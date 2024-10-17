@@ -66,7 +66,7 @@ def request_generator(count, req_type="success", session=1):
         for i in range(count):
             yield start_sink_streaming_request(str(i), req_type)
 
-        yield sink_pb2.SinkRequest(status=sink_pb2.SinkRequest.Status(eot=True))
+        yield sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True))
 
 
 _s: Server = None
@@ -148,13 +148,18 @@ class TestAsyncSink(unittest.TestCase):
             handshake = next(generator_response)
             # assert that handshake response is received.
             self.assertTrue(handshake.handshake.sot)
-            cnt = 0
+            data_resp = []
             for r in generator_response:
+                data_resp.append(r)
+            idx = 0
+            while idx < len(data_resp) - 1:
                 # capture the output from the SinkFn generator and assert.
-                self.assertEqual(r.result.status, sink_pb2.Status.SUCCESS)
-                cnt += 1
-            # 10 sink responses
-            self.assertEqual(10, cnt)
+                self.assertEqual(data_resp[idx].result.status, sink_pb2.Status.SUCCESS)
+                idx += 1
+            # EOT Response
+            self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
+            # 10 sink responses + 1 EOT response
+            self.assertEqual(11, len(data_resp))
         except grpc.RpcError as e:
             logging.error(e)
             grpc_exception = e
@@ -186,16 +191,22 @@ class TestAsyncSink(unittest.TestCase):
             generator_response = stub.SinkFn(
                 request_iterator=request_generator(count=10, req_type="fallback", session=1)
             )
-            cnt = 0
             handshake = next(generator_response)
             # assert that handshake response is received.
             self.assertTrue(handshake.handshake.sot)
+            data_resp = []
             for r in generator_response:
+                data_resp.append(r)
+
+            idx = 0
+            while idx < len(data_resp) - 1:
                 # capture the output from the SinkFn generator and assert.
-                self.assertEqual(r.result.status, sink_pb2.Status.FALLBACK)
-                cnt += 1
-            # 10 sink responses
-            self.assertEqual(10, cnt)
+                self.assertEqual(data_resp[idx].result.status, sink_pb2.Status.FALLBACK)
+                idx += 1
+            # EOT Response
+            self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
+            # 10 sink responses + 1 EOT response
+            self.assertEqual(11, len(data_resp))
         except grpc.RpcError as e:
             logging.error(e)
 

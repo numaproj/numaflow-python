@@ -120,7 +120,7 @@ class TestServer(unittest.TestCase):
                     watermark=watermark_timestamp,
                 )
             ),
-            sink_pb2.SinkRequest(status=sink_pb2.SinkRequest.Status(eot=True)),
+            sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
         ]
 
         method = self.test_server.invoke_stream_stream(
@@ -174,7 +174,7 @@ class TestServer(unittest.TestCase):
                     watermark=watermark_timestamp,
                 )
             ),
-            sink_pb2.SinkRequest(status=sink_pb2.SinkRequest.Status(eot=True)),
+            sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
         ]
 
         method = self.test_server.invoke_stream_stream(
@@ -197,8 +197,8 @@ class TestServer(unittest.TestCase):
                 if "No more responses!" in err.__str__():
                     break
 
-        # 1 handshake +  2 data messages
-        self.assertEqual(3, len(responses))
+        # 1 handshake +  2 data messages + 1 EOT
+        self.assertEqual(4, len(responses))
         # first message should be handshake response
         self.assertTrue(responses[0].handshake.sot)
 
@@ -209,6 +209,9 @@ class TestServer(unittest.TestCase):
         self.assertEqual(responses[2].result.status, sink_pb2.Status.FAILURE)
         self.assertEqual("", responses[1].result.err_msg)
         self.assertEqual("mock sink message error", responses[2].result.err_msg)
+
+        # last message should be EOT response
+        self.assertTrue(responses[3].status.eot)
 
         _, code, _ = method.termination()
         self.assertEqual(code, StatusCode.OK)

@@ -74,6 +74,8 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                     ret = cur_task.result()
                     for r in ret:
                         yield sink_pb2.SinkResponse(result=r)
+                    # send EOT after each finishing sink responses
+                    yield sink_pb2.SinkResponse(status=sink_pb2.TransmissionStatus(eot=True))
                     cur_task = None
                     continue
 

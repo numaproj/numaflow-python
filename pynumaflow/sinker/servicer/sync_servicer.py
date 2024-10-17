@@ -67,12 +67,17 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
                     ret = cur_task.join()
                     for resp in ret:
                         yield sink_pb2.SinkResponse(result=resp)
+                    # send EOT after each finishing sink responses
+                    yield sink_pb2.SinkResponse(status=sink_pb2.TransmissionStatus(eot=True))
                     cur_task = None
                     continue
 
                 # if we have a valid message, we will add it to the request queue for processing.
                 datum = datum_from_sink_req(d)
                 req_queue.put(datum)
+
+            if cur_task:
+                cur_task.join()
 
         except BaseException as err:
             # Handle exceptions

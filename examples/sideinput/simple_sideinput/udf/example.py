@@ -33,7 +33,7 @@ def watcher():
             if file_path.endswith(watched_file):
                 with global_variable_lock:
                     try:
-                        with open(file_path, 'r') as file:
+                        with open(file_path) as file:
                             new_value = file.read().strip()
                             global global_variable
                             global_variable = new_value
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     path = os.path.join(sideinputsdk.SIDE_INPUT_DIR_PATH, watched_file)
     print(path)
     try:
-        with open(path, 'r') as file:
+        with open(path) as file:
             value = file.read().strip()
             global_variable = value
             print(f"Global variable updated to: {global_variable}")

@@ -2,7 +2,6 @@ import asyncio
 from collections.abc import AsyncIterable
 from typing import Union
 
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
@@ -13,7 +12,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceRequest,
 )
 from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
-from pynumaflow.shared.server import exit_on_error, handle_error
+from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -95,35 +94,20 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    handle_error(context, msg)
-                    await asyncio.gather(
-                        context.abort(grpc.StatusCode.UNKNOWN, details=repr(msg)),
-                        return_exceptions=True,
-                    )
-                    exit_on_error(
-                        err=repr(msg), parent=False, context=context, update_context=False
-                    )
+                    await handle_async_error(context, msg)
                     return
                 # Send window EOF response or Window result response
                 # back to the client
                 else:
                     yield msg
         except BaseException as e:
-            handle_error(context, e)
-            await asyncio.gather(
-                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
-            )
-            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
+            await handle_async_error(context, e)
             return
         # Wait for the process_input_stream task to finish for a clean exit
         try:
             await producer
         except BaseException as e:
-            handle_error(context, e)
-            await asyncio.gather(
-                context.abort(grpc.StatusCode.UNKNOWN, details=repr(e)), return_exceptions=True
-            )
-            exit_on_error(err=repr(e), parent=False, context=context, update_context=False)
+            await handle_async_error(context, e)
             return
 
     async def IsReady(

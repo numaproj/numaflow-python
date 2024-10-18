@@ -5,7 +5,6 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.shared.server import exit_on_error
-from pynumaflow.shared.servicer import is_valid_handshake
 from pynumaflow.sinker._dtypes import Datum, AsyncSinkCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.servicer.utils import (
@@ -44,7 +43,8 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         try:
             # The first message to be received should be a valid handshake
             req = await request_iterator.__anext__()
-            if not is_valid_handshake(req):
+            # check if it is a valid handshake req
+            if not (req.handshake and req.handshake.sot):
                 raise Exception("ReadFn: expected handshake message")
             yield _create_read_handshake_response()
 

@@ -12,11 +12,7 @@ def build_sink_resp_results(responses: Responses) -> list[sink_pb2.SinkResponse.
     Returns:
     list[sink_pb2.SinkResponse.Result]: A list of SinkResponse.Result objects.
     """
-    ret = []
-    for rspn in responses:
-        sink_rsp = build_sink_response(rspn)
-        ret.append(sink_rsp)
-    return ret
+    return [build_sink_response(rspn) for rspn in responses]
 
 
 def build_sink_response(rspn: Response) -> sink_pb2.SinkResponse.Result:

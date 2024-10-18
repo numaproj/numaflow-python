@@ -4,7 +4,6 @@ from collections.abc import Iterable
 from pynumaflow._constants import _LOGGER, STREAM_EOF
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.shared.server import exit_on_error
-from pynumaflow.shared.servicer import is_valid_handshake
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.shared.thread_with_return import ThreadWithReturnValue
 from pynumaflow.sinker._dtypes import SyncSinkCallable
@@ -36,7 +35,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         try:
             # The first message to be received should be a valid handshake
             req = next(request_iterator)
-            if not is_valid_handshake(req):
+            # check if it is a valid handshake req
+            if not (req.handshake and req.handshake.sot):
                 raise Exception("SinkFn: expected handshake message")
             yield _create_read_handshake_response()
             # cur_task is used to track the thread processing

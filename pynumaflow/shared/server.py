@@ -267,7 +267,10 @@ def exit_on_error(
     p.kill()
 
 
-def handle_error(context: NumaflowServicerContext, e: BaseException):
+def update_context_err(context: NumaflowServicerContext, e: BaseException):
+    """
+    Update the context with the error and log the exception.
+    """
     trace = get_exception_traceback_str(e)
     _LOGGER.critical(trace)
     _LOGGER.critical(e.__str__())
@@ -281,9 +284,11 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_exception(context, exception):
-    """Handle exceptions by updating the context and exiting."""
-    handle_error(context, exception)
+async def handle_async_error(context: NumaflowServicerContext, exception: BaseException):
+    """
+    Handle exceptions for async servers by updating the context and exiting.
+    """
+    update_context_err(context, exception)
     await asyncio.gather(
         context.abort(grpc.StatusCode.UNKNOWN, details=repr(exception)), return_exceptions=True
     )

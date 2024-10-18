@@ -5,8 +5,7 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow.shared.server import exit_on_error, handle_exception
-from pynumaflow.shared.servicer import is_valid_handshake
+from pynumaflow.shared.server import exit_on_error, handle_async_error
 from pynumaflow.sourcer._dtypes import ReadRequest
 from pynumaflow.sourcer._dtypes import AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
@@ -90,7 +89,8 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         try:
             # The first message to be received should be a valid handshake
             req = await request_iterator.__anext__()
-            if not is_valid_handshake(req):
+            # check if it is a valid handshake req
+            if not (req.handshake and req.handshake.sot):
                 raise Exception("ReadFn: expected handshake message")
             yield _create_read_handshake_response()
 
@@ -108,7 +108,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
                 async for resp in riter:
                     if isinstance(resp, BaseException):
-                        await handle_exception(context, resp)
+                        await handle_async_error(context, resp)
                         return
 
                     yield _create_read_response(resp)
@@ -148,7 +148,8 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         try:
             # The first message to be received should be a valid handshake
             req = await request_iterator.__anext__()
-            if not is_valid_handshake(req):
+            # check if it is a valid handshake req
+            if not (req.handshake and req.handshake.sot):
                 raise Exception("AckFn: expected handshake message")
             yield _create_ack_handshake_response()
 

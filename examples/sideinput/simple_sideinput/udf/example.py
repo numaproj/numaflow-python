@@ -11,6 +11,7 @@ class SideInputHandler(Mapper):
     This is a class that inherits from the Mapper class.
     It implements the handler method that is called for each datum.
     """
+
     # variable and lock for thread safety
     data_value = "no_value"
     data_value_lock = threading.Lock()

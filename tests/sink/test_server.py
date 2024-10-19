@@ -1,22 +1,22 @@
 import os
 import unittest
-from datetime import datetime, timezone
 from collections.abc import Iterator
+from datetime import datetime, timezone
 from unittest import mock
 from unittest.mock import patch
 
-from google.protobuf import empty_pb2 as _empty_pb2
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
+from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 from pynumaflow._constants import (
     UD_CONTAINER_FALLBACK_SINK,
-    FALLBACK_SINK_SERVER_INFO_FILE_PATH,
     FALLBACK_SINK_SOCK_PATH,
+    FALLBACK_SINK_SERVER_INFO_FILE_PATH,
 )
-from pynumaflow.sinker import Responses, Datum, Response, SinkServer
 from pynumaflow.proto.sinker import sink_pb2
+from pynumaflow.sinker import Responses, Datum, Response, SinkServer
 from tests.testing_utils import mock_terminate_on_stop
 
 
@@ -89,6 +89,44 @@ class TestServer(unittest.TestCase):
         self.assertEqual(expected, response)
         self.assertEqual(code, StatusCode.OK)
 
+    def test_udsink_err_handshake(self):
+        server = SinkServer(sinker_instance=err_udsink_handler)
+        my_servicer = server.servicer
+        services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        event_time_timestamp.FromDatetime(dt=mock_event_time())
+        watermark_timestamp = _timestamp_pb2.Timestamp()
+        watermark_timestamp.FromDatetime(dt=mock_watermark())
+
+        test_datums = [
+            sink_pb2.SinkRequest(
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_0",
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                )
+            ),
+            sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
+        ]
+
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(
+                sink_pb2.DESCRIPTOR.services_by_name["Sink"].methods_by_name["SinkFn"]
+            ),
+            invocation_metadata={},
+            timeout=1,
+        )
+
+        method.send_request(test_datums[0])
+
+        metadata, code, details = method.termination()
+        print("HERE", details)
+        self.assertTrue("UDSinkError: Exception('SinkFn: expected handshake message')" in details)
+        self.assertEqual(StatusCode.UNKNOWN, code)
+
     def test_udsink_err(self):
         server = SinkServer(sinker_instance=err_udsink_handler)
         my_servicer = server.servicer
@@ -102,26 +140,28 @@ class TestServer(unittest.TestCase):
 
         test_datums = [
             sink_pb2.SinkRequest(
-                id="test_id_0",
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
+                handshake=sink_pb2.Handshake(sot=True),
             ),
             sink_pb2.SinkRequest(
-                id="test_id_1",
-                value=mock_err_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_0",
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                )
             ),
             sink_pb2.SinkRequest(
-                id="test_id_2",
-                value=mock_fallback_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_1",
+                    value=mock_err_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                )
             ),
+            sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
         ]
 
-        method = self.test_server.invoke_stream_unary(
+        method = self.test_server.invoke_stream_stream(
             method_descriptor=(
                 sink_pb2.DESCRIPTOR.services_by_name["Sink"].methods_by_name["SinkFn"]
             ),
@@ -133,8 +173,17 @@ class TestServer(unittest.TestCase):
         method.send_request(test_datums[1])
         method.send_request(test_datums[2])
         method.requests_closed()
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
 
-        response, metadata, code, details = method.termination()
+        metadata, code, details = method.termination()
+        print(code)
         self.assertEqual(StatusCode.UNKNOWN, code)
 
     def test_forward_message(self):
@@ -145,49 +194,64 @@ class TestServer(unittest.TestCase):
 
         test_datums = [
             sink_pb2.SinkRequest(
-                id="test_id_0",
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
+                handshake=sink_pb2.Handshake(sot=True),
             ),
             sink_pb2.SinkRequest(
-                id="test_id_1",
-                value=mock_err_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_0",
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                )
             ),
             sink_pb2.SinkRequest(
-                id="test_id_2",
-                value=mock_fallback_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_1",
+                    value=mock_err_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                )
             ),
+            sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
         ]
 
-        method = self.test_server.invoke_stream_unary(
+        method = self.test_server.invoke_stream_stream(
             method_descriptor=(
                 sink_pb2.DESCRIPTOR.services_by_name["Sink"].methods_by_name["SinkFn"]
             ),
             invocation_metadata={},
             timeout=1,
         )
-
-        method.send_request(test_datums[0])
-        method.send_request(test_datums[1])
-        method.send_request(test_datums[2])
+        for x in test_datums:
+            method.send_request(x)
         method.requests_closed()
 
-        response, metadata, code, details = method.termination()
-        self.assertEqual(3, len(response.results))
-        self.assertEqual("test_id_0", response.results[0].id)
-        self.assertEqual("test_id_1", response.results[1].id)
-        self.assertEqual("test_id_2", response.results[2].id)
-        self.assertEqual(response.results[0].status, sink_pb2.Status.SUCCESS)
-        self.assertEqual(response.results[1].status, sink_pb2.Status.FAILURE)
-        self.assertEqual(response.results[2].status, sink_pb2.Status.FALLBACK)
-        self.assertEqual("", response.results[0].err_msg)
-        self.assertEqual("mock sink message error", response.results[1].err_msg)
-        self.assertEqual("", response.results[2].err_msg)
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        # 1 handshake +  2 data messages + 1 EOT
+        self.assertEqual(4, len(responses))
+        # first message should be handshake response
+        self.assertTrue(responses[0].handshake.sot)
+
+        # assert the values for the corresponding messages
+        self.assertEqual("test_id_0", responses[1].result.id)
+        self.assertEqual("test_id_1", responses[2].result.id)
+        self.assertEqual(responses[1].result.status, sink_pb2.Status.SUCCESS)
+        self.assertEqual(responses[2].result.status, sink_pb2.Status.FAILURE)
+        self.assertEqual("", responses[1].result.err_msg)
+        self.assertEqual("mock sink message error", responses[2].result.err_msg)
+
+        # last message should be EOT response
+        self.assertTrue(responses[3].status.eot)
+
+        _, code, _ = method.termination()
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_init(self):

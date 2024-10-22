@@ -11,7 +11,7 @@ from pynumaflow._constants import (
 from pynumaflow.shared import NumaflowServer
 from pynumaflow.shared.server import sync_server_start
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
-from pynumaflow.sourcetransformer.servicer.servicer import SourceTransformServicer
+from pynumaflow.sourcetransformer.servicer._servicer import SourceTransformServicer
 
 
 class SourceTransformServer(NumaflowServer):

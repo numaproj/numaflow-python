@@ -86,6 +86,40 @@ class TestServer(unittest.TestCase):
         self.assertEqual(expected, response)
         self.assertEqual(code, StatusCode.OK)
 
+    def test_udf_mapt_err_handshake(self):
+        server = SourceTransformServer(source_transform_instance=err_transform_handler)
+        my_servicer = server.servicer
+        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        test_datums = get_test_datums(handshake=False)
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(
+                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
+                    "SourceTransformFn"
+                ]
+            ),
+            invocation_metadata={},
+            timeout=1,
+        )
+
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
+
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+        self.assertTrue("SourceTransformFn: expected handshake message" in details)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+
     def test_mapt_assign_new_event_time(self):
         test_datums = get_test_datums()
 
@@ -119,35 +153,20 @@ class TestServer(unittest.TestCase):
 
         self.assertTrue(responses[0].handshake.sot)
 
-        self.assertEqual("test-id-0", responses[1].id)
-        self.assertEqual(
-            bytes(
-                "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                encoding="utf-8",
-            ),
-            responses[1].results[0].value,
-        )
-        self.assertEqual(1, len(responses[1].results))
+        idx = 1
+        while idx < len(responses):
+            _id = "test-id-" + str(idx - 1)
+            self.assertEqual(_id, responses[idx].id)
+            self.assertEqual(
+                bytes(
+                    "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
+                    encoding="utf-8",
+                ),
+                responses[idx].results[0].value,
+            )
+            self.assertEqual(1, len(responses[idx].results))
+            idx += 1
 
-        self.assertEqual("test-id-1", responses[2].id)
-        self.assertEqual(
-            bytes(
-                "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                encoding="utf-8",
-            ),
-            responses[2].results[0].value,
-        )
-        self.assertEqual(1, len(responses[2].results))
-
-        self.assertEqual("test-id-2", responses[3].id)
-        self.assertEqual(
-            bytes(
-                "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                encoding="utf-8",
-            ),
-            responses[3].results[0].value,
-        )
-        self.assertEqual(1, len(responses[3].results))
         # Verify new event time gets assigned.
         updated_event_time_timestamp = _timestamp_pb2.Timestamp()
         updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())

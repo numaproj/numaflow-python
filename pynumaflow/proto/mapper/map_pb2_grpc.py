@@ -15,7 +15,7 @@ class MapStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.MapFn = channel.unary_unary(
+        self.MapFn = channel.stream_stream(
             "/map.v1.Map/MapFn",
             request_serializer=map__pb2.MapRequest.SerializeToString,
             response_deserializer=map__pb2.MapResponse.FromString,
@@ -30,7 +30,7 @@ class MapStub(object):
 class MapServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def MapFn(self, request, context):
+    def MapFn(self, request_iterator, context):
         """MapFn applies a function to each map request element."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -45,7 +45,7 @@ class MapServicer(object):
 
 def add_MapServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "MapFn": grpc.unary_unary_rpc_method_handler(
+        "MapFn": grpc.stream_stream_rpc_method_handler(
             servicer.MapFn,
             request_deserializer=map__pb2.MapRequest.FromString,
             response_serializer=map__pb2.MapResponse.SerializeToString,
@@ -66,7 +66,7 @@ class Map(object):
 
     @staticmethod
     def MapFn(
-        request,
+        request_iterator,
         target,
         options=(),
         channel_credentials=None,
@@ -77,8 +77,8 @@ class Map(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
             "/map.v1.Map/MapFn",
             map__pb2.MapRequest.SerializeToString,

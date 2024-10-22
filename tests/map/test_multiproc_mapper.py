@@ -4,18 +4,13 @@ from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.mapper import MapMultiprocServer
 from pynumaflow.proto.mapper import map_pb2
-from tests.map.utils import map_handler, err_map_handler
+from tests.map.utils import map_handler, err_map_handler, get_test_datums
 from tests.testing_utils import (
-    mock_event_time,
-    mock_watermark,
-    mock_message,
-    mock_headers,
     mock_terminate_on_stop,
 )
 
@@ -44,32 +39,59 @@ class TestMultiProcMethods(unittest.TestCase):
         server = MapMultiprocServer(mapper_instance=map_handler, server_count=20)
         self.assertEqual(server._process_count, default_val * 2)
 
-    def test_udf_map_err(self):
+    def test_udf_map_err_handshake(self):
         my_server = MapMultiprocServer(mapper_instance=err_map_handler)
         services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        request = map_pb2.MapRequest(
-            value=mock_message(),
-            event_time=event_time_timestamp,
-            watermark=watermark_timestamp,
-            headers=mock_headers(),
-        )
-
-        method = self.test_server.invoke_unary_unary(
+        test_datums = get_test_datums(handshake=False)
+        method = self.test_server.invoke_stream_stream(
             method_descriptor=(map_pb2.DESCRIPTOR.services_by_name["Map"].methods_by_name["MapFn"]),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=request,
+            invocation_metadata={},
             timeout=1,
         )
-        response, metadata, code, details = method.termination()
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
+
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+        self.assertTrue("MapFn: expected handshake message" in details)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+
+    def test_udf_map_err(self):
+        my_server = MapMultiprocServer(mapper_instance=err_map_handler)
+        services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+        test_datums = get_test_datums(handshake=True)
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(map_pb2.DESCRIPTOR.services_by_name["Map"].methods_by_name["MapFn"]),
+            invocation_metadata={},
+            timeout=1,
+        )
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
+
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+        self.assertTrue("Something is fishy!" in details)
         self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_is_ready(self):
@@ -88,39 +110,46 @@ class TestMultiProcMethods(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_map_forward_message(self):
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        request = map_pb2.MapRequest(
-            keys=["test"],
-            value=mock_message(),
-            event_time=event_time_timestamp,
-            watermark=watermark_timestamp,
-            headers=mock_headers(),
-        )
-
-        method = self.test_server.invoke_unary_unary(
+        test_datums = get_test_datums(handshake=True)
+        method = self.test_server.invoke_stream_stream(
             method_descriptor=(map_pb2.DESCRIPTOR.services_by_name["Map"].methods_by_name["MapFn"]),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=request,
+            invocation_metadata={},
             timeout=1,
         )
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
 
-        response, metadata, code, details = method.termination()
-        self.assertEqual(1, len(response.results))
-        self.assertEqual(["test"], response.results[0].keys)
-        self.assertEqual(
-            bytes(
-                "payload:test_mock_message "
-                "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
-                encoding="utf-8",
-            ),
-            response.results[0].value,
-        )
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+
+        # 1 handshake + 3 data responses
+        self.assertEqual(4, len(responses))
+
+        self.assertTrue(responses[0].handshake.sot)
+
+        idx = 1
+        while idx < len(responses):
+            _id = "test-id-" + str(idx)
+            self.assertEqual(_id, responses[idx].id)
+            self.assertEqual(
+                bytes(
+                    "payload:test_mock_message "
+                    "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+                    encoding="utf-8",
+                ),
+                responses[idx].results[0].value,
+            )
+            self.assertEqual(1, len(responses[idx].results))
+            idx += 1
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_input(self):

@@ -18,7 +18,7 @@ from pynumaflow.info.types import (
     ContainerType,
 )
 from pynumaflow.mapper._dtypes import MapSyncCallable
-from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
+from pynumaflow.mapper._servicer._sync_servicer import SyncMapServicer
 from pynumaflow.shared.server import (
     NumaflowServer,
     start_multiproc_server,

@@ -9,11 +9,8 @@ from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.sourcetransformer import SourceTransformServer
-from tests.sourcetransform.utils import transform_handler, err_transform_handler
+from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
 from tests.testing_utils import (
-    mock_event_time,
-    mock_watermark,
-    mock_message,
     mock_terminate_on_stop,
     mock_new_event_time,
 )
@@ -42,43 +39,8 @@ class TestServer(unittest.TestCase):
         my_servicer = server.servicer
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
 
-        test_datums = [
-            transform_pb2.SourceTransformRequest(
-                handshake=transform_pb2.Handshake(sot=True),
-            ),
-            transform_pb2.SourceTransformRequest(
-                request=transform_pb2.SourceTransformRequest.Request(
-                    keys=["test"],
-                    value=mock_message(),
-                    event_time=event_time_timestamp,
-                    watermark=watermark_timestamp,
-                    id="test-id-0",
-                )
-            ),
-            transform_pb2.SourceTransformRequest(
-                request=transform_pb2.SourceTransformRequest.Request(
-                    keys=["test"],
-                    value=mock_message(),
-                    event_time=event_time_timestamp,
-                    watermark=watermark_timestamp,
-                    id="test-id-1",
-                )
-            ),
-            transform_pb2.SourceTransformRequest(
-                request=transform_pb2.SourceTransformRequest.Request(
-                    keys=["test"],
-                    value=mock_message(),
-                    event_time=event_time_timestamp,
-                    watermark=watermark_timestamp,
-                    id="test-id-2",
-                )
-            ),
-        ]
+        test_datums = get_test_datums()
 
         method = self.test_server.invoke_stream_stream(
             method_descriptor=(
@@ -125,43 +87,7 @@ class TestServer(unittest.TestCase):
         self.assertEqual(code, StatusCode.OK)
 
     def test_mapt_assign_new_event_time(self):
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        test_datums = [
-            transform_pb2.SourceTransformRequest(
-                handshake=transform_pb2.Handshake(sot=True),
-            ),
-            transform_pb2.SourceTransformRequest(
-                request=transform_pb2.SourceTransformRequest.Request(
-                    keys=["test"],
-                    value=mock_message(),
-                    event_time=event_time_timestamp,
-                    watermark=watermark_timestamp,
-                    id="test-id-0",
-                )
-            ),
-            transform_pb2.SourceTransformRequest(
-                request=transform_pb2.SourceTransformRequest.Request(
-                    keys=["test"],
-                    value=mock_message(),
-                    event_time=event_time_timestamp,
-                    watermark=watermark_timestamp,
-                    id="test-id-1",
-                )
-            ),
-            transform_pb2.SourceTransformRequest(
-                request=transform_pb2.SourceTransformRequest.Request(
-                    keys=["test"],
-                    value=mock_message(),
-                    event_time=event_time_timestamp,
-                    watermark=watermark_timestamp,
-                    id="test-id-2",
-                )
-            ),
-        ]
+        test_datums = get_test_datums()
 
         method = self.test_server.invoke_stream_stream(
             method_descriptor=(
@@ -190,7 +116,6 @@ class TestServer(unittest.TestCase):
 
         # 1 handshake + 3 data responses
         self.assertEqual(4, len(responses))
-        # self.assertEqual(["test"], responses.results[0].keys)
 
         self.assertTrue(responses[0].handshake.sot)
 

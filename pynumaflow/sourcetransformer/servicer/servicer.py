@@ -12,7 +12,7 @@ from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow._constants import _LOGGER, STREAM_EOF, NUM_THREADS_DEFAULT
 
 
 def _create_read_handshake_response() -> transform_pb2.SourceTransformResponse:
@@ -39,7 +39,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         # This indicates whether the grpc server attached is multiproc or not
         self.multiproc = multiproc
         # create a thread pool with 50 worker threads
-        self.executor = ThreadPoolExecutor(max_workers=50)
+        self.executor = ThreadPoolExecutor(max_workers=NUM_THREADS_DEFAULT)
 
     def SourceTransformFn(
         self,
@@ -61,6 +61,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                 raise Exception("SourceTransformFn: expected handshake message")
             yield _create_read_handshake_response()
 
+            # result queue to stream messages from the user code back to the client
             result_queue = SyncIterator()
 
             # Reader thread to keep reading from the request iterator and once done close it.
@@ -69,18 +70,19 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             )
             reader_thread.start()
 
-            # Read the result queue and keep forwarding the results
+            # Read the result queue and keep forwarding them upstream
             for res in result_queue.read_iterator():
-                # if error check for that
+                # if error handler accordingly
                 if isinstance(res, BaseException):
                     # Terminate the current server process due to exception
                     exit_on_error(context, repr(res), parent=self.multiproc)
                     return
-                # keep returning the results back upstream
+                # return the result
                 yield res
-                # yield _create_transform_response(res)
 
+            # wait for the threads to cleanup
             reader_thread.join()
+            self.executor.shutdown(cancel_futures=True)
 
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
@@ -99,9 +101,9 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             # threadpool for invocation
             for request in request_iterator:
                 _ = self.executor.submit(self._invoke_transformer, context, request, result_queue)
-            # wait for all tasks to finish
+            # wait for all tasks to finish after all requests exhausted
             self.executor.shutdown(wait=True)
-            # Indicate to the result queue that no more messages left
+            # Indicate to the result queue that no more messages left to process
             result_queue.put(STREAM_EOF)
         except BaseException as e:
             _LOGGER.critical("SourceTransformFnError, re-raising the error", exc_info=True)

@@ -155,7 +155,7 @@ class TestServer(unittest.TestCase):
 
         idx = 1
         while idx < len(responses):
-            _id = "test-id-" + str(idx - 1)
+            _id = "test-id-" + str(idx)
             self.assertEqual(_id, responses[idx].id)
             self.assertEqual(
                 bytes(

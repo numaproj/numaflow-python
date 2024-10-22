@@ -38,15 +38,6 @@ def get_test_datums(handshake=True):
                 value=mock_message(),
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
-                id="test-id-0",
-            )
-        ),
-        transform_pb2.SourceTransformRequest(
-            request=transform_pb2.SourceTransformRequest.Request(
-                keys=["test"],
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
                 id="test-id-1",
             )
         ),
@@ -57,6 +48,15 @@ def get_test_datums(handshake=True):
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
                 id="test-id-2",
+            )
+        ),
+        transform_pb2.SourceTransformRequest(
+            request=transform_pb2.SourceTransformRequest.Request(
+                keys=["test"],
+                value=mock_message(),
+                event_time=event_time_timestamp,
+                watermark=watermark_timestamp,
+                id="test-id-3",
             )
         ),
     ]

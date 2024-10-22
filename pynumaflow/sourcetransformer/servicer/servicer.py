@@ -38,7 +38,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         self.__transform_handler: SourceTransformCallable = handler
         # This indicates whether the grpc server attached is multiproc or not
         self.multiproc = multiproc
-        # create a thread pool with 50 worker threads
+        # create a thread pool for executing UDF code
         self.executor = ThreadPoolExecutor(max_workers=NUM_THREADS_DEFAULT)
 
     def SourceTransformFn(
@@ -50,9 +50,6 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         Applies a function to each datum element.
         The pascal case function name comes from the generated transform_pb2_grpc.py file.
         """
-
-        # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
-        # we need to explicitly convert it to list
         try:
             # The first message to be received should be a valid handshake
             req = next(request_iterator)
@@ -64,7 +61,8 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             # result queue to stream messages from the user code back to the client
             result_queue = SyncIterator()
 
-            # Reader thread to keep reading from the request iterator and once done close it.
+            # Reader thread to keep reading from the request iterator and schedule
+            # execution for each of them
             reader_thread = threading.Thread(
                 target=self._process_requests, args=(context, request_iterator, result_queue)
             )
@@ -80,7 +78,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                 # return the result
                 yield res
 
-            # wait for the threads to cleanup
+            # wait for the threads to clean-up
             reader_thread.join()
             self.executor.shutdown(cancel_futures=True)
 

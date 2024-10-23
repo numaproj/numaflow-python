@@ -15,7 +15,7 @@ class SourceTransformStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.SourceTransformFn = channel.unary_unary(
+        self.SourceTransformFn = channel.stream_stream(
             "/sourcetransformer.v1.SourceTransform/SourceTransformFn",
             request_serializer=transform__pb2.SourceTransformRequest.SerializeToString,
             response_deserializer=transform__pb2.SourceTransformResponse.FromString,
@@ -30,7 +30,7 @@ class SourceTransformStub(object):
 class SourceTransformServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def SourceTransformFn(self, request, context):
+    def SourceTransformFn(self, request_iterator, context):
         """SourceTransformFn applies a function to each request element.
         In addition to map function, SourceTransformFn also supports assigning a new event time to response.
         SourceTransformFn can be used only at source vertex by source data transformer.
@@ -48,7 +48,7 @@ class SourceTransformServicer(object):
 
 def add_SourceTransformServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "SourceTransformFn": grpc.unary_unary_rpc_method_handler(
+        "SourceTransformFn": grpc.stream_stream_rpc_method_handler(
             servicer.SourceTransformFn,
             request_deserializer=transform__pb2.SourceTransformRequest.FromString,
             response_serializer=transform__pb2.SourceTransformResponse.SerializeToString,
@@ -71,7 +71,7 @@ class SourceTransform(object):
 
     @staticmethod
     def SourceTransformFn(
-        request,
+        request_iterator,
         target,
         options=(),
         channel_credentials=None,
@@ -82,8 +82,8 @@ class SourceTransform(object):
         timeout=None,
         metadata=None,
     ):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
             "/sourcetransformer.v1.SourceTransform/SourceTransformFn",
             transform__pb2.SourceTransformRequest.SerializeToString,

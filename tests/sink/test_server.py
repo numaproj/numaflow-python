@@ -123,7 +123,6 @@ class TestServer(unittest.TestCase):
         method.send_request(test_datums[0])
 
         metadata, code, details = method.termination()
-        print("HERE", details)
         self.assertTrue("UDSinkError: Exception('SinkFn: expected handshake message')" in details)
         self.assertEqual(StatusCode.UNKNOWN, code)
 

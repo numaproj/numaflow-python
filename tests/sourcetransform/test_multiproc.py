@@ -10,13 +10,9 @@ from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiProcServer
-from tests.sourcetransform.utils import transform_handler, err_transform_handler
+from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
 from tests.testing_utils import (
-    mock_event_time,
-    mock_watermark,
-    mock_message,
     mock_new_event_time,
-    get_time_args,
     mock_terminate_on_stop,
 )
 
@@ -48,36 +44,72 @@ class TestMultiProcMethods(unittest.TestCase):
         )
         self.assertEqual(server._process_count, 2 * default_value)
 
+    def test_udf_mapt_err_handshake(self):
+        server = SourceTransformMultiProcServer(source_transform_instance=err_transform_handler)
+        my_servicer = server.servicer
+        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+
+        test_datums = get_test_datums(handshake=False)
+        method = self.test_server.invoke_stream_stream(
+            method_descriptor=(
+                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
+                    "SourceTransformFn"
+                ]
+            ),
+            invocation_metadata={},
+            timeout=1,
+        )
+
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
+
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+        self.assertTrue("SourceTransformFn: expected handshake message" in details)
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+
     def test_udf_mapt_err(self):
         server = SourceTransformMultiProcServer(source_transform_instance=err_transform_handler)
         my_servicer = server.servicer
         services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
         self.test_server = server_from_dictionary(services, strict_real_time())
 
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-        request = transform_pb2.SourceTransformRequest(
-            value=mock_message(),
-            event_time=event_time_timestamp,
-            watermark=watermark_timestamp,
-        )
-
-        method = self.test_server.invoke_unary_unary(
+        test_datums = get_test_datums()
+        method = self.test_server.invoke_stream_stream(
             method_descriptor=(
                 transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
                     "SourceTransformFn"
                 ]
             ),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=request,
+            invocation_metadata={},
             timeout=1,
         )
-        response, metadata, code, details = method.termination()
+
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
+
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+        self.assertTrue("Something is fishy" in details)
         self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_is_ready(self):
@@ -97,48 +129,59 @@ class TestMultiProcMethods(unittest.TestCase):
         self.assertEqual(expected, response)
         self.assertEqual(code, StatusCode.OK)
 
-    def test_mapt_assign_new_event_time(self, test_server=None):
-        event_time_timestamp, watermark_timestamp = get_time_args()
+    def test_mapt_assign_new_event_time(self):
+        test_datums = get_test_datums()
 
-        request = transform_pb2.SourceTransformRequest(
-            keys=["test"],
-            value=mock_message(),
-            event_time=event_time_timestamp,
-            watermark=watermark_timestamp,
-        )
-        serv = self.test_server
-        if test_server:
-            serv = test_server
-
-        method = serv.invoke_unary_unary(
+        method = self.test_server.invoke_stream_stream(
             method_descriptor=(
                 transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
                     "SourceTransformFn"
                 ]
             ),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=request,
+            invocation_metadata={},
             timeout=1,
         )
 
-        response, metadata, code, details = method.termination()
-        self.assertEqual(1, len(response.results))
-        self.assertEqual(["test"], response.results[0].keys)
-        self.assertEqual(
-            bytes(
-                "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                encoding="utf-8",
-            ),
-            response.results[0].value,
-        )
+        for x in test_datums:
+            method.send_request(x)
+        method.requests_closed()
+
+        responses = []
+        while True:
+            try:
+                resp = method.take_response()
+                responses.append(resp)
+            except ValueError as err:
+                if "No more responses!" in err.__str__():
+                    break
+
+        metadata, code, details = method.termination()
+
+        # 1 handshake + 3 data responses
+        self.assertEqual(4, len(responses))
+
+        self.assertTrue(responses[0].handshake.sot)
+
+        idx = 1
+        while idx < len(responses):
+            _id = "test-id-" + str(idx)
+            self.assertEqual(_id, responses[idx].id)
+            self.assertEqual(
+                bytes(
+                    "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
+                    encoding="utf-8",
+                ),
+                responses[idx].results[0].value,
+            )
+            self.assertEqual(1, len(responses[idx].results))
+            idx += 1
+
         # Verify new event time gets assigned.
         updated_event_time_timestamp = _timestamp_pb2.Timestamp()
         updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
         self.assertEqual(
             updated_event_time_timestamp,
-            response.results[0].event_time,
+            responses[1].results[0].event_time,
         )
         self.assertEqual(code, StatusCode.OK)
 

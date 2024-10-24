@@ -48,7 +48,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
 
             # reader task to process the input task and invoke the required tasks
             producer = asyncio.create_task(
-                self._process_inputs(context, request_iterator, global_result_queue)
+                self._process_inputs(request_iterator, global_result_queue)
             )
 
             # keep reading on result queue and send messages back
@@ -61,7 +61,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                 # Send window response back to the client
                 else:
                     yield msg
-
+            # wait for the producer task to complete
             await producer
         except BaseException as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
@@ -70,30 +70,33 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
 
     async def _process_inputs(
         self,
-        context: NumaflowServicerContext,
         request_iterator: AsyncIterable[map_pb2.MapRequest],
-        result_queue,
+        result_queue: NonBlockingIterator,
     ):
+        """
+        Utility function for processing incoming MapRequests
+        """
         try:
+            # for each incoming request, create a background task to execute the
+            # UDF code
             async for req in request_iterator:
-                print("ABC ", len(self.background_tasks))
                 msg_task = asyncio.create_task(self._invoke_map(req, result_queue))
+                # save a reference to a set to store active tasks
                 self.background_tasks.add(msg_task)
                 msg_task.add_done_callback(self.background_tasks.discard)
 
-            print("1234 ", len(self.background_tasks))
             # wait for all tasks to complete
             for task in self.background_tasks:
                 await task
 
-            print("mew mew ", len(self.background_tasks))
+            # send an EOF to result queue to indicate that all tasks have completed
             await result_queue.put(STREAM_EOF)
 
         except BaseException as e:
             await result_queue.put(e)
             return
 
-    async def _invoke_map(self, req, result_queue):
+    async def _invoke_map(self, req: map_pb2.MapRequest, result_queue: NonBlockingIterator):
         """
         Invokes the user defined function.
         """

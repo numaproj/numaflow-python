@@ -83,24 +83,6 @@ def get_test_datums(handshake=True):
             ),
             id="test-id-3",
         ),
-        # transform_pb2.SourceTransformRequest(
-        #     request=transform_pb2.SourceTransformRequest.Request(
-        #         keys=["test"],
-        #         value=mock_message(),
-        #         event_time=event_time_timestamp,
-        #         watermark=watermark_timestamp,
-        #         id="test-id-2",
-        #     )
-        # ),
-        # transform_pb2.SourceTransformRequest(
-        #     request=transform_pb2.SourceTransformRequest.Request(
-        #         keys=["test"],
-        #         value=mock_message(),
-        #         event_time=event_time_timestamp,
-        #         watermark=watermark_timestamp,
-        #         id="test-id-3",
-        #     )
-        # ),
     ]
     for x in test_datum:
         responses.append(x)

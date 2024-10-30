@@ -6,7 +6,7 @@ from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.shared.server import exit_on_error
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.shared.thread_with_return import ThreadWithReturnValue
-from pynumaflow.sinker._dtypes import SyncSinkCallable
+from pynumaflow.sinker._dtypes import SinkSyncCallable
 from pynumaflow.sinker.servicer.utils import (
     datum_from_sink_req,
     _create_read_handshake_response,
@@ -22,8 +22,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(self, handler: SyncSinkCallable):
-        self.handler: SyncSinkCallable = handler
+    def __init__(self, handler: SinkSyncCallable):
+        self.handler: SinkSyncCallable = handler
 
     def SinkFn(
         self, request_iterator: Iterable[sink_pb2.SinkRequest], context: NumaflowServicerContext

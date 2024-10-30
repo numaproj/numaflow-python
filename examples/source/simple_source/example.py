@@ -55,7 +55,8 @@ class AsyncSource(Sourcer):
         The ack handler is used acknowledge the offsets that have been read, and remove them
         from the to_ack_set
         """
-        self.to_ack_set.remove(str(ack_request.offset.offset, "utf-8"))
+        for req in ack_request.offsets:
+            self.to_ack_set.remove(str(req.offset, "utf-8"))
 
     async def pending_handler(self) -> PendingResponse:
         """

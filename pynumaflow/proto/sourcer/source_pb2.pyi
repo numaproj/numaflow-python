@@ -122,10 +122,12 @@ class AckRequest(_message.Message):
     __slots__ = ("request", "handshake")
 
     class Request(_message.Message):
-        __slots__ = ("offset",)
-        OFFSET_FIELD_NUMBER: _ClassVar[int]
-        offset: Offset
-        def __init__(self, offset: _Optional[_Union[Offset, _Mapping]] = ...) -> None: ...
+        __slots__ = ("offsets",)
+        OFFSETS_FIELD_NUMBER: _ClassVar[int]
+        offsets: _containers.RepeatedCompositeFieldContainer[Offset]
+        def __init__(
+            self, offsets: _Optional[_Iterable[_Union[Offset, _Mapping]]] = ...
+        ) -> None: ...
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     request: AckRequest.Request

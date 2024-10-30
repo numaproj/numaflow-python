@@ -72,8 +72,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                     await req_queue.put(STREAM_EOF)
                     await cur_task
                     ret = cur_task.result()
-                    for r in ret:
-                        yield sink_pb2.SinkResponse(result=r)
+                    yield sink_pb2.SinkResponse(results=ret)
                     # send EOT after each finishing sink responses
                     yield sink_pb2.SinkResponse(status=sink_pb2.TransmissionStatus(eot=True))
                     cur_task = None
@@ -99,7 +98,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         except BaseException as err:
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
+            # exit_on_error(context, err_msg)
             raise err
 
     async def IsReady(

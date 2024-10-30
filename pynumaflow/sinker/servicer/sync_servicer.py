@@ -65,8 +65,7 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 if d.status and d.status.eot:
                     req_queue.put(STREAM_EOF)
                     ret = cur_task.join()
-                    for resp in ret:
-                        yield sink_pb2.SinkResponse(result=resp)
+                    yield sink_pb2.SinkResponse(results=ret)
                     # send EOT after each finishing sink responses
                     yield sink_pb2.SinkResponse(status=sink_pb2.TransmissionStatus(eot=True))
                     cur_task = None

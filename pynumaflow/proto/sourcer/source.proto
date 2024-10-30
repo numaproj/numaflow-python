@@ -110,8 +110,8 @@ message ReadResponse {
  */
 message AckRequest {
   message Request {
-    // Required field holding the offset to be acked
-    Offset offset = 1;
+    // Required field holding the offsets to be acked
+    repeated Offset offsets = 1;
   }
   // Required field holding the request. The list will be ordered and will have the same order as the original Read response.
   Request request = 1;

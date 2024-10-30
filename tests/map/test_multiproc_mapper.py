@@ -64,7 +64,7 @@ class TestMultiProcMethods(unittest.TestCase):
                     break
 
         metadata, code, details = method.termination()
-        self.assertTrue("MapFn: expected handshake message" in details)
+        self.assertTrue("MapFn: expected handshake as the first message" in details)
         self.assertEqual(grpc.StatusCode.UNKNOWN, code)
 
     def test_udf_map_err(self):

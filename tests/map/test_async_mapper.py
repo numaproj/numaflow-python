@@ -194,7 +194,7 @@ class TestAsyncMapper(unittest.TestCase):
         except grpc.RpcError as e:
             logging.error(e)
             grpc_exception = e
-            self.assertTrue("MapFn: expected handshake message" in e.__str__())
+            self.assertTrue("MapFn: expected handshake as the first message" in e.__str__())
 
         self.assertEqual(0, len(responses))
         self.assertIsNotNone(grpc_exception)

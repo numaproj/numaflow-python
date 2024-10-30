@@ -5,7 +5,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF
-from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum
+from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.server import exit_on_error, handle_async_error
 from pynumaflow.types import NumaflowServicerContext
@@ -41,7 +41,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             req = await request_iterator.__anext__()
             # check if it is a valid handshake req
             if not (req.handshake and req.handshake.sot):
-                raise Exception("MapFn: expected handshake message")
+                raise MapError("MapFn: expected handshake as the first message")
             yield map_pb2.MapResponse(handshake=map_pb2.Handshake(sot=True))
 
             global_result_queue = NonBlockingIterator()

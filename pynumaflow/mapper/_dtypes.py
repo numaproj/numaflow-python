@@ -204,3 +204,7 @@ MapSyncCallable = Union[Mapper, MapSyncHandlerCallable]
 # MapAsyncCallable is a callable which can be used as a handler for the Asynchronous Map UDF
 MapAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
 MapAsyncCallable = Union[Mapper, MapAsyncHandlerCallable]
+
+
+class MapError(Exception):
+    """To Raise an error while executing a Map call"""

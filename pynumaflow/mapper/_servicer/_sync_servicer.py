@@ -6,7 +6,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.server import exit_on_error
 
 from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER
-from pynumaflow.mapper._dtypes import MapSyncCallable, Datum
+from pynumaflow.mapper._dtypes import MapSyncCallable, Datum, MapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.types import NumaflowServicerContext
@@ -40,7 +40,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             req = next(request_iterator)
             # check if it is a valid handshake req
             if not (req.handshake and req.handshake.sot):
-                raise Exception("MapFn: expected handshake message")
+                raise MapError("MapFn: expected handshake as the first message")
             yield map_pb2.MapResponse(handshake=map_pb2.Handshake(sot=True))
 
             # result queue to stream messages from the user code back to the client

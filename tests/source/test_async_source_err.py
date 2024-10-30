@@ -131,7 +131,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             request = ack_req_source_fn()
             try:
                 resp = stub.AckFn(request_iterator=request_generator(1, request, "ack"))
-                for r in resp:
+                for _ in resp:
                     pass
             except BaseException as e:
                 self.assertTrue("Got a runtime error from ack handler." in e.__str__())

@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
@@ -17,13 +16,9 @@ from pynumaflow.mapper import (
     Message,
 )
 from pynumaflow.mapper.async_server import MapAsyncServer
-from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
+from pynumaflow.proto.mapper import map_pb2_grpc
+from tests.map.utils import get_test_datums
 from tests.testing_utils import (
-    mock_event_time,
-    mock_watermark,
-    mock_headers,
-    mock_message,
-    get_time_args,
     mock_terminate_on_stop,
 )
 
@@ -31,6 +26,10 @@ LOGGER = setup_logging(__name__)
 
 # if set to true, map handler will raise a `ValueError` exception.
 raise_error_from_map = False
+
+
+def request_generator(req):
+    yield from req
 
 
 async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
@@ -114,95 +113,115 @@ class TestAsyncMapper(unittest.TestCase):
     def test_run_server(self) -> None:
         with grpc.insecure_channel("unix:///tmp/async_map.sock") as channel:
             stub = map_pb2_grpc.MapStub(channel)
-            event_time_timestamp = _timestamp_pb2.Timestamp()
-            event_time_timestamp.FromDatetime(dt=mock_event_time())
-            watermark_timestamp = _timestamp_pb2.Timestamp()
-            watermark_timestamp.FromDatetime(dt=mock_watermark())
-
-            request = map_pb2.MapRequest(
-                keys=["test"],
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
-                headers=mock_headers(),
-            )
-
-            response = None
+            request = get_test_datums()
+            generator_response = None
             try:
-                response = stub.MapFn(request=request)
+                generator_response = stub.MapFn(request_iterator=request_generator(request))
             except grpc.RpcError as e:
                 logging.error(e)
 
-            self.assertEqual(1, len(response.results))
-            self.assertEqual(["test"], response.results[0].keys)
+            responses = []
+            # capture the output from the ReadFn generator and assert.
+            for r in generator_response:
+                responses.append(r)
+
+            # 1 handshake + 3 data responses
+            self.assertEqual(4, len(responses))
+
+            self.assertTrue(responses[0].handshake.sot)
+
+            idx = 1
+            while idx < len(responses):
+                _id = "test-id-" + str(idx)
+                self.assertEqual(_id, responses[idx].id)
+                self.assertEqual(
+                    bytes(
+                        "payload:test_mock_message "
+                        "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+                        encoding="utf-8",
+                    ),
+                    responses[idx].results[0].value,
+                )
+                self.assertEqual(1, len(responses[idx].results))
+                idx += 1
+            LOGGER.info("Successfully validated the server")
+
+    def test_map(self) -> None:
+        stub = map_pb2_grpc.MapStub(_channel)
+        request = get_test_datums()
+        generator_response = None
+        try:
+            generator_response = stub.MapFn(request_iterator=request_generator(request))
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        responses = []
+        # capture the output from the ReadFn generator and assert.
+        for r in generator_response:
+            responses.append(r)
+
+        # 1 handshake + 3 data responses
+        self.assertEqual(4, len(responses))
+
+        self.assertTrue(responses[0].handshake.sot)
+
+        idx = 1
+        while idx < len(responses):
+            _id = "test-id-" + str(idx)
+            self.assertEqual(_id, responses[idx].id)
             self.assertEqual(
                 bytes(
                     "payload:test_mock_message "
                     "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
                     encoding="utf-8",
                 ),
-                response.results[0].value,
+                responses[idx].results[0].value,
             )
-            LOGGER.info("Successfully validated the server")
+            self.assertEqual(1, len(responses[idx].results))
+            idx += 1
 
-    def test_map(self) -> None:
+    def test_map_grpc_error_no_handshake(self) -> None:
         stub = map_pb2_grpc.MapStub(_channel)
-        event_time_timestamp = _timestamp_pb2.Timestamp()
-        event_time_timestamp.FromDatetime(dt=mock_event_time())
-        watermark_timestamp = _timestamp_pb2.Timestamp()
-        watermark_timestamp.FromDatetime(dt=mock_watermark())
+        request = get_test_datums(handshake=False)
+        grpc_exception = None
 
-        request = map_pb2.MapRequest(
-            keys=["test"],
-            value=mock_message(),
-            event_time=event_time_timestamp,
-            watermark=watermark_timestamp,
-            headers=mock_headers(),
-        )
-        response = None
+        responses = []
         try:
-            response = stub.MapFn(request=request)
+            generator_response = stub.MapFn(request_iterator=request_generator(request))
+            # capture the output from the ReadFn generator and assert.
+            for r in generator_response:
+                responses.append(r)
         except grpc.RpcError as e:
-            LOGGER.error(e)
+            logging.error(e)
+            grpc_exception = e
+            self.assertTrue("MapFn: expected handshake as the first message" in e.__str__())
 
-        self.assertEqual(1, len(response.results))
-        self.assertEqual(["test"], response.results[0].keys)
-        self.assertEqual(
-            bytes(
-                "payload:test_mock_message "
-                "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
-                encoding="utf-8",
-            ),
-            response.results[0].value,
-        )
+        self.assertEqual(0, len(responses))
+        self.assertIsNotNone(grpc_exception)
 
     def test_map_grpc_error(self) -> None:
         stub = map_pb2_grpc.MapStub(_channel)
-        event_time_timestamp, watermark_timestamp = get_time_args()
+        request = get_test_datums()
+        grpc_exception = None
 
-        request = map_pb2.MapRequest(
-            keys=["test"],
-            value=mock_message(),
-            event_time=event_time_timestamp,
-            watermark=watermark_timestamp,
-            headers=mock_headers(),
-        )
-
-        grpcException = None
-
+        responses = []
         try:
             global raise_error_from_map
             raise_error_from_map = True
-            _ = stub.MapFn(request=request)
+            generator_response = stub.MapFn(request_iterator=request_generator(request))
+            # capture the output from the ReadFn generator and assert.
+            for r in generator_response:
+                responses.append(r)
         except grpc.RpcError as e:
-            grpcException = e
+            logging.error(e)
+            grpc_exception = e
             self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
-            print(e.details())
-
+            self.assertTrue("Exception thrown from map" in e.__str__())
         finally:
             raise_error_from_map = False
-
-        self.assertIsNotNone(grpcException)
+        # 1 handshake
+        self.assertEqual(1, len(responses))
+        self.assertIsNotNone(grpc_exception)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/async_map.sock") as channel:

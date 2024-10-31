@@ -16,7 +16,7 @@ from pynumaflow.info.types import (
     ContainerType,
 )
 from pynumaflow.mapper._dtypes import MapAsyncCallable
-from pynumaflow.mapper.servicer.async_servicer import AsyncMapServicer
+from pynumaflow.mapper._servicer._async_servicer import AsyncMapServicer
 from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.shared.server import (
     NumaflowServer,

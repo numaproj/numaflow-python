@@ -5,7 +5,7 @@ from pynumaflow.info.types import (
     MINIMUM_NUMAFLOW_VERSION,
     ContainerType,
 )
-from pynumaflow.mapper.servicer.sync_servicer import SyncMapServicer
+from pynumaflow.mapper._servicer._sync_servicer import SyncMapServicer
 
 from pynumaflow._constants import (
     NUM_THREADS_DEFAULT,

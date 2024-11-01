@@ -17,8 +17,8 @@ from pynumaflow.batchmapper import (
     BatchResponse,
     BatchMapAsyncServer,
 )
-from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
-from tests.batchmap.utils import start_request, request_generator
+from pynumaflow.proto.mapper import map_pb2_grpc
+from tests.batchmap.utils import request_generator
 
 LOGGER = setup_logging(__name__)
 
@@ -85,7 +85,7 @@ def NewAsyncBatchMapper():
 
 async def start_server(udfs):
     server = grpc.aio.server()
-    batchmap_pb2_grpc.add_BatchMapServicer_to_server(udfs, server)
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -125,37 +125,42 @@ class TestAsyncBatchMapper(unittest.TestCase):
 
     def test_batch_map(self) -> None:
         stub = self.__stub()
-        request = start_request()
         generator_response = None
 
         try:
-            generator_response = stub.BatchMapFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
+            generator_response = stub.MapFn(request_iterator=request_generator(count=10, session=1))
         except grpc.RpcError as e:
             logging.error(e)
 
-        # capture the output from the BatchMapFn generator and assert.
-        count = 0
+        handshake = next(generator_response)
+        # assert that handshake response is received.
+        self.assertTrue(handshake.handshake.sot)
+        data_resp = []
         for r in generator_response:
+            data_resp.append(r)
+
+        idx = 0
+        while idx < len(data_resp) - 1:
             self.assertEqual(
                 bytes(
                     "test_mock_message",
                     encoding="utf-8",
                 ),
-                r.results[0].value,
+                data_resp[idx].results[0].value,
             )
-            _id = r.id
-            self.assertEqual(_id, str(count))
-            count += 1
-
-        # in our example we should be return 10 messages which is equal to the number
-        # of requests
-        self.assertEqual(10, count)
+            _id = data_resp[idx].id
+            self.assertEqual(_id, "test-id-" + str(idx))
+            # capture the output from the SinkFn generator and assert.
+            # self.assertEqual(data_resp[idx].result.status, sink_pb2.Status.SUCCESS)
+            idx += 1
+        # EOT Response
+        self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
+        # 10 sink responses + 1 EOT response
+        self.assertEqual(11, len(data_resp))
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel(listen_addr) as channel:
-            stub = batchmap_pb2_grpc.BatchMapStub(channel)
+            stub = map_pb2_grpc.MapStub(channel)
 
             request = _empty_pb2.Empty()
             response = None
@@ -180,7 +185,7 @@ class TestAsyncBatchMapper(unittest.TestCase):
         self.assertEqual(server.max_threads, 4)
 
     def __stub(self):
-        return batchmap_pb2_grpc.BatchMapStub(_channel)
+        return map_pb2_grpc.MapStub(_channel)
 
 
 if __name__ == "__main__":

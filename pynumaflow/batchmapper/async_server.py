@@ -18,7 +18,7 @@ from pynumaflow.info.types import (
     MINIMUM_NUMAFLOW_VERSION,
     ContainerType,
 )
-from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
+from pynumaflow.proto.mapper import map_pb2_grpc
 from pynumaflow.shared.server import NumaflowServer, start_async_server
 
 
@@ -103,7 +103,7 @@ class BatchMapAsyncServer(NumaflowServer):
         # Create a new async server instance and add the servicer to it
         server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
-        batchmap_pb2_grpc.add_BatchMapServicer_to_server(
+        map_pb2_grpc.add_MapServicer_to_server(
             self.servicer,
             server,
         )

@@ -9,7 +9,7 @@ from pynumaflow.info.types import (
     ContainerType,
 )
 from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
-from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
+from pynumaflow.proto.mapper import map_pb2_grpc
 
 from pynumaflow._constants import (
     MAP_STREAM_SOCK_PATH,
@@ -122,7 +122,7 @@ class MapStreamAsyncServer(NumaflowServer):
         # Create a new async server instance and add the servicer to it
         server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
-        mapstream_pb2_grpc.add_MapStreamServicer_to_server(
+        map_pb2_grpc.add_MapServicer_to_server(
             self.servicer,
             server,
         )

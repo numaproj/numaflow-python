@@ -201,3 +201,7 @@ class MapStreamer(metaclass=ABCMeta):
 
 MapStreamAsyncCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
 MapStreamCallable = Union[MapStreamer, MapStreamAsyncCallable]
+
+
+class MapStreamError(Exception):
+    """To Raise an error while executing a MapStream call"""

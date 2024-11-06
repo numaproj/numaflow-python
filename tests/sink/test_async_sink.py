@@ -149,18 +149,23 @@ class TestAsyncSink(unittest.TestCase):
             handshake = next(generator_response)
             # assert that handshake response is received.
             self.assertTrue(handshake.handshake.sot)
+
             data_resp = []
             for r in generator_response:
                 data_resp.append(r)
+
+            # 1 sink data response + 1 EOT response
+            self.assertEqual(2, len(data_resp))
+
             idx = 0
-            while idx < len(data_resp) - 1:
-                # capture the output from the SinkFn generator and assert.
-                self.assertEqual(data_resp[idx].result.status, sink_pb2.Status.SUCCESS)
+            # capture the output from the SinkFn generator and assert.
+            for resp in data_resp[0].results:
+                self.assertEqual(resp.id, str(idx))
+                self.assertEqual(resp.status, sink_pb2.Status.SUCCESS)
                 idx += 1
             # EOT Response
-            self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
-            # 10 sink responses + 1 EOT response
-            self.assertEqual(11, len(data_resp))
+            self.assertEqual(data_resp[1].status.eot, True)
+
         except grpc.RpcError as e:
             logging.error(e)
             grpc_exception = e
@@ -214,19 +219,23 @@ class TestAsyncSink(unittest.TestCase):
             handshake = next(generator_response)
             # assert that handshake response is received.
             self.assertTrue(handshake.handshake.sot)
+
             data_resp = []
             for r in generator_response:
                 data_resp.append(r)
 
+            # 1 sink data response + 1 EOT response
+            self.assertEqual(2, len(data_resp))
+
             idx = 0
-            while idx < len(data_resp) - 1:
-                # capture the output from the SinkFn generator and assert.
-                self.assertEqual(data_resp[idx].result.status, sink_pb2.Status.FALLBACK)
+            # capture the output from the SinkFn generator and assert.
+            for resp in data_resp[0].results:
+                self.assertEqual(resp.id, str(idx))
+                self.assertEqual(resp.status, sink_pb2.Status.FALLBACK)
                 idx += 1
             # EOT Response
-            self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
-            # 10 sink responses + 1 EOT response
-            self.assertEqual(11, len(data_resp))
+            self.assertEqual(data_resp[1].status.eot, True)
+
         except grpc.RpcError as e:
             logging.error(e)
 

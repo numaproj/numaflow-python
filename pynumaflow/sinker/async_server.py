@@ -22,7 +22,7 @@ from pynumaflow._constants import (
 )
 
 from pynumaflow.shared.server import NumaflowServer, start_async_server
-from pynumaflow.sinker._dtypes import AsyncSinkCallable
+from pynumaflow.sinker._dtypes import SinkAsyncCallable
 
 
 class SinkAsyncServer(NumaflowServer):
@@ -75,7 +75,7 @@ class SinkAsyncServer(NumaflowServer):
 
     def __init__(
         self,
-        sinker_instance: AsyncSinkCallable,
+        sinker_instance: SinkAsyncCallable,
         sock_path=SINK_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,

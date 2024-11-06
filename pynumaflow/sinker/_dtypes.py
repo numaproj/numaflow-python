@@ -215,10 +215,10 @@ class Sinker(metaclass=ABCMeta):
         pass
 
 
-# SyncSinkCallable is a callable which can be used as a handler for the Synchronous UDSink.
+# SinkSyncCallable is a callable which can be used as a handler for the Synchronous UDSink.
 SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
-SyncSinkCallable = Union[Sinker, SinkHandlerCallable]
+SinkSyncCallable = Union[Sinker, SinkHandlerCallable]
 
-# AsyncSinkCallable is a callable which can be used as a handler for the Asynchronous UDSink.
+# SinkAsyncCallable is a callable which can be used as a handler for the Asynchronous UDSink.
 AsyncSinkHandlerCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
-AsyncSinkCallable = Union[Sinker, AsyncSinkHandlerCallable]
+SinkAsyncCallable = Union[Sinker, AsyncSinkHandlerCallable]

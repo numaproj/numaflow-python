@@ -90,7 +90,7 @@ class TransmissionStatus(_message.Message):
     def __init__(self, eot: bool = ...) -> None: ...
 
 class SinkResponse(_message.Message):
-    __slots__ = ("result", "handshake", "status")
+    __slots__ = ("results", "handshake", "status")
 
     class Result(_message.Message):
         __slots__ = ("id", "status", "err_msg")
@@ -106,15 +106,15 @@ class SinkResponse(_message.Message):
             status: _Optional[_Union[Status, str]] = ...,
             err_msg: _Optional[str] = ...,
         ) -> None: ...
-    RESULT_FIELD_NUMBER: _ClassVar[int]
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
-    result: SinkResponse.Result
+    results: _containers.RepeatedCompositeFieldContainer[SinkResponse.Result]
     handshake: Handshake
     status: TransmissionStatus
     def __init__(
         self,
-        result: _Optional[_Union[SinkResponse.Result, _Mapping]] = ...,
+        results: _Optional[_Iterable[_Union[SinkResponse.Result, _Mapping]]] = ...,
         handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
         status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...,
     ) -> None: ...

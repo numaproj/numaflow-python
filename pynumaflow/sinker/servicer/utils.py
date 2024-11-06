@@ -66,6 +66,5 @@ def _create_read_handshake_response() -> sink_pb2.SinkResponse:
     sink_pb2.SinkResponse: A SinkResponse object indicating a successful handshake.
     """
     return sink_pb2.SinkResponse(
-        result=sink_pb2.SinkResponse.Result(status=sink_pb2.SUCCESS),
         handshake=sink_pb2.Handshake(sot=True),
     )

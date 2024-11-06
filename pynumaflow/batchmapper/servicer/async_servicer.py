@@ -105,19 +105,6 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
             exit_on_error(context, repr(err))
             return
 
-    async def __invoke_batch_map(self, datum_iterator: AsyncIterable[Datum]):
-        """
-        # iterate over the incoming requests, and keep sending to the user code
-        # once all messages have been sent, we wait for the responses
-        """
-        try:
-            # invoke the user function with the request queue
-            return await self.__batch_map_handler(datum_iterator)
-        except BaseException as err:
-            err_msg = f"UDBatchMapError: {repr(err)}"
-            _LOGGER.critical(err_msg, exc_info=True)
-            raise err
-
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> map_pb2.ReadyResponse:

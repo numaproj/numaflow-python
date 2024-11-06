@@ -109,6 +109,22 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             return
         self.fail("Expected an exception.")
 
+    def test_map_stream_error_no_handshake(self) -> None:
+        global raise_error
+        raise_error = True
+        stub = self.__stub()
+        try:
+            generator_response = stub.MapFn(
+                request_iterator=request_generator(count=10, handshake=False, session=1)
+            )
+            counter = 0
+            for _ in generator_response:
+                counter += 1
+        except Exception as err:
+            self.assertTrue("MapStreamFn: expected handshake as the first message" in err.__str__())
+            return
+        self.fail("Expected an exception.")
+
     def __stub(self):
         return map_pb2_grpc.MapStub(_channel)
 

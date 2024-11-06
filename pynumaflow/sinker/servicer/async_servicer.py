@@ -5,7 +5,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.shared.server import exit_on_error
-from pynumaflow.sinker._dtypes import Datum, AsyncSinkCallable
+from pynumaflow.sinker._dtypes import Datum, SinkAsyncCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.servicer.utils import (
     datum_from_sink_req,
@@ -25,10 +25,10 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
     def __init__(
         self,
-        handler: AsyncSinkCallable,
+        handler: SinkAsyncCallable,
     ):
         self.background_tasks = set()
-        self.__sink_handler: AsyncSinkCallable = handler
+        self.__sink_handler: SinkAsyncCallable = handler
         self.cleanup_coroutines = []
 
     async def SinkFn(
@@ -72,8 +72,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                     await req_queue.put(STREAM_EOF)
                     await cur_task
                     ret = cur_task.result()
-                    for r in ret:
-                        yield sink_pb2.SinkResponse(result=r)
+                    yield sink_pb2.SinkResponse(results=ret)
                     # send EOT after each finishing sink responses
                     yield sink_pb2.SinkResponse(status=sink_pb2.TransmissionStatus(eot=True))
                     cur_task = None

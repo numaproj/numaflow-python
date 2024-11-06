@@ -149,25 +149,25 @@ class ReadRequest:
 class AckRequest:
     """
     Class for defining the request for acknowledging datum.
-    It takes an offset that need to be acknowledged.
+    It takes a list of offsets that need to be acknowledged.
     Args:
-        offset: the offset to be acknowledged.
+        offsets: the offsets to be acknowledged.
     >>> # Example usage
     >>> from pynumaflow.sourcer import AckRequest, Offset
-    >>> offset = Offset(offset=b"123", partition_id="0")
-    >>> ack_request = AckRequest(offsets=[offset, offset])
+    >>> offset_val = Offset(offset=b"123", partition_id=0)
+    >>> ack_request = AckRequest(offsets=[offset_val, offset_val])
     """
 
-    __slots__ = ("_offset",)
-    _offset: Offset
+    __slots__ = ("_offsets",)
+    _offsets: list[Offset]
 
-    def __init__(self, offset: Offset):
-        self._offset = offset
+    def __init__(self, offsets: list[Offset]):
+        self._offsets = offsets
 
     @property
-    def offset(self) -> Offset:
+    def offsets(self) -> list[Offset]:
         """Returns the offsets to be acknowledged."""
-        return self._offset
+        return self._offsets
 
 
 @dataclass(init=False)

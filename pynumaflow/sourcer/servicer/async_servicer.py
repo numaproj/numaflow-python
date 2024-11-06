@@ -6,7 +6,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.shared.server import exit_on_error, handle_async_error
-from pynumaflow.sourcer._dtypes import ReadRequest
+from pynumaflow.sourcer._dtypes import ReadRequest, Offset
 from pynumaflow.sourcer._dtypes import AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
@@ -155,7 +155,13 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
             # process the incoming Ack requests
             async for req in request_iterator:
-                await self.__source_ack_handler(AckRequest(req.request.offset))
+                # proto repeated field(offsets) is of
+                # type google._upb._message.RepeatedScalarContainer
+                # we need to explicitly convert it to list
+                offsets = [
+                    Offset(offset.offset, offset.partition_id) for offset in req.request.offsets
+                ]
+                await self.__source_ack_handler(AckRequest(offsets=offsets))
                 yield _create_ack_response()
         except BaseException as err:
             _LOGGER.critical("User-Defined Source AckFn error", exc_info=True)

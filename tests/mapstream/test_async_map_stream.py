@@ -14,8 +14,8 @@ from pynumaflow.mapstreamer import (
     Datum,
     MapStreamAsyncServer,
 )
-from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
-from tests.mapstream.utils import start_request_map_stream
+from pynumaflow.proto.mapper import map_pb2_grpc
+from tests.mapstream.utils import request_generator
 
 LOGGER = setup_logging(__name__)
 
@@ -47,14 +47,14 @@ def startup_callable(loop):
 def NewAsyncMapStreamer(
     map_stream_handler=async_map_stream_handler,
 ):
-    server = MapStreamAsyncServer(map_stream_instance=async_map_stream_handler)
+    server = MapStreamAsyncServer(map_stream_instance=map_stream_handler)
     udfs = server.servicer
     return udfs
 
 
 async def start_server(udfs):
     server = grpc.aio.server()
-    mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     listen_addr = "unix:///tmp/async_map_stream.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
@@ -95,31 +95,43 @@ class TestAsyncMapStreamer(unittest.TestCase):
 
     def test_map_stream(self) -> None:
         stub = self.__stub()
-        request = start_request_map_stream()
         generator_response = None
         try:
-            generator_response = stub.MapStreamFn(request=request)
+            generator_response = stub.MapFn(request_iterator=request_generator(count=1, session=1))
         except grpc.RpcError as e:
             logging.error(e)
 
-        counter = 0
-        # capture the output from the MapStreamFn generator and assert.
+        handshake = next(generator_response)
+        # assert that handshake response is received.
+        self.assertTrue(handshake.handshake.sot)
+        data_resp = []
         for r in generator_response:
-            counter += 1
+            data_resp.append(r)
+
+        self.assertEqual(11, len(data_resp))
+
+        idx = 0
+        while idx < len(data_resp) - 1:
             self.assertEqual(
                 bytes(
                     "payload:test_mock_message "
                     "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
                     encoding="utf-8",
                 ),
-                r.result.value,
+                data_resp[idx].results[0].value,
             )
-        """Assert that the generator was called 10 times in the stream"""
-        self.assertEqual(10, counter)
+            _id = data_resp[idx].id
+            self.assertEqual(_id, "test-id-0")
+            # capture the output from the SinkFn generator and assert.
+            idx += 1
+        # EOT Response
+        self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
+        # 10 sink responses + 1 EOT response
+        self.assertEqual(11, len(data_resp))
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/async_map_stream.sock") as channel:
-            stub = mapstream_pb2_grpc.MapStreamStub(channel)
+            stub = map_pb2_grpc.MapStub(channel)
 
             request = _empty_pb2.Empty()
             response = None
@@ -131,7 +143,7 @@ class TestAsyncMapStreamer(unittest.TestCase):
             self.assertTrue(response.ready)
 
     def __stub(self):
-        return mapstream_pb2_grpc.MapStreamStub(_channel)
+        return map_pb2_grpc.MapStub(_channel)
 
     def test_max_threads(self):
         # max cap at 16

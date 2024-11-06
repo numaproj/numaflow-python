@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable, Union, Optional
 from collections.abc import AsyncIterable
-from collections.abc import Awaitable
 
 from pynumaflow._constants import DROP
 
@@ -222,5 +221,9 @@ class BatchMapper(metaclass=ABCMeta):
         pass
 
 
-BatchMapAsyncCallable = Callable[[AsyncIterable[Datum]], Awaitable[BatchResponses]]
+BatchMapAsyncCallable = Callable[[AsyncIterable[Datum]], BatchResponses]
 BatchMapCallable = Union[BatchMapper, BatchMapAsyncCallable]
+
+
+class BatchMapError(Exception):
+    """To Raise an error while executing a BatchMap call"""

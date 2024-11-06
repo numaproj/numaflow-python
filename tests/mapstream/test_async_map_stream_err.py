@@ -11,8 +11,8 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer
-from pynumaflow.proto.mapstreamer import mapstream_pb2_grpc
-from tests.mapstream.utils import start_request_map_stream
+from pynumaflow.proto.mapper import map_pb2_grpc
+from tests.mapstream.utils import request_generator
 from tests.testing_utils import mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
@@ -47,7 +47,7 @@ async def start_server():
     server = grpc.aio.server()
     server_instance = MapStreamAsyncServer(err_async_map_stream_handler)
     udfs = server_instance.servicer
-    mapstream_pb2_grpc.add_MapStreamServicer_to_server(udfs, server)
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     listen_addr = "unix:///tmp/async_map_stream_err.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
@@ -88,20 +88,45 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             LOGGER.error(e)
 
     def test_map_stream_error(self) -> None:
-        stub = self.__stub()
-        request = start_request_map_stream()
         try:
-            generator_response = stub.MapStreamFn(request=request)
-            counter = 0
-            for _ in generator_response:
-                counter += 1
+            stub = self.__stub()
+            generator_response = None
+            try:
+                generator_response = stub.MapFn(
+                    request_iterator=request_generator(count=1, session=1)
+                )
+            except grpc.RpcError as e:
+                logging.error(e)
+
+            handshake = next(generator_response)
+            # assert that handshake response is received.
+            self.assertTrue(handshake.handshake.sot)
+            data_resp = []
+            for r in generator_response:
+                data_resp.append(r)
         except Exception as err:
             self.assertTrue("Got a runtime error from map stream handler." in err.__str__())
             return
         self.fail("Expected an exception.")
 
+    def test_map_stream_error_no_handshake(self) -> None:
+        global raise_error
+        raise_error = True
+        stub = self.__stub()
+        try:
+            generator_response = stub.MapFn(
+                request_iterator=request_generator(count=10, handshake=False, session=1)
+            )
+            counter = 0
+            for _ in generator_response:
+                counter += 1
+        except Exception as err:
+            self.assertTrue("MapStreamFn: expected handshake as the first message" in err.__str__())
+            return
+        self.fail("Expected an exception.")
+
     def __stub(self):
-        return mapstream_pb2_grpc.MapStreamStub(_channel)
+        return map_pb2_grpc.MapStub(_channel)
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):

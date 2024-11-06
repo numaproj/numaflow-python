@@ -10,9 +10,9 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow.batchmapper import BatchResponses
-from pynumaflow.batchmapper import Datum, BatchMapAsyncServer
-from pynumaflow.proto.batchmapper import batchmap_pb2_grpc
-from tests.batchmap.utils import start_request
+from pynumaflow.batchmapper import BatchMapAsyncServer
+from pynumaflow.proto.mapper import map_pb2_grpc
+from tests.batchmap.utils import request_generator
 from tests.testing_utils import mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
@@ -20,17 +20,8 @@ LOGGER = setup_logging(__name__)
 raise_error = False
 
 
-def request_generator(count, request, resetkey: bool = False):
-    for i in range(count):
-        # add the id to the datum
-        request.id = str(i)
-        if resetkey:
-            request.payload.keys.extend([f"key-{i}"])
-        yield request
-
-
 # This handler mimics the scenario where batch map UDF throws a runtime error.
-async def err_handler(datums: list[Datum]) -> BatchResponses:
+async def err_handler(datums) -> BatchResponses:
     if raise_error:
         raise RuntimeError("Got a runtime error from batch map handler.")
     batch_responses = BatchResponses()
@@ -55,7 +46,7 @@ async def start_server():
     server = grpc.aio.server()
     server_instance = BatchMapAsyncServer(err_handler)
     udfs = server_instance.servicer
-    batchmap_pb2_grpc.add_BatchMapServicer_to_server(udfs, server)
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     global _s
@@ -99,8 +90,8 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
         raise_error = True
         stub = self.__stub()
         try:
-            generator_response = stub.BatchMapFn(
-                request_iterator=request_generator(count=10, request=start_request())
+            generator_response = stub.MapFn(
+                request_iterator=request_generator(count=10, handshake=True, session=1)
             )
             counter = 0
             for _ in generator_response:
@@ -110,27 +101,24 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
             return
         self.fail("Expected an exception.")
 
-    def test_batch_map_length_error(self) -> None:
+    def test_batch_map_error_no_handshake(self) -> None:
         global raise_error
-        raise_error = False
+        raise_error = True
         stub = self.__stub()
         try:
-            generator_response = stub.BatchMapFn(
-                request_iterator=request_generator(count=10, request=start_request())
+            generator_response = stub.MapFn(
+                request_iterator=request_generator(count=10, handshake=False, session=1)
             )
             counter = 0
             for _ in generator_response:
                 counter += 1
         except Exception as err:
-            self.assertTrue(
-                "batchMapFn: mismatch between length of batch requests and responses"
-                in err.__str__()
-            )
+            self.assertTrue("BatchMapFn: expected handshake as the first message" in err.__str__())
             return
         self.fail("Expected an exception.")
 
     def __stub(self):
-        return batchmap_pb2_grpc.BatchMapStub(_channel)
+        return map_pb2_grpc.MapStub(_channel)
 
     def test_invalid_input(self):
         with self.assertRaises(TypeError):

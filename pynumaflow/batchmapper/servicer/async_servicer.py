@@ -105,41 +105,6 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
             exit_on_error(context, repr(err))
             return
 
-        # # Create an async iterator from the request iterator
-        # datum_iterator = datum_generator(request_iterator=request_iterator)
-        #
-        # try:
-        #     # invoke the UDF call for batch map
-        #     responses, request_counter = await self.invoke_batch_map(datum_iterator)
-        #
-        #     # If the number of responses received does not align with the request batch size,
-        #     # we will not be able to process the data correctly.
-        #     # This should be marked as an error and raised to the user.
-        #     if len(responses) != request_counter:
-        #         err_msg = "batchMapFn: mismatch between length of batch requests and responses"
-        #         raise Exception(err_msg)
-        #
-        #     # iterate over the responses received and covert to the required proto format
-        #     for batch_response in responses:
-        #         single_req_resp = []
-        #         for msg in batch_response.messages:
-        #             single_req_resp.append(
-        #                 batchmap_pb2.BatchMapResponse.Result(
-        #                     keys=msg.keys, value=msg.value, tags=msg.tags
-        #                 )
-        #             )
-        #
-        #         # send the response for a given ID back to the stream
-        #         yield batchmap_pb2.BatchMapResponse(id=batch_response.id, results=single_req_resp)
-        #
-        # except BaseException as err:
-        #     _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-        #     await asyncio.gather(
-        #         context.abort(grpc.StatusCode.UNKNOWN, details=repr(err)), return_exceptions=True
-        #     )
-        #     exit_on_error(context, repr(err))
-        #     return
-
     async def __invoke_batch_map(self, datum_iterator: AsyncIterable[Datum]):
         """
         # iterate over the incoming requests, and keep sending to the user code

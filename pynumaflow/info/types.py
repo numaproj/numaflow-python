@@ -77,15 +77,15 @@ class ContainerType(str, Enum):
 # To update this value, please follow the instructions for MINIMUM_NUMAFLOW_VERSION in
 # https://github.com/numaproj/numaflow-rs/blob/main/src/shared.rs
 MINIMUM_NUMAFLOW_VERSION = {
-    ContainerType.Sourcer: "1.3.0-z",
-    ContainerType.Sourcetransformer: "1.3.0-z",
-    ContainerType.Sinker: "1.3.0-z",
-    ContainerType.Mapper: "1.3.0-z",
-    ContainerType.Reducer: "1.3.0-z",
-    ContainerType.Reducestreamer: "1.3.0-z",
-    ContainerType.Sessionreducer: "1.3.0-z",
-    ContainerType.Sideinput: "1.3.0-z",
-    ContainerType.Fbsinker: "1.3.0-z",
+    ContainerType.Sourcer: "1.4.0-z",
+    ContainerType.Sourcetransformer: "1.4.0-z",
+    ContainerType.Sinker: "1.4.0-z",
+    ContainerType.Mapper: "1.4.0-z",
+    ContainerType.Reducer: "1.4.0-z",
+    ContainerType.Reducestreamer: "1.4.0-z",
+    ContainerType.Sessionreducer: "1.4.0-z",
+    ContainerType.Sideinput: "1.4.0-z",
+    ContainerType.Fbsinker: "1.4.0-z",
 }
 
 

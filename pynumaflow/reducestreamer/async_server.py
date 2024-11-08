@@ -35,7 +35,7 @@ def get_handler(
     """
     if inspect.isfunction(reducer_handler):
         if init_args or init_kwargs:
-            # if the init_args or init_kwargs are passed, then the reduce_stream_handler
+            # if the init_args or init_kwargs are passed, then the reduce_stream_instance
             # can only be of class ReduceStreamer type
             raise TypeError("Cannot pass function handler with init args or kwargs")
         # return the function handler
@@ -60,7 +60,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
     A new servicer instance is created and attached to the server.
     The server instance is returned.
     Args:
-        reduce_stream_handler: The reducer instance to be used for
+        reduce_stream_instance: The reducer instance to be used for
                 Reduce Streaming UDF
         init_args: The arguments to be passed to the reduce_stream_handler
         init_kwargs: The keyword arguments to be passed to the
@@ -128,7 +128,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
 
     def __init__(
         self,
-        reduce_stream_handler: ReduceStreamCallable,
+        reduce_stream_instance: ReduceStreamCallable,
         init_args: tuple = (),
         init_kwargs: dict = None,
         sock_path=REDUCE_STREAM_SOCK_PATH,
@@ -141,7 +141,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         A new servicer instance is created and attached to the server.
         The server instance is returned.
         Args:
-            reduce_stream_handler: The reducer instance to be used for
+            reduce_stream_instance: The reducer instance to be used for
                     Reduce Streaming UDF
             init_args: The arguments to be passed to the reduce_stream_handler
             init_kwargs: The keyword arguments to be passed to the
@@ -154,7 +154,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         """
         if init_kwargs is None:
             init_kwargs = {}
-        self.reduce_stream_handler = get_handler(reduce_stream_handler, init_args, init_kwargs)
+        self.reduce_stream_handler = get_handler(reduce_stream_instance, init_args, init_kwargs)
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
         self.max_threads = min(max_threads, MAX_NUM_THREADS)

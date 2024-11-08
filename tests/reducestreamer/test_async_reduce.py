@@ -262,7 +262,7 @@ class TestAsyncReduceStreamer(unittest.TestCase):
         return reduce_pb2_grpc.ReduceStub(_channel)
 
     def test_error_init(self):
-        # Check that reducer_handler in required
+        # Check that reducer_instance in required
         with self.assertRaises(TypeError):
             ReduceStreamAsyncServer()
         # Check that the init_args and init_kwargs are passed
@@ -279,19 +279,19 @@ class TestAsyncReduceStreamer(unittest.TestCase):
             pass
 
         with self.assertRaises(TypeError):
-            ReduceStreamAsyncServer(reduce_stream_handler=ExampleBadClass)
+            ReduceStreamAsyncServer(reduce_stream_instance=ExampleBadClass)
 
     def test_max_threads(self):
         # max cap at 16
-        server = ReduceStreamAsyncServer(reduce_stream_handler=ExampleClass, max_threads=32)
+        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass, max_threads=32)
         self.assertEqual(server.max_threads, 16)
 
         # use argument provided
-        server = ReduceStreamAsyncServer(reduce_stream_handler=ExampleClass, max_threads=5)
+        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass, max_threads=5)
         self.assertEqual(server.max_threads, 5)
 
         # defaults to 4
-        server = ReduceStreamAsyncServer(reduce_stream_handler=ExampleClass)
+        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
         self.assertEqual(server.max_threads, 4)
 
 

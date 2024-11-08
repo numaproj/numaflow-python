@@ -35,7 +35,7 @@ def get_handler(
     """
     if inspect.isfunction(reducer_handler):
         if len(init_args) > 0 or len(init_kwargs) > 0:
-            # if the init_args or init_kwargs are passed, then the reducer_handler
+            # if the init_args or init_kwargs are passed, then the reducer_instance
             # can only be of class Reducer type
             raise TypeError("Cannot pass function handler with init args or kwargs")
         # return the function handler
@@ -58,7 +58,7 @@ class ReduceAsyncServer(NumaflowServer):
     A new servicer instance is created and attached to the server.
     The server instance is returned.
     Args:
-        reducer_handler: The reducer instance to be used for Reduce UDF
+        reducer_instance: The reducer instance to be used for Reduce UDF
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
@@ -115,7 +115,7 @@ class ReduceAsyncServer(NumaflowServer):
 
     def __init__(
         self,
-        reducer_handler: ReduceCallable,
+        reducer_instance: ReduceCallable,
         init_args: tuple = (),
         init_kwargs: dict = None,
         sock_path=REDUCE_SOCK_PATH,
@@ -137,7 +137,7 @@ class ReduceAsyncServer(NumaflowServer):
         """
         if init_kwargs is None:
             init_kwargs = {}
-        self.reducer_handler = get_handler(reducer_handler, init_args, init_kwargs)
+        self.reducer_handler = get_handler(reducer_instance, init_args, init_kwargs)
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size
         self.max_threads = min(max_threads, MAX_NUM_THREADS)

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.9.0 (2024-11-08)
+
+ * [f2f7bf6](https://github.com/numaproj/numaflow-python/commit/f2f7bf67ed89d74f51173e907c30abb116bb2cf7) feat: update batchmap and mapstream to use Map proto (#200)
+ * [4788627](https://github.com/numaproj/numaflow-python/commit/47886276695753b5c638133096615e8c4ff18380) feat: bi-directional streaming map (#197)
+ * [a1d3eb5](https://github.com/numaproj/numaflow-python/commit/a1d3eb5bf5323cd483462a7a4bae981bbade6791) feat: streaming transformer (#196)
+ * [ec00728](https://github.com/numaproj/numaflow-python/commit/ec007289a66c3dd4a91871884a5736568896df00) feat: streaming sink (#193)
+ * [b1b2d94](https://github.com/numaproj/numaflow-python/commit/b1b2d9496a8928e915920d795ad65fb1ac56d45e) fix: update side-input readme (#194)
+ * [7180ce2](https://github.com/numaproj/numaflow-python/commit/7180ce27f9d6a9f79e81c2fd192f88a861dd867f) feat: container-type level version compatibility check (#190)
+
+### Contributors
+
+ * Keran Yang
+ * Sidhant Kohli
+
 ## v0.8.0 (2024-08-19)
 
  * [921b7c0](https://github.com/numaproj/numaflow-python/commit/921b7c069d726799ccdfc2f3b2ec3a1ebc27669b) feat: batch-map implementation (#177)

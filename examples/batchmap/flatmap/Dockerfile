@@ -43,7 +43,7 @@ WORKDIR $PYSETUP_PATH
 COPY ./ ./
 
 WORKDIR $EXAMPLE_PATH
-RUN poetry lock --no-update
+RUN poetry lock
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
 

@@ -1,6 +1,8 @@
 name: Docker Publish
 
 on:
+  pull_request:
+    branches: [ "main" ]
   push:
     branches: [ main ]
     tags:
@@ -18,13 +20,17 @@ jobs:
         # TODO: rewrite asyncio_reduce example using latest SDK version, as it is currently using old methods
         # then add to example_directories matrix
         example_directories: [
-          "examples/map/even_odd", "examples/map/flatmap", "examples/map/forward_message",
-          "examples/map/multiproc_map", "examples/mapstream/flatmap_stream", "examples/reduce/counter",
-          "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple_sideinput",
-          "examples/sideinput/simple_sideinput/udf", "examples/sink/async_log", "examples/sink/log",
-          "examples/source/simple_source", "examples/sourcetransform/event_time_filter",
-          "examples/batchmap/flatmap"
+          "examples/map/even_odd"
         ]
+#        example_directories: [
+#          "examples/map/even_odd", "examples/map/flatmap", "examples/map/forward_message",
+#          "examples/map/multiproc_map", "examples/mapstream/flatmap_stream", "examples/reduce/counter",
+#          "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple_sideinput",
+#          "examples/sideinput/simple_sideinput/udf", "examples/sink/async_log", "examples/sink/log",
+#          "examples/source/simple_source", "examples/sourcetransform/event_time_filter",
+#          "examples/batchmap/flatmap"
+#        ]
+
 
     steps:
       - name: Check out repository

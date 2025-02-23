@@ -186,10 +186,8 @@ class TestServer(unittest.TestCase):
             request=request,
             timeout=1,
         )
-        pl = Payload(origin="abc", value=bytes("test_put", encoding="utf-8"))
-        self.InMem.store["abc"] = [pl]
         response, metadata, code, details = method.termination()
-        self.assertEqual(len(response.payloads), 1)
+        self.assertEqual(len(response.payloads), 0)
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_input(self):

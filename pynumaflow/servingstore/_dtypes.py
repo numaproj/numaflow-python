@@ -1,37 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import TypeVar, Awaitable
 
 P = TypeVar("P", bound="Payload")
-
-
-# class Payload:
-#     """
-#     Class to define each independent result stored in the Store for the given ID.
-#     Args:
-#         origin: origin for a given payload
-#         value: the data associated for the given message
-#     """
-#     __slots__ = ("_origin", "_value")
-#
-#     def __init__(
-#             self,
-#             origin: str,
-#             value: bytes,
-#     ):
-#         """
-#         Creates a Payload object to send value retrieved from the store.
-#         """
-#         self._origin = origin
-#         self._value = value
-#
-#     @property
-#     def value(self) -> bytes:
-#         return self._value
-#
-#     @property
-#     def origin(self) -> str:
-#         return self._origin
 
 
 @dataclass
@@ -41,7 +12,7 @@ class Payload:
 
     Attributes:
         origin (str): The origin of a given payload, typically describing where or what the data
-                      comes from, for example, a sensor ID or a message source.
+                      comes from
         value (bytes): The data associated with the payload, stored as bytes to accommodate various
                        types of binary data or encoded string data.
     """
@@ -61,7 +32,7 @@ class PutDatum:
     >>> # Example usage
     >>> from pynumaflow.servingstore import PutDatum
     >>> from datetime import datetime, timezone
-    >>> payload = bytes("test_mock_message", encoding="utf-8")
+    >>> payload = Payload(_id="avc", value=bytes("test_mock_message", encoding="utf-8"))
     >>> d = PutDatum(
     ...      id_ = "avc", payloads = [payload]
     ...    )
@@ -73,9 +44,9 @@ class PutDatum:
     _payloads: list[Payload]
 
     def __init__(
-        self,
-        id_: str,
-        payloads: list[Payload],
+            self,
+            id_: str,
+            payloads: list[Payload],
     ):
         self._id = id_
         self._payloads = payloads or []
@@ -112,8 +83,8 @@ class GetDatum:
     _id: str
 
     def __init__(
-        self,
-        id_: str,
+            self,
+            id_: str,
     ):
         self._id = id_
 
@@ -169,7 +140,7 @@ class ServingStorer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def get(self, datum: GetDatum) -> StoredResult:
+    def get(self, datum: GetDatum) -> [StoredResult, Awaitable[StoredResult]]:
         """
         The simple source always returns zero to indicate there is no pending record.
         """

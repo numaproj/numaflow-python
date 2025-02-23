@@ -190,6 +190,31 @@ class TestServer(unittest.TestCase):
         self.assertEqual(len(response.payloads), 0)
         self.assertEqual(code, StatusCode.OK)
 
+    def test_serving_store_get_err(self):
+        """
+        Test the error case for the Put method,
+        """
+        server = ServingStoreServer(ErrInMemoryStore())
+        my_service = server.servicer
+        services = {store_pb2.DESCRIPTOR.services_by_name["ServingStore"]: my_service}
+        self.test_server = server_from_dictionary(services, strict_real_time())
+        request = store_pb2.GetRequest(
+            id="abc",
+        )
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                store_pb2.DESCRIPTOR.services_by_name["ServingStore"].methods_by_name["Get"]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request,
+            timeout=1,
+        )
+        response, metadata, code, details = method.termination()
+        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+        self.assertTrue("get is fishy" in details)
+
     def test_invalid_input(self):
         with self.assertRaises(TypeError):
             ServingStoreServer()

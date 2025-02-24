@@ -8,7 +8,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow.proto.serving import store_pb2_grpc
+from pynumaflow.proto.serving import store_pb2_grpc, store_pb2
 from pynumaflow.servingstore import (
     ServingStoreAsyncServer,
     ServingStorer,
@@ -42,28 +42,6 @@ class AsyncInMemoryStore(ServingStorer):
         if req_id in self.store:
             resp = self.store[req_id]
         return StoredResult(id_=req_id, payloads=resp)
-
-
-class AsyncErrInMemoryStore(ServingStorer):
-    def __init__(self):
-        self.store = {}
-
-    async def put(self, datum: PutDatum):
-        req_id = datum.id
-        print("Received Put request for ", req_id)
-        if req_id not in self.store:
-            self.store[req_id] = []
-
-        cur_payloads = self.store[req_id]
-        for x in datum.payloads:
-            cur_payloads.append(Payload(x.origin, x.value))
-        raise ValueError("something fishy")
-        self.store[req_id] = cur_payloads
-
-    async def get(self, datum: GetDatum) -> StoredResult:
-        req_id = datum.id
-        print("Received Get request for ", req_id)
-        raise ValueError("get is fishy")
 
 
 LOGGER = setup_logging(__name__)
@@ -130,40 +108,6 @@ class TestAsyncServingStore(unittest.TestCase):
         except Exception as e:
             LOGGER.error(e)
 
-    # def test_read_source(self) -> None:
-    #     with grpc.insecure_channel(server_port) as channel:
-    #         stub = store_pb2_grpc.ServingStoreStub(channel)
-    #
-    #         request = read_req_source_fn()
-    #         generator_response = None
-    #         try:
-    #             generator_response = stub.Put(request=source_pb2.ReadRequest(request=request))
-    #         except grpc.RpcError as e:
-    #             logging.error(e)
-    #
-    #         counter = 0
-    #         # capture the output from the ReadFn generator and assert.
-    #         for r in generator_response:
-    #             counter += 1
-    #             self.assertEqual(
-    #                 bytes("payload:test_mock_message", encoding="utf-8"),
-    #                 r.result.payload,
-    #             )
-    #             self.assertEqual(
-    #                 ["test_key"],
-    #                 r.result.keys,
-    #             )
-    #             self.assertEqual(
-    #                 mock_offset().offset,
-    #                 r.result.offset.offset,
-    #             )
-    #             self.assertEqual(
-    #                 mock_offset().partition_id,
-    #                 r.result.offset.partition_id,
-    #             )
-    #         """Assert that the generator was called 10 times in the stream"""
-    #         self.assertEqual(10, counter)
-
     def test_is_ready(self) -> None:
         with grpc.insecure_channel(server_port) as channel:
             stub = store_pb2_grpc.ServingStoreStub(channel)
@@ -177,57 +121,49 @@ class TestAsyncServingStore(unittest.TestCase):
 
             self.assertTrue(response.ready)
 
-    # def test_ack(self) -> None:
-    #     with grpc.insecure_channel(server_port) as channel:
-    #         stub = source_pb2_grpc.SourceStub(channel)
-    #         request = ack_req_source_fn()
-    #         try:
-    #             response = stub.AckFn(request=source_pb2.AckRequest(request=request))
-    #         except grpc.RpcError as e:
-    #             print(e)
-    #
-    #         self.assertEqual(response, source_pb2.AckResponse())
-    #
-    # def test_pending(self) -> None:
-    #     with grpc.insecure_channel(server_port) as channel:
-    #         stub = source_pb2_grpc.SourceStub(channel)
-    #         request = _empty_pb2.Empty()
-    #         response = None
-    #         try:
-    #             response = stub.PendingFn(request=request)
-    #         except grpc.RpcError as e:
-    #             logging.error(e)
-    #
-    #         self.assertEqual(response.result.count, 10)
-    #
-    # def test_partitions(self) -> None:
-    #     with grpc.insecure_channel(server_port) as channel:
-    #         stub = source_pb2_grpc.SourceStub(channel)
-    #         request = _empty_pb2.Empty()
-    #         response = None
-    #         try:
-    #             response = stub.PartitionsFn(request=request)
-    #         except grpc.RpcError as e:
-    #             logging.error(e)
-    #
-    #         self.assertEqual(response.result.partitions, mock_partitions())
-    #
-    # def __stub(self):
-    #     return source_pb2_grpc.SourceStub(_channel)
-    #
-    # def test_max_threads(self):
-    #     class_instance = AsyncSource()
-    #     # max cap at 16
-    #     server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=32)
-    #     self.assertEqual(server.max_threads, 16)
-    #
-    #     # use argument provided
-    #     server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=5)
-    #     self.assertEqual(server.max_threads, 5)
-    #
-    #     # defaults to 4
-    #     server = SourceAsyncServer(sourcer_instance=class_instance)
-    #     self.assertEqual(server.max_threads, 4)
+    def test_put_get(self) -> None:
+        val = bytes("test_get", encoding="utf-8")
+        with grpc.insecure_channel(server_port) as channel:
+            stub = store_pb2_grpc.ServingStoreStub(channel)
+            response = None
+            request = store_pb2.PutRequest(
+                id="abc",
+                payloads=[store_pb2.Payload(origin="abc1", value=val)],
+            )
+            try:
+                response = stub.Put(request=request)
+            except grpc.RpcError as e:
+                logging.error(e)
+
+            self.assertEqual(True, response.success)
+
+            stub = store_pb2_grpc.ServingStoreStub(channel)
+            response_get = None
+            request = store_pb2.GetRequest(
+                id="abc",
+            )
+            try:
+                response_get = stub.Get(request=request)
+            except grpc.RpcError as e:
+                logging.error(e)
+
+            self.assertEqual(len(response_get.payloads), 1)
+            self.assertEqual(response_get.payloads[0].value, val)
+            self.assertEqual(response_get.payloads[0].origin, "abc1")
+
+    def test_max_threads(self):
+        class_instance = AsyncInMemoryStore()
+        # max cap at 16
+        server = ServingStoreAsyncServer(serving_store_instance=class_instance, max_threads=32)
+        self.assertEqual(server.max_threads, 16)
+
+        # use argument provided
+        server = ServingStoreAsyncServer(serving_store_instance=class_instance, max_threads=5)
+        self.assertEqual(server.max_threads, 5)
+
+        # defaults to 4
+        server = ServingStoreAsyncServer(serving_store_instance=class_instance)
+        self.assertEqual(server.max_threads, 4)
 
 
 if __name__ == "__main__":

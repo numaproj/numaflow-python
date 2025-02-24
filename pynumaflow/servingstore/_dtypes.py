@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Awaitable
+from typing import TypeVar
+from collections.abc import Awaitable
 
 P = TypeVar("P", bound="Payload")
 
@@ -44,9 +45,9 @@ class PutDatum:
     _payloads: list[Payload]
 
     def __init__(
-            self,
-            id_: str,
-            payloads: list[Payload],
+        self,
+        id_: str,
+        payloads: list[Payload],
     ):
         self._id = id_
         self._payloads = payloads or []
@@ -83,8 +84,8 @@ class GetDatum:
     _id: str
 
     def __init__(
-            self,
-            id_: str,
+        self,
+        id_: str,
     ):
         self._id = id_
 

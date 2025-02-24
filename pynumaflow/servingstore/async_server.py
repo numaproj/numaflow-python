@@ -4,7 +4,9 @@ import grpc
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
     NUM_THREADS_DEFAULT,
-    MAX_NUM_THREADS, SERVING_STORE_SOCK_PATH, SERVING_STORE_SERVER_INFO_FILE_PATH,
+    MAX_NUM_THREADS,
+    SERVING_STORE_SOCK_PATH,
+    SERVING_STORE_SERVER_INFO_FILE_PATH,
 )
 from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.proto.serving import store_pb2_grpc

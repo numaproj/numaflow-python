@@ -2,7 +2,6 @@ from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow._constants import _LOGGER
 from pynumaflow.proto.serving import store_pb2_grpc, store_pb2
-from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.servingstore._dtypes import ServingStoreCallable, PutDatum, Payload, GetDatum
 from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
@@ -22,7 +21,7 @@ class AsyncServingStoreServicer(store_pb2_grpc.ServingStoreServicer):
         self.cleanup_coroutines = []
 
     async def Put(
-            self, request: store_pb2.PutRequest, context: NumaflowServicerContext
+        self, request: store_pb2.PutRequest, context: NumaflowServicerContext
     ) -> store_pb2.PutResponse:
         """
         Handles the Put function, processing incoming requests and sending responses.
@@ -42,7 +41,7 @@ class AsyncServingStoreServicer(store_pb2_grpc.ServingStoreServicer):
         return store_pb2.PutResponse(success=True)
 
     async def Get(
-            self, request: store_pb2.GetRequest, context: NumaflowServicerContext
+        self, request: store_pb2.GetRequest, context: NumaflowServicerContext
     ) -> store_pb2.GetResponse:
         """
         Handles the Get function, processing incoming requests and sending responses.
@@ -61,11 +60,10 @@ class AsyncServingStoreServicer(store_pb2_grpc.ServingStoreServicer):
         return store_pb2.GetResponse(id=request.id, payloads=resp_payloads)
 
     async def IsReady(
-            self, request: _empty_pb2.Empty, context: NumaflowServicerContext
-    ) -> source_pb2.ReadyResponse:
+        self, request: _empty_pb2.Empty, context: NumaflowServicerContext
+    ) -> store_pb2.ReadyResponse:
         """
         IsReady is the heartbeat endpoint for gRPC.
         The pascal case function name comes from the proto source_pb2_grpc.py file.
         """
-        return source_pb2.ReadyResponse(ready=True)
-
+        return store_pb2.ReadyResponse(ready=True)

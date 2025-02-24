@@ -172,6 +172,23 @@ class TestServer(unittest.TestCase):
         where we expect the no_broadcast flag to be False and
         the message value to be the mock_message.
         """
+        val = bytes("test_put", encoding="utf-8")
+        request_put = store_pb2.PutRequest(
+            id="abc",
+            payloads=[store_pb2.Payload(origin="abc1", value=val)],
+        )
+        method = self.test_server.invoke_unary_unary(
+            method_descriptor=(
+                store_pb2.DESCRIPTOR.services_by_name["ServingStore"].methods_by_name["Put"]
+            ),
+            invocation_metadata={
+                ("this_metadata_will_be_skipped", "test_ignore"),
+            },
+            request=request_put,
+            timeout=1,
+        )
+        response, metadata, code, details = method.termination()
+
         request = store_pb2.GetRequest(
             id="abc",
         )
@@ -187,7 +204,9 @@ class TestServer(unittest.TestCase):
             timeout=1,
         )
         response, metadata, code, details = method.termination()
-        self.assertEqual(len(response.payloads), 0)
+        self.assertEqual(len(response.payloads), 1)
+        self.assertEqual(response.payloads[0].value, val)
+        self.assertEqual(response.payloads[0].origin, "abc1")
         self.assertEqual(code, StatusCode.OK)
 
     def test_serving_store_get_err(self):

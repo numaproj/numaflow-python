@@ -18,6 +18,7 @@ SOURCE_SOCK_PATH = "/var/run/numaflow/source.sock"
 MULTIPROC_MAP_SOCK_ADDR = "/var/run/numaflow/multiproc"
 FALLBACK_SINK_SOCK_PATH = "/var/run/numaflow/fb-sink.sock"
 BATCH_MAP_SOCK_PATH = "/var/run/numaflow/batchmap.sock"
+SERVING_STORE_SOCK_PATH = "/var/run/numaflow/serving.sock"
 
 # Server information file configs
 MAP_SERVER_INFO_FILE_PATH = "/var/run/numaflow/mapper-server-info"
@@ -28,6 +29,7 @@ SINK_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sinker-server-info"
 SIDE_INPUT_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sideinput-server-info"
 SOURCE_SERVER_INFO_FILE_PATH = "/var/run/numaflow/sourcer-server-info"
 FALLBACK_SINK_SERVER_INFO_FILE_PATH = "/var/run/numaflow/fb-sinker-server-info"
+SERVING_STORE_SERVER_INFO_FILE_PATH = "/var/run/numaflow/serving-server-info"
 
 ENV_UD_CONTAINER_TYPE = "NUMAFLOW_UD_CONTAINER_TYPE"
 UD_CONTAINER_FALLBACK_SINK = "fb-udsink"
@@ -64,3 +66,4 @@ class UDFType(str, Enum):
     Source = "source"
     SideInput = "sideinput"
     SourceTransformer = "sourcetransformer"
+    ServingStore = "servingstore"

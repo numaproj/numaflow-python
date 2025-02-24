@@ -26,6 +26,7 @@ from pynumaflow.info.types import (
     MULTIPROC_KEY,
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
+from pynumaflow.proto.serving import store_pb2_grpc
 from pynumaflow.proto.sideinput import sideinput_pb2_grpc
 from pynumaflow.proto.sinker import sink_pb2_grpc
 from pynumaflow.proto.sourcer import source_pb2_grpc
@@ -107,6 +108,8 @@ def _run_server(
         source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
     elif udf_type == UDFType.SideInput:
         sideinput_pb2_grpc.add_SideInputServicer_to_server(servicer, server)
+    elif udf_type == UDFType.ServingStore:
+        store_pb2_grpc.add_ServingStoreServicer_to_server(servicer, server)
 
     # bind the server to the UDS/TCP socket
     server.add_insecure_port(bind_address)

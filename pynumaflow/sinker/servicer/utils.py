@@ -28,7 +28,9 @@ def build_sink_response(rspn: Response) -> sink_pb2.SinkResponse.Result:
     """
     rid = rspn.id
     if rspn.success:
-        return sink_pb2.SinkResponse.Result(id=rid, status=sink_pb2.Status.SUCCESS)
+        return sink_pb2.SinkResponse.Result(
+            id=rid, status=sink_pb2.Status.SUCCESS, serve_response=rspn.serve_response
+        )
     elif rspn.fallback:
         return sink_pb2.SinkResponse.Result(id=rid, status=sink_pb2.Status.FALLBACK)
     else:

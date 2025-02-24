@@ -71,6 +71,7 @@ class ContainerType(str, Enum):
     Sessionreducer = "sessionreducer"
     Sideinput = "sideinput"
     Fbsinker = "fb-sinker"
+    Serving = "serving"
 
 
 # Minimum version of Numaflow required by the current SDK version
@@ -86,6 +87,7 @@ MINIMUM_NUMAFLOW_VERSION = {
     ContainerType.Sessionreducer: "1.4.0-z",
     ContainerType.Sideinput: "1.4.0-z",
     ContainerType.Fbsinker: "1.4.0-z",
+    ContainerType.Serving: "1.5.0-z",
 }
 
 

@@ -93,18 +93,21 @@ class SinkResponse(_message.Message):
     __slots__ = ("results", "handshake", "status")
 
     class Result(_message.Message):
-        __slots__ = ("id", "status", "err_msg")
+        __slots__ = ("id", "status", "err_msg", "serve_response")
         ID_FIELD_NUMBER: _ClassVar[int]
         STATUS_FIELD_NUMBER: _ClassVar[int]
         ERR_MSG_FIELD_NUMBER: _ClassVar[int]
+        SERVE_RESPONSE_FIELD_NUMBER: _ClassVar[int]
         id: str
         status: Status
         err_msg: str
+        serve_response: bytes
         def __init__(
             self,
             id: _Optional[str] = ...,
             status: _Optional[_Union[Status, str]] = ...,
             err_msg: _Optional[str] = ...,
+            serve_response: _Optional[bytes] = ...,
         ) -> None: ...
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]

@@ -268,11 +268,7 @@ def exit_on_error(
             )
         )
 
-        status = status_pb2.Status(
-            code=code_pb2.INTERNAL,
-            message=err,
-            details=[details]
-        )
+        status = status_pb2.Status(code=code_pb2.INTERNAL, message=err, details=[details])
 
         modified_status = rpc_status.to_status(status)
 

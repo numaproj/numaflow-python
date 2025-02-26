@@ -12,7 +12,12 @@ from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, STREAM_EOF, NUM_THREADS_DEFAULT, ERR_TRANSFORMER_EXCEPTION
+from pynumaflow._constants import (
+    _LOGGER,
+    STREAM_EOF,
+    NUM_THREADS_DEFAULT,
+    ERR_TRANSFORMER_EXCEPTION,
+)
 
 
 def _create_read_handshake_response() -> transform_pb2.SourceTransformResponse:
@@ -73,7 +78,9 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                 # if error handler accordingly
                 if isinstance(res, BaseException):
                     # Terminate the current server process due to exception
-                    exit_on_error(context, f"{ERR_TRANSFORMER_EXCEPTION}: {repr(res)}", parent=self.multiproc)
+                    exit_on_error(
+                        context, f"{ERR_TRANSFORMER_EXCEPTION}: {repr(res)}", parent=self.multiproc
+                    )
                     return
                 # return the result
                 yield res

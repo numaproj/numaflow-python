@@ -57,7 +57,9 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
                 # if error handler accordingly
                 if isinstance(res, BaseException):
                     # Terminate the current server process due to exception
-                    exit_on_error(context, f"{ERR_MAP_EXCEPTION}: {repr(res)}", parent=self.multiproc)
+                    exit_on_error(
+                        context, f"{ERR_MAP_EXCEPTION}: {repr(res)}", parent=self.multiproc
+                    )
                     return
                 # return the result
                 yield res

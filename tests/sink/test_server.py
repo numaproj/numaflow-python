@@ -123,8 +123,8 @@ class TestServer(unittest.TestCase):
         method.send_request(test_datums[0])
 
         metadata, code, details = method.termination()
-        self.assertTrue("UDSinkError: Exception('SinkFn: expected handshake message')" in details)
-        self.assertEqual(StatusCode.UNKNOWN, code)
+        self.assertTrue("UDF_EXECUTION_ERROR(sink): Exception('SinkFn: expected handshake message')" in details)
+        self.assertEqual(StatusCode.INTERNAL, code)
 
     def test_udsink_err(self):
         server = SinkServer(sinker_instance=err_udsink_handler)
@@ -183,7 +183,7 @@ class TestServer(unittest.TestCase):
 
         metadata, code, details = method.termination()
         print(code)
-        self.assertEqual(StatusCode.UNKNOWN, code)
+        self.assertEqual(StatusCode.INTERNAL, code)
 
     def test_forward_message(self):
         event_time_timestamp = _timestamp_pb2.Timestamp()

@@ -245,8 +245,23 @@ def check_instance(instance, callable_type) -> bool:
         return False
 
 
+def get_grpc_status(err: str):
+    """
+    Create a grpc status object with the error details.
+    """
+    details = any_pb2.Any()
+    details.Pack(
+        error_details_pb2.DebugInfo(
+            detail="\n".join(traceback.format_stack()),
+        )
+    )
+
+    status = status_pb2.Status(code=code_pb2.INTERNAL, message=err, details=[details])
+    return rpc_status.to_status(status)
+
+
 def exit_on_error(
-    context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
+        context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
 ):
     """
     Exit the current/parent process on an error.
@@ -261,21 +276,12 @@ def exit_on_error(
     """
     if update_context:
         # Create a status object with the error details
-        details = any_pb2.Any()
-        details.Pack(
-            error_details_pb2.DebugInfo(
-                detail="\n".join(traceback.format_stack()),
-            )
-        )
-
-        status = status_pb2.Status(code=code_pb2.INTERNAL, message=err, details=[details])
-
-        modified_status = rpc_status.to_status(status)
+        grpc_status = get_grpc_status(err)
 
         context.set_code(grpc.StatusCode.INTERNAL)
         context.set_details(err)
-        context.set_trailing_metadata(modified_status.trailing_metadata)
-        context.abort(grpc.StatusCode.INTERNAL, details=repr(err))
+        context.set_trailing_metadata(grpc_status.trailing_metadata)
+        # context.abort(grpc.StatusCode.INTERNAL, details=repr(err))
 
     p = psutil.Process(os.getpid())
     # If the parent flag is true, we exit from the parent process
@@ -286,15 +292,19 @@ def exit_on_error(
     p.kill()
 
 
-def update_context_err(context: NumaflowServicerContext, e: BaseException):
+def update_context_err(context: NumaflowServicerContext, e: BaseException, err_msg: str):
     """
     Update the context with the error and log the exception.
     """
     trace = get_exception_traceback_str(e)
     _LOGGER.critical(trace)
     _LOGGER.critical(e.__str__())
-    context.set_code(grpc.StatusCode.UNKNOWN)
-    context.set_details(e.__str__())
+
+    grpc_status = get_grpc_status(err_msg)
+
+    context.set_code(grpc.StatusCode.INTERNAL)
+    context.set_details(err_msg)
+    context.set_trailing_metadata(grpc_status.trailing_metadata)
 
 
 def get_exception_traceback_str(exc) -> str:
@@ -303,12 +313,13 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_async_error(context: NumaflowServicerContext, exception: BaseException):
+async def handle_async_error(context: NumaflowServicerContext, exception: BaseException, exception_type: str):
     """
     Handle exceptions for async servers by updating the context and exiting.
     """
-    update_context_err(context, exception)
+    err_msg = f"{exception_type}: {repr(exception)}"
+    update_context_err(context, exception, err_msg)
     await asyncio.gather(
-        context.abort(grpc.StatusCode.UNKNOWN, details=repr(exception)), return_exceptions=True
+        context.abort(grpc.StatusCode.INTERNAL, details=err_msg), return_exceptions=True
     )
-    exit_on_error(err=repr(exception), parent=False, context=context, update_context=False)
+    exit_on_error(err=err_msg, parent=False, context=context, update_context=False)

@@ -261,7 +261,7 @@ def get_grpc_status(err: str):
 
 
 def exit_on_error(
-        context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
+    context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
 ):
     """
     Exit the current/parent process on an error.
@@ -313,7 +313,9 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_async_error(context: NumaflowServicerContext, exception: BaseException, exception_type: str):
+async def handle_async_error(
+    context: NumaflowServicerContext, exception: BaseException, exception_type: str
+):
     """
     Handle exceptions for async servers by updating the context and exiting.
     """

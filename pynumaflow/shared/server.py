@@ -5,6 +5,10 @@ import multiprocessing
 import os
 import socket
 import traceback
+
+from google.protobuf import any_pb2
+from google.rpc import code_pb2, status_pb2, error_details_pb2
+from grpc_status import rpc_status
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
@@ -118,6 +122,7 @@ def _run_server(
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
     server.wait_for_termination()
+    # server.stop()
 
 
 def start_multiproc_server(
@@ -255,8 +260,26 @@ def exit_on_error(
             the context with the error codes
     """
     if update_context:
-        context.set_code(grpc.StatusCode.UNKNOWN)
+        # Create a status object with the error details
+        details = any_pb2.Any()
+        details.Pack(
+            error_details_pb2.DebugInfo(
+                detail="\n".join(traceback.format_stack()),
+            )
+        )
+
+        status = status_pb2.Status(
+            code=code_pb2.INTERNAL,
+            message=err,
+            details=[details]
+        )
+
+        modified_status = rpc_status.to_status(status)
+
+        context.set_code(grpc.StatusCode.INTERNAL)
         context.set_details(err)
+        context.set_trailing_metadata(modified_status.trailing_metadata)
+        context.abort(grpc.StatusCode.INTERNAL, details=repr(err))
 
     p = psutil.Process(os.getpid())
     # If the parent flag is true, we exit from the parent process

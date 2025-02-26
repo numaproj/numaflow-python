@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.server import exit_on_error
 
-from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER
+from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER, ERR_MAP_EXCEPTION
 from pynumaflow.mapper._dtypes import MapSyncCallable, Datum, MapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.synciter import SyncIterator
@@ -57,7 +57,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
                 # if error handler accordingly
                 if isinstance(res, BaseException):
                     # Terminate the current server process due to exception
-                    exit_on_error(context, repr(res), parent=self.multiproc)
+                    exit_on_error(context, f"{ERR_MAP_EXCEPTION}: {repr(res)}", parent=self.multiproc)
                     return
                 # return the result
                 yield res
@@ -89,7 +89,6 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             result_queue.put(STREAM_EOF)
         except BaseException as e:
             _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
-            result_queue.put(e)
 
     def _invoke_map(
         self,

@@ -122,7 +122,6 @@ def _run_server(
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
     server.wait_for_termination()
-    # server.stop()
 
 
 def start_multiproc_server(

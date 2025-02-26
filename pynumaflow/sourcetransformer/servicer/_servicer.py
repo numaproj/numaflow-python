@@ -92,7 +92,9 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             # Terminate the current server process due to exception
-            exit_on_error(context, repr(err), parent=self.multiproc)
+            exit_on_error(
+                context, f"{ERR_TRANSFORMER_EXCEPTION}: {repr(err)}", parent=self.multiproc
+            )
             return
 
     def _process_requests(
@@ -110,7 +112,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             self.executor.shutdown(wait=True)
             # Indicate to the result queue that no more messages left to process
             result_queue.put(STREAM_EOF)
-        except BaseException as e:
+        except BaseException:
             _LOGGER.critical("SourceTransformFnError, re-raising the error", exc_info=True)
 
     def _invoke_transformer(

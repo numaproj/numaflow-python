@@ -93,7 +93,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                     pass
             except BaseException as e:
                 print(e.__str__())
-                self.assertTrue("UDF_EXECUTION_ERROR(source): TypeError(\"handle_async_error() missing 1 required positional argument: 'exception_type'\")" in e.__str__())
+                self.assertTrue(
+                    "UDF_EXECUTION_ERROR(source): TypeError(\"handle_async_error() missing 1 required positional argument: 'exception_type'\")"
+                    in e.__str__()
+                )
                 return
             except grpc.RpcError as e:
                 grpc_exception = e

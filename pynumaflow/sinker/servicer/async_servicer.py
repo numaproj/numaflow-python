@@ -4,7 +4,7 @@ from collections.abc import AsyncIterable
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow.shared.server import exit_on_error, handle_async_error
+from pynumaflow.shared.server import handle_async_error
 from pynumaflow.sinker._dtypes import Datum, SinkAsyncCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.servicer.utils import (

@@ -280,7 +280,6 @@ def exit_on_error(
         context.set_code(grpc.StatusCode.INTERNAL)
         context.set_details(err)
         context.set_trailing_metadata(grpc_status.trailing_metadata)
-        # context.abort(grpc.StatusCode.INTERNAL, details=repr(err))
 
     p = psutil.Process(os.getpid())
     # If the parent flag is true, we exit from the parent process

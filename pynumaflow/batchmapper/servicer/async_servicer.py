@@ -1,16 +1,15 @@
 import asyncio
 from collections.abc import AsyncIterable
 
-import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow.batchmapper import Datum
 from pynumaflow.batchmapper._dtypes import BatchMapCallable, BatchMapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_BATCH_MAP_EXCEPTION
 
 
 class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
@@ -99,10 +98,7 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
 
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await asyncio.gather(
-                context.abort(grpc.StatusCode.UNKNOWN, details=repr(err)), return_exceptions=True
-            )
-            exit_on_error(context, repr(err))
+            await handle_async_error(context, err, ERR_BATCH_MAP_EXCEPTION)
             return
 
     async def IsReady(

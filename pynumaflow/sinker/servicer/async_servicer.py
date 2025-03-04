@@ -4,7 +4,7 @@ from collections.abc import AsyncIterable
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import handle_async_error
 from pynumaflow.sinker._dtypes import Datum, SinkAsyncCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.servicer.utils import (
@@ -13,7 +13,7 @@ from pynumaflow.sinker.servicer.utils import (
     build_sink_resp_results,
 )
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_SINK_EXCEPTION
 
 
 class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
@@ -85,7 +85,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             # if there is an exception, we will mark all the responses as a failure
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
+            await handle_async_error(context, err, ERR_SINK_EXCEPTION)
             return
 
     async def __invoke_sink(
@@ -98,7 +98,6 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         except BaseException as err:
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
             raise err
 
     async def IsReady(

@@ -215,7 +215,7 @@ class TestAsyncMapper(unittest.TestCase):
         except grpc.RpcError as e:
             logging.error(e)
             grpc_exception = e
-            self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+            self.assertEqual(grpc.StatusCode.INTERNAL, e.code())
             self.assertTrue("Exception thrown from map" in e.__str__())
         finally:
             raise_error_from_map = False

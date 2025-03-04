@@ -76,7 +76,7 @@ class TestMultiProcMethods(unittest.TestCase):
 
         metadata, code, details = method.termination()
         self.assertTrue("SourceTransformFn: expected handshake message" in details)
-        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+        self.assertEqual(grpc.StatusCode.INTERNAL, code)
 
     def test_udf_mapt_err(self):
         server = SourceTransformMultiProcServer(source_transform_instance=err_transform_handler)
@@ -110,7 +110,7 @@ class TestMultiProcMethods(unittest.TestCase):
 
         metadata, code, details = method.termination()
         self.assertTrue("Something is fishy" in details)
-        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+        self.assertEqual(grpc.StatusCode.INTERNAL, code)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(

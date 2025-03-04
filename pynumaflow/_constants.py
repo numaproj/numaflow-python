@@ -6,6 +6,16 @@ from pynumaflow import setup_logging
 
 SIDE_INPUT_DIR_PATH = "/var/numaflow/side-inputs"
 
+# UDF execution error prefixes
+ERR_SOURCE_EXCEPTION = "UDF_EXECUTION_ERROR(source)"
+ERR_TRANSFORMER_EXCEPTION = "UDF_EXECUTION_ERROR(transformer)"
+ERR_SINK_EXCEPTION = "UDF_EXECUTION_ERROR(sink)"
+ERR_MAP_STREAM_EXCEPTION = "UDF_EXECUTION_ERROR(mapstream)"
+ERR_MAP_EXCEPTION = "UDF_EXECUTION_ERROR(map)"
+ERR_BATCH_MAP_EXCEPTION = "UDF_EXECUTION_ERROR(batchmap)"
+ERR_REDUCE_EXCEPTION = "UDF_EXECUTION_ERROR(reduce)"
+ERR_SIDE_INPUT_RETRIEVAL_EXCEPTION = "UDF_EXECUTION_ERROR(sideinput)"
+
 # Socket configs
 MAP_SOCK_PATH = "/var/run/numaflow/map.sock"
 MAP_STREAM_SOCK_PATH = "/var/run/numaflow/mapstream.sock"

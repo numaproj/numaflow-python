@@ -76,7 +76,7 @@ class TestServer(unittest.TestCase):
             timeout=1,
         )
         response, metadata, code, details = method.termination()
-        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+        self.assertEqual(grpc.StatusCode.INTERNAL, code)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(

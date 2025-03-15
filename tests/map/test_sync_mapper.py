@@ -59,7 +59,7 @@ class TestSyncMapper(unittest.TestCase):
 
         metadata, code, details = method.termination()
         self.assertTrue("MapFn: expected handshake as the first message" in details)
-        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+        self.assertEqual(grpc.StatusCode.INTERNAL, code)
 
     def test_udf_map_error_response(self):
         my_server = MapServer(mapper_instance=err_map_handler)
@@ -87,7 +87,7 @@ class TestSyncMapper(unittest.TestCase):
 
         metadata, code, details = method.termination()
         self.assertTrue("Something is fishy!" in details)
-        self.assertEqual(grpc.StatusCode.UNKNOWN, code)
+        self.assertEqual(grpc.StatusCode.INTERNAL, code)
 
     def test_is_ready(self):
         method = self.test_server.invoke_unary_unary(

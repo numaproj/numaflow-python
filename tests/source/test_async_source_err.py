@@ -92,7 +92,11 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 for _ in generator_response:
                     pass
             except BaseException as e:
-                self.assertTrue("Got a runtime error from read handler." in e.__str__())
+                self.assertTrue(
+                    "UDF_EXECUTION_ERROR(source): TypeError("
+                    '"handle_async_error() missing 1 required positional argument: '
+                    "'exception_type'\")" in e.__str__()
+                )
                 return
             except grpc.RpcError as e:
                 grpc_exception = e

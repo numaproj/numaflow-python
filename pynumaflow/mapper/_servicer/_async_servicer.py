@@ -4,10 +4,10 @@ from collections.abc import AsyncIterable
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_MAP_EXCEPTION
 from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
-from pynumaflow.shared.server import exit_on_error, handle_async_error
+from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -56,7 +56,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg)
+                    await handle_async_error(context, msg, ERR_MAP_EXCEPTION)
                     return
                 # Send window response back to the client
                 else:
@@ -65,7 +65,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             await producer
         except BaseException as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            exit_on_error(context, repr(e))
+            await handle_async_error(context, e, ERR_MAP_EXCEPTION)
             return
 
     async def _process_inputs(
@@ -92,9 +92,8 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             # send an EOF to result queue to indicate that all tasks have completed
             await result_queue.put(STREAM_EOF)
 
-        except BaseException as e:
-            await result_queue.put(e)
-            return
+        except BaseException:
+            _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
 
     async def _invoke_map(self, req: map_pb2.MapRequest, result_queue: NonBlockingIterator):
         """
@@ -116,7 +115,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                 )
             await result_queue.put(map_pb2.MapResponse(results=datums, id=req.id))
         except BaseException as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
+            _LOGGER.critical("MapFn handler error", exc_info=True)
             await result_queue.put(err)
 
     async def IsReady(

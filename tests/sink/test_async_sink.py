@@ -185,7 +185,6 @@ class TestAsyncSink(unittest.TestCase):
         except BaseException as e:
             self.assertTrue(
                 f"{ERR_UDF_EXCEPTION_STRING}: ValueError('test_mock_err_message')" in e.__str__()
-
             )
             return
         except grpc.RpcError as e:

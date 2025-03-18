@@ -4,7 +4,7 @@ from collections.abc import AsyncIterable
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_MAP_EXCEPTION
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.server import handle_async_error
@@ -56,7 +56,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_MAP_EXCEPTION)
+                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
                     return
                 # Send window response back to the client
                 else:
@@ -65,7 +65,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             await producer
         except BaseException as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, e, ERR_MAP_EXCEPTION)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
             return
 
     async def _process_inputs(

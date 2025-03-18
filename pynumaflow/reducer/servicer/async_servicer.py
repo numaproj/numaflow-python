@@ -3,7 +3,7 @@ from typing import Union
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow._constants import _LOGGER, ERR_REDUCE_EXCEPTION
+from pynumaflow._constants import _LOGGER, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducer._dtypes import (
     Datum,
@@ -105,7 +105,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             _LOGGER.critical("Reduce Error", exc_info=True)
             # Send a context abort signal for the rpc, this is required for numa container to get
             # the correct grpc error
-            await handle_async_error(context, e, ERR_REDUCE_EXCEPTION)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
@@ -136,7 +136,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             _LOGGER.critical("Reduce Error", exc_info=True)
             # Send a context abort signal for the rpc, this is required for numa container to get
             # the correct grpc error
-            await handle_async_error(context, e, ERR_REDUCE_EXCEPTION)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

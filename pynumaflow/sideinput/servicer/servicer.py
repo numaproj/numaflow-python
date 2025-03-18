@@ -2,7 +2,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 
 from pynumaflow._constants import (
     _LOGGER,
-    ERR_SIDE_INPUT_RETRIEVAL_EXCEPTION,
+    ERR_UDF_EXCEPTION_STRING,
 )
 from pynumaflow.proto.sideinput import sideinput_pb2_grpc, sideinput_pb2
 from pynumaflow.shared.server import exit_on_error
@@ -28,7 +28,7 @@ class SideInputServicer(sideinput_pb2_grpc.SideInputServicer):
         try:
             rspn = self.__retrieve_handler()
         except BaseException as err:
-            err_msg = f"{ERR_SIDE_INPUT_RETRIEVAL_EXCEPTION}: {repr(err)}"
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
             exit_on_error(context, err_msg)
             return

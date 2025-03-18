@@ -16,7 +16,7 @@ from pynumaflow._constants import (
     _LOGGER,
     STREAM_EOF,
     NUM_THREADS_DEFAULT,
-    ERR_TRANSFORMER_EXCEPTION,
+    ERR_UDF_EXCEPTION_STRING,
 )
 
 
@@ -79,7 +79,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                 if isinstance(res, BaseException):
                     # Terminate the current server process due to exception
                     exit_on_error(
-                        context, f"{ERR_TRANSFORMER_EXCEPTION}: {repr(res)}", parent=self.multiproc
+                        context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}", parent=self.multiproc
                     )
                     return
                 # return the result
@@ -93,7 +93,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             # Terminate the current server process due to exception
             exit_on_error(
-                context, f"{ERR_TRANSFORMER_EXCEPTION}: {repr(err)}", parent=self.multiproc
+                context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}", parent=self.multiproc
             )
             return
 

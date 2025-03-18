@@ -11,6 +11,7 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
+    ERR_UDF_EXCEPTION_STRING,
     UD_CONTAINER_FALLBACK_SINK,
     FALLBACK_SINK_SOCK_PATH,
     FALLBACK_SINK_SERVER_INFO_FILE_PATH,
@@ -183,7 +184,8 @@ class TestAsyncSink(unittest.TestCase):
                 pass
         except BaseException as e:
             self.assertTrue(
-                "UDF_EXECUTION_ERROR(sink): ValueError('test_mock_err_message')" in e.__str__()
+                f"{ERR_UDF_EXCEPTION_STRING}: ValueError('test_mock_err_message')" in e.__str__()
+
             )
             return
         except grpc.RpcError as e:

@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.server import exit_on_error
 
-from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER, ERR_MAP_EXCEPTION
+from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapper._dtypes import MapSyncCallable, Datum, MapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.synciter import SyncIterator
@@ -58,7 +58,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
                 if isinstance(res, BaseException):
                     # Terminate the current server process due to exception
                     exit_on_error(
-                        context, f"{ERR_MAP_EXCEPTION}: {repr(res)}", parent=self.multiproc
+                        context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}", parent=self.multiproc
                     )
                     return
                 # return the result
@@ -71,7 +71,9 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             # Terminate the current server process due to exception
-            exit_on_error(context, f"{ERR_MAP_EXCEPTION}: {repr(err)}", parent=self.multiproc)
+            exit_on_error(
+                context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}", parent=self.multiproc
+            )
             return
 
     def _process_requests(

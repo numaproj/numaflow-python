@@ -7,7 +7,7 @@ from pynumaflow.mapstreamer._dtypes import MapStreamCallable, MapStreamError
 from pynumaflow.proto.mapper import map_pb2_grpc, map_pb2
 from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, ERR_MAP_STREAM_EXCEPTION
+from pynumaflow._constants import _LOGGER, ERR_UDF_EXCEPTION_STRING
 
 
 class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
@@ -59,7 +59,7 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
                 yield map_pb2.MapResponse(status=map_pb2.TransmissionStatus(eot=True), id=req.id)
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, err, ERR_MAP_STREAM_EXCEPTION)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
             return
 
     async def __invoke_map_stream(self, keys: list[str], req: Datum):

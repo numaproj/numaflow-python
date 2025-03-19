@@ -5,16 +5,12 @@ from enum import Enum
 from pynumaflow import setup_logging
 
 SIDE_INPUT_DIR_PATH = "/var/numaflow/side-inputs"
+ENV_UD_CONTAINER_TYPE = "NUMAFLOW_UD_CONTAINER_TYPE"
 
-# UDF execution error prefixes
-ERR_SOURCE_EXCEPTION = "UDF_EXECUTION_ERROR(source)"
-ERR_TRANSFORMER_EXCEPTION = "UDF_EXECUTION_ERROR(transformer)"
-ERR_SINK_EXCEPTION = "UDF_EXECUTION_ERROR(sink)"
-ERR_MAP_STREAM_EXCEPTION = "UDF_EXECUTION_ERROR(mapstream)"
-ERR_MAP_EXCEPTION = "UDF_EXECUTION_ERROR(map)"
-ERR_BATCH_MAP_EXCEPTION = "UDF_EXECUTION_ERROR(batchmap)"
-ERR_REDUCE_EXCEPTION = "UDF_EXECUTION_ERROR(reduce)"
-ERR_SIDE_INPUT_RETRIEVAL_EXCEPTION = "UDF_EXECUTION_ERROR(sideinput)"
+# Get container type from env var, default to unknown-container
+CONTAINER_TYPE = os.getenv(ENV_UD_CONTAINER_TYPE, "unknown-container")
+# UDF exception error string with container type
+ERR_UDF_EXCEPTION_STRING = f"UDF_EXECUTION_ERROR({CONTAINER_TYPE})"
 
 # Socket configs
 MAP_SOCK_PATH = "/var/run/numaflow/map.sock"

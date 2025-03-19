@@ -13,7 +13,7 @@ from pynumaflow.sinker.servicer.utils import (
     build_sink_resp_results,
 )
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_SINK_EXCEPTION
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 
 
 class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
@@ -85,7 +85,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             # if there is an exception, we will mark all the responses as a failure
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            await handle_async_error(context, err, ERR_SINK_EXCEPTION)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
             return
 
     async def __invoke_sink(

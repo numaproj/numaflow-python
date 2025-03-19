@@ -29,7 +29,10 @@ class TestResponses(unittest.TestCase):
 
     def test_responses(self):
         self.resps.append(Response.as_success("4"))
-        self.assertEqual(4, len(self.resps))
+        self.resps.append(
+            Response.as_serving_response("6", result=bytes("test_put", encoding="utf-8"))
+        )
+        self.assertEqual(5, len(self.resps))
 
         for resp in self.resps:
             self.assertIsInstance(resp, Response)
@@ -38,12 +41,15 @@ class TestResponses(unittest.TestCase):
         self.assertEqual(self.resps[1].id, "3")
         self.assertEqual(self.resps[2].id, "5")
         self.assertEqual(self.resps[3].id, "4")
+        self.assertEqual(self.resps[4].id, "6")
 
         self.assertEqual(
-            "[Response(id='2', success=True, err=None, fallback=False), "
-            "Response(id='3', success=False, err='RuntimeError encountered!', fallback=False), "
-            "Response(id='5', success=False, err=None, fallback=True), "
-            "Response(id='4', success=True, err=None, fallback=False)]",
+            "[Response(id='2', success=True, err=None, fallback=False, serve_response=None), "
+            "Response(id='3', success=False, err='RuntimeError encountered!', "
+            "fallback=False, serve_response=None), "
+            "Response(id='5', success=False, err=None, fallback=True, serve_response=None), "
+            "Response(id='4', success=True, err=None, fallback=False, serve_response=None), "
+            "Response(id='6', success=True, err=None, fallback=False, serve_response=b'test_put')]",
             repr(self.resps),
         )
 

@@ -9,7 +9,7 @@ from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
-from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_BATCH_MAP_EXCEPTION
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 
 
 class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
@@ -98,7 +98,7 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
 
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, err, ERR_BATCH_MAP_EXCEPTION)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
             return
 
     async def IsReady(

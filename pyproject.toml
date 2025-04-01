@@ -23,15 +23,15 @@ repository = "https://github.com/numaproj/numaflow-python"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.14"
-grpcio = "^1.48.1"
-grpcio-tools = "^1.48.1"
+grpcio = "^1.71.0"
+grpcio-tools = "^1.71.0"
 google-cloud = "^0.34.0"
-google-api-core = "^2.11.0"
-grpcio-status = "^1.48.1"
+google-api-core = "^2.24.2"
+grpcio-status = "^1.71.0"
 protobuf = ">=3.20,<6.0"
-aiorun = "^2023.7"
-uvloop = "^0.19.0"
-psutil = "^6.0.0"
+aiorun = "^2025.1.1"
+uvloop = "^0.21.0"
+psutil = "^7.0.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -40,8 +40,8 @@ optional = true
 pytest = "^7.2.1"
 pytest-cov = "^3.0"
 black = "^23.1"
-grpcio-testing = "^1.48.1"
-ruff = "^0.0.264"
+grpcio-testing = "^1.71.0"
+ruff = "^0.11.2"
 pre-commit = "^3.3.1"
 
 [build-system]
@@ -81,7 +81,5 @@ extend-exclude = [
     "*_pb2*.py",
     "*.pyi"
 ]
-output-format = "full"
-[tool.ruff.lint]
-select = ["E", "F", "UP"]
+lint.select = ["E", "F", "UP"]
 

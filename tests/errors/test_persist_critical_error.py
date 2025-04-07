@@ -49,7 +49,7 @@ class TestErrorPersistence(unittest.TestCase):
         final_file_name = files[0]
         final_file_path = os.path.join(container_dir, final_file_name)
 
-        with open(final_file_path, "r") as f:
+        with open(final_file_path) as f:
             data = json.load(f)
 
         self.assertEqual(data["code"], error_code)
@@ -73,7 +73,7 @@ class TestErrorPersistence(unittest.TestCase):
         files = os.listdir(container_dir)
         self.assertEqual(len(files), 1)
 
-        with open(os.path.join(container_dir, files[0]), "r") as f:
+        with open(os.path.join(container_dir, files[0])) as f:
             error_data = json.load(f)
             self.assertEqual(error_data["code"], INTERNAL_ERROR)
 

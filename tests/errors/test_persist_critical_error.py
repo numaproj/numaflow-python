@@ -5,7 +5,7 @@ import threading
 import unittest
 from pynumaflow.errors.errors import persist_critical_error, _persist_error_once
 from pynumaflow.errors.errors import _persist_critical_error_to_file
-from pynumaflow._constants import CONTAINER_TYPE, INTERNAL_ERROR
+from pynumaflow._constants import CONTAINER_TYPE, INTERNAL_ERROR_CODE
 
 
 class TestErrorPersistence(unittest.TestCase):
@@ -75,7 +75,7 @@ class TestErrorPersistence(unittest.TestCase):
 
         with open(os.path.join(container_dir, files[0])) as f:
             error_data = json.load(f)
-            self.assertEqual(error_data["code"], INTERNAL_ERROR)
+            self.assertEqual(error_data["code"], INTERNAL_ERROR_CODE)
 
     def test_persist_critical_error_all_threads_fail(self):
         """

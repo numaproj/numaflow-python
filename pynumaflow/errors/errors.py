@@ -5,8 +5,8 @@ import time
 from pynumaflow._constants import (
     CONTAINER_TYPE,
     RUNTIME_APPLICATION_ERRORS_PATH,
-    CURRENT_FILE,
-    INTERNAL_ERROR,
+    CURRENT_CRITICAL_ERROR_FILE,
+    INTERNAL_ERROR_CODE,
 )
 from pynumaflow.errors._dtypes import _RuntimeErrorEntry
 from typing import Union
@@ -62,8 +62,8 @@ def _persist_critical_error_to_file(
     container_dir = os.path.join(dir_path, CONTAINER_TYPE)
     os.makedirs(container_dir, mode=0o777, exist_ok=True)
 
-    current_file_path = os.path.join(container_dir, CURRENT_FILE)
-    error_code = error_code or INTERNAL_ERROR
+    current_file_path = os.path.join(container_dir, CURRENT_CRITICAL_ERROR_FILE)
+    error_code = error_code or INTERNAL_ERROR_CODE
     current_timestamp = int(time.time())
 
     runtime_error_entry = _RuntimeErrorEntry(

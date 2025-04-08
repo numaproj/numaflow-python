@@ -9,8 +9,8 @@ ENV_UD_CONTAINER_TYPE = "NUMAFLOW_UD_CONTAINER_TYPE"
 
 # Error Constants
 RUNTIME_APPLICATION_ERRORS_PATH = "/var/numaflow/runtime/application-errors"
-CURRENT_FILE = "current-udf.json"
-INTERNAL_ERROR = "Internal error"
+CURRENT_CRITICAL_ERROR_FILE = "current-udf.json"
+INTERNAL_ERROR_CODE = "Internal error"
 CONTAINER_TYPE = os.getenv(ENV_UD_CONTAINER_TYPE, "unknown-container")
 ERR_UDF_EXCEPTION_STRING = f"UDF_EXECUTION_ERROR({CONTAINER_TYPE})"
 

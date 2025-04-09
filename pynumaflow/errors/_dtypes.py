@@ -4,6 +4,7 @@ from dataclasses import dataclass, asdict
 @dataclass
 class _RuntimeErrorEntry:
     """Represents a runtime error entry to be persisted."""
+
     container: str
     timestamp: int
     code: str

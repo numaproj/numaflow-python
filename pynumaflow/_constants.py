@@ -7,9 +7,11 @@ from pynumaflow import setup_logging
 SIDE_INPUT_DIR_PATH = "/var/numaflow/side-inputs"
 ENV_UD_CONTAINER_TYPE = "NUMAFLOW_UD_CONTAINER_TYPE"
 
-# Get container type from env var, default to unknown-container
+# Error Constants
+RUNTIME_APPLICATION_ERRORS_PATH = "/var/numaflow/runtime/application-errors"
+CURRENT_CRITICAL_ERROR_FILE = "current-udf.json"
+INTERNAL_ERROR_CODE = "Internal error"
 CONTAINER_TYPE = os.getenv(ENV_UD_CONTAINER_TYPE, "unknown-container")
-# UDF exception error string with container type
 ERR_UDF_EXCEPTION_STRING = f"UDF_EXECUTION_ERROR({CONTAINER_TYPE})"
 
 # Socket configs

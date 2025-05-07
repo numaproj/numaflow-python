@@ -3,7 +3,7 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar, Callable, Union, Optional
+from typing import TypeVar, Callable, Union, Optional, Type
 from collections.abc import AsyncIterable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -282,38 +282,55 @@ class AccumulatorRequest:
 @dataclass(init=False)
 class Message:
     """
-    Basic datatype for data passing to the next vertex/vertices.
-
-    Args:
-        value: data in bytes
-        keys: []string keys for vertex (optional)
-        tags: []string tags for conditional forwarding (optional)
+    Represents a unit of data passed to the next vertex in the pipeline.
     """
 
-    __slots__ = ("_value", "_keys", "_tags")
+    __slots__ = (
+        "_value", "_keys", "_tags", "_event_time", "_watermark", "_id", "_headers"
+    )
 
     _value: bytes
     _keys: list[str]
     _tags: list[str]
+    _event_time: datetime
+    _watermark: datetime
+    _id: str
+    _headers: dict[str, str]
 
     def __init__(
         self,
         value: bytes,
-        keys: list[str] = None,
-        tags: list[str] = None,
+        keys: Optional[list[str]] = None,
+        tags: Optional[list[str]] = None,
+        event_time: Optional[datetime] = None,
+        watermark: Optional[datetime] = None,
+        id: Optional[str] = "",
+        headers: Optional[dict[str, str]] = None,
     ):
-        """
-        Creates a Message object to send value to a vertex.
-        """
+        self._value = value or b""
         self._keys = keys or []
         self._tags = tags or []
-        self._value = value or b""
-        # self._window = window or None
+        self._event_time = event_time or datetime.fromtimestamp(0)
+        self._watermark = watermark or datetime.fromtimestamp(0)
+        self._id = id or ""
+        self._headers = headers or {}
 
-    # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: type[M]) -> M:
-        return cls(b"", None, [DROP])
+    def to_drop(cls: Type[M]) -> M:
+        return cls(b"", None, ["DROP"])
+
+    @classmethod
+    def from_datum(cls: Type[M], datum: "Datum") -> M:
+        """Creates a Message from a Datum."""
+        return cls(
+            value=datum.value,
+            keys=datum.keys,
+            tags=[],
+            event_time=datum.event_time,
+            watermark=datum.watermark,
+            id=datum.id,
+            headers=datum.headers,
+        )
 
     @property
     def value(self) -> bytes:
@@ -326,6 +343,22 @@ class Message:
     @property
     def tags(self) -> list[str]:
         return self._tags
+
+    @property
+    def event_time(self) -> datetime:
+        return self._event_time
+
+    @property
+    def watermark(self) -> datetime:
+        return self._watermark
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return self._headers
 
 
 AccumulatorAsyncCallable = Callable[

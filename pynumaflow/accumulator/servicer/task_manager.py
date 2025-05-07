@@ -17,6 +17,7 @@ from pynumaflow.accumulator._dtypes import (
 )
 from pynumaflow.proto.accumulator import accumulator_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 
 def build_unique_key_name(keys):
@@ -94,11 +95,11 @@ class TaskManager:
         """
         for unified_key in self.tasks:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
-            self.tasks.pop(unified_key)
+        self.tasks.clear()
 
     async def close_task(self, req):
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -118,7 +119,7 @@ class TaskManager:
         it creates a new task or appends the request to the existing task.
         """
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -178,9 +179,9 @@ class TaskManager:
             await result.iterator.put(d)
 
     async def __invoke_accumulator(
-        self,
-        request_iterator: AsyncIterable[Datum],
-        output: NonBlockingIterator,
+            self,
+            request_iterator: AsyncIterable[Datum],
+            output: NonBlockingIterator,
     ):
         """
         Invokes the UDF reduce handler with the given keys,
@@ -207,22 +208,24 @@ class TaskManager:
             await self.global_result_queue.put(err)
 
     async def process_input_stream(
-        self, request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest]
+            self, request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest]
     ):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
         try:
             async for request in request_iterator:
+                # print("IM HERE", request.payload.keys)
                 # check whether the request is an open or append operation
-                if request.operation is int(WindowOperation.OPEN):
+                if request.operation.event is int(WindowOperation.OPEN):
+
                     # create a new task for the open operation and
                     # put the request in the task iterator
                     await self.create_task(request)
-                elif request.operation is int(WindowOperation.APPEND):
+                elif request.operation.event is int(WindowOperation.APPEND):
                     # append the task data to the existing task
                     # if the task does not exist, create a new task
                     await self.send_datum_to_task(request)
-                elif request.operation is int(WindowOperation.CLOSE):
+                elif request.operation.event is int(WindowOperation.CLOSE):
                     # close the current task for req
                     await self.close_task(request)
         # If there is an error in the reduce operation, log and
@@ -275,7 +278,7 @@ class TaskManager:
             await self.global_result_queue.put(e)
 
     async def write_to_global_queue(
-        self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, unified_key: str
+            self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, unified_key: str
     ):
         """
         This task is for given Reduce task.
@@ -285,7 +288,7 @@ class TaskManager:
         reader = input_queue.read_iterator()
         task = self.tasks[unified_key]
 
-        wm: datetime = task.latest_watermark
+        wm = task.latest_watermark
         async for msg in reader:
             # Convert the window to a datetime object
             if wm < msg.watermark:
@@ -293,8 +296,13 @@ class TaskManager:
                 self.tasks[unified_key] = task
                 wm = msg.watermark
 
-            start_dt = datetime.fromtimestamp(0)
-            end_dt = wm
+            event_time_timestamp = _timestamp_pb2.Timestamp()
+            t = datetime.fromtimestamp(0)
+            event_time_timestamp.FromDatetime(dt=t)
+
+            event_time_timestamp_end = _timestamp_pb2.Timestamp()
+            event_time_timestamp_end.FromDatetime(dt=wm)
+
             res = accumulator_pb2.AccumulatorResponse(
                 payload=accumulator_pb2.Payload(
                     keys=msg.keys,
@@ -305,17 +313,25 @@ class TaskManager:
                     id=msg.id,
                 ),
                 window=accumulator_pb2.KeyedWindow(
-                    start=start_dt, end=end_dt, slot="slot-0", keys=task.keys
+                    start=event_time_timestamp, end=event_time_timestamp_end, slot="slot-0", keys=task.keys
                 ),
                 EOF=False,
                 tags=msg.tags,
             )
             await output_queue.put(res)
         # send EOF
+        event_time_timestamp = _timestamp_pb2.Timestamp()
+        t = datetime.fromtimestamp(0)
+        event_time_timestamp.FromDatetime(dt=t)
+
+        event_time_timestamp_end = _timestamp_pb2.Timestamp()
+        event_time_timestamp_end.FromDatetime(dt=wm)
+
+        window = accumulator_pb2.KeyedWindow(
+            start=event_time_timestamp, end=event_time_timestamp_end, slot="slot-0", keys=task.keys
+        )
         res = accumulator_pb2.AccumulatorResponse(
-            window=accumulator_pb2.KeyedWindow(
-                start=datetime.fromtimestamp(0), end=wm, slot="slot-0", keys=task.keys
-            ),
+            window=window,
             EOF=True,
         )
         await output_queue.put(res)

@@ -18,11 +18,10 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(
-        self,
-        handler: MapAsyncCallable,
-    ):
+    def __init__(self, handler: MapAsyncCallable, multiproc: bool = False):
         self.background_tasks = set()
+        # This indicates whether the grpc server attached is multiproc or not
+        self.multiproc = multiproc
         self.__map_handler: MapAsyncCallable = handler
 
     async def MapFn(
@@ -56,7 +55,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
+                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING, self.multiproc)
                     return
                 # Send window response back to the client
                 else:
@@ -65,7 +64,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             await producer
         except BaseException as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING, self.multiproc)
             return
 
     async def _process_inputs(

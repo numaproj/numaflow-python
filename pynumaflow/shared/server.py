@@ -217,7 +217,7 @@ async def start_async_server(
 
 
 @contextlib.contextmanager
-def _reserve_port(port_num: int) -> Iterator[int]:
+def reserve_port(port_num: int) -> Iterator[int]:
     """Find and reserve a port for all subprocesses to use."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -311,9 +311,8 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_async_error(
-    context: NumaflowServicerContext, exception: BaseException, exception_type: str
-):
+async def handle_async_error(context: NumaflowServicerContext, exception: BaseException,
+                             exception_type: str, parent: bool = False):
     """
     Handle exceptions for async servers by updating the context and exiting.
     """
@@ -322,4 +321,4 @@ async def handle_async_error(
     await asyncio.gather(
         context.abort(grpc.StatusCode.INTERNAL, details=err_msg), return_exceptions=True
     )
-    exit_on_error(err=err_msg, parent=False, context=context, update_context=False)
+    exit_on_error(err=err_msg, parent=parent, context=context, update_context=False)

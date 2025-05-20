@@ -95,20 +95,20 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
+                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING, False)
                     return
                 # Send window EOF response or Window result response
                 # back to the client
                 else:
                     yield msg
         except BaseException as e:
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING, False)
             return
         # Wait for the process_input_stream task to finish for a clean exit
         try:
             await producer
         except BaseException as e:
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING, False)
             return
 
     async def IsReady(

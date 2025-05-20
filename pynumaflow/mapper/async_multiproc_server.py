@@ -33,7 +33,7 @@ from pynumaflow.info.server import write as info_server_write
 _LOGGER = logging.getLogger(__name__)
 
 
-class AsyncMultiprocMapServer(NumaflowServer):
+class AsyncMapMultiprocServer(NumaflowServer):
     """
     A multiprocess asynchronous gRPC server for Numaflow Map UDFs.
     Spawns N worker processes, each running an asyncio-based gRPC server.

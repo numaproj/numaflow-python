@@ -4,11 +4,26 @@ import multiprocessing
 import aiorun
 import grpc
 
-from pynumaflow._constants import MAX_NUM_THREADS, MAX_MESSAGE_SIZE, MAP_SOCK_PATH, MAP_SERVER_INFO_FILE_PATH, \
-    _PROCESS_COUNT, NUM_THREADS_DEFAULT, MULTIPROC_MAP_SOCK_ADDR
+from pynumaflow._constants import (
+    MAX_NUM_THREADS,
+    MAX_MESSAGE_SIZE,
+    MAP_SERVER_INFO_FILE_PATH,
+    _PROCESS_COUNT,
+    NUM_THREADS_DEFAULT,
+    MULTIPROC_MAP_SOCK_ADDR,
+)
 from pynumaflow.info.server import get_metadata_env
-from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType, MAP_MODE_KEY, MapMode, \
-    METADATA_ENVS, MULTIPROC_KEY, MULTIPROC_ENDPOINTS, Protocol
+from pynumaflow.info.types import (
+    ServerInfo,
+    MINIMUM_NUMAFLOW_VERSION,
+    ContainerType,
+    MAP_MODE_KEY,
+    MapMode,
+    METADATA_ENVS,
+    MULTIPROC_KEY,
+    MULTIPROC_ENDPOINTS,
+    Protocol,
+)
 from pynumaflow.mapper._dtypes import MapAsyncCallable
 from pynumaflow.mapper._servicer._async_servicer import AsyncMapServicer
 from pynumaflow.proto.mapper import map_pb2_grpc
@@ -25,14 +40,14 @@ class AsyncMultiprocMapServer(NumaflowServer):
     """
 
     def __init__(
-            self,
-            mapper_instance: MapAsyncCallable,
-            server_count: int = _PROCESS_COUNT,
-            sock_path: str = MULTIPROC_MAP_SOCK_ADDR,
-            max_message_size: int = MAX_MESSAGE_SIZE,
-            max_threads: int = NUM_THREADS_DEFAULT,
-            server_info_file: str = MAP_SERVER_INFO_FILE_PATH,
-            use_tcp: bool = False,
+        self,
+        mapper_instance: MapAsyncCallable,
+        server_count: int = _PROCESS_COUNT,
+        sock_path: str = MULTIPROC_MAP_SOCK_ADDR,
+        max_message_size: int = MAX_MESSAGE_SIZE,
+        max_threads: int = NUM_THREADS_DEFAULT,
+        server_info_file: str = MAP_SERVER_INFO_FILE_PATH,
+        use_tcp: bool = False,
     ):
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
@@ -56,9 +71,7 @@ class AsyncMultiprocMapServer(NumaflowServer):
         """
         Starts the multiprocess async gRPC servers.
         """
-        _LOGGER.info(
-            "Starting async multiprocess gRPC server with %d workers", self._process_count
-        )
+        _LOGGER.info("Starting async multiprocess gRPC server with %d workers", self._process_count)
 
         workers = []
         ports = []

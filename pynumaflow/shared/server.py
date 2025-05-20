@@ -311,8 +311,12 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_async_error(context: NumaflowServicerContext, exception: BaseException,
-                             exception_type: str, parent: bool = False):
+async def handle_async_error(
+    context: NumaflowServicerContext,
+    exception: BaseException,
+    exception_type: str,
+    parent: bool = False,
+):
     """
     Handle exceptions for async servers by updating the context and exiting.
     """

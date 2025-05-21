@@ -113,6 +113,8 @@ class AsyncMapMultiprocServer(NumaflowServer):
             server_info = ServerInfo.get_default_server_info()
             server_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
             server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
+            if self.use_tcp:
+                server_info.protocol = Protocol.TCP
             # Add the MULTIPROC metadata using the number of servers to use
             server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
             # Add the MAP_MODE metadata to the server info for the correct map mode
@@ -123,7 +125,7 @@ class AsyncMapMultiprocServer(NumaflowServer):
                 sock_path=bind_address,
                 max_threads=self.max_threads,
                 cleanup_coroutines=list(),
-                server_info_file=self.server_info_file,
+                server_info_file=None,
                 server_info=server_info,
             )
 

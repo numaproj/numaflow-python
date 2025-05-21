@@ -95,7 +95,6 @@ class AsyncMapMultiprocServer(NumaflowServer):
 
         # Write server info file
         if self.server_info_file:
-            print("NOT HEREEE")
             server_info = ServerInfo.get_default_server_info()
             server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
             server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap

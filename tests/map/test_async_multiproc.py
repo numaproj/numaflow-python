@@ -14,8 +14,11 @@ sock_prefix = f"/tmp/test_async_multiproc_map_{uuid.uuid4().hex}_"
 
 
 async def async_handler(keys, datum: Datum) -> Messages:
-    msg = f"payload:{datum.value.decode()} event_time:{datum.event_time} watermark:{datum.watermark}"
+    msg = (
+        f"payload:{datum.value.decode()} event_time:{datum.event_time} watermark:{datum.watermark}"
+    )
     return Messages(Message(value=msg.encode(), keys=keys))
+
 
 class TestAsyncMapMultiprocServer(unittest.TestCase):
     def setUp(self):
@@ -25,7 +28,7 @@ class TestAsyncMapMultiprocServer(unittest.TestCase):
             server_count=2,
             sock_path=self.base_sock_path,
             use_tcp=False,
-            server_info_file="/tmp/server_info"
+            server_info_file="/tmp/server_info",
         )
         self.process = Process(target=self.server.start)
         self.process.start()
@@ -80,4 +83,6 @@ class TestAsyncMapMultiprocServer(unittest.TestCase):
 
     def test_server_start(self):
         for path in self.socket_paths:
-            self.assertTrue(os.path.exists(path), f"Server socket {path} was not created successfully")
+            self.assertTrue(
+                os.path.exists(path), f"Server socket {path} was not created successfully"
+            )

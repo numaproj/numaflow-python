@@ -89,6 +89,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             _LOGGER.critical("MapFn Error in _process_inputs", exc_info=True)
         finally:
             await result_queue.put(STREAM_EOF)
+
     # async def _process_inputs(
     #     self,
     #     request_iterator: AsyncIterable[map_pb2.MapRequest],

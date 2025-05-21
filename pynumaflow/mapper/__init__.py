@@ -14,5 +14,5 @@ __all__ = [
     "MapServer",
     "MapAsyncServer",
     "MapMultiprocServer",
-    "AsyncMapMultiprocServer"
+    "AsyncMapMultiprocServer",
 ]

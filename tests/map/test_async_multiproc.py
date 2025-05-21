@@ -28,7 +28,7 @@ class TestAsyncMapMultiprocServer(unittest.TestCase):
             server_count=2,
             sock_path=self.base_sock_path,
             use_tcp=False,
-            server_info_file="/tmp/server_info",
+            server_info_file=None,
         )
         self.process = Process(target=self.server.start)
         self.process.start()

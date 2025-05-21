@@ -82,7 +82,7 @@ class MapAsyncServer(NumaflowServer):
             ("grpc.max_receive_message_length", self.max_message_size),
         ]
         # Get the servicer instance for the async server
-        self.servicer = AsyncMapServicer(handler=mapper_instance)
+        self.servicer = AsyncMapServicer(handler=mapper_instance, multiproc=False)
 
     def start(self) -> None:
         """

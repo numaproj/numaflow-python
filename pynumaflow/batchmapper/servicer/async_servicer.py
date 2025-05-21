@@ -98,7 +98,7 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
 
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING, False)
             return
 
     async def IsReady(

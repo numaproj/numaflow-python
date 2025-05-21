@@ -105,7 +105,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             _LOGGER.critical("Reduce Error", exc_info=True)
             # Send a context abort signal for the rpc, this is required for numa container to get
             # the correct grpc error
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING, False)
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
@@ -136,7 +136,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             _LOGGER.critical("Reduce Error", exc_info=True)
             # Send a context abort signal for the rpc, this is required for numa container to get
             # the correct grpc error
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING, False)
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

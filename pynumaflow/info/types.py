@@ -26,6 +26,7 @@ MAP_MODE_KEY = "MAP_MODE"
 # MULTIPROC_KEY is the field used to indicate that Multiproc map mode is enabled
 # The value contains the number of servers spawned.
 MULTIPROC_KEY = "MULTIPROC"
+MULTIPROC_ENDPOINTS = "MULTIPROC_ENDPOINTS"
 
 SI = TypeVar("SI", bound="ServerInfo")
 

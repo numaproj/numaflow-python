@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from collections.abc import AsyncIterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -18,11 +19,10 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(
-        self,
-        handler: MapAsyncCallable,
-    ):
+    def __init__(self, handler: MapAsyncCallable, multiproc: bool = False):
         self.background_tasks = set()
+        # This indicates whether the grpc server attached is multiproc or not
+        self.multiproc = multiproc
         self.__map_handler: MapAsyncCallable = handler
 
     async def MapFn(
@@ -36,6 +36,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
         """
         # proto repeated field(keys) is of type google._upb._message.RepeatedScalarContainer
         # we need to explicitly convert it to list
+        producer = None
         try:
             # The first message to be received should be a valid handshake
             req = await request_iterator.__anext__()
@@ -56,44 +57,65 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
+                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING, self.multiproc)
                     return
                 # Send window response back to the client
                 else:
                     yield msg
             # wait for the producer task to complete
             await producer
+        except GeneratorExit:
+            _LOGGER.info("Client disconnected, generator closed.")
+            raise
         except BaseException as e:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING, self.multiproc)
             return
+        finally:
+            if producer and not producer.done():
+                producer.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await producer
 
-    async def _process_inputs(
-        self,
-        request_iterator: AsyncIterable[map_pb2.MapRequest],
-        result_queue: NonBlockingIterator,
-    ):
-        """
-        Utility function for processing incoming MapRequests
-        """
+    async def _process_inputs(self, request_iterator, result_queue):
         try:
-            # for each incoming request, create a background task to execute the
-            # UDF code
             async for req in request_iterator:
-                msg_task = asyncio.create_task(self._invoke_map(req, result_queue))
-                # save a reference to a set to store active tasks
-                self.background_tasks.add(msg_task)
-                msg_task.add_done_callback(self.background_tasks.discard)
+                task = asyncio.create_task(self._invoke_map(req, result_queue))
+                self.background_tasks.add(task)
+                task.add_done_callback(self.background_tasks.discard)
 
-            # wait for all tasks to complete
-            for task in self.background_tasks:
-                await task
-
-            # send an EOF to result queue to indicate that all tasks have completed
+            await asyncio.gather(*self.background_tasks)
+        except BaseException:
+            _LOGGER.critical("MapFn Error in _process_inputs", exc_info=True)
+        finally:
             await result_queue.put(STREAM_EOF)
 
-        except BaseException:
-            _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
+    # async def _process_inputs(
+    #     self,
+    #     request_iterator: AsyncIterable[map_pb2.MapRequest],
+    #     result_queue: NonBlockingIterator,
+    # ):
+    #     """
+    #     Utility function for processing incoming MapRequests
+    #     """
+    #     try:
+    #         # for each incoming request, create a background task to execute the
+    #         # UDF code
+    #         async for req in request_iterator:
+    #             msg_task = asyncio.create_task(self._invoke_map(req, result_queue))
+    #             # save a reference to a set to store active tasks
+    #             self.background_tasks.add(msg_task)
+    #             msg_task.add_done_callback(self.background_tasks.discard)
+    #
+    #         # wait for all tasks to complete
+    #         for task in self.background_tasks:
+    #             await task
+    #
+    #         # send an EOF to result queue to indicate that all tasks have completed
+    #         await result_queue.put(STREAM_EOF)
+    #
+    #     except BaseException:
+    #         _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
 
     async def _invoke_map(self, req: map_pb2.MapRequest, result_queue: NonBlockingIterator):
         """

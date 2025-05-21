@@ -190,11 +190,7 @@ async def start_async_server(
     """
     await server_async.start()
 
-    if server_info is None:
-        # Create the server info file if not provided
-        server_info = ServerInfo.get_default_server_info()
     # Add the server information to the server info file
-
     if server_info_file:
         info_server_write(server_info=server_info, info_file=server_info_file)
 

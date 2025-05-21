@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # To set the env server_count value set the env variable
     # NUM_CPU_MULTIPROC="N"
     server_count = int(os.getenv("NUM_CPU_MULTIPROC", "2"))
-    server_type = int(os.getenv("SERVER_KIND", "tcp"))
+    server_type = os.getenv("SERVER_KIND", "tcp")
     use_tcp = False
     if server_type == "tcp":
         use_tcp = True

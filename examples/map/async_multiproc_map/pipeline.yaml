@@ -15,9 +15,11 @@ spec:
     - name: mult
       udf:
         container:
-          image: quay.io/skohli/numaflow-python/async-multiproc:v4
+          image: quay.io/skohli/numaflow-python/async-multiproc:v5
 #          imagePullPolicy: Always
           env:
+            - name: SERVER_KIND
+              value: "uds"
             - name: PYTHONDEBUG
               value: "true"
             - name: NUM_CPU_MULTIPROC

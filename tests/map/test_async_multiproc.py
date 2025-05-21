@@ -8,7 +8,7 @@ from pynumaflow.mapper import Datum, Messages, Message
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.map.test_async_mapper import request_generator
 from tests.map.utils import get_test_datums
-from pynumaflow.mapper import AsyncMapMultiprocServer  # wherever your class is
+from pynumaflow.mapper import AsyncMapMultiprocServer
 
 sock_prefix = f"/tmp/test_async_multiproc_map_{uuid.uuid4().hex}_"
 

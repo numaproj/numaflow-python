@@ -1,4 +1,4 @@
-TAG ?= v5
+TAG ?= v6
 PUSH ?= false
 IMAGE_REGISTRY = quay.io/skohli/numaflow-python/async-multiproc:${TAG}
 DOCKER_FILE_PATH = examples/map/async_multiproc_map/Dockerfile

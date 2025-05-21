@@ -1,5 +1,6 @@
 import logging
 import multiprocessing
+from typing import Optional
 
 import aiorun
 import grpc
@@ -46,7 +47,7 @@ class AsyncMapMultiprocServer(NumaflowServer):
         sock_path: str = MULTIPROC_MAP_SOCK_ADDR,
         max_message_size: int = MAX_MESSAGE_SIZE,
         max_threads: int = NUM_THREADS_DEFAULT,
-        server_info_file: str = MAP_SERVER_INFO_FILE_PATH,
+        server_info_file: Optional[str] = MAP_SERVER_INFO_FILE_PATH,
         use_tcp: bool = False,
     ):
         self.sock_path = f"unix://{sock_path}"
@@ -93,13 +94,15 @@ class AsyncMapMultiprocServer(NumaflowServer):
             workers.append(worker)
 
         # Write server info file
-        server_info = ServerInfo.get_default_server_info()
-        server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
-        server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
-        if self.use_tcp:
-            server_info.protocol = Protocol.TCP
-            server_info.metadata[MULTIPROC_ENDPOINTS] = ",".join(map(str, ports))
-        info_server_write(server_info=server_info, info_file=self.server_info_file)
+        if self.server_info_file:
+            print("NOT HEREEE")
+            server_info = ServerInfo.get_default_server_info()
+            server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
+            server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
+            if self.use_tcp:
+                server_info.protocol = Protocol.TCP
+                server_info.metadata[MULTIPROC_ENDPOINTS] = ",".join(map(str, ports))
+            info_server_write(server_info=server_info, info_file=self.server_info_file)
 
         for worker in workers:
             worker.join()
@@ -110,15 +113,19 @@ class AsyncMapMultiprocServer(NumaflowServer):
             server.add_insecure_port(bind_address)
             map_pb2_grpc.add_MapServicer_to_server(self.servicer, server)
 
-            server_info = ServerInfo.get_default_server_info()
-            server_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Mapper]
-            server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
-            if self.use_tcp:
-                server_info.protocol = Protocol.TCP
-            # Add the MULTIPROC metadata using the number of servers to use
-            server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
-            # Add the MAP_MODE metadata to the server info for the correct map mode
-            server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
+            server_info = None
+            if self.server_info_file:
+                server_info = ServerInfo.get_default_server_info()
+                server_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[
+                    ContainerType.Mapper
+                ]
+                server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
+                if self.use_tcp:
+                    server_info.protocol = Protocol.TCP
+                # Add the MULTIPROC metadata using the number of servers to use
+                server_info.metadata[MULTIPROC_KEY] = str(self._process_count)
+                # Add the MAP_MODE metadata to the server info for the correct map mode
+                server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 
             await start_async_server(
                 server_async=server,

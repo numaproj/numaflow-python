@@ -82,7 +82,7 @@ class AsyncMapMultiprocServer(NumaflowServer):
                     bind_address = f"0.0.0.0:{reserved_port}"
                     ports.append(f"http://{bind_address}")
             else:
-                bind_address = f"unix://{self.sock_path}{idx}.sock"
+                bind_address = f"{self.sock_path}{idx}.sock"
             _LOGGER.info("Binding server to: %s", bind_address)
 
             worker = multiprocessing.Process(

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.9.2 (2025-04-10)
+
+ * [6ccd49e](https://github.com/numaproj/numaflow-python/commit/6ccd49ef09ad11eac9b0bb9a6b0f5517d858bea4) feat: utility function to persist critical error (#222)
+
+### Contributors
+
+ * Adarsh Jain
+
+## v0.9.1 (2025-02-13)
+
+
+### Contributors
+
+
 ## v0.9.0 (2024-11-08)
 
  * [f2f7bf6](https://github.com/numaproj/numaflow-python/commit/f2f7bf67ed89d74f51173e907c30abb116bb2cf7) feat: update batchmap and mapstream to use Map proto (#200)
@@ -13,6 +27,12 @@
 
  * Keran Yang
  * Sidhant Kohli
+
+## v0.8.1 (2025-01-29)
+
+
+### Contributors
+
 
 ## v0.8.0 (2024-08-19)
 

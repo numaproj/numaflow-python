@@ -26,26 +26,33 @@ class Response:
     success: bool
     err: Optional[str]
     fallback: bool
+    serve_response: Optional[bytes]
 
-    __slots__ = ("id", "success", "err", "fallback")
+    __slots__ = ("id", "success", "err", "fallback", "serve_response")
 
     # as_success creates a successful Response with the given id.
     # The Success field is set to true.
     @classmethod
     def as_success(cls: type[R], id_: str) -> R:
-        return Response(id=id_, success=True, err=None, fallback=False)
+        return Response(id=id_, success=True, err=None, fallback=False, serve_response=None)
 
     # as_failure creates a failed Response with the given id and error message.
     # The success field is set to false and the err field is set to the provided error message.
     @classmethod
     def as_failure(cls: type[R], id_: str, err_msg: str) -> R:
-        return Response(id=id_, success=False, err=err_msg, fallback=False)
+        return Response(id=id_, success=False, err=err_msg, fallback=False, serve_response=None)
 
     # as_fallback creates a Response with the fallback field set to true.
     # This indicates that the message should be sent to the fallback sink.
     @classmethod
     def as_fallback(cls: type[R], id_: str) -> R:
-        return Response(id=id_, fallback=True, err=None, success=False)
+        return Response(id=id_, fallback=True, err=None, success=False, serve_response=None)
+
+    # as_serving_response creates a Response with the serve_response field set to
+    # value of the result to be sent back from the serving sink.
+    @classmethod
+    def as_serving_response(cls: type[R], id_: str, result: bytes) -> R:
+        return Response(id=id_, fallback=False, err=None, success=True, serve_response=result)
 
 
 class Responses(Sequence[R]):

@@ -2,7 +2,7 @@ import datetime
 import logging
 
 from pynumaflow.sourcetransformer import Messages, Message, Datum
-from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
+from pynumaflow.sourcetransformer import SourceTransformAsyncServer
 
 """
 This is a simple User Defined Function example which receives a message, applies the following

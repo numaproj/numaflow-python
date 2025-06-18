@@ -13,18 +13,6 @@ from pynumaflow.sourcetransformer._dtypes import SourceTransformAsyncCallable
 from pynumaflow.types import NumaflowServicerContext
 
 
-def _create_read_handshake_response() -> transform_pb2.SourceTransformResponse:
-    """
-    Create a handshake response for the SourceTransform function.
-
-    Returns:
-    SourceTransformResponse: A SourceTransformResponse object indicating a successful handshake.
-    """
-    return transform_pb2.SourceTransformResponse(
-        handshake=transform_pb2.Handshake(sot=True),
-    )
-
-
 class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
     """
     This class is used to create a new grpc SourceTransform Async Servicer instance.

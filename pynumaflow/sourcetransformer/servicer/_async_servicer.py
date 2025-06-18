@@ -27,8 +27,8 @@ def _create_read_handshake_response() -> transform_pb2.SourceTransformResponse:
 
 class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
     """
-    This class is used to create a new grpc Batch Map Servicer instance.
-    It implements the MapServicer interface from the proto
+    This class is used to create a new grpc SourceTransform Async Servicer instance.
+    It implements the SourceTransformServicer interface from the proto
     transform_pb2_grpc.py file.
     Provides the functionality for the required rpc methods.
     """
@@ -46,7 +46,7 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
         context: NumaflowServicerContext,
     ) -> AsyncIterable[transform_pb2.SourceTransformResponse]:
         """
-        Applies a batch map function to a MapRequest stream in a batching mode.
+        Applies a transform function to a SourceTransformRequest stream
         The pascal case function name comes from the proto transform_pb2_grpc.py file.
         """
         try:

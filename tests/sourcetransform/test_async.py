@@ -12,7 +12,7 @@ from grpc.aio._server import Server
 from pynumaflow import setup_logging
 from pynumaflow._constants import MAX_MESSAGE_SIZE
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
-from pynumaflow.sourcetransformer import Datum, Messages, Message
+from pynumaflow.sourcetransformer import Datum, Messages, Message, SourceTransformer
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
 from tests.sourcetransform.utils import get_test_datums
 from tests.testing_utils import (
@@ -26,18 +26,19 @@ LOGGER = setup_logging(__name__)
 raise_error_from_st = False
 
 
-async def async_transform_handler(keys: list[str], datum: Datum) -> Messages:
-    if raise_error_from_st:
-        raise ValueError("Exception thrown from transform")
-    val = datum.value
-    msg = "payload:{} event_time:{} ".format(
-        val.decode("utf-8"),
-        datum.event_time,
-    )
-    val = bytes(msg, encoding="utf-8")
-    messages = Messages()
-    messages.append(Message(val, mock_new_event_time(), keys=keys))
-    return messages
+class TestAsyncSourceTrn(SourceTransformer):
+    async def handler(self, keys: list[str], datum: Datum) -> Messages:
+        if raise_error_from_st:
+            raise ValueError("Exception thrown from transform")
+        val = datum.value
+        msg = "payload:{} event_time:{} ".format(
+            val.decode("utf-8"),
+            datum.event_time,
+        )
+        val = bytes(msg, encoding="utf-8")
+        messages = Messages()
+        messages.append(Message(val, mock_new_event_time(), keys=keys))
+        return messages
 
 
 def request_generator(req):
@@ -55,7 +56,8 @@ def startup_callable(loop):
 
 
 def new_async_st():
-    server = SourceTransformAsyncServer(source_transform_instance=async_transform_handler)
+    handle = TestAsyncSourceTrn()
+    server = SourceTransformAsyncServer(source_transform_instance=handle)
     udfs = server.servicer
     return udfs
 
@@ -251,20 +253,17 @@ class TestAsyncTransformer(unittest.TestCase):
         return transform_pb2_grpc.SourceTransformStub(_channel)
 
     def test_max_threads(self):
+        handle = TestAsyncSourceTrn()
         # max cap at 16
-        server = SourceTransformAsyncServer(
-            source_transform_instance=async_transform_handler, max_threads=32
-        )
+        server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=32)
         self.assertEqual(server.max_threads, 16)
 
         # use argument provided
-        server = SourceTransformAsyncServer(
-            source_transform_instance=async_transform_handler, max_threads=5
-        )
+        server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=5)
         self.assertEqual(server.max_threads, 5)
 
         # defaults to 4
-        server = SourceTransformAsyncServer(source_transform_instance=async_transform_handler)
+        server = SourceTransformAsyncServer(source_transform_instance=handle)
         self.assertEqual(server.max_threads, 4)
 
 

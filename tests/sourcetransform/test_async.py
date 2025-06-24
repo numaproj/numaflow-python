@@ -26,7 +26,7 @@ LOGGER = setup_logging(__name__)
 raise_error_from_st = False
 
 
-class TestAsyncSourceTrn(SourceTransformer):
+class SimpleAsyncSourceTrn(SourceTransformer):
     async def handler(self, keys: list[str], datum: Datum) -> Messages:
         if raise_error_from_st:
             raise ValueError("Exception thrown from transform")
@@ -56,7 +56,7 @@ def startup_callable(loop):
 
 
 def new_async_st():
-    handle = TestAsyncSourceTrn()
+    handle = SimpleAsyncSourceTrn()
     server = SourceTransformAsyncServer(source_transform_instance=handle)
     udfs = server.servicer
     return udfs
@@ -253,7 +253,7 @@ class TestAsyncTransformer(unittest.TestCase):
         return transform_pb2_grpc.SourceTransformStub(_channel)
 
     def test_max_threads(self):
-        handle = TestAsyncSourceTrn()
+        handle = SimpleAsyncSourceTrn()
         # max cap at 16
         server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=32)
         self.assertEqual(server.max_threads, 16)

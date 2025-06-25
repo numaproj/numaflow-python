@@ -3,6 +3,7 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar, Callable, Union, Optional
+from collections.abc import Awaitable
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -210,3 +211,9 @@ SourceTransformHandler = Callable[[list[str], Datum], Messages]
 # SourceTransformCallable is the type of the handler function for the
 # Source Transformer UDFunction.
 SourceTransformCallable = Union[SourceTransformHandler, SourceTransformer]
+
+
+# SourceTransformAsyncCallable is a callable which can be used as a handler
+# for the Asynchronous Transformer UDF
+SourceTransformHandlerAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
+SourceTransformAsyncCallable = Union[SourceTransformer, SourceTransformHandlerAsyncHandlerCallable]

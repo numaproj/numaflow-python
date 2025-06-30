@@ -34,11 +34,7 @@ RUN apt-get update \
     && chmod +x /dumb-init \
     && curl -sSL https://install.python-poetry.org | python3 -
 
-####################################################################################################
-# udf: used for running the udf vertices
-####################################################################################################
-FROM builder AS udf
-
+# Copy necessary files and install dependencies
 WORKDIR $PYSETUP_PATH
 COPY ./ ./
 
@@ -47,6 +43,36 @@ RUN poetry lock
 RUN poetry install --no-cache --no-root && \
     rm -rf ~/.cache/pypoetry/
 
+####################################################################################################
+# udf: used for running the udf vertices
+####################################################################################################
+FROM python:3.10-slim-bullseye AS udf
+
+ENV PYTHONFAULTHANDLER=1 \
+  PYTHONUNBUFFERED=1 \
+  PYTHONHASHSEED=random \
+  PYSETUP_PATH="/opt/pysetup"
+
+ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/map/forward_message"
+ENV VENV_PATH="$EXAMPLE_PATH/.venv"
+ENV PATH="$VENV_PATH/bin:$PATH"
+
+# Install only runtime system dependencies
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
+        wget \
+    && apt-get clean && rm -rf /var/lib/apt/lists/* \
+    \
+    # install dumb-init
+    && wget -O /dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_x86_64 \
+    && chmod +x /dumb-init
+
+# Copy only the virtual environment and application code from builder
+WORKDIR $PYSETUP_PATH
+COPY --from=builder $VENV_PATH $VENV_PATH
+COPY examples/map/forward_message/ $EXAMPLE_PATH/
+
+WORKDIR $EXAMPLE_PATH
 RUN chmod +x entry.sh
 
 ENTRYPOINT ["/dumb-init", "--"]

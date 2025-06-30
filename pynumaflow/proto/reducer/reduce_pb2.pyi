@@ -25,6 +25,7 @@ class ReduceRequest(_message.Message):
             OPEN: _ClassVar[ReduceRequest.WindowOperation.Event]
             CLOSE: _ClassVar[ReduceRequest.WindowOperation.Event]
             APPEND: _ClassVar[ReduceRequest.WindowOperation.Event]
+
         OPEN: ReduceRequest.WindowOperation.Event
         CLOSE: ReduceRequest.WindowOperation.Event
         APPEND: ReduceRequest.WindowOperation.Event
@@ -48,6 +49,7 @@ class ReduceRequest(_message.Message):
             key: str
             value: str
             def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+
         KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
@@ -66,6 +68,7 @@ class ReduceRequest(_message.Message):
             watermark: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
             headers: _Optional[_Mapping[str, str]] = ...,
         ) -> None: ...
+
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
     payload: ReduceRequest.Payload
@@ -108,6 +111,7 @@ class ReduceResponse(_message.Message):
             value: _Optional[bytes] = ...,
             tags: _Optional[_Iterable[str]] = ...,
         ) -> None: ...
+
     RESULT_FIELD_NUMBER: _ClassVar[int]
     WINDOW_FIELD_NUMBER: _ClassVar[int]
     EOF_FIELD_NUMBER: _ClassVar[int]

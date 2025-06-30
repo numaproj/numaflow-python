@@ -21,7 +21,6 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
     return messages
 
 
-
 if __name__ == "__main__":
     """
     This example shows how to create a simple map function that takes in a

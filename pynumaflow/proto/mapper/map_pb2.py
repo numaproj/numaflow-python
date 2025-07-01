@@ -26,9 +26,9 @@ _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "map_pb2", _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
     _globals["DESCRIPTOR"]._options = None
-    _globals["DESCRIPTOR"]._serialized_options = (
-        b"Z5github.com/numaproj/numaflow-go/pkg/apis/proto/map/v1"
-    )
+    _globals[
+        "DESCRIPTOR"
+    ]._serialized_options = b"Z5github.com/numaproj/numaflow-go/pkg/apis/proto/map/v1"
     _globals["_MAPREQUEST_REQUEST_HEADERSENTRY"]._options = None
     _globals["_MAPREQUEST_REQUEST_HEADERSENTRY"]._serialized_options = b"8\001"
     _globals["_MAPREQUEST"]._serialized_start = 84

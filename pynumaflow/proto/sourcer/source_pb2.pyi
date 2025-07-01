@@ -83,7 +83,6 @@ class ReadResponse(_message.Message):
             __slots__ = ()
             SUCCESS: _ClassVar[ReadResponse.Status.Code]
             FAILURE: _ClassVar[ReadResponse.Status.Code]
-
         SUCCESS: ReadResponse.Status.Code
         FAILURE: ReadResponse.Status.Code
 
@@ -91,7 +90,6 @@ class ReadResponse(_message.Message):
             __slots__ = ()
             UNACKED: _ClassVar[ReadResponse.Status.Error]
             OTHER: _ClassVar[ReadResponse.Status.Error]
-
         UNACKED: ReadResponse.Status.Error
         OTHER: ReadResponse.Status.Error
         EOT_FIELD_NUMBER: _ClassVar[int]

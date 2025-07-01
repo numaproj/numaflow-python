@@ -25,7 +25,6 @@ class ReduceRequest(_message.Message):
             OPEN: _ClassVar[ReduceRequest.WindowOperation.Event]
             CLOSE: _ClassVar[ReduceRequest.WindowOperation.Event]
             APPEND: _ClassVar[ReduceRequest.WindowOperation.Event]
-
         OPEN: ReduceRequest.WindowOperation.Event
         CLOSE: ReduceRequest.WindowOperation.Event
         APPEND: ReduceRequest.WindowOperation.Event

@@ -29,7 +29,7 @@ google-api-core = "^2.11.0"
 grpcio-status = "^1.48.1"
 protobuf = ">=3.20,<6.0"
 aiorun = "^2023.7"
-uvloop = "^0.19.0"
+uvloop = { version = "^0.19.0", markers = "sys_platform == 'linux'" }
 psutil = "^6.0.0"
 
 [tool.poetry.group.dev]
@@ -80,7 +80,6 @@ extend-exclude = [
     "*_pb2*.py",
     "*.pyi"
 ]
-output-format = "full"
-[tool.ruff.lint]
+format = "grouped"
 select = ["E", "F", "UP"]
 

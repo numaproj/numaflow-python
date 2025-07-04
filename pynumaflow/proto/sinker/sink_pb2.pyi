@@ -37,6 +37,7 @@ class SinkRequest(_message.Message):
             key: str
             value: str
             def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+
         KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
@@ -58,6 +59,7 @@ class SinkRequest(_message.Message):
             id: _Optional[str] = ...,
             headers: _Optional[_Mapping[str, str]] = ...,
         ) -> None: ...
+
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
@@ -106,6 +108,7 @@ class SinkResponse(_message.Message):
             status: _Optional[_Union[Status, str]] = ...,
             err_msg: _Optional[str] = ...,
         ) -> None: ...
+
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]

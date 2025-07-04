@@ -80,7 +80,5 @@ extend-exclude = [
     "*_pb2*.py",
     "*.pyi"
 ]
-output-format = "full"
-[tool.ruff.lint]
 select = ["E", "F", "UP"]
 

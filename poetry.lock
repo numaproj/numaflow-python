@@ -1105,7 +1105,6 @@ description = "Fast implementation of asyncio event loop on top of libuv"
 optional = false
 python-versions = ">=3.8.0"
 groups = ["main"]
-markers = "sys_platform == \"linux\""
 files = [
     {file = "uvloop-0.19.0-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:de4313d7f575474c8f5a12e163f6d89c0a878bc49219641d49e6f1444369a90e"},
     {file = "uvloop-0.19.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:5588bd21cf1fcf06bded085f37e43ce0e00424197e7c10e77afd4bbefffef428"},
@@ -1168,4 +1167,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9, <3.13"
-content-hash = "d3cdb3d6868fa027b722920ebd118d52f11334101eb2d448348a9b46c386629d"
+content-hash = "afdf2080de75a2057f967d51fb0e96189ea51ce3a2970f3ee623701c6d4a70d7"

@@ -85,7 +85,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             # if there is an exception, we will mark all the responses as a failure
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING, False)
             return
 
     async def __invoke_sink(

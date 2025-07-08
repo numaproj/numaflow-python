@@ -32,6 +32,7 @@ class ReadRequest(_message.Message):
         def __init__(
             self, num_records: _Optional[int] = ..., timeout_in_ms: _Optional[int] = ...
         ) -> None: ...
+
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     request: ReadRequest.Request
@@ -55,6 +56,7 @@ class ReadResponse(_message.Message):
             key: str
             value: str
             def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+
         PAYLOAD_FIELD_NUMBER: _ClassVar[int]
         OFFSET_FIELD_NUMBER: _ClassVar[int]
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
@@ -105,6 +107,7 @@ class ReadResponse(_message.Message):
             error: _Optional[_Union[ReadResponse.Status.Error, str]] = ...,
             msg: _Optional[str] = ...,
         ) -> None: ...
+
     RESULT_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
@@ -128,6 +131,7 @@ class AckRequest(_message.Message):
         def __init__(
             self, offsets: _Optional[_Iterable[_Union[Offset, _Mapping]]] = ...
         ) -> None: ...
+
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     request: AckRequest.Request
@@ -148,6 +152,7 @@ class AckResponse(_message.Message):
         def __init__(
             self, success: _Optional[_Union[_empty_pb2.Empty, _Mapping]] = ...
         ) -> None: ...
+
     RESULT_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     result: AckResponse.Result
@@ -172,6 +177,7 @@ class PendingResponse(_message.Message):
         COUNT_FIELD_NUMBER: _ClassVar[int]
         count: int
         def __init__(self, count: _Optional[int] = ...) -> None: ...
+
     RESULT_FIELD_NUMBER: _ClassVar[int]
     result: PendingResponse.Result
     def __init__(
@@ -186,6 +192,7 @@ class PartitionsResponse(_message.Message):
         PARTITIONS_FIELD_NUMBER: _ClassVar[int]
         partitions: _containers.RepeatedScalarFieldContainer[int]
         def __init__(self, partitions: _Optional[_Iterable[int]] = ...) -> None: ...
+
     RESULT_FIELD_NUMBER: _ClassVar[int]
     result: PartitionsResponse.Result
     def __init__(

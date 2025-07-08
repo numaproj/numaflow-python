@@ -20,11 +20,11 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 ####################################################################################################
 FROM base-builder AS udf-builder
 
-ENV EXAMPLE_PATH="/opt/pysetup/examples/sink/log"
+ENV EXAMPLE_PATH="/opt/pysetup/examples/reduce/batchmap/flatmap"
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 WORKDIR $EXAMPLE_PATH
-COPY examples/sink/log/ ./
+COPY examples/reduce/batchmap/flatmap/ ./
 RUN poetry install --no-root --no-interaction
 
 ####################################################################################################
@@ -33,7 +33,7 @@ RUN poetry install --no-root --no-interaction
 FROM python:3.10-slim-bullseye AS udf
 
 ENV PYSETUP_PATH="/opt/pysetup"
-ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/sink/log"
+ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/reduce/batchmap/flatmap"
 ENV VENV_PATH="$EXAMPLE_PATH/.venv"
 ENV PATH="$VENV_PATH/bin:$PATH"
 
@@ -52,4 +52,4 @@ RUN chmod +x entry.sh
 ENTRYPOINT ["/dumb-init", "--"]
 CMD ["sh", "-c", "$EXAMPLE_PATH/entry.sh"]
 
-EXPOSE 5000
+EXPOSE 5000 

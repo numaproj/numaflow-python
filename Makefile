@@ -34,4 +34,5 @@ proto:
 	poetry run python3 -m grpc_tools.protoc --pyi_out=pynumaflow/proto/sourcer -I=pynumaflow/proto/sourcer --python_out=pynumaflow/proto/sourcer --grpc_python_out=pynumaflow/proto/sourcer  pynumaflow/proto/sourcer/*.proto
 
 
-	sed -i -e 's/^\(import.*_pb2\)/from . \1/' pynumaflow/proto/*/*.py
+	sed -i.bak -e 's/^\(import.*_pb2\)/from . \1/' pynumaflow/proto/*/*.py
+	rm pynumaflow/proto/*/*.py.bak

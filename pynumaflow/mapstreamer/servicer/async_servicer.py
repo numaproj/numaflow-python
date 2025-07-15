@@ -59,7 +59,7 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
                 yield map_pb2.MapResponse(status=map_pb2.TransmissionStatus(eot=True), id=req.id)
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING, False)
             return
 
     async def __invoke_map_stream(self, keys: list[str], req: Datum):

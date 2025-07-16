@@ -3,7 +3,7 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar, Callable, Union, Optional
+from typing import TypeVar, Callable, Union, Optional, Type
 from collections.abc import AsyncIterable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -314,22 +314,30 @@ class Message:
         headers: dict[str, str] = None,
         id: str = None,
     ):
-        """
-        Creates a Message object to send value to a vertex.
-        """
+        self._value = value or b""
         self._keys = keys or []
         self._tags = tags or []
-        self._value = value or b""
         self._watermark = watermark
         self._event_time = event_time
         self._headers = headers or {}
         self._id = id or ""
-        # self._window = window or None
 
-    # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: type[M]) -> M:
-        return cls(b"", None, [DROP])
+    def to_drop(cls: Type[M]) -> M:
+        return cls(b"", None, ["DROP"])
+
+    @classmethod
+    def from_datum(cls: Type[M], datum: "Datum") -> M:
+        """Creates a Message from a Datum."""
+        return cls(
+            value=datum.value,
+            keys=datum.keys,
+            tags=[],
+            event_time=datum.event_time,
+            watermark=datum.watermark,
+            id=datum.id,
+            headers=datum.headers,
+        )
 
     @property
     def value(self) -> bytes:
@@ -358,7 +366,6 @@ class Message:
     @property
     def id(self) -> str:
         return self._id
-
 
 AccumulatorAsyncCallable = Callable[
     [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None

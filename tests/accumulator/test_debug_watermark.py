@@ -88,7 +88,15 @@ class ExampleErrorClass(Accumulator):
             
             msg = f"counter:{self.counter}"
             logging.info(f"[HANDLER_DEBUG] Putting message: {msg}")
-            message_obj = Message(str.encode(msg), keys=datum.keys(), tags=[])
+            message_obj = Message(
+                str.encode(msg), 
+                keys=datum.keys(), 
+                tags=[],
+                watermark=datum.watermark,
+                event_time=datum.event_time,
+                headers=datum.headers,
+                id=datum.id
+            )
             logging.info(f"[HANDLER_DEBUG] Message object: {message_obj}")
             logging.info(f"[HANDLER_DEBUG] Message has watermark: {hasattr(message_obj, 'watermark')}")
             logging.info(f"[HANDLER_DEBUG] Message has event_time: {hasattr(message_obj, 'event_time')}")

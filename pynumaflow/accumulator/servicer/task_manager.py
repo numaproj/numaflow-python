@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Union
 import logging
 
+from google.protobuf import timestamp_pb2
 from pynumaflow._constants import (
     STREAM_EOF,
     DELIMITER,
@@ -93,7 +94,9 @@ class TaskManager:
         tasks that are currently being processed.
         This is called when the input grpc stream is closed.
         """
-        for unified_key in self.tasks:
+        # Create a copy of the keys to avoid dictionary size change during iteration
+        task_keys = list(self.tasks.keys())
+        for unified_key in task_keys:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
             self.tasks.pop(unified_key)
 
@@ -304,83 +307,56 @@ class TaskManager:
         reader = input_queue.read_iterator()
         task = self.tasks[unified_key]
 
-        _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Starting write_to_global_queue for key: {unified_key}")
-        _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Task: {task}")
-        _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Task watermark: {task.latest_watermark}")
-        _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Task keys: {task.keys}")
-        
-        # Store the last datum processed for this task - we need this for watermark info
-        last_datum = getattr(task, 'last_datum', None)
-        _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Last datum: {last_datum}")
-        
         wm: datetime = task.latest_watermark
         async for msg in reader:
-            _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Received message: {msg}")
-            _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Message type: {type(msg)}")
-            _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Message keys: {msg.keys}")
-            _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Message value: {msg.value}")
-            _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Message tags: {msg.tags}")
+            # Convert the window to a datetime object
+            # Only update watermark if msg.watermark is not None
+            if msg.watermark is not None and wm < msg.watermark:
+                task.update_watermark(msg.watermark)
+                self.tasks[unified_key] = task
+                wm = msg.watermark
+
+            # Convert datetime to protobuf timestamp
+            event_time_pb = timestamp_pb2.Timestamp()
+            if msg.event_time is not None:
+                event_time_pb.FromDatetime(msg.event_time)
             
-            # For now, let's see if we can get the datum info from the task
-            # The task should have access to the datum information
+            watermark_pb = timestamp_pb2.Timestamp()
+            if msg.watermark is not None:
+                watermark_pb.FromDatetime(msg.watermark)
             
-            # If we have a last_datum, use its watermark and metadata
-            if last_datum:
-                _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Using last_datum watermark: {last_datum.watermark}")
-                _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Using last_datum event_time: {last_datum.event_time}")
-                _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Using last_datum headers: {last_datum.headers}")
-                _LOGGER.info(f"[WRITE_TO_GLOBAL_DEBUG] Using last_datum id: {last_datum.id}")
-                
-                # Update watermark if the datum's watermark is newer
-                if wm < last_datum.watermark:
-                    task.update_watermark(last_datum.watermark)
-                    self.tasks[unified_key] = task
-                    wm = last_datum.watermark
-                    
-                start_dt = datetime.fromtimestamp(0)
-                end_dt = wm
-                res = accumulator_pb2.AccumulatorResponse(
-                    payload=accumulator_pb2.Payload(
-                        keys=msg.keys,
-                        value=msg.value,
-                        event_time=last_datum.event_time,
-                        watermark=last_datum.watermark,
-                        headers=last_datum.headers,
-                        id=last_datum.id,
-                    ),
-                    window=accumulator_pb2.KeyedWindow(
-                        start=start_dt, end=end_dt, slot="slot-0", keys=task.keys
-                    ),
-                    EOF=False,
-                    tags=msg.tags,
-                )
-                await output_queue.put(res)
-            else:
-                _LOGGER.error("[WRITE_TO_GLOBAL_DEBUG] No last_datum available!")
-                # This is the problematic code that tries to access msg.watermark
-                # TODO: We need to fix this by storing datum information properly
-                start_dt = datetime.fromtimestamp(0)
-                end_dt = wm
-                res = accumulator_pb2.AccumulatorResponse(
-                    payload=accumulator_pb2.Payload(
-                        keys=msg.keys,
-                        value=msg.value,
-                        event_time=datetime.now(),  # Temporary fallback
-                        watermark=wm,  # Use task watermark as fallback
-                        headers={},  # Empty headers as fallback
-                        id="",  # Empty id as fallback
-                    ),
-                    window=accumulator_pb2.KeyedWindow(
-                        start=start_dt, end=end_dt, slot="slot-0", keys=task.keys
-                    ),
-                    EOF=False,
-                    tags=msg.tags,
-                )
-                await output_queue.put(res)
+            start_dt_pb = timestamp_pb2.Timestamp()
+            start_dt_pb.FromDatetime(datetime.fromtimestamp(0))
+            
+            end_dt_pb = timestamp_pb2.Timestamp()
+            end_dt_pb.FromDatetime(wm)
+            
+            res = accumulator_pb2.AccumulatorResponse(
+                payload=accumulator_pb2.Payload(
+                    keys=msg.keys,
+                    value=msg.value,
+                    event_time=event_time_pb,
+                    watermark=watermark_pb,
+                    headers=msg.headers,
+                    id=msg.id,
+                ),
+                window=accumulator_pb2.KeyedWindow(
+                    start=start_dt_pb, end=end_dt_pb, slot="slot-0", keys=task.keys
+                ),
+                EOF=False,
+                tags=msg.tags,
+            )
+            await output_queue.put(res)
         # send EOF
+        start_eof_pb = timestamp_pb2.Timestamp()
+        start_eof_pb.FromDatetime(datetime.fromtimestamp(0))
+        
+        end_eof_pb = timestamp_pb2.Timestamp()
+        end_eof_pb.FromDatetime(wm)
+        
         res = accumulator_pb2.AccumulatorResponse(
             window=accumulator_pb2.KeyedWindow(
-                start=datetime.fromtimestamp(0), end=wm, slot="slot-0", keys=task.keys
+                start=start_eof_pb, end=end_eof_pb, slot="slot-0", keys=task.keys
             ),
             EOF=True,
         )

@@ -4,8 +4,8 @@ from pynumaflow.accumulator._dtypes import (
     IntervalWindow,
     Metadata,
     DROP,
-    ReduceStreamer,
     KeyedWindow,
+    Accumulator,
 )
 from pynumaflow.accumulator.async_server import AccumulatorAsyncServer
 
@@ -16,6 +16,6 @@ __all__ = [
     "Metadata",
     "DROP",
     "AccumulatorAsyncServer",
-    "ReduceStreamer",
     "KeyedWindow",
+    "Accumulator",
 ]

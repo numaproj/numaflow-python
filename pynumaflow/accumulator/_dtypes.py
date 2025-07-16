@@ -288,19 +288,31 @@ class Message:
         value: data in bytes
         keys: []string keys for vertex (optional)
         tags: []string tags for conditional forwarding (optional)
+        watermark: watermark for this message (optional)
+        event_time: event time for this message (optional)
+        headers: headers for this message (optional)
+        id: message id (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags")
+    __slots__ = ("_value", "_keys", "_tags", "_watermark", "_event_time", "_headers", "_id")
 
     _value: bytes
     _keys: list[str]
     _tags: list[str]
+    _watermark: datetime
+    _event_time: datetime
+    _headers: dict[str, str]
+    _id: str
 
     def __init__(
         self,
         value: bytes,
         keys: list[str] = None,
         tags: list[str] = None,
+        watermark: datetime = None,
+        event_time: datetime = None,
+        headers: dict[str, str] = None,
+        id: str = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -308,6 +320,10 @@ class Message:
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""
+        self._watermark = watermark
+        self._event_time = event_time
+        self._headers = headers or {}
+        self._id = id or ""
         # self._window = window or None
 
     # returns the Message Object which will be dropped
@@ -326,6 +342,22 @@ class Message:
     @property
     def tags(self) -> list[str]:
         return self._tags
+
+    @property
+    def watermark(self) -> datetime:
+        return self._watermark
+
+    @property
+    def event_time(self) -> datetime:
+        return self._event_time
+
+    @property
+    def headers(self) -> dict[str, str]:
+        return self._headers
+
+    @property
+    def id(self) -> str:
+        return self._id
 
 
 AccumulatorAsyncCallable = Callable[

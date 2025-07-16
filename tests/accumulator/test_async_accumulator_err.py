@@ -47,6 +47,7 @@ def start_request() -> accumulator_pb2.AccumulatorRequest:
         event_time=event_time_timestamp,
         watermark=watermark_timestamp,
         id="test_id",
+        headers={"test_header_key": "test_header_value", "source": "test_source"},
     )
     operation = accumulator_pb2.AccumulatorRequest.WindowOperation(
         event=accumulator_pb2.AccumulatorRequest.WindowOperation.Event.OPEN,
@@ -163,9 +164,13 @@ class TestAsyncAccumulatorError(unittest.TestCase):
             
             # Try to consume the generator
             counter = 0
-            for _ in generator_response:
+            logging.info(f"[TEST_DEBUG] About to iterate through generator_response")
+            for response in generator_response:
                 counter += 1
+                logging.info(f"[TEST_DEBUG] Received response {counter}: {response}")
+            logging.info(f"[TEST_DEBUG] Finished iterating, got {counter} responses")
         except BaseException as err:
+            logging.info(f"[TEST_DEBUG] Caught exception: {err}")
             self.assertTrue("Simulated error in accumulator handler" in str(err))
             return
         self.fail("Expected an exception.")

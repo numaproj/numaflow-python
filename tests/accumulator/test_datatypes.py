@@ -206,7 +206,7 @@ class TestAccumulatorResult(unittest.TestCase):
 class TestAccumulatorRequest(unittest.TestCase):
     def test_create_request(self):
         operation = WindowOperation.OPEN
-        windows = [KeyedWindow(start=mock_start_time(), end=mock_end_time())]
+        keyed_window = KeyedWindow(start=mock_start_time(), end=mock_end_time())
         payload = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
@@ -215,9 +215,9 @@ class TestAccumulatorRequest(unittest.TestCase):
             id_=TEST_ID,
         )
 
-        request = AccumulatorRequest(operation, windows, payload)
+        request = AccumulatorRequest(operation, keyed_window, payload)
         self.assertEqual(request.operation, operation)
-        self.assertEqual(request.windows, windows)
+        self.assertEqual(request.keyed_window, keyed_window)
         self.assertEqual(request.payload, payload)
 
 

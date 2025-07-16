@@ -223,7 +223,7 @@ class TestAsyncAccumulator(unittest.TestCase):
                 
         # We should have 10 messages (one for each key)
         self.assertEqual(10, count)
-        self.assertEqual(1, eof_count)
+        self.assertEqual(10, eof_count)  # Each key/task sends its own EOF
         # Each key should appear once
         self.assertEqual(len(key_counts), 10)
 

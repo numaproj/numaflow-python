@@ -65,6 +65,11 @@ class TaskManager:
         # This queue is also used to send the error/exceptions to the client
         # if the reduce operation fails.
         self.global_result_queue = NonBlockingIterator()
+        # EOF response counting to ensure proper termination
+        self._expected_eof_count = 0
+        self._received_eof_count = 0
+        self._eof_count_lock = asyncio.Lock()
+        self._stream_termination_event = asyncio.Event()
 
     def get_unique_windows(self):
         """
@@ -163,6 +168,11 @@ class TaskManager:
 
             # Save the result of the reduce operation to the task list
             self.tasks[unified_key] = curr_task
+            
+            # Increment expected EOF count since we created a new task
+            async with self._eof_count_lock:
+                self._expected_eof_count += 1
+                logging.info(f"[EOF_COUNT_DEBUG] Task created. Expected EOF count: {self._expected_eof_count}")
 
         # Put the request in the iterator
         await curr_task.iterator.put(d)
@@ -289,7 +299,13 @@ class TaskManager:
             #     eof_window_msg = create_window_eof_response(window=window)
             #     await self.global_result_queue.put(eof_window_msg)
 
-            # Once all tasks are completed, senf EOF the global result queue
+            # Wait for all tasks to send their EOF responses before terminating the stream
+            # This ensures proper ordering: all messages -> all EOF responses -> STREAM_EOF
+            logging.info("[PROCESS_INPUT_DEBUG] All tasks completed, waiting for EOF responses")
+            await self._stream_termination_event.wait()
+            
+            # Now send STREAM_EOF to terminate the global result queue iterator
+            logging.info("[PROCESS_INPUT_DEBUG] All EOF responses received, sending STREAM_EOF")
             await self.global_result_queue.put(STREAM_EOF)
         except BaseException as e:
             err_msg = f"Reduce Streaming Error: {repr(e)}"
@@ -361,6 +377,20 @@ class TaskManager:
             EOF=True,
         )
         await output_queue.put(res)
+        
+        # Increment received EOF count and check if all tasks are done
+        async with self._eof_count_lock:
+            self._received_eof_count += 1
+            logging.info(f"[EOF_COUNT_DEBUG] EOF response sent. Received EOF count: {self._received_eof_count}/{self._expected_eof_count}")
+            
+            # Check if all tasks have sent their EOF responses
+            if self._received_eof_count == self._expected_eof_count:
+                logging.info("[EOF_COUNT_DEBUG] All EOF responses received, setting termination event")
+                self._stream_termination_event.set()
+            elif self._received_eof_count > self._expected_eof_count:
+                logging.error(f"[EOF_COUNT_DEBUG] ERROR: Received more EOF responses ({self._received_eof_count}) than expected ({self._expected_eof_count})")
+                # Still set the event to prevent hanging, but log the error
+                self._stream_termination_event.set()
 
     def clean_background(self, task):
         """

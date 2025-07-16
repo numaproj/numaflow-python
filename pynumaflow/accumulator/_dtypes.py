@@ -19,7 +19,7 @@ class WindowOperation(IntEnum):
 
     OPEN = (0,)
     CLOSE = (1,)
-    APPEND = (4,)
+    APPEND = (2,)
 
 
 @dataclass(init=False)
@@ -252,26 +252,26 @@ class AccumulatorResult:
 class AccumulatorRequest:
     """Defines the object to hold a request for the accumulator operation."""
 
-    __slots__ = ("_operation", "_windows", "_payload")
+    __slots__ = ("_operation", "_keyed_window", "_payload")
 
     _operation: WindowOperation
-    _windows: list[KeyedWindow]
+    _keyed_window: KeyedWindow
     _payload: Datum
 
-    def __init__(self, operation: WindowOperation, windows: list[KeyedWindow], payload: Datum):
+    def __init__(self, operation: WindowOperation, keyed_window: KeyedWindow, payload: Datum):
         self._operation = operation
-        self._windows = windows
+        self._keyed_window = keyed_window
         self._payload = payload
 
     @property
     def operation(self) -> WindowOperation:
-        """Returns the future result of computation."""
+        """Returns the operation type."""
         return self._operation
 
     @property
-    def windows(self) -> list[KeyedWindow]:
-        """Returns the handle to the producer queue."""
-        return self._windows
+    def keyed_window(self) -> KeyedWindow:
+        """Returns the keyed window."""
+        return self._keyed_window
 
     @property
     def payload(self) -> Datum:

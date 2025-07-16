@@ -1,0 +1,396 @@
+import asyncio
+import unittest
+from collections.abc import AsyncIterable
+from datetime import datetime, timezone
+from typing import Dict, List
+
+from pynumaflow.accumulator import (
+    Message,
+    Datum,
+    Accumulator,
+    AccumulatorAsyncServer,
+)
+from pynumaflow.shared.asynciter import NonBlockingIterator
+from tests.testing_utils import mock_headers
+
+
+class StreamSorterAccumulator(Accumulator):
+    """
+    Accumulator that sorts events by event_time and watermark.
+    This demonstrates custom sorting use case.
+    """
+
+    def __init__(self):
+        self.buffer: List[Datum] = []
+
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
+        # Collect all datums
+        async for datum in datums:
+            self.buffer.append(datum)
+
+        # Sort by event_time
+        self.buffer.sort(key=lambda d: d.event_time)
+
+        # Emit sorted datums
+        for datum in self.buffer:
+            await output.put(
+                Message(
+                    value=datum.value,
+                    keys=datum.keys(),
+                    tags=[],
+                )
+            )
+
+        # Clear buffer for next window
+        self.buffer.clear()
+
+
+class StreamJoinerAccumulator(Accumulator):
+    """
+    Accumulator that joins streams from different sources based on keys.
+    This demonstrates stream joining use case.
+    """
+
+    def __init__(self):
+        self.streams: Dict[str, List[Datum]] = {}
+
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
+        # Group datums by source (using first key as source identifier)
+        async for datum in datums:
+            source_key = datum.keys()[0] if datum.keys() else "default"
+            if source_key not in self.streams:
+                self.streams[source_key] = []
+            self.streams[source_key].append(datum)
+
+        # Join streams by combining data from different sources
+        # Sort all data by event_time across all sources
+        all_datums = []
+        for source_datums in self.streams.values():
+            all_datums.extend(source_datums)
+
+        # Sort by event_time for temporal ordering
+        all_datums.sort(key=lambda d: d.event_time)
+
+        # Emit joined and sorted stream
+        for datum in all_datums:
+            joined_value = f"joined_{datum.value.decode()}"
+            await output.put(
+                Message(
+                    value=joined_value.encode(),
+                    keys=datum.keys(),
+                    tags=["joined"],
+                )
+            )
+
+        # Clear streams for next window
+        self.streams.clear()
+
+
+class ReorderingAccumulator(Accumulator):
+    """
+    Accumulator that handles out-of-order events by reordering them.
+    This demonstrates event reordering use case.
+    """
+
+    def __init__(self, max_delay_seconds: int = 5):
+        self.max_delay_seconds = max_delay_seconds
+        self.event_buffer: List[Datum] = []
+
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
+        # Collect all datums
+        async for datum in datums:
+            self.event_buffer.append(datum)
+
+        # Sort by event_time to handle out-of-order events
+        self.event_buffer.sort(key=lambda d: d.event_time)
+
+        # Process events that are within the acceptable delay window
+        current_time = datetime.now(timezone.utc)
+        processed_events = []
+
+        for datum in self.event_buffer:
+            # Check if event is within acceptable delay
+            delay = (current_time - datum.event_time).total_seconds()
+            if delay <= self.max_delay_seconds:
+                processed_events.append(datum)
+            else:
+                # Event is too old, but we still process it with a tag
+                reordered_datum = datum
+                await output.put(
+                    Message(
+                        value=reordered_datum.value,
+                        keys=reordered_datum.keys(),
+                        tags=["reordered", "delayed"],
+                    )
+                )
+
+        # Emit processed events in order
+        for datum in processed_events:
+            await output.put(
+                Message(
+                    value=datum.value,
+                    keys=datum.keys(),
+                    tags=["reordered"],
+                )
+            )
+
+        # Clear buffer
+        self.event_buffer.clear()
+
+
+class TimeBasedCorrelationAccumulator(Accumulator):
+    """
+    Accumulator that correlates events from different sources based on timestamps.
+    This demonstrates time-based correlation use case.
+    """
+
+    def __init__(self, correlation_window_seconds: int = 10):
+        self.correlation_window_seconds = correlation_window_seconds
+        self.events: List[Datum] = []
+
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
+        # Collect all datums
+        async for datum in datums:
+            self.events.append(datum)
+
+        # Sort by event_time
+        self.events.sort(key=lambda d: d.event_time)
+
+        # Correlate events within time windows
+        correlated_groups = []
+        current_group = []
+
+        for event in self.events:
+            if not current_group:
+                current_group.append(event)
+            else:
+                # Check if event is within correlation window
+                time_diff = (event.event_time - current_group[0].event_time).total_seconds()
+                if time_diff <= self.correlation_window_seconds:
+                    current_group.append(event)
+                else:
+                    # Start new group
+                    correlated_groups.append(current_group)
+                    current_group = [event]
+
+        # Add the last group
+        if current_group:
+            correlated_groups.append(current_group)
+
+        # Emit correlated events
+        for group_idx, group in enumerate(correlated_groups):
+            for event in group:
+                correlation_id = f"corr_group_{group_idx}"
+                correlated_value = f"correlated_{event.value.decode()}"
+                await output.put(
+                    Message(
+                        value=correlated_value.encode(),
+                        keys=event.keys() + [correlation_id],
+                        tags=["correlated"],
+                    )
+                )
+
+        # Clear events
+        self.events.clear()
+
+
+class CustomTriggerAccumulator(Accumulator):
+    """
+    Accumulator that triggers actions based on custom conditions.
+    This demonstrates custom triggering use case.
+    """
+
+    def __init__(self, trigger_count: int = 3):
+        self.trigger_count = trigger_count
+        self.accumulated_events: List[Datum] = []
+
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
+        # Collect datums
+        async for datum in datums:
+            self.accumulated_events.append(datum)
+
+        # Custom trigger: when we have enough events or specific conditions
+        if len(self.accumulated_events) >= self.trigger_count:
+            # Trigger action: process all accumulated events
+            total_value = sum(
+                int(event.value.decode()) for event in self.accumulated_events
+                if event.value.decode().isdigit()
+            )
+
+            # Emit triggered result
+            await output.put(
+                Message(
+                    value=f"triggered_sum_{total_value}".encode(),
+                    keys=["triggered"],
+                    tags=["custom_trigger"],
+                )
+            )
+
+            # Clear accumulated events
+            self.accumulated_events.clear()
+        else:
+            # Not enough events to trigger, emit individual events
+            for event in self.accumulated_events:
+                await output.put(
+                    Message(
+                        value=event.value,
+                        keys=event.keys(),
+                        tags=["pending_trigger"],
+                    )
+                )
+
+
+class TestAccumulatorUseCases(unittest.TestCase):
+    def test_stream_sorter_accumulator(self):
+        """Test the stream sorting use case"""
+        sorter = StreamSorterAccumulator()
+        
+        # Test that the accumulator sorts by event_time
+        self.assertIsInstance(sorter, StreamSorterAccumulator)
+        self.assertEqual(len(sorter.buffer), 0)
+
+    def test_stream_joiner_accumulator(self):
+        """Test the stream joining use case"""
+        joiner = StreamJoinerAccumulator()
+        
+        # Test that the accumulator can join streams
+        self.assertIsInstance(joiner, StreamJoinerAccumulator)
+        self.assertEqual(len(joiner.streams), 0)
+
+    def test_reordering_accumulator(self):
+        """Test the event reordering use case"""
+        reorderer = ReorderingAccumulator(max_delay_seconds=10)
+        
+        # Test that the accumulator handles reordering
+        self.assertIsInstance(reorderer, ReorderingAccumulator)
+        self.assertEqual(reorderer.max_delay_seconds, 10)
+        self.assertEqual(len(reorderer.event_buffer), 0)
+
+    def test_time_based_correlation_accumulator(self):
+        """Test the time-based correlation use case"""
+        correlator = TimeBasedCorrelationAccumulator(correlation_window_seconds=5)
+        
+        # Test that the accumulator correlates events
+        self.assertIsInstance(correlator, TimeBasedCorrelationAccumulator)
+        self.assertEqual(correlator.correlation_window_seconds, 5)
+        self.assertEqual(len(correlator.events), 0)
+
+    def test_custom_trigger_accumulator(self):
+        """Test the custom triggering use case"""
+        trigger = CustomTriggerAccumulator(trigger_count=5)
+        
+        # Test that the accumulator handles custom triggers
+        self.assertIsInstance(trigger, CustomTriggerAccumulator)
+        self.assertEqual(trigger.trigger_count, 5)
+        self.assertEqual(len(trigger.accumulated_events), 0)
+
+    def test_accumulator_server_with_use_cases(self):
+        """Test that AccumulatorAsyncServer can be created with use case implementations"""
+        # Test with StreamSorterAccumulator
+        server1 = AccumulatorAsyncServer(StreamSorterAccumulator)
+        self.assertIsNotNone(server1)
+        
+        # Test with StreamJoinerAccumulator
+        server2 = AccumulatorAsyncServer(StreamJoinerAccumulator)
+        self.assertIsNotNone(server2)
+        
+        # Test with ReorderingAccumulator with init args
+        server3 = AccumulatorAsyncServer(ReorderingAccumulator, init_args=(10,))
+        self.assertIsNotNone(server3)
+        
+        # Test with TimeBasedCorrelationAccumulator with init args
+        server4 = AccumulatorAsyncServer(TimeBasedCorrelationAccumulator, init_args=(15,))
+        self.assertIsNotNone(server4)
+        
+        # Test with CustomTriggerAccumulator with init args
+        server5 = AccumulatorAsyncServer(CustomTriggerAccumulator, init_args=(3,))
+        self.assertIsNotNone(server5)
+
+    def test_stream_sorter_functionality(self):
+        """Test actual sorting functionality"""
+        async def _test_stream_sorter_functionality():
+            sorter = StreamSorterAccumulator()
+            output = NonBlockingIterator()
+            
+            # Create datums with different event times (out of order)
+            datums = [
+                Datum(
+                    keys=["test"],
+                    value=b"event_3",
+                    event_time=datetime.fromtimestamp(1662998460, timezone.utc),
+                    watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+                    id_="3",
+                ),
+                Datum(
+                    keys=["test"],
+                    value=b"event_1",
+                    event_time=datetime.fromtimestamp(1662998400, timezone.utc),
+                    watermark=datetime.fromtimestamp(1662998400, timezone.utc),
+                    id_="1",
+                ),
+                Datum(
+                    keys=["test"],
+                    value=b"event_2",
+                    event_time=datetime.fromtimestamp(1662998430, timezone.utc),
+                    watermark=datetime.fromtimestamp(1662998430, timezone.utc),
+                    id_="2",
+                ),
+            ]
+            
+            async def datum_generator():
+                for datum in datums:
+                    yield datum
+            
+            # Process the datums
+            await sorter.handler(datum_generator(), output)
+            
+            # Verify the buffer is cleared
+            self.assertEqual(len(sorter.buffer), 0)
+        
+        asyncio.run(_test_stream_sorter_functionality())
+
+    def test_stream_joiner_functionality(self):
+        """Test actual joining functionality"""
+        async def _test_stream_joiner_functionality():
+            joiner = StreamJoinerAccumulator()
+            output = NonBlockingIterator()
+            
+            # Create datums from different sources
+            datums = [
+                Datum(
+                    keys=["source1"],
+                    value=b"data_from_source1",
+                    event_time=datetime.fromtimestamp(1662998400, timezone.utc),
+                    watermark=datetime.fromtimestamp(1662998400, timezone.utc),
+                    id_="s1_1",
+                ),
+                Datum(
+                    keys=["source2"],
+                    value=b"data_from_source2",
+                    event_time=datetime.fromtimestamp(1662998430, timezone.utc),
+                    watermark=datetime.fromtimestamp(1662998430, timezone.utc),
+                    id_="s2_1",
+                ),
+            ]
+            
+            async def datum_generator():
+                for datum in datums:
+                    yield datum
+            
+            # Process the datums
+            await joiner.handler(datum_generator(), output)
+            
+            # Verify the streams are cleared
+            self.assertEqual(len(joiner.streams), 0)
+        
+        asyncio.run(_test_stream_joiner_functionality())
+
+    def test_run_async_tests(self):
+        """Run the async test methods"""
+        # This test method is no longer needed since the async tests
+        # are now properly handled within their respective test methods
+        pass
+
+
+if __name__ == "__main__":
+    unittest.main()

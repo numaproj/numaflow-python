@@ -19,7 +19,6 @@ from pynumaflow.accumulator._dtypes import (
 )
 from pynumaflow.proto.accumulator import accumulator_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 
 def build_unique_key_name(keys):
@@ -104,11 +103,11 @@ class TaskManager:
         task_keys = list(self.tasks.keys())
         for unified_key in task_keys:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
-        self.tasks.clear()
+            self.tasks.pop(unified_key)
 
     async def close_task(self, req):
         d = req.payload
-        keys = d.keys
+        keys = d.keys()
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -128,7 +127,7 @@ class TaskManager:
         it creates a new task or appends the request to the existing task.
         """
         d = req.payload
-        keys = d.keys
+        keys = d.keys()
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -193,9 +192,9 @@ class TaskManager:
             await result.iterator.put(d)
 
     async def __invoke_accumulator(
-            self,
-            request_iterator: AsyncIterable[Datum],
-            output: NonBlockingIterator,
+        self,
+        request_iterator: AsyncIterable[Datum],
+        output: NonBlockingIterator,
     ):
         """
         Invokes the UDF reduce handler with the given keys,
@@ -225,7 +224,7 @@ class TaskManager:
             logging.info(f"[ACCUMULATOR_DEBUG] Exception put in global_result_queue successfully")
 
     async def process_input_stream(
-            self, request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest]
+        self, request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest]
     ):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
@@ -241,18 +240,17 @@ class TaskManager:
                 logging.info(f"[PROCESS_INPUT_DEBUG] WindowOperation.CLOSE: {int(WindowOperation.CLOSE)}")
                 logging.info(f"[PROCESS_INPUT_DEBUG] Comparison - request.operation is int(WindowOperation.OPEN): {request.operation is int(WindowOperation.OPEN)}")
                 # check whether the request is an open or append operation
-                if request.operation.event is int(WindowOperation.OPEN):
-
+                if request.operation is int(WindowOperation.OPEN):
                     # create a new task for the open operation and
                     # put the request in the task iterator
                     logging.info(f"[PROCESS_INPUT_DEBUG] Creating task for OPEN operation")
                     await self.create_task(request)
-                elif request.operation.event is int(WindowOperation.APPEND):
+                elif request.operation is int(WindowOperation.APPEND):
                     # append the task data to the existing task
                     # if the task does not exist, create a new task
                     logging.info(f"[PROCESS_INPUT_DEBUG] Sending datum to task for APPEND operation")
                     await self.send_datum_to_task(request)
-                elif request.operation.event is int(WindowOperation.CLOSE):
+                elif request.operation is int(WindowOperation.CLOSE):
                     # close the current task for req
                     logging.info(f"[PROCESS_INPUT_DEBUG] Closing task for CLOSE operation")
                     await self.close_task(request)
@@ -315,7 +313,7 @@ class TaskManager:
             await self.global_result_queue.put(e)
 
     async def write_to_global_queue(
-            self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, unified_key: str
+        self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, unified_key: str
     ):
         """
         This task is for given Reduce task.
@@ -325,7 +323,7 @@ class TaskManager:
         reader = input_queue.read_iterator()
         task = self.tasks[unified_key]
 
-        wm = task.latest_watermark
+        wm: datetime = task.latest_watermark
         async for msg in reader:
             # Convert the window to a datetime object
             # Only update watermark if msg.watermark is not None
@@ -348,6 +346,7 @@ class TaskManager:
             
             end_dt_pb = timestamp_pb2.Timestamp()
             end_dt_pb.FromDatetime(wm)
+            
             res = accumulator_pb2.AccumulatorResponse(
                 payload=accumulator_pb2.Payload(
                     keys=msg.keys,

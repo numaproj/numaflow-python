@@ -1,0 +1,45 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: stream-sorter
+spec:
+  limits:
+    readBatchSize: 1
+  vertices:
+    - name: http-one
+      scale:
+        min: 1
+        max: 1
+      source:
+        http: {}
+    - name: http-two
+      scale:
+        min: 1
+        max: 1
+      source:
+        http: {}
+    - name: accum
+      udf:
+        container:
+          image: docker.intuit.com/personal/srao12/accumulator-sorter:test1
+        groupBy:
+          window:
+            accumulator:
+              timeout: 10s
+          keyed: true
+          storage:
+            persistentVolumeClaim:
+              volumeSize: 1Gi
+    - name: sink
+      scale:
+        min: 1
+        max: 1
+      sink:
+        log: {}
+  edges:
+    - from: http-one
+      to: accum
+    - from: http-two
+      to: accum
+    - from: accum
+      to: sink

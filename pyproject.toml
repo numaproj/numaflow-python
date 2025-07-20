@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pynumaflow"
-version = "0.9.1"
+version = "0.10.0a0"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = ["NumaFlow Developers"]
 readme = "README.md"
@@ -80,7 +80,5 @@ extend-exclude = [
     "*_pb2*.py",
     "*.pyi"
 ]
-output-format = "full"
-[tool.ruff.lint]
 select = ["E", "F", "UP"]
 

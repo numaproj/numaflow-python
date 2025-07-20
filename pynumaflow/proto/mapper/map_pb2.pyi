@@ -26,6 +26,7 @@ class MapRequest(_message.Message):
             key: str
             value: str
             def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+
         KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
@@ -44,6 +45,7 @@ class MapRequest(_message.Message):
             watermark: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
             headers: _Optional[_Mapping[str, str]] = ...,
         ) -> None: ...
+
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
@@ -89,6 +91,7 @@ class MapResponse(_message.Message):
             value: _Optional[bytes] = ...,
             tags: _Optional[_Iterable[str]] = ...,
         ) -> None: ...
+
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]

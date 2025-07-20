@@ -256,6 +256,82 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(msg.keys, [])
         self.assertEqual(msg.tags, [])
 
+    def test_from_datum(self):
+        """Test that Message.from_datum correctly creates a Message from a Datum"""
+        # Create a sample datum with all properties
+        test_keys = ["key1", "key2"]
+        test_value = b"test_message_value"
+        test_event_time = mock_event_time()
+        test_watermark = mock_watermark()
+        test_headers = {"header1": "value1", "header2": "value2"}
+        test_id = "test_datum_id"
+        
+        datum = Datum(
+            keys=test_keys,
+            value=test_value,
+            event_time=test_event_time,
+            watermark=test_watermark,
+            id_=test_id,
+            headers=test_headers,
+        )
+        
+        # Create message from datum
+        message = Message.from_datum(datum)
+        
+        # Verify all properties are correctly transferred
+        self.assertEqual(message.value, test_value)
+        self.assertEqual(message.keys, test_keys)
+        self.assertEqual(message.event_time, test_event_time)
+        self.assertEqual(message.watermark, test_watermark)
+        self.assertEqual(message.headers, test_headers)
+        self.assertEqual(message.id, test_id)
+        
+        # Verify that tags are empty (default for Message)
+        self.assertEqual(message.tags, [])
+        
+    def test_from_datum_minimal(self):
+        """Test from_datum with minimal Datum (no headers)"""
+        test_keys = ["minimal_key"]
+        test_value = b"minimal_value"
+        test_event_time = mock_event_time()
+        test_watermark = mock_watermark()
+        test_id = "minimal_id"
+        
+        datum = Datum(
+            keys=test_keys,
+            value=test_value,
+            event_time=test_event_time,
+            watermark=test_watermark,
+            id_=test_id,
+            # headers not provided (will default to {})
+        )
+        
+        message = Message.from_datum(datum)
+        
+        self.assertEqual(message.value, test_value)
+        self.assertEqual(message.keys, test_keys)
+        self.assertEqual(message.event_time, test_event_time)
+        self.assertEqual(message.watermark, test_watermark)
+        self.assertEqual(message.headers, {})
+        self.assertEqual(message.id, test_id)
+        self.assertEqual(message.tags, [])
+        
+    def test_from_datum_empty_keys(self):
+        """Test from_datum with empty keys"""
+        datum = Datum(
+            keys=None,  # Will default to []
+            value=b"test_value",
+            event_time=mock_event_time(),
+            watermark=mock_watermark(),
+            id_="test_id",
+        )
+        
+        message = Message.from_datum(datum)
+        
+        self.assertEqual(message.keys, [])
+        self.assertEqual(message.value, b"test_value")
+        self.assertEqual(message.id, "test_id")
+
 
 class TestAccumulatorClass(unittest.TestCase):
     class ExampleClass(Accumulator):

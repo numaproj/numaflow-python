@@ -6,7 +6,7 @@ from typing import List
 
 from pynumaflow import setup_logging
 from pynumaflow.accumulator import Accumulator, AccumulatorAsyncServer
-from pynumaflow.reducestreamer import (
+from pynumaflow.accumulator import (
     Message,
     Datum,
 )

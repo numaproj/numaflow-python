@@ -359,6 +359,25 @@ class Message:
     def id(self) -> str:
         return self._id
 
+    @classmethod
+    def from_datum(cls, datum: Datum):
+        """Create a Message instance from a Datum object.
+        
+        Args:
+            datum: The Datum object to convert
+            
+        Returns:
+            Message: A new Message instance with data from the datum
+        """
+        return cls(
+            value=datum.value,
+            keys=datum.keys(),
+            watermark=datum.watermark,
+            event_time=datum.event_time,
+            headers=datum.headers,
+            id=datum.id
+        )
+
 
 AccumulatorAsyncCallable = Callable[
     [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None

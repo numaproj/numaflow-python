@@ -7,7 +7,7 @@ An example User Defined Function that sorts the incoming stream by event time.
 To apply the pipeline, use the following command:
 
 ```shell
-  kubectl apply -f manifest/stream-sorter-pipeline.yaml
+  kubectl apply -f pipeline.yaml
 ```
 
 ### Publish messages

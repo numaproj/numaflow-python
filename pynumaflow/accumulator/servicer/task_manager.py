@@ -2,7 +2,6 @@ import asyncio
 from collections.abc import AsyncIterable
 from datetime import datetime
 from typing import Union
-import logging
 
 from google.protobuf import timestamp_pb2
 from pynumaflow._constants import (
@@ -172,7 +171,6 @@ class TaskManager:
             # Increment expected EOF count since we created a new task
             async with self._eof_count_lock:
                 self._expected_eof_count += 1
-                logging.info(f"[EOF_COUNT_DEBUG] Task created. Expected EOF count: {self._expected_eof_count}")
 
         # Put the request in the iterator
         await curr_task.iterator.put(d)
@@ -217,46 +215,33 @@ class TaskManager:
         # then send the error to the result queue
         except BaseException as err:
             _LOGGER.critical("panic inside accumulator handle", exc_info=True)
-            logging.info(f"[ACCUMULATOR_DEBUG] Exception caught in __invoke_accumulator: {err}")
-            logging.info(f"[ACCUMULATOR_DEBUG] Putting exception in global_result_queue: {repr(err)}")
             # Put the exception in the result queue
             await self.global_result_queue.put(err)
-            logging.info(f"[ACCUMULATOR_DEBUG] Exception put in global_result_queue successfully")
 
     async def process_input_stream(
         self, request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest]
     ):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
-        logging.info(f"[PROCESS_INPUT_DEBUG] Starting process_input_stream")
         try:
             request_count = 0
             async for request in request_iterator:
                 request_count += 1
-                logging.info(f"[PROCESS_INPUT_DEBUG] Processing request {request_count}, operation: {request.operation}")
-                logging.info(f"[PROCESS_INPUT_DEBUG] Operation value: {request.operation}")
-                logging.info(f"[PROCESS_INPUT_DEBUG] WindowOperation.OPEN: {int(WindowOperation.OPEN)}")
-                logging.info(f"[PROCESS_INPUT_DEBUG] WindowOperation.APPEND: {int(WindowOperation.APPEND)}")
-                logging.info(f"[PROCESS_INPUT_DEBUG] WindowOperation.CLOSE: {int(WindowOperation.CLOSE)}")
-                logging.info(f"[PROCESS_INPUT_DEBUG] Comparison - request.operation is int(WindowOperation.OPEN): {request.operation is int(WindowOperation.OPEN)}")
                 # check whether the request is an open or append operation
                 if request.operation is int(WindowOperation.OPEN):
                     # create a new task for the open operation and
                     # put the request in the task iterator
-                    logging.info(f"[PROCESS_INPUT_DEBUG] Creating task for OPEN operation")
                     await self.create_task(request)
                 elif request.operation is int(WindowOperation.APPEND):
                     # append the task data to the existing task
                     # if the task does not exist, create a new task
-                    logging.info(f"[PROCESS_INPUT_DEBUG] Sending datum to task for APPEND operation")
                     await self.send_datum_to_task(request)
                 elif request.operation is int(WindowOperation.CLOSE):
                     # close the current task for req
-                    logging.info(f"[PROCESS_INPUT_DEBUG] Closing task for CLOSE operation")
                     await self.close_task(request)
                 else:
-                    logging.info(f"[PROCESS_INPUT_DEBUG] No operation matched")
-            logging.info(f"[PROCESS_INPUT_DEBUG] Finished processing {request_count} requests")
+                    _LOGGER.debug(f"No operation matched for request: {request}", exc_info=True)
+
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
         except BaseException as e:
@@ -289,23 +274,11 @@ class TaskManager:
                 con_future = task.consumer_future
                 await con_future
 
-            # # Once all tasks are completed, send EOF to all windows that
-            # # were processed in the Task Manager. We send a single
-            # # EOF message per window.
-            # current_windows = self.get_unique_windows()
-            # for window in current_windows.values():
-            #     # Send an EOF message to the global result queue
-            #     # This will signal that window has been processed
-            #     eof_window_msg = create_window_eof_response(window=window)
-            #     await self.global_result_queue.put(eof_window_msg)
-
             # Wait for all tasks to send their EOF responses before terminating the stream
             # This ensures proper ordering: all messages -> all EOF responses -> STREAM_EOF
-            logging.info("[PROCESS_INPUT_DEBUG] All tasks completed, waiting for EOF responses")
             await self._stream_termination_event.wait()
             
             # Now send STREAM_EOF to terminate the global result queue iterator
-            logging.info("[PROCESS_INPUT_DEBUG] All EOF responses received, sending STREAM_EOF")
             await self.global_result_queue.put(STREAM_EOF)
         except BaseException as e:
             err_msg = f"Reduce Streaming Error: {repr(e)}"
@@ -381,14 +354,11 @@ class TaskManager:
         # Increment received EOF count and check if all tasks are done
         async with self._eof_count_lock:
             self._received_eof_count += 1
-            logging.info(f"[EOF_COUNT_DEBUG] EOF response sent. Received EOF count: {self._received_eof_count}/{self._expected_eof_count}")
-            
+
             # Check if all tasks have sent their EOF responses
             if self._received_eof_count == self._expected_eof_count:
-                logging.info("[EOF_COUNT_DEBUG] All EOF responses received, setting termination event")
                 self._stream_termination_event.set()
             elif self._received_eof_count > self._expected_eof_count:
-                logging.error(f"[EOF_COUNT_DEBUG] ERROR: Received more EOF responses ({self._received_eof_count}) than expected ({self._expected_eof_count})")
                 # Still set the event to prevent hanging, but log the error
                 self._stream_termination_event.set()
 

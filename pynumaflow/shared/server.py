@@ -317,15 +317,9 @@ async def handle_async_error(
     """
     Handle exceptions for async servers by updating the context and exiting.
     """
-    import logging
     err_msg = f"{exception_type}: {repr(exception)}"
-    logging.info(f"[HANDLE_ASYNC_ERROR] Called with exception: {exception}")
-    logging.info(f"[HANDLE_ASYNC_ERROR] Error message: {err_msg}")
     update_context_err(context, exception, err_msg)
-    logging.info(f"[HANDLE_ASYNC_ERROR] Updated context with error")
     await asyncio.gather(
         context.abort(grpc.StatusCode.INTERNAL, details=err_msg), return_exceptions=True
     )
-    logging.info(f"[HANDLE_ASYNC_ERROR] Called context.abort")
     exit_on_error(err=err_msg, parent=False, context=context, update_context=False)
-    logging.info(f"[HANDLE_ASYNC_ERROR] Called exit_on_error")

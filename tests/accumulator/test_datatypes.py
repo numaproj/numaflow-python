@@ -553,39 +553,51 @@ class TestTaskManagerUtilities(unittest.TestCase):
 
     def test_task_manager_initialization(self):
         """Test TaskManager initialization."""
+        import asyncio
         from pynumaflow.accumulator.servicer.task_manager import TaskManager
         from unittest.mock import Mock
 
-        handler = Mock()
-        task_manager = TaskManager(handler)
+        async def run_test():
+            handler = Mock()
+            task_manager = TaskManager(handler)
 
-        self.assertEqual(task_manager._TaskManager__accumulator_handler, handler)
-        self.assertEqual(len(task_manager.tasks), 0)
-        self.assertEqual(len(task_manager.background_tasks), 0)
-        self.assertEqual(task_manager._expected_eof_count, 0)
-        self.assertEqual(task_manager._received_eof_count, 0)
+            self.assertEqual(task_manager._TaskManager__accumulator_handler, handler)
+            self.assertEqual(len(task_manager.tasks), 0)
+            self.assertEqual(len(task_manager.background_tasks), 0)
+            self.assertEqual(task_manager._expected_eof_count, 0)
+            self.assertEqual(task_manager._received_eof_count, 0)
+
+        asyncio.run(run_test())
 
     def test_task_manager_get_unique_windows(self):
         """Test TaskManager get_unique_windows with empty tasks."""
+        import asyncio
         from pynumaflow.accumulator.servicer.task_manager import TaskManager
         from unittest.mock import Mock
 
-        handler = Mock()
-        task_manager = TaskManager(handler)
+        async def run_test():
+            handler = Mock()
+            task_manager = TaskManager(handler)
 
-        windows = task_manager.get_unique_windows()
-        self.assertEqual(len(windows), 0)
+            windows = task_manager.get_unique_windows()
+            self.assertEqual(len(windows), 0)
+
+        asyncio.run(run_test())
 
     def test_task_manager_get_tasks(self):
         """Test TaskManager get_tasks method."""
+        import asyncio
         from pynumaflow.accumulator.servicer.task_manager import TaskManager
         from unittest.mock import Mock
 
-        handler = Mock()
-        task_manager = TaskManager(handler)
+        async def run_test():
+            handler = Mock()
+            task_manager = TaskManager(handler)
 
-        tasks = task_manager.get_tasks()
-        self.assertEqual(len(tasks), 0)
+            tasks = task_manager.get_tasks()
+            self.assertEqual(len(tasks), 0)
+
+        asyncio.run(run_test())
 
     def test_task_manager_close_task_not_found(self):
         """Test TaskManager close_task when task is not found."""

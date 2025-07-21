@@ -397,7 +397,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
         """Test error handling scenarios in accumulator processing."""
 
         async def run_test():
-            # Test 1: Function handler called directly (covers line 44 in async_server.py)
+            # Test 1: Function handler called directly
             async def func_handler(datums: AsyncIterable[Datum], output: NonBlockingIterator):
                 async for datum in datums:
                     await output.put(Message(datum.value, keys=datum.keys()))
@@ -407,7 +407,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
             handler = get_handler(func_handler)
             self.assertEqual(handler, func_handler)
 
-            # Test 2: Task manager with function handler (covers lines 208->210 in task_manager.py)
+            # Test 2: Task manager with function handler
             from pynumaflow.accumulator.servicer.task_manager import TaskManager
 
             task_manager = TaskManager(func_handler)
@@ -449,40 +449,44 @@ class TestAccumulatorUseCases(unittest.TestCase):
 
     def test_task_manager_error_scenarios(self):
         """Test various error scenarios in TaskManager."""
+        import asyncio
+        
+        async def run_test():
+            # Test 1: Unknown window operation
+            from pynumaflow.accumulator.servicer.task_manager import TaskManager
+            from unittest.mock import Mock
 
-        # Test 1: Unknown window operation (covers lines 239-243 in task_manager.py)
-        from pynumaflow.accumulator.servicer.task_manager import TaskManager
-        from unittest.mock import Mock
+            handler = Mock()
+            task_manager = TaskManager(handler)
 
-        handler = Mock()
-        task_manager = TaskManager(handler)
+            # Test 2: Watermark update with AccumulatorResult
+            from pynumaflow.accumulator._dtypes import AccumulatorResult
 
-        # Test 2: Watermark update with AccumulatorResult (covers lines 311, 315)
-        from pynumaflow.accumulator._dtypes import AccumulatorResult
+            # Create a task to test watermark updating
+            initial_watermark = datetime.fromtimestamp(500)
+            task = AccumulatorResult(
+                _future=Mock(),
+                _iterator=Mock(),
+                _key=["test_key"],
+                _result_queue=Mock(),
+                _consumer_future=Mock(),
+                _latest_watermark=initial_watermark,
+            )
 
-        # Create a task to test watermark updating
-        initial_watermark = datetime.fromtimestamp(500)
-        task = AccumulatorResult(
-            _future=Mock(),
-            _iterator=Mock(),
-            _key=["test_key"],
-            _result_queue=Mock(),
-            _consumer_future=Mock(),
-            _latest_watermark=initial_watermark,
-        )
+            # Test update_watermark method directly
+            new_watermark = datetime.fromtimestamp(2000)
+            task.update_watermark(new_watermark)
+            self.assertEqual(task.latest_watermark, new_watermark)
 
-        # Test update_watermark method directly
-        new_watermark = datetime.fromtimestamp(2000)
-        task.update_watermark(new_watermark)
-        self.assertEqual(task.latest_watermark, new_watermark)
+            # Test 3: Test direct instantiation and basic functionality
+            unified_key = "test_key"
+            task_manager.tasks[unified_key] = task
 
-        # Test 3: Test direct instantiation and basic functionality
-        unified_key = "test_key"
-        task_manager.tasks[unified_key] = task
+            # Verify task was added
+            self.assertIn(unified_key, task_manager.tasks)
+            self.assertEqual(task_manager.tasks[unified_key], task)
 
-        # Verify task was added
-        self.assertIn(unified_key, task_manager.tasks)
-        self.assertEqual(task_manager.tasks[unified_key], task)
+        asyncio.run(run_test())
 
     def test_edge_case_scenarios(self):
         """Test edge cases and error conditions."""
@@ -491,7 +495,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
             from pynumaflow.accumulator.servicer.task_manager import TaskManager
             from unittest.mock import Mock
 
-            # Test 1: Error handling in EOF counting (covers lines 361-363)
+            # Test 1: Error handling in EOF counting
             handler = Mock()
             task_manager = TaskManager(handler)
 
@@ -514,7 +518,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
             unified_key = "edge_test"
             task_manager.tasks[unified_key] = mock_task
 
-            # Test watermark handling with None values (covers lines 311, 315)
+            # Test watermark handling with None values
             input_queue = NonBlockingIterator()
             output_queue = NonBlockingIterator()
 
@@ -544,7 +548,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
         asyncio.run(run_test())
 
     def test_abstract_method_coverage(self):
-        """Test abstract method coverage (line 412 in _dtypes.py)."""
+        """Test abstract method coverage."""
 
         # Test calling the abstract handler method directly
         class DirectTestAccumulator(Accumulator):
@@ -555,13 +559,13 @@ class TestAccumulatorUseCases(unittest.TestCase):
             DirectTestAccumulator()
 
     def test_servicer_error_handling(self):
-        """Test error handling in AsyncAccumulatorServicer (lines 116-118, 122-124)."""
+        """Test error handling in AsyncAccumulatorServicer."""
 
         async def run_test():
             from pynumaflow.accumulator.servicer.async_servicer import AsyncAccumulatorServicer
             from unittest.mock import Mock, patch
 
-            # Test exception in consumer loop (lines 116-118)
+            # Test exception in consumer loop
             mock_handler = Mock()
             servicer = AsyncAccumulatorServicer(mock_handler)
             mock_context = Mock()
@@ -588,7 +592,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
 
                 mock_task_manager.process_input_stream.return_value = mock_process()
 
-                # This should handle the consumer exception (lines 116-118)
+                # This should handle the consumer exception
                 with patch(
                     "pynumaflow.accumulator.servicer.async_servicer.handle_async_error"
                 ) as mock_handle:
@@ -601,7 +605,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
                     # Should have called error handler
                     mock_handle.assert_called()
 
-            # Test exception in producer wait (lines 122-124)
+            # Test exception in producer wait
             with patch("pynumaflow.accumulator.servicer.async_servicer.TaskManager") as mock_tm2:
                 mock_task_manager2 = Mock()
                 mock_tm2.return_value = mock_task_manager2
@@ -621,7 +625,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
 
                 mock_task_manager2.process_input_stream.return_value = failing_process()
 
-                # This should handle the producer exception (lines 122-124)
+                # This should handle the producer exception
                 with patch(
                     "pynumaflow.accumulator.servicer.async_servicer.handle_async_error"
                 ) as mock_handle2:

@@ -1,7 +1,7 @@
 TAG ?= stable
 PUSH ?= false
 IMAGE_REGISTRY = quay.io/numaio/numaflow-python/streamsorter:${TAG}
-DOCKER_FILE_PATH = examples/map/even_odd/Dockerfile.optimized
+DOCKER_FILE_PATH = examples/accumulator/streamsorter/Dockerfile
 BASE_IMAGE_NAME = numaflow-python-base
 
 .PHONY: base-image

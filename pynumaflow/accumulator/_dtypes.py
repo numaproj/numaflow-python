@@ -77,32 +77,56 @@ class Datum:
         self._id = id_
 
     def keys(self) -> list[str]:
-        """Returns the keys of the event"""
+        """Returns the keys of the event.
+
+        Returns:
+            list[str]: A list of string keys associated with this event.
+        """
         return self._keys
 
     @property
     def value(self) -> bytes:
-        """Returns the value of the event."""
+        """Returns the value of the event.
+
+        Returns:
+            bytes: The payload data of the event as bytes.
+        """
         return self._value
 
     @property
     def event_time(self) -> datetime:
-        """Returns the event time of the event."""
+        """Returns the event time of the event.
+
+        Returns:
+            datetime: The timestamp when the event occurred.
+        """
         return self._event_time
 
     @property
     def watermark(self) -> datetime:
-        """Returns the watermark of the event."""
+        """Returns the watermark of the event.
+
+        Returns:
+            datetime: The watermark timestamp indicating the progress of event time.
+        """
         return self._watermark
 
     @property
     def headers(self) -> dict[str, str]:
-        """Returns the headers of the event."""
+        """Returns the headers of the event.
+
+        Returns:
+            dict[str, str]: A dictionary containing header key-value pairs for this event.
+        """
         return self._headers
 
     @property
     def id(self) -> str:
-        """Returns the id of the event."""
+        """Returns the id of the event.
+
+        Returns:
+            str: The unique identifier for this event.
+        """
         return self._id
 
 
@@ -120,13 +144,21 @@ class IntervalWindow:
         self._end = end
 
     @property
-    def start(self):
-        """Returns the start point of the interval window."""
+    def start(self) -> datetime:
+        """Returns the start point of the interval window.
+
+        Returns:
+            datetime: The start timestamp of the interval window.
+        """
         return self._start
 
     @property
-    def end(self):
-        """Returns the end point of the interval window."""
+    def end(self) -> datetime:
+        """Returns the end point of the interval window.
+
+        Returns:
+            datetime: The end timestamp of the interval window.
+        """
         return self._end
 
 
@@ -149,28 +181,48 @@ class KeyedWindow:
         self._keys = keys
 
     @property
-    def start(self):
-        """Returns the start point of the interval window."""
+    def start(self) -> datetime:
+        """Returns the start point of the interval window.
+
+        Returns:
+            datetime: The start timestamp of the interval window.
+        """
         return self._window.start
 
     @property
-    def end(self):
-        """Returns the end point of the interval window."""
+    def end(self) -> datetime:
+        """Returns the end point of the interval window.
+
+        Returns:
+            datetime: The end timestamp of the interval window.
+        """
         return self._window.end
 
     @property
-    def slot(self):
-        """Returns the slot from the window"""
+    def slot(self) -> str:
+        """Returns the slot from the window.
+
+        Returns:
+            str: The slot identifier for this window.
+        """
         return self._slot
 
     @property
-    def window(self):
-        """Return the interval window"""
+    def window(self) -> IntervalWindow:
+        """Returns the interval window.
+
+        Returns:
+            IntervalWindow: The underlying interval window object.
+        """
         return self._window
 
     @property
-    def keys(self):
-        """Return the keys for window"""
+    def keys(self) -> list[str]:
+        """Returns the keys for window.
+
+        Returns:
+            list[str]: A list of keys associated with this window.
+        """
         return self._keys
 
 
@@ -186,8 +238,12 @@ class Metadata:
         self._interval_window = interval_window
 
     @property
-    def interval_window(self):
-        """Returns the interval window for the event."""
+    def interval_window(self) -> IntervalWindow:
+        """Returns the interval window for the event.
+
+        Returns:
+            IntervalWindow: The interval window associated with this event.
+        """
         return self._interval_window
 
 
@@ -212,37 +268,68 @@ class AccumulatorResult:
     _latest_watermark: datetime
 
     @property
-    def future(self):
-        """Returns the future result of computation."""
+    def future(self) -> Task:
+        """Returns the future result of computation.
+
+        Returns:
+            Task: The asyncio Task representing the computation future.
+        """
         return self._future
 
     @property
-    def iterator(self):
-        """Returns the handle to the producer queue."""
+    def iterator(self) -> NonBlockingIterator:
+        """Returns the handle to the producer queue.
+
+        Returns:
+            NonBlockingIterator: The iterator for producing data to the queue.
+        """
         return self._iterator
 
     @property
     def keys(self) -> list[str]:
-        """Returns the keys of the partition."""
+        """Returns the keys of the partition.
+
+        Returns:
+            list[str]: The keys associated with this partition.
+        """
         return self._key
 
     @property
-    def result_queue(self):
-        """Returns the async queue used to write the output for the tasks"""
+    def result_queue(self) -> NonBlockingIterator:
+        """Returns the async queue used to write the output for the tasks.
+
+        Returns:
+            NonBlockingIterator: The queue for writing task output.
+        """
         return self._result_queue
 
     @property
-    def consumer_future(self):
-        """Returns the async consumer task for the result queue"""
+    def consumer_future(self) -> Task:
+        """Returns the async consumer task for the result queue.
+
+        Returns:
+            Task: The asyncio Task for consuming from the result queue.
+        """
         return self._consumer_future
 
     @property
-    def latest_watermark(self):
-        """Returns the latest watermark for task"""
+    def latest_watermark(self) -> datetime:
+        """Returns the latest watermark for task.
+
+        Returns:
+            datetime: The latest watermark timestamp for this task.
+        """
         return self._latest_watermark
 
     def update_watermark(self, new_watermark: datetime):
-        """Updates the latest watermark value."""
+        """Updates the latest watermark value.
+
+        Args:
+            new_watermark (datetime): The new watermark timestamp to set.
+
+        Raises:
+            TypeError: If new_watermark is not a datetime object.
+        """
         if not isinstance(new_watermark, datetime):
             raise TypeError("new_watermark must be a datetime object")
         self._latest_watermark = new_watermark
@@ -265,17 +352,29 @@ class AccumulatorRequest:
 
     @property
     def operation(self) -> WindowOperation:
-        """Returns the operation type."""
+        """Returns the operation type.
+
+        Returns:
+            WindowOperation: The type of window operation (OPEN, CLOSE, or APPEND).
+        """
         return self._operation
 
     @property
     def keyed_window(self) -> KeyedWindow:
-        """Returns the keyed window."""
+        """Returns the keyed window.
+
+        Returns:
+            KeyedWindow: The keyed window associated with this request.
+        """
         return self._keyed_window
 
     @property
     def payload(self) -> Datum:
-        """Returns the payload of the window."""
+        """Returns the payload of the window.
+
+        Returns:
+            Datum: The data payload for this accumulator request.
+        """
         return self._payload
 
 
@@ -324,39 +423,78 @@ class Message:
         self._event_time = event_time
         self._headers = headers or {}
         self._id = id or ""
-        # self._window = window or None
 
-    # returns the Message Object which will be dropped
     @classmethod
     def to_drop(cls: type[M]) -> M:
+        """Creates a Message instance that indicates the message should be dropped.
+
+        Returns:
+            M: A Message instance with empty value and DROP tag indicating
+               the message should be dropped.
+        """
         return cls(b"", None, [DROP])
 
     @property
     def value(self) -> bytes:
+        """Returns the message payload value.
+
+        Returns:
+            bytes: The message payload data as bytes.
+        """
         return self._value
 
     @property
     def keys(self) -> list[str]:
+        """Returns the message keys.
+
+        Returns:
+            list[str]: A list of string keys associated with this message.
+        """
         return self._keys
 
     @property
     def tags(self) -> list[str]:
+        """Returns the message tags for conditional forwarding.
+
+        Returns:
+            list[str]: A list of string tags used for conditional forwarding.
+        """
         return self._tags
 
     @property
     def watermark(self) -> datetime:
+        """Returns the watermark timestamp for this message.
+
+        Returns:
+            datetime: The watermark timestamp, or None if not set.
+        """
         return self._watermark
 
     @property
     def event_time(self) -> datetime:
+        """Returns the event time for this message.
+
+        Returns:
+            datetime: The event time timestamp, or None if not set.
+        """
         return self._event_time
 
     @property
     def headers(self) -> dict[str, str]:
+        """Returns the message headers.
+
+        Returns:
+            dict[str, str]: A dictionary containing header key-value pairs for this message.
+        """
         return self._headers
 
     @property
     def id(self) -> str:
+        """Returns the message ID.
+
+        Returns:
+            str: The unique identifier for this message.
+        """
         return self._id
 
     @classmethod

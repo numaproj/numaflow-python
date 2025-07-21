@@ -1,6 +1,6 @@
-TAG ?= test4
+TAG ?= stable
 PUSH ?= false
-IMAGE_REGISTRY = docker.intuit.com/personal/srao12/py-accumulator-sorter:${TAG}
+IMAGE_REGISTRY = quay.io/numaio/numaflow-python/streamsorter:${TAG}
 DOCKER_FILE_PATH = examples/accumulator/streamsorter/Dockerfile
 
 .PHONY: update

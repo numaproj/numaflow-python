@@ -450,7 +450,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
     def test_task_manager_error_scenarios(self):
         """Test various error scenarios in TaskManager."""
         import asyncio
-        
+
         async def run_test():
             # Test 1: Unknown window operation
             from pynumaflow.accumulator.servicer.task_manager import TaskManager

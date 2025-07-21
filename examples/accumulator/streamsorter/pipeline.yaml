@@ -26,8 +26,6 @@ spec:
           env:
             - name: PYTHONDEBUG
               value: "true"
-            - name: INVOKE
-              value: "class"
         groupBy:
           window:
             accumulator:

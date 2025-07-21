@@ -67,11 +67,6 @@ class StreamSorter(Accumulator):
 
 
 if __name__ == "__main__":
-    invoke = os.getenv("INVOKE", "class")
     grpc_server = None
-    if invoke == "class":
-        # Here we are using the class instance as the accumulator_instance
-        # which will be used to invoke the handler function.
-        # We are passing the init_args for the class instance.
-        grpc_server = AccumulatorAsyncServer(StreamSorter)
+    grpc_server = AccumulatorAsyncServer(StreamSorter)
     grpc_server.start()

@@ -362,10 +362,10 @@ class Message:
     @classmethod
     def from_datum(cls, datum: Datum):
         """Create a Message instance from a Datum object.
-        
+
         Args:
             datum: The Datum object to convert
-            
+
         Returns:
             Message: A new Message instance with data from the datum
         """
@@ -375,7 +375,7 @@ class Message:
             watermark=datum.watermark,
             event_time=datum.event_time,
             headers=datum.headers,
-            id=datum.id
+            id=datum.id,
         )
 
 

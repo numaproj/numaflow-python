@@ -2,7 +2,6 @@ import logging
 import os
 from collections.abc import AsyncIterable
 from datetime import datetime
-from typing import List
 
 from pynumaflow import setup_logging
 from pynumaflow.accumulator import Accumulator, AccumulatorAsyncServer
@@ -21,7 +20,7 @@ class StreamSorter(Accumulator):
     def __init__(self):
         _LOGGER.info("StreamSorter initialized")
         self.latest_wm = datetime.fromtimestamp(-1)
-        self.sorted_buffer: List[Datum] = []
+        self.sorted_buffer: list[Datum] = []
 
     async def handler(
         self,

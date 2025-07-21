@@ -167,7 +167,7 @@ class TaskManager:
 
             # Save the result of the reduce operation to the task list
             self.tasks[unified_key] = curr_task
-            
+
             # Increment expected EOF count since we created a new task
             async with self._eof_count_lock:
                 self._expected_eof_count += 1
@@ -277,7 +277,7 @@ class TaskManager:
             # Wait for all tasks to send their EOF responses before terminating the stream
             # This ensures proper ordering: all messages -> all EOF responses -> STREAM_EOF
             await self._stream_termination_event.wait()
-            
+
             # Now send STREAM_EOF to terminate the global result queue iterator
             await self.global_result_queue.put(STREAM_EOF)
         except BaseException as e:
@@ -309,17 +309,17 @@ class TaskManager:
             event_time_pb = timestamp_pb2.Timestamp()
             if msg.event_time is not None:
                 event_time_pb.FromDatetime(msg.event_time)
-            
+
             watermark_pb = timestamp_pb2.Timestamp()
             if msg.watermark is not None:
                 watermark_pb.FromDatetime(msg.watermark)
-            
+
             start_dt_pb = timestamp_pb2.Timestamp()
             start_dt_pb.FromDatetime(datetime.fromtimestamp(0))
-            
+
             end_dt_pb = timestamp_pb2.Timestamp()
             end_dt_pb.FromDatetime(wm)
-            
+
             res = accumulator_pb2.AccumulatorResponse(
                 payload=accumulator_pb2.Payload(
                     keys=msg.keys,
@@ -339,10 +339,10 @@ class TaskManager:
         # send EOF
         start_eof_pb = timestamp_pb2.Timestamp()
         start_eof_pb.FromDatetime(datetime.fromtimestamp(0))
-        
+
         end_eof_pb = timestamp_pb2.Timestamp()
         end_eof_pb.FromDatetime(wm)
-        
+
         res = accumulator_pb2.AccumulatorResponse(
             window=accumulator_pb2.KeyedWindow(
                 start=start_eof_pb, end=end_eof_pb, slot="slot-0", keys=task.keys
@@ -350,7 +350,7 @@ class TaskManager:
             EOF=True,
         )
         await output_queue.put(res)
-        
+
         # Increment received EOF count and check if all tasks are done
         async with self._eof_count_lock:
             self._received_eof_count += 1

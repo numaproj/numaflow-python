@@ -1,7 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterable
 from typing import Union
-import logging
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -31,7 +30,7 @@ async def datum_generator(
             slot=d.operation.keyedWindow.slot,
             keys=list(d.operation.keyedWindow.keys),
         )
-        
+
         accumulator_request = AccumulatorRequest(
             operation=d.operation.event,
             keyed_window=keyed_window,  # Use the new parameter name
@@ -105,23 +104,16 @@ class AsyncAccumulatorServicer(accumulator_pb2_grpc.AccumulatorServicer):
         # This is a special message that indicates the end of the processing for a window
         # When we get this message, we send an EOF message to the client
         try:
-            logging.info("[ACCUMULATOR_DEBUG] Starting to read from consumer")
             async for msg in consumer:
-                logging.info(f"[ACCUMULATOR_DEBUG] Received message type: {type(msg)}")
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    logging.info(f"[ACCUMULATOR_DEBUG] Found exception: {msg}")
-                    logging.info(f"[ACCUMULATOR_DEBUG] Calling handle_async_error with exception: {repr(msg)}")
                     await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
-                    logging.info(f"[ACCUMULATOR_DEBUG] Returning after handle_async_error")
                     return
                 # Send window EOF response or Window result response
                 # back to the client
                 else:
-                    logging.info(f"[ACCUMULATOR_DEBUG] Yielding message: {msg}")
                     yield msg
         except BaseException as e:
-            logging.info(f"[ACCUMULATOR_DEBUG] Caught exception in try block: {e}")
             await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
             return
         # Wait for the process_input_stream task to finish for a clean exit

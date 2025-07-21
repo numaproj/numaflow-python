@@ -14,7 +14,7 @@ def create_test_datum(keys, value, event_time=None, watermark=None, id_=None, he
         id_ = "test_id"
     if headers is None:
         headers = {}
-    
+
     return Datum(
         keys=keys,
         value=value,
@@ -32,14 +32,14 @@ def create_accumulator_request(operation, keys, value, event_time=None, watermar
     else:
         event_time_timestamp = event_time
         watermark_timestamp = watermark
-    
+
     window = accumulator_pb2.KeyedWindow(
         start=event_time_timestamp,
         end=watermark_timestamp,
         slot="slot-0",
         keys=keys,
     )
-    
+
     payload = accumulator_pb2.Payload(
         keys=keys,
         value=value,
@@ -47,12 +47,12 @@ def create_accumulator_request(operation, keys, value, event_time=None, watermar
         watermark=watermark_timestamp,
         id="test_id",
     )
-    
+
     operation_proto = accumulator_pb2.AccumulatorRequest.WindowOperation(
         event=operation,
         keyedWindow=window,
     )
-    
+
     return accumulator_pb2.AccumulatorRequest(
         payload=payload,
         operation=operation_proto,

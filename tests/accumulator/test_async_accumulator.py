@@ -33,12 +33,14 @@ def request_generator(count, request, resetkey: bool = False):
             # Clear previous keys and add new ones
             del request.payload.keys[:]
             request.payload.keys.extend([f"key-{i}"])
-        
+
         # Set operation based on index - first is OPEN, rest are APPEND
         if i == 0:
             request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.OPEN
         else:
-            request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+            request.operation.event = (
+                accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+            )
         yield request
 
 
@@ -82,27 +84,19 @@ class ExampleClass(Accumulator):
     def __init__(self, counter):
         self.counter = counter
 
-    async def handler(
-        self, datums: AsyncIterable[Datum], output: NonBlockingIterator
-    ):
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
         async for datum in datums:
             self.counter += 1
             msg = f"counter:{self.counter}"
-            await output.put(
-                Message(str.encode(msg), keys=datum.keys(), tags=[])
-            )
+            await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
 
 
-async def accumulator_handler_func(
-    datums: AsyncIterable[Datum], output: NonBlockingIterator
-):
+async def accumulator_handler_func(datums: AsyncIterable[Datum], output: NonBlockingIterator):
     counter = 0
     async for datum in datums:
         counter += 1
         msg = f"counter:{counter}"
-        await output.put(
-            Message(str.encode(msg), keys=datum.keys(), tags=[])
-        )
+        await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
 
 
 def NewAsyncAccumulator():
@@ -167,7 +161,7 @@ class TestAsyncAccumulator(unittest.TestCase):
         count = 0
         eof_count = 0
         for r in generator_response:
-            if hasattr(r, 'payload') and r.payload.value:
+            if hasattr(r, "payload") and r.payload.value:
                 count += 1
                 # Each datum should increment the counter
                 expected_msg = f"counter:{count}"
@@ -181,7 +175,7 @@ class TestAsyncAccumulator(unittest.TestCase):
             else:
                 self.assertEqual(r.EOF, True)
                 eof_count += 1
-                
+
         # We should have received 5 messages (one for each datum)
         self.assertEqual(5, count)
         self.assertEqual(1, eof_count)
@@ -209,7 +203,7 @@ class TestAsyncAccumulator(unittest.TestCase):
                 # Track count per key
                 key = r.payload.keys[0] if r.payload.keys else "no_key"
                 key_counts[key] = key_counts.get(key, 0) + 1
-                
+
                 # Each key should have its own counter starting from 1
                 expected_msg = f"counter:{key_counts[key]}"
                 self.assertEqual(
@@ -220,7 +214,7 @@ class TestAsyncAccumulator(unittest.TestCase):
             else:
                 eof_count += 1
                 self.assertEqual(r.EOF, True)
-                
+
         # We should have 10 messages (one for each key)
         self.assertEqual(10, count)
         self.assertEqual(10, eof_count)  # Each key/task sends its own EOF

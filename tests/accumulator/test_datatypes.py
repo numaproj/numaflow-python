@@ -23,7 +23,6 @@ from tests.testing_utils import (
     mock_watermark,
     mock_start_time,
     mock_end_time,
-    mock_headers,
 )
 
 TEST_KEYS = ["test"]
@@ -176,9 +175,7 @@ class TestAccumulatorResult(unittest.TestCase):
         consumer_future = None  # In real usage, this would be an asyncio.Task
         watermark = datetime.fromtimestamp(1662998400, timezone.utc)
 
-        result = AccumulatorResult(
-            future, iterator, keys, result_queue, consumer_future, watermark
-        )
+        result = AccumulatorResult(future, iterator, keys, result_queue, consumer_future, watermark)
 
         self.assertEqual(result.future, future)
         self.assertEqual(result.iterator, iterator)
@@ -265,7 +262,7 @@ class TestMessage(unittest.TestCase):
         test_watermark = mock_watermark()
         test_headers = {"header1": "value1", "header2": "value2"}
         test_id = "test_datum_id"
-        
+
         datum = Datum(
             keys=test_keys,
             value=test_value,
@@ -274,10 +271,10 @@ class TestMessage(unittest.TestCase):
             id_=test_id,
             headers=test_headers,
         )
-        
+
         # Create message from datum
         message = Message.from_datum(datum)
-        
+
         # Verify all properties are correctly transferred
         self.assertEqual(message.value, test_value)
         self.assertEqual(message.keys, test_keys)
@@ -285,10 +282,10 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(message.watermark, test_watermark)
         self.assertEqual(message.headers, test_headers)
         self.assertEqual(message.id, test_id)
-        
+
         # Verify that tags are empty (default for Message)
         self.assertEqual(message.tags, [])
-        
+
     def test_from_datum_minimal(self):
         """Test from_datum with minimal Datum (no headers)"""
         test_keys = ["minimal_key"]
@@ -296,7 +293,7 @@ class TestMessage(unittest.TestCase):
         test_event_time = mock_event_time()
         test_watermark = mock_watermark()
         test_id = "minimal_id"
-        
+
         datum = Datum(
             keys=test_keys,
             value=test_value,
@@ -305,9 +302,9 @@ class TestMessage(unittest.TestCase):
             id_=test_id,
             # headers not provided (will default to {})
         )
-        
+
         message = Message.from_datum(datum)
-        
+
         self.assertEqual(message.value, test_value)
         self.assertEqual(message.keys, test_keys)
         self.assertEqual(message.event_time, test_event_time)
@@ -315,7 +312,7 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(message.headers, {})
         self.assertEqual(message.id, test_id)
         self.assertEqual(message.tags, [])
-        
+
     def test_from_datum_empty_keys(self):
         """Test from_datum with empty keys"""
         datum = Datum(
@@ -325,9 +322,9 @@ class TestMessage(unittest.TestCase):
             watermark=mock_watermark(),
             id_="test_id",
         )
-        
+
         message = Message.from_datum(datum)
-        
+
         self.assertEqual(message.keys, [])
         self.assertEqual(message.value, b"test_value")
         self.assertEqual(message.id, "test_id")
@@ -335,9 +332,7 @@ class TestMessage(unittest.TestCase):
 
 class TestAccumulatorClass(unittest.TestCase):
     class ExampleClass(Accumulator):
-        async def handler(
-            self, datums: AsyncIterable[Datum], output: NonBlockingIterator
-        ):
+        async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
             pass
 
         def __init__(self, test1, test2):
@@ -382,7 +377,7 @@ class TestAccumulatorClass(unittest.TestCase):
         # Since handler is an async method, __call__ should return a coroutine
         import asyncio
         from pynumaflow.shared.asynciter import NonBlockingIterator
-        
+
         async def test_datums():
             yield Datum(
                 keys=["test"],
@@ -391,7 +386,7 @@ class TestAccumulatorClass(unittest.TestCase):
                 watermark=mock_watermark(),
                 id_="test",
             )
-        
+
         output = NonBlockingIterator()
         result = r(test_datums(), output)
         self.assertTrue(asyncio.iscoroutine(result))

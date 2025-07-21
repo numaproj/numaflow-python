@@ -19,8 +19,6 @@ from pynumaflow.proto.accumulator import accumulator_pb2, accumulator_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
-    mock_interval_window_start,
-    mock_interval_window_end,
     get_time_args,
     mock_terminate_on_stop,
 )
@@ -74,23 +72,17 @@ class ExampleErrorClass(Accumulator):
     def __init__(self, counter):
         self.counter = counter
 
-    async def handler(
-        self, datums: AsyncIterable[Datum], output: NonBlockingIterator
-    ):
+    async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
         async for datum in datums:
             self.counter += 1
             if self.counter == 2:
                 # Simulate an error on the second datum
                 raise RuntimeError("Simulated error in accumulator handler")
             msg = f"counter:{self.counter}"
-            await output.put(
-                Message(str.encode(msg), keys=datum.keys(), tags=[])
-            )
+            await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
 
 
-async def error_accumulator_handler_func(
-    datums: AsyncIterable[Datum], output: NonBlockingIterator
-):
+async def error_accumulator_handler_func(datums: AsyncIterable[Datum], output: NonBlockingIterator):
     counter = 0
     async for datum in datums:
         counter += 1
@@ -98,9 +90,7 @@ async def error_accumulator_handler_func(
             # Simulate an error on the second datum
             raise RuntimeError("Simulated error in accumulator function")
         msg = f"counter:{counter}"
-        await output.put(
-            Message(str.encode(msg), keys=datum.keys(), tags=[])
-        )
+        await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
 
 
 def NewAsyncAccumulatorError():
@@ -120,6 +110,7 @@ async def start_server(udfs):
     _s = server
     await server.start()
     await server.wait_for_termination()
+
 
 @patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncAccumulatorError(unittest.TestCase):
@@ -156,15 +147,15 @@ class TestAsyncAccumulatorError(unittest.TestCase):
         stub = self.__stub()
         request = start_request()
         generator_response = None
-        
+
         try:
             generator_response = stub.AccumulateFn(
                 request_iterator=request_generator(count=5, request=request)
             )
-            
+
             # Try to consume the generator
             counter = 0
-            logging.info(f"[TEST_DEBUG] About to iterate through generator_response")
+            logging.info("[TEST_DEBUG] About to iterate through generator_response")
             for response in generator_response:
                 counter += 1
                 logging.info(f"[TEST_DEBUG] Received response {counter}: {response}")
@@ -180,12 +171,12 @@ class TestAsyncAccumulatorError(unittest.TestCase):
         """Test that the first datum is processed before error occurs"""
         stub = self.__stub()
         request = start_request()
-        
+
         try:
             generator_response = stub.AccumulateFn(
                 request_iterator=request_generator(count=3, request=request)
             )
-            
+
             # Try to consume the generator
             counter = 0
             for _ in generator_response:

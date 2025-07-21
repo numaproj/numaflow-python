@@ -270,6 +270,60 @@ class TestAsyncAccumulator(unittest.TestCase):
         server = AccumulatorAsyncServer(accumulator_instance=ExampleClass)
         self.assertEqual(server.max_threads, 4)
 
+    def test_server_info_file_path_handling(self):
+        """Test AccumulatorAsyncServer with custom server info file path."""
+
+        server = AccumulatorAsyncServer(
+            ExampleClass, init_args=(0,), server_info_file="/custom/path/server_info.json"
+        )
+
+        self.assertEqual(server.server_info_file, "/custom/path/server_info.json")
+
+    def test_init_kwargs_none_handling(self):
+        """Test init_kwargs None handling in AccumulatorAsyncServer."""
+
+        server = AccumulatorAsyncServer(
+            ExampleClass, init_args=(0,), init_kwargs=None  # This should be converted to {}
+        )
+
+        # Should not raise any errors and should work correctly
+        self.assertIsNotNone(server.accumulator_handler)
+
+    def test_server_with_zero_max_threads(self):
+        """Test server creation with max_threads set to 0."""
+
+        server = AccumulatorAsyncServer(ExampleClass, max_threads=0)
+
+        # Should be set to 0 (minimum)
+        self.assertEqual(server.max_threads, 0)
+
+    def test_server_with_negative_max_threads(self):
+        """Test server creation with negative max_threads."""
+
+        server = AccumulatorAsyncServer(ExampleClass, max_threads=-5)
+
+        # Should be set to -5 (the minimum function will handle this)
+        self.assertEqual(server.max_threads, -5)
+
+    def test_server_start_method_logging(self):
+        """Test server start method includes proper logging."""
+        from unittest.mock import patch
+
+        server = AccumulatorAsyncServer(ExampleClass)
+
+        # Mock aiorun.run to prevent actual server startup
+        with patch("pynumaflow.accumulator.async_server.aiorun") as mock_aiorun, patch(
+            "pynumaflow.accumulator.async_server._LOGGER"
+        ) as mock_logger:
+            server.start()
+
+            # Verify logging was called
+            mock_logger.info.assert_called_once_with("Starting Async Accumulator Server")
+
+            # Verify aiorun.run was called with correct parameters
+            mock_aiorun.run.assert_called_once()
+            self.assertTrue(mock_aiorun.run.call_args[1]["use_uvloop"])
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)

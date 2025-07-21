@@ -62,8 +62,8 @@ class AccumulatorAsyncServer(NumaflowServer):
     A new servicer instance is created and attached to the server.
     The server instance is returned.
     Args:
-        accumulator_instance: The reducer instance to be used for
-                Reduce Streaming UDF
+        accumulator_instance: The accumulator instance to be used for
+                Accumulator UDF
         init_args: The arguments to be passed to the accumulator_handler
         init_kwargs: The keyword arguments to be passed to the
             accumulator_handler
@@ -78,7 +78,7 @@ class AccumulatorAsyncServer(NumaflowServer):
         from pynumaflow.accumulator import Messages, Message, Datum, Metadata,
         AccumulatorAsyncServer, Accumulator
 
-        class ReduceCounter(Accumulator):
+        class StreamSorter(Accumulator):
             def __init__(self, counter):
                 self.counter = counter
 
@@ -117,13 +117,13 @@ class AccumulatorAsyncServer(NumaflowServer):
         if __name__ == "__main__":
             invoke = os.getenv("INVOKE", "func_handler")
             if invoke == "class":
-                # Here we are using the class instance as the reducer_instance
+                # Here we are using the class instance as the accumulator_instance
                 # which will be used to invoke the handler function.
                 # We are passing the init_args for the class instance.
-                grpc_server = AccumulatorAsyncServer(ReduceCounter, init_args=(0,))
+                grpc_server = AccumulatorAsyncServer(StreamSorter, init_args=(0,))
             else:
-                # Here we are using the handler function directly as the reducer_instance.
-                grpc_server = AccumulatorAsyncServer(reduce_handler)
+                # Here we are using the handler function directly as the accumulator_instance.
+                grpc_server = AccumulatorAsyncServer(accumulator_handler)
             grpc_server.start()
 
     """

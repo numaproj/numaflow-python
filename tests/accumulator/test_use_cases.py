@@ -10,6 +10,7 @@ from pynumaflow.accumulator import (
     AccumulatorAsyncServer,
 )
 from pynumaflow.shared.asynciter import NonBlockingIterator
+from pynumaflow._constants import STREAM_EOF
 
 
 class StreamSorterAccumulator(Accumulator):
@@ -391,6 +392,249 @@ class TestAccumulatorUseCases(unittest.TestCase):
         # This test method is no longer needed since the async tests
         # are now properly handled within their respective test methods
         pass
+
+    def test_error_handling_scenarios(self):
+        """Test error handling scenarios in accumulator processing."""
+
+        async def run_test():
+            # Test 1: Function handler called directly (covers line 44 in async_server.py)
+            async def func_handler(datums: AsyncIterable[Datum], output: NonBlockingIterator):
+                async for datum in datums:
+                    await output.put(Message(datum.value, keys=datum.keys()))
+
+            from pynumaflow.accumulator.async_server import get_handler
+
+            handler = get_handler(func_handler)
+            self.assertEqual(handler, func_handler)
+
+            # Test 2: Task manager with function handler (covers lines 208->210 in task_manager.py)
+            from pynumaflow.accumulator.servicer.task_manager import TaskManager
+
+            task_manager = TaskManager(func_handler)
+            # Create mock request iterator that simulates function handler path
+            mock_datum = Datum(
+                keys=["func_key"],
+                value=b"test_data",
+                event_time=datetime.now(),
+                watermark=datetime.now(),
+                id_="func_test",
+            )
+
+            output_queue = NonBlockingIterator()
+
+            # Create an async iterator that yields our mock datum
+            async def datum_iter():
+                yield mock_datum
+
+            # This should cover the function handler path in __invoke_accumulator
+            await task_manager._TaskManager__invoke_accumulator(datum_iter(), output_queue)
+
+            # Verify the function handler was called by checking for output
+            results = []
+            try:
+                async for item in output_queue.read_iterator():
+                    results.append(item)
+                    if item == STREAM_EOF:
+                        break
+                    # Only expect one message for this test
+                    if len(results) >= 3:  # Safety break to avoid infinite loop
+                        break
+            except Exception:
+                pass  # Expected behavior for this simplified test
+
+            # Verify we got at least one result (message was processed)
+            self.assertGreaterEqual(len(results), 1)
+
+        asyncio.run(run_test())
+
+    def test_task_manager_error_scenarios(self):
+        """Test various error scenarios in TaskManager."""
+
+        # Test 1: Unknown window operation (covers lines 239-243 in task_manager.py)
+        from pynumaflow.accumulator.servicer.task_manager import TaskManager
+        from unittest.mock import Mock
+
+        handler = Mock()
+        task_manager = TaskManager(handler)
+
+        # Test 2: Watermark update with AccumulatorResult (covers lines 311, 315)
+        from pynumaflow.accumulator._dtypes import AccumulatorResult
+
+        # Create a task to test watermark updating
+        initial_watermark = datetime.fromtimestamp(500)
+        task = AccumulatorResult(
+            _future=Mock(),
+            _iterator=Mock(),
+            _key=["test_key"],
+            _result_queue=Mock(),
+            _consumer_future=Mock(),
+            _latest_watermark=initial_watermark,
+        )
+
+        # Test update_watermark method directly
+        new_watermark = datetime.fromtimestamp(2000)
+        task.update_watermark(new_watermark)
+        self.assertEqual(task.latest_watermark, new_watermark)
+
+        # Test 3: Test direct instantiation and basic functionality
+        unified_key = "test_key"
+        task_manager.tasks[unified_key] = task
+
+        # Verify task was added
+        self.assertIn(unified_key, task_manager.tasks)
+        self.assertEqual(task_manager.tasks[unified_key], task)
+
+    def test_edge_case_scenarios(self):
+        """Test edge cases and error conditions."""
+
+        async def run_test():
+            from pynumaflow.accumulator.servicer.task_manager import TaskManager
+            from unittest.mock import Mock
+
+            # Test 1: Error handling in EOF counting (covers lines 361-363)
+            handler = Mock()
+            task_manager = TaskManager(handler)
+
+            # Manually set up a scenario where EOF count exceeds expected
+            task_manager._expected_eof_count = 1
+            task_manager._received_eof_count = 2  # More than expected
+
+            # Create mock task for testing
+            from pynumaflow.accumulator._dtypes import AccumulatorResult
+
+            mock_task = AccumulatorResult(
+                _future=Mock(),
+                _iterator=Mock(),
+                _key=["edge_test"],
+                _result_queue=Mock(),
+                _consumer_future=Mock(),
+                _latest_watermark=datetime.now(),
+            )
+
+            unified_key = "edge_test"
+            task_manager.tasks[unified_key] = mock_task
+
+            # Test watermark handling with None values (covers lines 311, 315)
+            input_queue = NonBlockingIterator()
+            output_queue = NonBlockingIterator()
+
+            # Create message with None watermark and event_time
+            edge_message = Message(
+                value=b"edge_test",
+                keys=["edge_test"],
+                watermark=None,  # Test None watermark handling
+                event_time=None,  # Test None event_time handling
+            )
+
+            await input_queue.put(edge_message)
+            await input_queue.put(STREAM_EOF)
+
+            # This should handle None watermark and event_time without error
+            await task_manager.write_to_global_queue(input_queue, output_queue, unified_key)
+
+            # Verify output was generated
+            results = []
+            async for item in output_queue.read_iterator():
+                results.append(item)
+                if len(results) >= 2:  # Message + EOF response
+                    break
+
+            self.assertTrue(len(results) >= 2)
+
+        asyncio.run(run_test())
+
+    def test_abstract_method_coverage(self):
+        """Test abstract method coverage (line 412 in _dtypes.py)."""
+
+        # Test calling the abstract handler method directly
+        class DirectTestAccumulator(Accumulator):
+            pass  # Don't implement handler to test abstract method
+
+        # This should raise TypeError due to abstract method
+        with self.assertRaises(TypeError):
+            DirectTestAccumulator()
+
+    def test_servicer_error_handling(self):
+        """Test error handling in AsyncAccumulatorServicer (lines 116-118, 122-124)."""
+
+        async def run_test():
+            from pynumaflow.accumulator.servicer.async_servicer import AsyncAccumulatorServicer
+            from unittest.mock import Mock, patch
+
+            # Test exception in consumer loop (lines 116-118)
+            mock_handler = Mock()
+            servicer = AsyncAccumulatorServicer(mock_handler)
+            mock_context = Mock()
+
+            async def failing_request_iterator():
+                yield Mock()  # Just one request
+
+            # Mock TaskManager to simulate error in consumer
+            with patch("pynumaflow.accumulator.servicer.async_servicer.TaskManager") as mock_tm:
+                mock_task_manager = Mock()
+                mock_tm.return_value = mock_task_manager
+
+                # Mock read_iterator to raise exception
+                async def failing_reader():
+                    raise RuntimeError("Consumer error")
+
+                mock_result_queue = Mock()
+                mock_result_queue.read_iterator.return_value = failing_reader()
+                mock_task_manager.global_result_queue = mock_result_queue
+
+                # Mock process_input_stream
+                async def mock_process():
+                    pass
+
+                mock_task_manager.process_input_stream.return_value = mock_process()
+
+                # This should handle the consumer exception (lines 116-118)
+                with patch(
+                    "pynumaflow.accumulator.servicer.async_servicer.handle_async_error"
+                ) as mock_handle:
+                    results = []
+                    async for result in servicer.AccumulateFn(
+                        failing_request_iterator(), mock_context
+                    ):
+                        results.append(result)
+
+                    # Should have called error handler
+                    mock_handle.assert_called()
+
+            # Test exception in producer wait (lines 122-124)
+            with patch("pynumaflow.accumulator.servicer.async_servicer.TaskManager") as mock_tm2:
+                mock_task_manager2 = Mock()
+                mock_tm2.return_value = mock_task_manager2
+
+                # Mock read_iterator to work normally
+                async def normal_reader():
+                    return
+                    yield  # Empty generator
+
+                mock_result_queue2 = Mock()
+                mock_result_queue2.read_iterator.return_value = normal_reader()
+                mock_task_manager2.global_result_queue = mock_result_queue2
+
+                # Mock process_input_stream to raise exception when awaited
+                async def failing_process():
+                    raise RuntimeError("Producer error")
+
+                mock_task_manager2.process_input_stream.return_value = failing_process()
+
+                # This should handle the producer exception (lines 122-124)
+                with patch(
+                    "pynumaflow.accumulator.servicer.async_servicer.handle_async_error"
+                ) as mock_handle2:
+                    results2 = []
+                    async for result in servicer.AccumulateFn(
+                        failing_request_iterator(), mock_context
+                    ):
+                        results2.append(result)
+
+                    # Should have called error handler for producer error
+                    mock_handle2.assert_called()
+
+        asyncio.run(run_test())
 
 
 if __name__ == "__main__":

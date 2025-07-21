@@ -9,7 +9,6 @@ WORKDIR $PYSETUP_PATH
 # Copy only core dependency files first for better caching
 COPY pyproject.toml poetry.lock README.md ./
 COPY pynumaflow/ ./pynumaflow/
-RUN echo "Simulating long build step..." && sleep 20
 RUN apt-get update && apt-get install --no-install-recommends -y \
         curl wget build-essential git \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \

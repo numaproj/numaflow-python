@@ -29,9 +29,11 @@ class StreamSorter(Accumulator):
     ):
         _LOGGER.info("StreamSorter handler started")
         async for datum in datums:
-            _LOGGER.info(f"Received datum with event time: {datum.event_time}")
-            _LOGGER.info(f"Current latest watermark: {self.latest_wm}")
-            _LOGGER.info(f"Datum watermark: {datum.watermark}")
+            _LOGGER.info(
+                f"Received datum with event time: {datum.event_time}, "
+                f"Current latest watermark: {self.latest_wm}, "
+                f"Datum watermark: {datum.watermark}"
+            )
 
             # If watermark has moved forward
             if datum.watermark and datum.watermark > self.latest_wm:
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     invoke = os.getenv("INVOKE", "class")
     grpc_server = None
     if invoke == "class":
-        # Here we are using the class instance as the reducer_instance
+        # Here we are using the class instance as the accumulator_instance
         # which will be used to invoke the handler function.
         # We are passing the init_args for the class instance.
         grpc_server = AccumulatorAsyncServer(StreamSorter)

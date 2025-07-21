@@ -48,7 +48,7 @@ async def datum_generator(
 
 class AsyncAccumulatorServicer(accumulator_pb2_grpc.AccumulatorServicer):
     """
-    This class is used to create a new grpc Reduce servicer instance.
+    This class is used to create a new grpc Accumulator servicer instance.
     Provides the functionality for the required rpc methods.
     """
 
@@ -90,17 +90,17 @@ class AsyncAccumulatorServicer(accumulator_pb2_grpc.AccumulatorServicer):
         # Start the consumer task where we read from the result queue
         # and send the results to the client
         # The task manager can write the following to the result queue:
-        # 1. A accumulator_pb2.ReduceResponse message
-        # This is the result of the reduce function, it contains the window and the
-        # result of the reduce function
-        # The result of the reduce function is a accumulator_pb2.ReduceResponse message and can be
-        # directly sent to the client
+        # 1. A accumulator_pb2.AccumulatorResponse message
+        # This is the result of the accumulator function, it contains the window and the
+        # result of the accumulator function
+        # The result of the accumulator function is a accumulator_pb2.AccumulatorResponse message
+        #  and can be directly sent to the client
         #
         # 2. An Exception
-        # Any exceptions that occur during the processing reduce function tasks are
+        # Any exceptions that occur during the processing accumulator function tasks are
         # sent to the result queue. We then forward these exception to the client
         #
-        # 3. A accumulator_pb2.ReduceResponse message with EOF=True
+        # 3. A accumulator_pb2.AccumulatorResponse message with EOF=True
         # This is a special message that indicates the end of the processing for a window
         # When we get this message, we send an EOF message to the client
         try:

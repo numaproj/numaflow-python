@@ -32,7 +32,7 @@ class Datum:
         event_time: the event time of the event.
         watermark: the watermark of the event.
     >>> # Example usage
-    >>> from pynumaflow.reducer import Datum
+    >>> from pynumaflow.accumulator import Datum
     >>> from datetime import datetime, timezone
     >>> payload = bytes("test_mock_message", encoding="utf-8")
     >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
@@ -419,8 +419,8 @@ class _AccumulatorBuilderClass:
 
     Args:
         accumulator_class: the Accumulator class to be used for Accumulator UDF
-        args: the arguments to be passed to the reducer class
-        kwargs: the keyword arguments to be passed to the reducer class
+        args: the arguments to be passed to the accumulator class
+        kwargs: the keyword arguments to be passed to the accumulator class
     """
 
     def __init__(self, accumulator_class: type[Accumulator], args: tuple, kwargs: dict):
@@ -430,10 +430,10 @@ class _AccumulatorBuilderClass:
 
     def create(self) -> Accumulator:
         """
-        Create a new ReduceStreamer instance.
+        Create a new Accumulator instance.
         """
         return self._accumulator_class(*self._args, **self._kwargs)
 
 
-# AccumulatorStreamCallable is a callable which can be used as a handler for the Reduce UDF.
+# AccumulatorStreamCallable is a callable which can be used as a handler for the Accumulator UDF.
 AccumulatorStreamCallable = Union[AccumulatorAsyncCallable, type[Accumulator]]

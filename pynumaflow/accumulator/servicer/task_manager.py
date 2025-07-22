@@ -112,6 +112,8 @@ class TaskManager:
 
         if curr_task:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
+            await curr_task.future
+            await curr_task.consumer_future
             self.tasks.pop(unified_key)
         else:
             _LOGGER.critical("accumulator task not found", exc_info=True)

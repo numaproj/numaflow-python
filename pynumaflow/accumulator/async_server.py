@@ -75,55 +75,57 @@ class AccumulatorAsyncServer(NumaflowServer):
     Example invocation:
         import os
         from collections.abc import AsyncIterable
-        from pynumaflow.accumulator import Messages, Message, Datum, Metadata,
-        AccumulatorAsyncServer, Accumulator
+        from datetime import datetime
+
+        from pynumaflow.accumulator import Accumulator, AccumulatorAsyncServer
+        from pynumaflow.accumulator import (
+            Message,
+            Datum,
+        )
+        from pynumaflow.shared.asynciter import NonBlockingIterator
 
         class StreamSorter(Accumulator):
             def __init__(self, counter):
-                self.counter = counter
+                self.latest_wm = datetime.fromtimestamp(-1)
+                self.sorted_buffer: list[Datum] = []
 
             async def handler(
                 self,
-                keys: list[str],
                 datums: AsyncIterable[Datum],
                 output: NonBlockingIterator,
-                md: Metadata,
             ):
                 async for _ in datums:
-                    self.counter += 1
-                    if self.counter > 20:
-                        msg = f"counter:{self.counter}"
-                        await output.put(Message(str.encode(msg), keys=keys))
-                        self.counter = 0
-                msg = f"counter:{self.counter}"
-                await output.put(Message(str.encode(msg), keys=keys))
+                    # Process the datums and send output
+                    if datum.watermark and datum.watermark > self.latest_wm:
+                        self.latest_wm = datum.watermark
+                        await self.flush_buffer(output)
 
-        async def reduce_handler(
-                keys: list[str],
-                datums: AsyncIterable[Datum],
-                output: NonBlockingIterator,
-                md: Metadata,
-            ):
-            counter = 0
-            async for _ in datums:
-                counter += 1
-                if counter > 20:
-                    msg = f"counter:{counter}"
-                    await output.put(Message(str.encode(msg), keys=keys))
-                    counter = 0
-            msg = f"counter:{counter}"
-            await output.put(Message(str.encode(msg), keys=keys))
+                    self.insert_sorted(datum)
+
+            def insert_sorted(self, datum: Datum):
+                # Binary insert to keep sorted buffer in order
+                left, right = 0, len(self.sorted_buffer)
+                while left < right:
+                    mid = (left + right) // 2
+                    if self.sorted_buffer[mid].event_time > datum.event_time:
+                        right = mid
+                    else:
+                        left = mid + 1
+                self.sorted_buffer.insert(left, datum)
+
+            async def flush_buffer(self, output: NonBlockingIterator):
+                i = 0
+                for datum in self.sorted_buffer:
+                    if datum.event_time > self.latest_wm:
+                        break
+                    await output.put(Message.from_datum(datum))
+                    i += 1
+                # Remove flushed items
+                self.sorted_buffer = self.sorted_buffer[i:]
+
 
         if __name__ == "__main__":
-            invoke = os.getenv("INVOKE", "func_handler")
-            if invoke == "class":
-                # Here we are using the class instance as the accumulator_instance
-                # which will be used to invoke the handler function.
-                # We are passing the init_args for the class instance.
-                grpc_server = AccumulatorAsyncServer(StreamSorter, init_args=(0,))
-            else:
-                # Here we are using the handler function directly as the accumulator_instance.
-                grpc_server = AccumulatorAsyncServer(accumulator_handler)
+            grpc_server = AccumulatorAsyncServer(StreamSorter)
             grpc_server.start()
 
     """

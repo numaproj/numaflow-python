@@ -23,15 +23,12 @@ class StreamSorterAccumulator(Accumulator):
         self.buffer: list[Datum] = []
 
     async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
-        print("[StreamSorterAccumulator] Starting handler")
         # Collect all datums
         datum_count = 0
         async for datum in datums:
             datum_count += 1
-            print(f"[StreamSorterAccumulator] Received datum {datum_count}: {datum.value}")
             self.buffer.append(datum)
 
-        print(f"[StreamSorterAccumulator] Total datums received: {datum_count}")
         # Sort by event_time
         self.buffer.sort(key=lambda d: d.event_time)
 
@@ -39,7 +36,6 @@ class StreamSorterAccumulator(Accumulator):
         message_count = 0
         for datum in self.buffer:
             message_count += 1
-            print(f"[StreamSorterAccumulator] Emitting message {message_count}: {datum.value}")
             await output.put(
                 Message(
                     value=datum.value,
@@ -48,8 +44,6 @@ class StreamSorterAccumulator(Accumulator):
                 )
             )
 
-        print(f"[StreamSorterAccumulator] Total messages emitted: {message_count}")
-        print(f"[StreamSorterAccumulator] Handler completed, buffer cleared")
         # Clear buffer for next window
         self.buffer.clear()
 
@@ -320,7 +314,6 @@ class TestAccumulatorUseCases(unittest.TestCase):
         """Test actual sorting functionality"""
 
         async def _test_stream_sorter_functionality():
-            print("[Test] Starting stream sorter functionality test")
             sorter = StreamSorterAccumulator()
             output = NonBlockingIterator()
 
@@ -351,42 +344,27 @@ class TestAccumulatorUseCases(unittest.TestCase):
 
             async def datum_generator():
                 for datum in datums:
-                    print(f"[Test] Yielding datum: {datum.value}")
                     yield datum
-                print("[Test] Datum generator completed")
 
             # Process the datums
-            print("[Test] Calling sorter.handler")
             await sorter.handler(datum_generator(), output)
-            print("[Test] sorter.handler completed")
-            
+
             # Send STREAM_EOF to signal completion (this is normally done by TaskManager)
-            print("[Test] Sending STREAM_EOF to output queue")
             await output.put(STREAM_EOF)
-            print("[Test] STREAM_EOF sent")
 
             # Now let's read from the output to see what was written
-            print("[Test] Reading from output queue")
             results = []
             reader = output.read_iterator()
             async for item in reader:
-                print(f"[Test] Read from output: {item}")
                 results.append(item)
                 if item == STREAM_EOF:
-                    print("[Test] Received STREAM_EOF, breaking")
                     break
                 # Safety break to avoid infinite loop
                 if len(results) >= 10:
-                    print("[Test] Safety break - too many results")
                     break
-            
-            print(f"[Test] Total results read: {len(results)}")
-            for i, result in enumerate(results):
-                print(f"[Test] Result {i}: {result}")
 
             # Verify the buffer is cleared
             self.assertEqual(len(sorter.buffer), 0)
-            print("[Test] Test completed")
 
         asyncio.run(_test_stream_sorter_functionality())
 
@@ -652,7 +630,7 @@ class TestAccumulatorUseCases(unittest.TestCase):
                 mock_task_manager2 = Mock()
                 mock_tm2.return_value = mock_task_manager2
 
-                # Mock read_iterator to return an async generator  
+                # Mock read_iterator to return an async generator
                 async def normal_reader():
                     return
                     yield  # Empty generator

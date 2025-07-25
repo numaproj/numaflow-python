@@ -48,6 +48,7 @@ def request_generator(count, request, resetkey: bool = False, send_close: bool =
         request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
         yield request
 
+
 def request_generator_append_only(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
@@ -59,6 +60,7 @@ def request_generator_append_only(count, request, resetkey: bool = False):
         request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
         yield request
 
+
 def request_generator_mixed(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
@@ -66,13 +68,16 @@ def request_generator_mixed(count, request, resetkey: bool = False):
             del request.payload.keys[:]
             request.payload.keys.extend([f"key-{i}"])
 
-        if i% 2 == 0:
-            # Set operation to OPEN for the first request
-            request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+        if i % 2 == 0:
+            # Set operation to APPEND for even requests
+            request.operation.event = (
+                accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+            )
         else:
-            # Set operation to APPEND for all requests
+            # Set operation to CLOSE for odd requests
             request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
         yield request
+
 
 def start_request() -> accumulator_pb2.AccumulatorRequest:
     event_time_timestamp, watermark_timestamp = get_time_args()
@@ -208,7 +213,6 @@ class TestAsyncAccumulator(unittest.TestCase):
         count = 0
         eof_count = 0
         for r in generator_response:
-            print(r)
             if hasattr(r, "payload") and r.payload.value:
                 count += 1
                 # Each datum should increment the counter
@@ -237,7 +241,7 @@ class TestAsyncAccumulator(unittest.TestCase):
                 request_iterator=request_generator(count=10, request=request, resetkey=True),
             )
         except grpc.RpcError as e:
-            print(e)
+            LOGGER.error(e)
 
         count = 0
         eof_count = 0
@@ -284,7 +288,6 @@ class TestAsyncAccumulator(unittest.TestCase):
         count = 0
         eof_count = 0
         for r in generator_response:
-            print(r)
             if hasattr(r, "payload") and r.payload.value:
                 count += 1
                 # Each datum should increment the counter
@@ -319,7 +322,6 @@ class TestAsyncAccumulator(unittest.TestCase):
         count = 0
         eof_count = 0
         for r in generator_response:
-            print(r)
             if hasattr(r, "payload") and r.payload.value:
                 count += 1
                 # Each datum should increment the counter
@@ -350,7 +352,7 @@ class TestAsyncAccumulator(unittest.TestCase):
                 )
             )
         except grpc.RpcError as e:
-            print(e)
+            LOGGER.error(e)
 
         count = 0
         eof_count = 0
@@ -397,11 +399,10 @@ class TestAsyncAccumulator(unittest.TestCase):
         count = 0
         eof_count = 0
         for r in generator_response:
-            print(r)
             if hasattr(r, "payload") and r.payload.value:
                 count += 1
                 # Each datum should increment the counter
-                expected_msg = f"counter:1"
+                expected_msg = "counter:1"
                 self.assertEqual(
                     bytes(expected_msg, encoding="utf-8"),
                     r.payload.value,

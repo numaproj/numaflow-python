@@ -564,8 +564,6 @@ class TestTaskManagerUtilities(unittest.TestCase):
             self.assertEqual(task_manager._TaskManager__accumulator_handler, handler)
             self.assertEqual(len(task_manager.tasks), 0)
             self.assertEqual(len(task_manager.background_tasks), 0)
-            self.assertEqual(task_manager._expected_eof_count, 0)
-            self.assertEqual(task_manager._received_eof_count, 0)
 
         asyncio.run(run_test())
 

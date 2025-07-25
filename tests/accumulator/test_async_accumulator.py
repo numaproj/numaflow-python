@@ -27,7 +27,7 @@ from tests.testing_utils import (
 LOGGER = setup_logging(__name__)
 
 
-def request_generator(count, request, resetkey: bool = False):
+def request_generator(count, request, resetkey: bool = False, send_close: bool = False):
     for i in range(count):
         if resetkey:
             # Clear previous keys and add new ones
@@ -43,6 +43,36 @@ def request_generator(count, request, resetkey: bool = False):
             )
         yield request
 
+    if send_close:
+        # Send a close operation after all requests
+        request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
+        yield request
+
+def request_generator_append_only(count, request, resetkey: bool = False):
+    for i in range(count):
+        if resetkey:
+            # Clear previous keys and add new ones
+            del request.payload.keys[:]
+            request.payload.keys.extend([f"key-{i}"])
+
+        # Set operation to APPEND for all requests
+        request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+        yield request
+
+def request_generator_mixed(count, request, resetkey: bool = False):
+    for i in range(count):
+        if resetkey:
+            # Clear previous keys and add new ones
+            del request.payload.keys[:]
+            request.payload.keys.extend([f"key-{i}"])
+
+        if i% 2 == 0:
+            # Set operation to OPEN for the first request
+            request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+        else:
+            # Set operation to APPEND for all requests
+            request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
+        yield request
 
 def start_request() -> accumulator_pb2.AccumulatorRequest:
     event_time_timestamp, watermark_timestamp = get_time_args()
@@ -66,6 +96,23 @@ def start_request() -> accumulator_pb2.AccumulatorRequest:
     request = accumulator_pb2.AccumulatorRequest(
         payload=payload,
         operation=operation,
+    )
+    return request
+
+
+def start_request_without_open() -> accumulator_pb2.AccumulatorRequest:
+    event_time_timestamp, watermark_timestamp = get_time_args()
+
+    payload = accumulator_pb2.Payload(
+        keys=["test_key"],
+        value=mock_message(),
+        event_time=event_time_timestamp,
+        watermark=watermark_timestamp,
+        id="test_id",
+    )
+
+    request = accumulator_pb2.AccumulatorRequest(
+        payload=payload,
     )
     return request
 
@@ -161,6 +208,7 @@ class TestAsyncAccumulator(unittest.TestCase):
         count = 0
         eof_count = 0
         for r in generator_response:
+            print(r)
             if hasattr(r, "payload") and r.payload.value:
                 count += 1
                 # Each datum should increment the counter
@@ -220,6 +268,154 @@ class TestAsyncAccumulator(unittest.TestCase):
         self.assertEqual(10, eof_count)  # Each key/task sends its own EOF
         # Each key should appear once
         self.assertEqual(len(key_counts), 10)
+
+    def test_accumulate_with_close(self) -> None:
+        stub = self.__stub()
+        request = start_request()
+        generator_response = None
+        try:
+            generator_response = stub.AccumulateFn(
+                request_iterator=request_generator(count=5, request=request, send_close=True)
+            )
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        # capture the output from the AccumulateFn generator and assert.
+        count = 0
+        eof_count = 0
+        for r in generator_response:
+            print(r)
+            if hasattr(r, "payload") and r.payload.value:
+                count += 1
+                # Each datum should increment the counter
+                expected_msg = f"counter:{count}"
+                self.assertEqual(
+                    bytes(expected_msg, encoding="utf-8"),
+                    r.payload.value,
+                )
+                self.assertEqual(r.EOF, False)
+                # Check that keys are preserved
+                self.assertEqual(list(r.payload.keys), ["test_key"])
+            else:
+                self.assertEqual(r.EOF, True)
+                eof_count += 1
+
+        # We should have received 5 messages (one for each datum)
+        self.assertEqual(5, count)
+        self.assertEqual(1, eof_count)
+
+    def test_accumulate_append_without_open(self) -> None:
+        stub = self.__stub()
+        request = start_request_without_open()
+        generator_response = None
+        try:
+            generator_response = stub.AccumulateFn(
+                request_iterator=request_generator_append_only(count=5, request=request)
+            )
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        # capture the output from the AccumulateFn generator and assert.
+        count = 0
+        eof_count = 0
+        for r in generator_response:
+            print(r)
+            if hasattr(r, "payload") and r.payload.value:
+                count += 1
+                # Each datum should increment the counter
+                expected_msg = f"counter:{count}"
+                self.assertEqual(
+                    bytes(expected_msg, encoding="utf-8"),
+                    r.payload.value,
+                )
+                self.assertEqual(r.EOF, False)
+                # Check that keys are preserved
+                self.assertEqual(list(r.payload.keys), ["test_key"])
+            else:
+                self.assertEqual(r.EOF, True)
+                eof_count += 1
+
+        # We should have received 5 messages (one for each datum)
+        self.assertEqual(5, count)
+        self.assertEqual(1, eof_count)
+
+    def test_accumulate_with_multiple_keys_append_only(self) -> None:
+        stub = self.__stub()
+        request = start_request_without_open()
+        generator_response = None
+        try:
+            generator_response = stub.AccumulateFn(
+                request_iterator=request_generator_append_only(
+                    count=10, request=request, resetkey=True
+                )
+            )
+        except grpc.RpcError as e:
+            print(e)
+
+        count = 0
+        eof_count = 0
+        key_counts = {}
+
+        # capture the output from the AccumulateFn generator and assert.
+        for r in generator_response:
+            # Check for responses with values
+            if r.payload.value:
+                count += 1
+                # Track count per key
+                key = r.payload.keys[0] if r.payload.keys else "no_key"
+                key_counts[key] = key_counts.get(key, 0) + 1
+
+                # Each key should have its own counter starting from 1
+                expected_msg = f"counter:{key_counts[key]}"
+                self.assertEqual(
+                    bytes(expected_msg, encoding="utf-8"),
+                    r.payload.value,
+                )
+                self.assertEqual(r.EOF, False)
+            else:
+                eof_count += 1
+                self.assertEqual(r.EOF, True)
+
+        # We should have 10 messages (one for each key)
+        self.assertEqual(10, count)
+        self.assertEqual(10, eof_count)
+        # Each key should appear once
+        self.assertEqual(len(key_counts), 10)
+
+    def test_accumulate_append_mixed(self) -> None:
+        stub = self.__stub()
+        request = start_request()
+        generator_response = None
+        try:
+            generator_response = stub.AccumulateFn(
+                request_iterator=request_generator_mixed(count=5, request=request)
+            )
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        # capture the output from the AccumulateFn generator and assert.
+        count = 0
+        eof_count = 0
+        for r in generator_response:
+            print(r)
+            if hasattr(r, "payload") and r.payload.value:
+                count += 1
+                # Each datum should increment the counter
+                expected_msg = f"counter:1"
+                self.assertEqual(
+                    bytes(expected_msg, encoding="utf-8"),
+                    r.payload.value,
+                )
+                self.assertEqual(r.EOF, False)
+                # Check that keys are preserved
+                self.assertEqual(list(r.payload.keys), ["test_key"])
+            else:
+                self.assertEqual(r.EOF, True)
+                eof_count += 1
+
+        # We should have received 5 messages (one for each datum)
+        self.assertEqual(3, count)
+        self.assertEqual(3, eof_count)
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/accumulator.sock") as channel:

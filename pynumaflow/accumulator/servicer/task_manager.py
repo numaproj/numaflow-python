@@ -64,11 +64,6 @@ class TaskManager:
         # This queue is also used to send the error/exceptions to the client
         # if the accumulator operation fails.
         self.global_result_queue = NonBlockingIterator()
-        # EOF response counting to ensure proper termination
-        self._expected_eof_count = 0
-        self._received_eof_count = 0
-        self._eof_count_lock = asyncio.Lock()
-        self._stream_termination_event = asyncio.Event()
 
     def get_unique_windows(self):
         """
@@ -102,7 +97,6 @@ class TaskManager:
         task_keys = list(self.tasks.keys())
         for unified_key in task_keys:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
-            self.tasks.pop(unified_key)
 
     async def close_task(self, req):
         d = req.payload
@@ -169,10 +163,6 @@ class TaskManager:
 
             # Save the result of the accumulator operation to the task list
             self.tasks[unified_key] = curr_task
-
-            # Increment expected EOF count since we created a new task
-            async with self._eof_count_lock:
-                self._expected_eof_count += 1
 
         # Put the request in the iterator
         await curr_task.iterator.put(d)
@@ -275,10 +265,7 @@ class TaskManager:
                 # all the results of this task to the global result queue
                 con_future = task.consumer_future
                 await con_future
-
-            # Wait for all tasks to send their EOF responses before terminating the stream
-            # This ensures proper ordering: all messages -> all EOF responses -> STREAM_EOF
-            await self._stream_termination_event.wait()
+            self.tasks.clear()
 
             # Now send STREAM_EOF to terminate the global result queue iterator
             await self.global_result_queue.put(STREAM_EOF)
@@ -352,17 +339,6 @@ class TaskManager:
             EOF=True,
         )
         await output_queue.put(res)
-
-        # Increment received EOF count and check if all tasks are done
-        async with self._eof_count_lock:
-            self._received_eof_count += 1
-
-            # Check if all tasks have sent their EOF responses
-            if self._received_eof_count == self._expected_eof_count:
-                self._stream_termination_event.set()
-            elif self._received_eof_count > self._expected_eof_count:
-                # Still set the event to prevent hanging, but log the error
-                self._stream_termination_event.set()
 
     def clean_background(self, task):
         """

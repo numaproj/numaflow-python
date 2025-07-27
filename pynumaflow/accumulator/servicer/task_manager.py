@@ -263,11 +263,6 @@ class TaskManager:
                 fut = task.future
                 await fut
 
-                # # Send an EOF message to the local result queue
-                # # This will signal that the task has completed processing
-                # TODO: remove this and test end to end as we are sending EOF in _invoke_accumulator
-                await task.result_queue.put(STREAM_EOF)
-
                 # Wait for the local queue to write
                 # all the results of this task to the global result queue
                 con_future = task.consumer_future

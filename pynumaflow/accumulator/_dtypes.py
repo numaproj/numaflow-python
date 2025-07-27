@@ -118,7 +118,7 @@ class Datum:
         Returns:
             dict[str, str]: A dictionary containing header key-value pairs for this event.
         """
-        return self._headers
+        return self._headers.copy()
 
     @property
     def id(self) -> str:
@@ -224,27 +224,6 @@ class KeyedWindow:
             list[str]: A list of keys associated with this window.
         """
         return self._keys
-
-
-@dataclass(init=False)
-class Metadata:
-    """Defines the metadata for the event."""
-
-    __slots__ = ("_interval_window",)
-
-    _interval_window: IntervalWindow
-
-    def __init__(self, interval_window: IntervalWindow):
-        self._interval_window = interval_window
-
-    @property
-    def interval_window(self) -> IntervalWindow:
-        """Returns the interval window for the event.
-
-        Returns:
-            IntervalWindow: The interval window associated with this event.
-        """
-        return self._interval_window
 
 
 @dataclass
@@ -486,7 +465,7 @@ class Message:
         Returns:
             dict[str, str]: A dictionary containing header key-value pairs for this message.
         """
-        return self._headers
+        return self._headers.copy()
 
     @property
     def id(self) -> str:
@@ -517,9 +496,7 @@ class Message:
         )
 
 
-AccumulatorAsyncCallable = Callable[
-    [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None
-]
+AccumulatorAsyncCallable = Callable[[list[str], AsyncIterable[Datum], NonBlockingIterator], None]
 
 
 class Accumulator(metaclass=ABCMeta):

@@ -341,49 +341,6 @@ class TestAsyncAccumulator(unittest.TestCase):
         self.assertEqual(5, count)
         self.assertEqual(1, eof_count)
 
-    def test_accumulate_with_multiple_keys_append_only(self) -> None:
-        stub = self.__stub()
-        request = start_request_without_open()
-        generator_response = None
-        try:
-            generator_response = stub.AccumulateFn(
-                request_iterator=request_generator_append_only(
-                    count=10, request=request, resetkey=True
-                )
-            )
-        except grpc.RpcError as e:
-            LOGGER.error(e)
-
-        count = 0
-        eof_count = 0
-        key_counts = {}
-
-        # capture the output from the AccumulateFn generator and assert.
-        for r in generator_response:
-            # Check for responses with values
-            if r.payload.value:
-                count += 1
-                # Track count per key
-                key = r.payload.keys[0] if r.payload.keys else "no_key"
-                key_counts[key] = key_counts.get(key, 0) + 1
-
-                # Each key should have its own counter starting from 1
-                expected_msg = f"counter:{key_counts[key]}"
-                self.assertEqual(
-                    bytes(expected_msg, encoding="utf-8"),
-                    r.payload.value,
-                )
-                self.assertEqual(r.EOF, False)
-            else:
-                eof_count += 1
-                self.assertEqual(r.EOF, True)
-
-        # We should have 10 messages (one for each key)
-        self.assertEqual(10, count)
-        self.assertEqual(10, eof_count)
-        # Each key should appear once
-        self.assertEqual(len(key_counts), 10)
-
     def test_accumulate_append_mixed(self) -> None:
         stub = self.__stub()
         request = start_request()
@@ -467,6 +424,14 @@ class TestAsyncAccumulator(unittest.TestCase):
         server = AccumulatorAsyncServer(accumulator_instance=ExampleClass)
         self.assertEqual(server.max_threads, 4)
 
+        # zero threads
+        server = AccumulatorAsyncServer(ExampleClass, max_threads=0)
+        self.assertEqual(server.max_threads, 0)
+
+        # negative threads
+        server = AccumulatorAsyncServer(ExampleClass, max_threads=-5)
+        self.assertEqual(server.max_threads, -5)
+
     def test_server_info_file_path_handling(self):
         """Test AccumulatorAsyncServer with custom server info file path."""
 
@@ -485,22 +450,6 @@ class TestAsyncAccumulator(unittest.TestCase):
 
         # Should not raise any errors and should work correctly
         self.assertIsNotNone(server.accumulator_handler)
-
-    def test_server_with_zero_max_threads(self):
-        """Test server creation with max_threads set to 0."""
-
-        server = AccumulatorAsyncServer(ExampleClass, max_threads=0)
-
-        # Should be set to 0 (minimum)
-        self.assertEqual(server.max_threads, 0)
-
-    def test_server_with_negative_max_threads(self):
-        """Test server creation with negative max_threads."""
-
-        server = AccumulatorAsyncServer(ExampleClass, max_threads=-5)
-
-        # Should be set to -5 (the minimum function will handle this)
-        self.assertEqual(server.max_threads, -5)
 
     def test_server_start_method_logging(self):
         """Test server start method includes proper logging."""

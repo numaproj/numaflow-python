@@ -143,10 +143,10 @@ class TestAsyncAccumulatorError(unittest.TestCase):
             LOGGER.error(e)
 
     @patch("psutil.Process.kill", mock_terminate_on_stop)
-    def test_accumulate_error(self) -> None:
+    def test_accumulate_partial_success(self) -> None:
+        """Test that the first datum is processed before error occurs"""
         stub = self.__stub()
         request = start_request()
-        generator_response = None
 
         try:
             generator_response = stub.AccumulateFn(
@@ -155,32 +155,12 @@ class TestAsyncAccumulatorError(unittest.TestCase):
 
             # Try to consume the generator
             counter = 0
-            logging.info("[TEST_DEBUG] About to iterate through generator_response")
             for response in generator_response:
+                self.assertIsInstance(response, accumulator_pb2.AccumulatorResponse)
+                self.assertTrue(response.payload.value.startswith(b"counter:"))
                 counter += 1
-                logging.info(f"[TEST_DEBUG] Received response {counter}: {response}")
-            logging.info(f"[TEST_DEBUG] Finished iterating, got {counter} responses")
-        except BaseException as err:
-            logging.info(f"[TEST_DEBUG] Caught exception: {err}")
-            self.assertTrue("Simulated error in accumulator handler" in str(err))
-            return
-        self.fail("Expected an exception.")
 
-    @patch("psutil.Process.kill", mock_terminate_on_stop)
-    def test_accumulate_partial_success(self) -> None:
-        """Test that the first datum is processed before error occurs"""
-        stub = self.__stub()
-        request = start_request()
-
-        try:
-            generator_response = stub.AccumulateFn(
-                request_iterator=request_generator(count=3, request=request)
-            )
-
-            # Try to consume the generator
-            counter = 0
-            for _ in generator_response:
-                counter += 1
+            self.assertEqual(counter, 1, "Expected only one successful response before error")
         except BaseException as err:
             self.assertTrue("Simulated error in accumulator handler" in str(err))
             return

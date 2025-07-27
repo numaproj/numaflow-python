@@ -38,11 +38,6 @@ def build_window_hash(window):
     return f"{window.start.ToMilliseconds()}:{window.end.ToMilliseconds()}"
 
 
-def create_window_eof_response(window):
-    """Create a Accumulator response with EOF=True for a given window"""
-    return accumulator_pb2.AccumulatorResponse(window=window, EOF=True)
-
-
 class TaskManager:
     """
     TaskManager is responsible for managing the Accumulator tasks.
@@ -89,8 +84,9 @@ class TaskManager:
 
     async def stream_send_eof(self):
         """
-        Sends EOF to input streams of all the Accumulator
-        tasks that are currently being processed.
+        Function used to indicate to all processing tasks that no
+        more requests are expected by sending EOF message to
+        local input streams of individual tasks.
         This is called when the input grpc stream is closed.
         """
         # Create a copy of the keys to avoid dictionary size change during iteration
@@ -99,6 +95,16 @@ class TaskManager:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
 
     async def close_task(self, req):
+        """
+        Closes a running accumulator task for a given key.
+        Based on the request we compute the unique key, and then
+        signal the corresponding task for it to closure.
+        The steps involve
+        1. Send a signal to the local request queue of the task to stop reading
+        2. Wait for the user function to complete
+        3. Wait for all the results from the task to be written to the global result  queue
+        4. Remove the task from the tracker
+        """
         d = req.payload
         keys = d.keys()
         unified_key = build_unique_key_name(keys)
@@ -259,6 +265,7 @@ class TaskManager:
 
                 # # Send an EOF message to the local result queue
                 # # This will signal that the task has completed processing
+                # TODO: remove this and test end to end as we are sending EOF in _invoke_accumulator
                 await task.result_queue.put(STREAM_EOF)
 
                 # Wait for the local queue to write
@@ -278,9 +285,9 @@ class TaskManager:
         self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, unified_key: str
     ):
         """
-        This task is for given Accumulator task.
-        This would from the local result queue for the task and then write
-        to the global result queue
+        This function is used to route the messages from the
+        local result queue for a given task to the global result queue.
+        Once all messages are routed, it sends the window EOF messages for the same.
         """
         reader = input_queue.read_iterator()
         task = self.tasks[unified_key]

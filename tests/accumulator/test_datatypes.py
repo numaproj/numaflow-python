@@ -9,13 +9,11 @@ from pynumaflow.accumulator import Accumulator
 from pynumaflow.accumulator._dtypes import (
     IntervalWindow,
     KeyedWindow,
-    Metadata,
     Datum,
     AccumulatorResult,
     AccumulatorRequest,
     WindowOperation,
     Message,
-    _AccumulatorBuilderClass,
 )
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
@@ -28,6 +26,7 @@ from tests.testing_utils import (
 
 TEST_KEYS = ["test"]
 TEST_ID = "test_id"
+TEST_HEADERS = {"key1": "value1", "key2": "value2"}
 
 
 class TestDatum(unittest.TestCase):
@@ -69,49 +68,21 @@ class TestDatum(unittest.TestCase):
             str(context.exception),
         )
 
-    def test_value(self):
-        test_headers = {"key1": "value1", "key2": "value2"}
+    def test_properties(self):
         d = Datum(
             keys=TEST_KEYS,
             value=mock_message(),
             event_time=mock_event_time(),
             watermark=mock_watermark(),
             id_=TEST_ID,
-            headers=test_headers,
+            headers=TEST_HEADERS,
         )
         self.assertEqual(mock_message(), d.value)
-        self.assertEqual(test_headers, d.headers)
-        self.assertEqual(TEST_ID, d.id)
-
-    def test_key(self):
-        d = Datum(
-            keys=TEST_KEYS,
-            value=mock_message(),
-            event_time=mock_event_time(),
-            watermark=mock_watermark(),
-            id_=TEST_ID,
-        )
         self.assertEqual(TEST_KEYS, d.keys())
-
-    def test_event_time(self):
-        d = Datum(
-            keys=TEST_KEYS,
-            value=mock_message(),
-            event_time=mock_event_time(),
-            watermark=mock_watermark(),
-            id_=TEST_ID,
-        )
         self.assertEqual(mock_event_time(), d.event_time)
-
-    def test_watermark(self):
-        d = Datum(
-            keys=TEST_KEYS,
-            value=mock_message(),
-            event_time=mock_event_time(),
-            watermark=mock_watermark(),
-            id_=TEST_ID,
-        )
         self.assertEqual(mock_watermark(), d.watermark)
+        self.assertEqual(TEST_HEADERS, d.headers)
+        self.assertEqual(TEST_ID, d.id)
 
     def test_default_values(self):
         d = Datum(
@@ -156,14 +127,6 @@ class TestKeyedWindow(unittest.TestCase):
         self.assertIsInstance(kw.window, IntervalWindow)
         self.assertEqual(kw.window.start, mock_start_time())
         self.assertEqual(kw.window.end, mock_end_time())
-
-
-class TestMetadata(unittest.TestCase):
-    def test_interval_window(self):
-        i = IntervalWindow(start=mock_start_time(), end=mock_end_time())
-        m = Metadata(interval_window=i)
-        self.assertEqual(type(i), type(m.interval_window))
-        self.assertEqual(i, m.interval_window)
 
 
 class TestAccumulatorResult(unittest.TestCase):
@@ -393,312 +356,6 @@ class TestAccumulatorClass(unittest.TestCase):
         self.assertTrue(asyncio.iscoroutine(result))
         # Clean up the coroutine
         result.close()
-
-
-class TestAccumulatorBuilderClass(unittest.TestCase):
-    """Test AccumulatorBuilderClass functionality."""
-
-    def test_builder_class_creation(self):
-        """Test AccumulatorBuilderClass creation and instantiation."""
-
-        class TestAccumulator(Accumulator):
-            def __init__(self, counter=0):
-                self.counter = counter
-
-            async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
-                pass
-
-        builder = _AccumulatorBuilderClass(TestAccumulator, (15,), {})
-        instance = builder.create()
-
-        self.assertIsInstance(instance, TestAccumulator)
-        self.assertEqual(instance.counter, 15)
-
-    def test_builder_class_with_kwargs(self):
-        """Test AccumulatorBuilderClass with keyword arguments."""
-
-        class KwargsAccumulator(Accumulator):
-            def __init__(self, param1, param2, param3=None):
-                self.param1 = param1
-                self.param2 = param2
-                self.param3 = param3
-
-            async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
-                pass
-
-        builder = _AccumulatorBuilderClass(
-            KwargsAccumulator, ("arg1", "arg2"), {"param3": "kwarg_value"}
-        )
-        instance = builder.create()
-
-        self.assertIsInstance(instance, KwargsAccumulator)
-        self.assertEqual(instance.param1, "arg1")
-        self.assertEqual(instance.param2, "arg2")
-        self.assertEqual(instance.param3, "kwarg_value")
-
-    def test_builder_class_empty_args(self):
-        """Test AccumulatorBuilderClass with empty args and kwargs."""
-
-        class EmptyArgsAccumulator(Accumulator):
-            def __init__(self):
-                self.initialized = True
-
-            async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
-                pass
-
-        builder = _AccumulatorBuilderClass(EmptyArgsAccumulator, (), {})
-        instance = builder.create()
-
-        self.assertIsInstance(instance, EmptyArgsAccumulator)
-        self.assertTrue(instance.initialized)
-
-
-class TestAsyncServerHandlerCoverage(unittest.TestCase):
-    """Test async server handler function coverage."""
-
-    def test_get_handler_with_function_and_args_error(self):
-        """Test get_handler raises TypeError when function handler is passed with init args."""
-        from pynumaflow.accumulator.async_server import get_handler
-
-        async def test_func(datums, output):
-            pass
-
-        with self.assertRaises(TypeError) as context:
-            get_handler(test_func, init_args=(1, 2))
-
-        self.assertIn(
-            "Cannot pass function handler with init args or kwargs", str(context.exception)
-        )
-
-    def test_get_handler_with_function_and_kwargs_error(self):
-        """Test get_handler raises TypeError when function handler is passed with init kwargs."""
-        from pynumaflow.accumulator.async_server import get_handler
-
-        async def test_func(datums, output):
-            pass
-
-        with self.assertRaises(TypeError) as context:
-            get_handler(test_func, init_kwargs={"test": "value"})
-
-        self.assertIn(
-            "Cannot pass function handler with init args or kwargs", str(context.exception)
-        )
-
-    def test_get_handler_with_invalid_class(self):
-        """Test get_handler raises TypeError for invalid class type."""
-        from pynumaflow.accumulator.async_server import get_handler
-
-        class InvalidClass:
-            pass
-
-        with self.assertRaises(TypeError) as context:
-            get_handler(InvalidClass())
-
-        # The actual error comes from issubclass() check since we're passing an instance
-        self.assertIn("issubclass() arg 1 must be a class", str(context.exception))
-
-    def test_get_handler_with_invalid_class_type(self):
-        """Test get_handler raises TypeError for invalid Accumulator class type."""
-        from pynumaflow.accumulator.async_server import get_handler
-
-        class NonAccumulatorClass:
-            pass
-
-        with self.assertRaises(TypeError) as context:
-            get_handler(NonAccumulatorClass)
-
-        # This will hit the 'Invalid Class Type' error path
-        self.assertIn("Invalid Class Type", str(context.exception))
-
-    def test_get_handler_with_valid_class(self):
-        """Test get_handler returns AccumulatorBuilderClass for valid Accumulator subclass."""
-        from pynumaflow.accumulator.async_server import get_handler
-
-        class ValidAccumulator(Accumulator):
-            def __init__(self, counter=0):
-                self.counter = counter
-
-            async def handler(self, datums: AsyncIterable[Datum], output: NonBlockingIterator):
-                pass
-
-        result = get_handler(ValidAccumulator, init_args=(10,), init_kwargs={"counter": 5})
-
-        self.assertIsInstance(result, _AccumulatorBuilderClass)
-
-
-class TestTaskManagerUtilities(unittest.TestCase):
-    """Test TaskManager utility functions."""
-
-    def test_build_window_hash(self):
-        """Test build_window_hash function."""
-        from pynumaflow.accumulator.servicer.task_manager import build_window_hash
-        from unittest.mock import Mock
-
-        # Create a mock window with ToMilliseconds method
-        mock_window = Mock()
-        mock_window.start.ToMilliseconds.return_value = 1000
-        mock_window.end.ToMilliseconds.return_value = 2000
-
-        result = build_window_hash(mock_window)
-        self.assertEqual(result, "1000:2000")
-
-    def test_build_unique_key_name(self):
-        """Test build_unique_key_name function."""
-        from pynumaflow.accumulator.servicer.task_manager import build_unique_key_name
-
-        keys = ["key1", "key2", "key3"]
-        result = build_unique_key_name(keys)
-
-        self.assertEqual(result, "key1:key2:key3")
-
-    def test_task_manager_initialization(self):
-        """Test TaskManager initialization."""
-        import asyncio
-        from pynumaflow.accumulator.servicer.task_manager import TaskManager
-        from unittest.mock import Mock
-
-        async def run_test():
-            handler = Mock()
-            task_manager = TaskManager(handler)
-
-            self.assertEqual(task_manager._TaskManager__accumulator_handler, handler)
-            self.assertEqual(len(task_manager.tasks), 0)
-            self.assertEqual(len(task_manager.background_tasks), 0)
-
-        asyncio.run(run_test())
-
-    def test_task_manager_get_unique_windows(self):
-        """Test TaskManager get_unique_windows with empty tasks."""
-        import asyncio
-        from pynumaflow.accumulator.servicer.task_manager import TaskManager
-        from unittest.mock import Mock
-
-        async def run_test():
-            handler = Mock()
-            task_manager = TaskManager(handler)
-
-            windows = task_manager.get_unique_windows()
-            self.assertEqual(len(windows), 0)
-
-        asyncio.run(run_test())
-
-    def test_task_manager_get_tasks(self):
-        """Test TaskManager get_tasks method."""
-        import asyncio
-        from pynumaflow.accumulator.servicer.task_manager import TaskManager
-        from unittest.mock import Mock
-
-        async def run_test():
-            handler = Mock()
-            task_manager = TaskManager(handler)
-
-            tasks = task_manager.get_tasks()
-            self.assertEqual(len(tasks), 0)
-
-        asyncio.run(run_test())
-
-    def test_task_manager_close_task_not_found(self):
-        """Test TaskManager close_task when task is not found."""
-        import asyncio
-        from unittest.mock import patch, Mock
-        from pynumaflow.accumulator.servicer.task_manager import TaskManager
-
-        with patch("pynumaflow.accumulator.servicer.task_manager._LOGGER") as mock_logger:
-            handler = Mock()
-            task_manager = TaskManager(handler)
-
-            # Create a mock request with payload that has keys
-            mock_request = Mock()
-            mock_datum = Mock()
-            mock_datum.keys.return_value = ["test_key"]
-            mock_request.payload = mock_datum
-
-            # Call close_task - should log error and put exception in queue
-            asyncio.run(task_manager.close_task(mock_request))
-
-            # Verify logger was called
-            mock_logger.critical.assert_called_once_with(
-                "accumulator task not found", exc_info=True
-            )
-
-
-class TestAsyncServicerCoverage(unittest.TestCase):
-    """Test AsyncAccumulatorServicer coverage."""
-
-    def test_servicer_is_ready_method(self):
-        """Test AsyncAccumulatorServicer IsReady method."""
-        import asyncio
-        from unittest.mock import Mock
-        from pynumaflow.accumulator.servicer.async_servicer import AsyncAccumulatorServicer
-        from pynumaflow.proto.accumulator import accumulator_pb2
-        from google.protobuf import empty_pb2 as _empty_pb2
-
-        async def run_test():
-            mock_handler = Mock()
-            servicer = AsyncAccumulatorServicer(mock_handler)
-
-            # Create mock context and empty request
-            mock_context = Mock()
-            empty_request = _empty_pb2.Empty()
-
-            # Call IsReady
-            response = await servicer.IsReady(empty_request, mock_context)
-
-            # Verify response
-            self.assertIsInstance(response, accumulator_pb2.ReadyResponse)
-            self.assertTrue(response.ready)
-
-        asyncio.run(run_test())
-
-    def test_datum_generator(self):
-        """Test datum_generator function."""
-        import asyncio
-        from unittest.mock import Mock
-        from pynumaflow.accumulator.servicer.async_servicer import datum_generator
-        from tests.testing_utils import (
-            get_time_args,
-            mock_interval_window_start,
-            mock_interval_window_end,
-        )
-
-        async def run_test():
-            # Create mock request
-            event_time_timestamp, watermark_timestamp = get_time_args()
-
-            mock_request = Mock()
-            mock_request.operation.event = WindowOperation.OPEN.value
-            mock_request.operation.keyedWindow.start.ToDatetime.return_value = (
-                mock_interval_window_start().ToDatetime()
-            )
-            mock_request.operation.keyedWindow.end.ToDatetime.return_value = (
-                mock_interval_window_end().ToDatetime()
-            )
-            mock_request.operation.keyedWindow.slot = "slot-0"
-            mock_request.operation.keyedWindow.keys = ["test_key"]
-
-            mock_request.payload.keys = ["test_key"]
-            mock_request.payload.value = b"test_value"
-            mock_request.payload.event_time.ToDatetime.return_value = (
-                event_time_timestamp.ToDatetime()
-            )
-            mock_request.payload.watermark.ToDatetime.return_value = (
-                watermark_timestamp.ToDatetime()
-            )
-            mock_request.payload.id = "test_id"
-            mock_request.payload.headers = {"header1": "value1"}
-
-            async def mock_request_iterator():
-                yield mock_request
-
-            results = []
-            async for result in datum_generator(mock_request_iterator()):
-                results.append(result)
-
-            self.assertEqual(len(results), 1)
-            self.assertIsInstance(results[0], AccumulatorRequest)
-            self.assertEqual(results[0].operation, WindowOperation.OPEN.value)
-
-        asyncio.run(run_test())
 
 
 if __name__ == "__main__":

@@ -19,15 +19,15 @@ class AccumulatorStub(object):
             channel: A grpc.Channel.
         """
         self.AccumulateFn = channel.stream_stream(
-                '/accumulator.v1.Accumulator/AccumulateFn',
-                request_serializer=accumulator__pb2.AccumulatorRequest.SerializeToString,
-                response_deserializer=accumulator__pb2.AccumulatorResponse.FromString,
-                )
+            "/accumulator.v1.Accumulator/AccumulateFn",
+            request_serializer=accumulator__pb2.AccumulatorRequest.SerializeToString,
+            response_deserializer=accumulator__pb2.AccumulatorResponse.FromString,
+        )
         self.IsReady = channel.unary_unary(
-                '/accumulator.v1.Accumulator/IsReady',
-                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=accumulator__pb2.ReadyResponse.FromString,
-                )
+            "/accumulator.v1.Accumulator/IsReady",
+            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            response_deserializer=accumulator__pb2.ReadyResponse.FromString,
+        )
 
 
 class AccumulatorServicer(object):
@@ -37,39 +37,38 @@ class AccumulatorServicer(object):
     """
 
     def AccumulateFn(self, request_iterator, context):
-        """AccumulateFn applies a accumulate function to a request stream.
-        """
+        """AccumulateFn applies a accumulate function to a request stream."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def IsReady(self, request, context):
-        """IsReady is the heartbeat endpoint for gRPC.
-        """
+        """IsReady is the heartbeat endpoint for gRPC."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_AccumulatorServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'AccumulateFn': grpc.stream_stream_rpc_method_handler(
-                    servicer.AccumulateFn,
-                    request_deserializer=accumulator__pb2.AccumulatorRequest.FromString,
-                    response_serializer=accumulator__pb2.AccumulatorResponse.SerializeToString,
-            ),
-            'IsReady': grpc.unary_unary_rpc_method_handler(
-                    servicer.IsReady,
-                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=accumulator__pb2.ReadyResponse.SerializeToString,
-            ),
+        "AccumulateFn": grpc.stream_stream_rpc_method_handler(
+            servicer.AccumulateFn,
+            request_deserializer=accumulator__pb2.AccumulatorRequest.FromString,
+            response_serializer=accumulator__pb2.AccumulatorResponse.SerializeToString,
+        ),
+        "IsReady": grpc.unary_unary_rpc_method_handler(
+            servicer.IsReady,
+            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+            response_serializer=accumulator__pb2.ReadyResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'accumulator.v1.Accumulator', rpc_method_handlers)
+        "accumulator.v1.Accumulator", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class Accumulator(object):
     """AccumulatorWindow describes a special kind of SessionWindow (similar to Global Window) where output should
     always have monotonically increasing WM but it can be manipulated through event-time by reordering the messages.
@@ -77,35 +76,59 @@ class Accumulator(object):
     """
 
     @staticmethod
-    def AccumulateFn(request_iterator,
+    def AccumulateFn(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.stream_stream(request_iterator, target, '/accumulator.v1.Accumulator/AccumulateFn',
+            "/accumulator.v1.Accumulator/AccumulateFn",
             accumulator__pb2.AccumulatorRequest.SerializeToString,
             accumulator__pb2.AccumulatorResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def IsReady(request,
+    def IsReady(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/accumulator.v1.Accumulator/IsReady',
+            "/accumulator.v1.Accumulator/IsReady",
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             accumulator__pb2.ReadyResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

@@ -3,14 +3,22 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from typing import (
+    ClassVar as _ClassVar,
+    Iterable as _Iterable,
+    Mapping as _Mapping,
+    Optional as _Optional,
+    Union as _Union,
+)
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class MapRequest(_message.Message):
     __slots__ = ("request", "id", "handshake", "status")
+
     class Request(_message.Message):
         __slots__ = ("keys", "value", "event_time", "watermark", "headers")
+
         class HeadersEntry(_message.Message):
             __slots__ = ("key", "value")
             KEY_FIELD_NUMBER: _ClassVar[int]
@@ -28,7 +36,14 @@ class MapRequest(_message.Message):
         event_time: _timestamp_pb2.Timestamp
         watermark: _timestamp_pb2.Timestamp
         headers: _containers.ScalarMap[str, str]
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., headers: _Optional[_Mapping[str, str]] = ...) -> None: ...
+        def __init__(
+            self,
+            keys: _Optional[_Iterable[str]] = ...,
+            value: _Optional[bytes] = ...,
+            event_time: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
+            watermark: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...,
+            headers: _Optional[_Mapping[str, str]] = ...,
+        ) -> None: ...
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
@@ -37,7 +52,13 @@ class MapRequest(_message.Message):
     id: str
     handshake: Handshake
     status: TransmissionStatus
-    def __init__(self, request: _Optional[_Union[MapRequest.Request, _Mapping]] = ..., id: _Optional[str] = ..., handshake: _Optional[_Union[Handshake, _Mapping]] = ..., status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...) -> None: ...
+    def __init__(
+        self,
+        request: _Optional[_Union[MapRequest.Request, _Mapping]] = ...,
+        id: _Optional[str] = ...,
+        handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
+        status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...,
+    ) -> None: ...
 
 class Handshake(_message.Message):
     __slots__ = ("sot",)
@@ -53,6 +74,7 @@ class TransmissionStatus(_message.Message):
 
 class MapResponse(_message.Message):
     __slots__ = ("results", "id", "handshake", "status")
+
     class Result(_message.Message):
         __slots__ = ("keys", "value", "tags")
         KEYS_FIELD_NUMBER: _ClassVar[int]
@@ -61,7 +83,12 @@ class MapResponse(_message.Message):
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         tags: _containers.RepeatedScalarFieldContainer[str]
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ...) -> None: ...
+        def __init__(
+            self,
+            keys: _Optional[_Iterable[str]] = ...,
+            value: _Optional[bytes] = ...,
+            tags: _Optional[_Iterable[str]] = ...,
+        ) -> None: ...
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
@@ -70,7 +97,13 @@ class MapResponse(_message.Message):
     id: str
     handshake: Handshake
     status: TransmissionStatus
-    def __init__(self, results: _Optional[_Iterable[_Union[MapResponse.Result, _Mapping]]] = ..., id: _Optional[str] = ..., handshake: _Optional[_Union[Handshake, _Mapping]] = ..., status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...) -> None: ...
+    def __init__(
+        self,
+        results: _Optional[_Iterable[_Union[MapResponse.Result, _Mapping]]] = ...,
+        id: _Optional[str] = ...,
+        handshake: _Optional[_Union[Handshake, _Mapping]] = ...,
+        status: _Optional[_Union[TransmissionStatus, _Mapping]] = ...,
+    ) -> None: ...
 
 class ReadyResponse(_message.Message):
     __slots__ = ("ready",)

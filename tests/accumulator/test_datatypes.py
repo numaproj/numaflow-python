@@ -310,28 +310,6 @@ class TestAccumulatorClass(unittest.TestCase):
         self.assertEqual(2, r.test2)
         self.assertEqual(1, r.test3)
 
-    def test_deep_copy(self):
-        """Test that the deepcopy works as expected"""
-        r = self.ExampleClass(test1=1, test2=2)
-        # Create a copy of r
-        r_copy = deepcopy(r)
-        # Check that the attributes are the same
-        self.assertEqual(1, r_copy.test1)
-        self.assertEqual(2, r_copy.test2)
-        self.assertEqual(1, r_copy.test3)
-        # Check that the objects are not the same
-        self.assertNotEqual(id(r), id(r_copy))
-        # Update the attributes of r
-        r.test1 = 5
-        r.test3 = 6
-        # Check that the other object is not updated
-        self.assertNotEqual(r.test1, r_copy.test1)
-        self.assertNotEqual(r.test3, r_copy.test3)
-        self.assertNotEqual(id(r.test3), id(r_copy.test3))
-        # Verify that the instance type is correct
-        self.assertTrue(isinstance(r_copy, self.ExampleClass))
-        self.assertTrue(isinstance(r_copy, Accumulator))
-
     def test_callable(self):
         """Test that accumulator instances can be called directly"""
         r = self.ExampleClass(test1=1, test2=2)

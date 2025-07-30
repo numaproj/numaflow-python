@@ -20,11 +20,11 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 ####################################################################################################
 FROM base-builder AS udf-builder
 
-ENV EXAMPLE_PATH="/opt/pysetup/examples/map/even_odd"
+ENV EXAMPLE_PATH="/opt/pysetup/examples/accumulator/streamsorter"
 ENV POETRY_VIRTUALENVS_IN_PROJECT=true
 
 WORKDIR $EXAMPLE_PATH
-COPY examples/map/even_odd/ ./
+COPY examples/accumulator/streamsorter/ ./
 RUN poetry install --no-root --no-interaction
 
 ####################################################################################################
@@ -33,7 +33,7 @@ RUN poetry install --no-root --no-interaction
 FROM python:3.10-slim-bullseye AS udf
 
 ENV PYSETUP_PATH="/opt/pysetup"
-ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/map/even_odd"
+ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/accumulator/streamsorter"
 ENV VENV_PATH="$EXAMPLE_PATH/.venv"
 ENV PATH="$VENV_PATH/bin:$PATH"
 

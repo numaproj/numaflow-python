@@ -23,7 +23,7 @@ jobs:
           "examples/reducestream/counter", "examples/reducestream/sum", "examples/sideinput/simple_sideinput",
           "examples/sideinput/simple_sideinput/udf", "examples/sink/async_log", "examples/sink/log",
           "examples/source/simple_source", "examples/sourcetransform/event_time_filter",
-          "examples/batchmap/flatmap"
+          "examples/batchmap/flatmap", "examples/accumulator/streamsorter"
         ]
 
     steps:

@@ -1,0 +1,49 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: stream-sorter
+spec:
+  limits:
+    readBatchSize: 1
+  vertices:
+    - name: http-one
+      scale:
+        min: 1
+        max: 1
+      source:
+        http: {}
+    - name: http-two
+      scale:
+        min: 1
+        max: 1
+      source:
+        http: {}
+    - name: py-accum
+      udf:
+        container:
+          image: quay.io/numaio/numaflow-python/streamsorter:stable
+          imagePullPolicy: Always
+          env:
+            - name: PYTHONDEBUG
+              value: "true"
+        groupBy:
+          window:
+            accumulator:
+              timeout: 10s
+          keyed: true
+          storage:
+            persistentVolumeClaim:
+              volumeSize: 1Gi
+    - name: py-sink
+      scale:
+        min: 1
+        max: 1
+      sink:
+        log: {}
+  edges:
+    - from: http-one
+      to: py-accum
+    - from: http-two
+      to: py-accum
+    - from: py-accum
+      to: py-sink

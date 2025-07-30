@@ -1,0 +1,52 @@
+TAG ?= stable
+PUSH ?= false
+IMAGE_REGISTRY = quay.io/numaio/numaflow-python/streamsorter:${TAG}
+DOCKER_FILE_PATH = examples/accumulator/streamsorter/Dockerfile
+BASE_IMAGE_NAME = numaflow-python-base
+
+.PHONY: base-image
+base-image:
+	@echo "Building shared base image..."
+	docker build -f Dockerfile.base -t ${BASE_IMAGE_NAME} .
+
+.PHONY: update
+update:
+	poetry update -vv
+
+.PHONY: image-push
+image-push: base-image update
+	cd ../../../ && docker buildx build \
+	-f ${DOCKER_FILE_PATH} \
+	-t ${IMAGE_REGISTRY} \
+	--platform linux/amd64,linux/arm64 . --push
+
+.PHONY: image
+image: base-image update
+	cd ../../../ && docker build \
+	-f ${DOCKER_FILE_PATH} \
+	-t ${IMAGE_REGISTRY} .
+	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}; fi
+
+.PHONY: image-fast
+image-fast: update
+	@echo "Building with shared base image (fastest option)..."
+	cd ../../../ && docker build \
+	-f examples/map/even_odd/Dockerfile.shared-base \
+	-t ${IMAGE_REGISTRY} .
+	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}; fi
+
+.PHONY: clean
+clean:
+	docker rmi ${BASE_IMAGE_NAME} 2>/dev/null || true
+	docker rmi ${IMAGE_REGISTRY} 2>/dev/null || true
+
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@echo "  base-image    - Build the shared base image with pynumaflow"
+	@echo "  image         - Build UDF image with optimized multi-stage build"
+	@echo "  image-fast    - Build UDF image using shared base (fastest)"
+	@echo "  image-push    - Build and push multi-platform image"
+	@echo "  update        - Update poetry dependencies"
+	@echo "  clean         - Remove built images"
+	@echo "  help          - Show this help message" 

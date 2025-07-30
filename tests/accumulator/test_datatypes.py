@@ -1,4 +1,3 @@
-from copy import deepcopy
 import unittest
 from collections.abc import AsyncIterable
 from datetime import datetime, timezone

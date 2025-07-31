@@ -77,7 +77,7 @@ class TestDatum(unittest.TestCase):
             headers=TEST_HEADERS,
         )
         self.assertEqual(mock_message(), d.value)
-        self.assertEqual(TEST_KEYS, d.keys())
+        self.assertEqual(TEST_KEYS, d.keys)
         self.assertEqual(mock_event_time(), d.event_time)
         self.assertEqual(mock_watermark(), d.watermark)
         self.assertEqual(TEST_HEADERS, d.headers)
@@ -91,7 +91,7 @@ class TestDatum(unittest.TestCase):
             watermark=mock_watermark(),
             id_=TEST_ID,
         )
-        self.assertEqual([], d.keys())
+        self.assertEqual([], d.keys)
         self.assertEqual(b"", d.value)
         self.assertEqual({}, d.headers)
 

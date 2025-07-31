@@ -79,7 +79,7 @@ class ExampleErrorClass(Accumulator):
                 # Simulate an error on the second datum
                 raise RuntimeError("Simulated error in accumulator handler")
             msg = f"counter:{self.counter}"
-            await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
+            await output.put(Message(str.encode(msg), keys=datum.keys, tags=[]))
 
 
 async def error_accumulator_handler_func(datums: AsyncIterable[Datum], output: NonBlockingIterator):
@@ -90,7 +90,7 @@ async def error_accumulator_handler_func(datums: AsyncIterable[Datum], output: N
             # Simulate an error on the second datum
             raise RuntimeError("Simulated error in accumulator function")
         msg = f"counter:{counter}"
-        await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
+        await output.put(Message(str.encode(msg), keys=datum.keys, tags=[]))
 
 
 def NewAsyncAccumulatorError():

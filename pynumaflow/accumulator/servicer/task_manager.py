@@ -106,7 +106,7 @@ class TaskManager:
         4. Remove the task from the tracker
         """
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -128,7 +128,7 @@ class TaskManager:
         it creates a new task or appends the request to the existing task.
         """
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -179,7 +179,7 @@ class TaskManager:
         If the task does not exist, create it.
         """
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys)
         result = self.tasks.get(unified_key, None)
         if not result:

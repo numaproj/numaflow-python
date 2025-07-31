@@ -76,6 +76,7 @@ class Datum:
         self._headers = headers or {}
         self._id = id_
 
+    @property
     def keys(self) -> list[str]:
         """Returns the keys of the event.
 
@@ -488,7 +489,7 @@ class Message:
         """
         return cls(
             value=datum.value,
-            keys=datum.keys(),
+            keys=datum.keys,
             watermark=datum.watermark,
             event_time=datum.event_time,
             headers=datum.headers,

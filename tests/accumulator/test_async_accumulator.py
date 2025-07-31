@@ -140,7 +140,7 @@ class ExampleClass(Accumulator):
         async for datum in datums:
             self.counter += 1
             msg = f"counter:{self.counter}"
-            await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
+            await output.put(Message(str.encode(msg), keys=datum.keys, tags=[]))
 
 
 async def accumulator_handler_func(datums: AsyncIterable[Datum], output: NonBlockingIterator):
@@ -148,7 +148,7 @@ async def accumulator_handler_func(datums: AsyncIterable[Datum], output: NonBloc
     async for datum in datums:
         counter += 1
         msg = f"counter:{counter}"
-        await output.put(Message(str.encode(msg), keys=datum.keys(), tags=[]))
+        await output.put(Message(str.encode(msg), keys=datum.keys, tags=[]))
 
 
 def NewAsyncAccumulator():

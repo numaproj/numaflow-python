@@ -110,7 +110,7 @@ class TaskManager:
             raise UDFError("reduce create operation error: invalid number of windows")
 
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys, req.windows[0])
         curr_task = self.tasks.get(unified_key, None)
 
@@ -161,7 +161,7 @@ class TaskManager:
         if len(req.windows) != 1:
             raise UDFError("reduce append operation error: invalid number of windows")
         d = req.payload
-        keys = d.keys()
+        keys = d.keys
         unified_key = build_unique_key_name(keys, req.windows[0])
         result = self.tasks.get(unified_key, None)
         if not result:

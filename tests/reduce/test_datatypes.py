@@ -75,7 +75,7 @@ class TestDatum(unittest.TestCase):
             event_time=mock_event_time(),
             watermark=mock_watermark(),
         )
-        self.assertEqual(TEST_KEYS, d.keys())
+        self.assertEqual(TEST_KEYS, d.keys)
 
     def test_event_time(self):
         d = Datum(

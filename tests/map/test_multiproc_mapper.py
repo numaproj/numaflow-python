@@ -36,7 +36,7 @@ class TestMultiProcMethods(unittest.TestCase):
         """Max process count is capped at 2 * os.cpu_count, irrespective of what the user
         provides as input"""
         default_val = os.cpu_count()
-        server = MapMultiprocServer(mapper_instance=map_handler, server_count=20)
+        server = MapMultiprocServer(mapper_instance=map_handler, server_count=100)
         self.assertEqual(server._process_count, default_val * 2)
 
     def test_udf_map_err_handshake(self):

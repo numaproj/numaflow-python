@@ -167,6 +167,7 @@ class Datum:
         self._watermark = watermark
         self._headers = headers or {}
 
+    @property
     def keys(self) -> list[str]:
         """Returns the keys of the event"""
         return self._keys

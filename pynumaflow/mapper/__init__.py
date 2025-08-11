@@ -1,3 +1,4 @@
+from pynumaflow.mapper.async_multiproc_server import AsyncMapMultiprocServer
 from pynumaflow.mapper.async_server import MapAsyncServer
 from pynumaflow.mapper.multiproc_server import MapMultiprocServer
 from pynumaflow.mapper.sync_server import MapServer
@@ -13,4 +14,5 @@ __all__ = [
     "MapServer",
     "MapAsyncServer",
     "MapMultiprocServer",
+    "AsyncMapMultiprocServer",
 ]

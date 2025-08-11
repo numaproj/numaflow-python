@@ -180,7 +180,7 @@ async def start_async_server(
     sock_path: str,
     max_threads: int,
     cleanup_coroutines: list,
-    server_info_file: str,
+    server_info_file: Optional[str] = None,
     server_info: Optional[ServerInfo] = None,
 ):
     """
@@ -190,11 +190,9 @@ async def start_async_server(
     """
     await server_async.start()
 
-    if server_info is None:
-        # Create the server info file if not provided
-        server_info = ServerInfo.get_default_server_info()
     # Add the server information to the server info file
-    info_server_write(server_info=server_info, info_file=server_info_file)
+    if server_info_file:
+        info_server_write(server_info=server_info, info_file=server_info_file)
 
     # Log the server start
     _LOGGER.info(
@@ -217,7 +215,7 @@ async def start_async_server(
 
 
 @contextlib.contextmanager
-def _reserve_port(port_num: int) -> Iterator[int]:
+def reserve_port(port_num: int) -> Iterator[int]:
     """Find and reserve a port for all subprocesses to use."""
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -312,7 +310,10 @@ def get_exception_traceback_str(exc) -> str:
 
 
 async def handle_async_error(
-    context: NumaflowServicerContext, exception: BaseException, exception_type: str
+    context: NumaflowServicerContext,
+    exception: BaseException,
+    exception_type: str,
+    parent: bool = False,
 ):
     """
     Handle exceptions for async servers by updating the context and exiting.
@@ -322,4 +323,4 @@ async def handle_async_error(
     await asyncio.gather(
         context.abort(grpc.StatusCode.INTERNAL, details=err_msg), return_exceptions=True
     )
-    exit_on_error(err=err_msg, parent=False, context=context, update_context=False)
+    exit_on_error(err=err_msg, parent=parent, context=context, update_context=False)

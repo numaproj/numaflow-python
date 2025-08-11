@@ -9,7 +9,6 @@ import grpc
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import ERR_UDF_EXCEPTION_STRING
 from pynumaflow.sourcer import SourceAsyncServer
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -93,11 +92,7 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 for _ in generator_response:
                     pass
             except BaseException as e:
-                self.assertTrue(
-                    f"{ERR_UDF_EXCEPTION_STRING}: TypeError("
-                    '"handle_async_error() missing 1 required positional argument: '
-                    "'exception_type'\")" in e.__str__()
-                )
+                self.assertTrue("Got a runtime error from read handler" in e.__str__())
                 return
             except grpc.RpcError as e:
                 grpc_exception = e

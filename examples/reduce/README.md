@@ -7,11 +7,13 @@ For creating a reducer UDF we can use two different approaches:
   kwargs that the custom reducer class requires.
   - Finally we need to call the `start` method on the `ReduceAsyncServer` instance to start the reducer server.
   ```python
-    from numaflow import Reducer, ReduceAsyncServer
-    class Example(Reducer):
+  from collections.abc import AsyncIterable
+  from pynumaflow.reducer import Reducer, ReduceAsyncServer, Datum, Message, Messages, Metadata
+
+  class Example(Reducer):
       def __init__(self, counter):
           self.counter = counter
-    
+  
       async def handler(
           self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
       ) -> Messages:
@@ -25,12 +27,12 @@ For creating a reducer UDF we can use two different approaches:
           )
           return Messages(Message(str.encode(msg), keys=keys))
 
-    if __name__ == "__main__":
-    # Here we are using the class instance as the reducer_instance
-    # which will be used to invoke the handler function.
-    # We are passing the init_args for the class instance.
-    grpc_server = ReduceAsyncServer(Example, init_args=(0,))
-    grpc_server.start()
+  if __name__ == "__main__":
+      # Here we are using the class instance as the reducer_instance
+      # which will be used to invoke the handler function.
+      # We are passing the init_args for the class instance.
+      grpc_server = ReduceAsyncServer(Example, init_args=(0,))
+      grpc_server.start()
   ``` 
 
 - Function based reducer

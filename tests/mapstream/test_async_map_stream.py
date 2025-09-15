@@ -95,39 +95,67 @@ class TestAsyncMapStreamer(unittest.TestCase):
 
     def test_map_stream(self) -> None:
         stub = self.__stub()
-        generator_response = None
+
+        # Send >1 requests
+        req_count = 3
         try:
-            generator_response = stub.MapFn(request_iterator=request_generator(count=1, session=1))
+            generator_response = stub.MapFn(
+                request_iterator=request_generator(count=req_count, session=1)
+            )
         except grpc.RpcError as e:
             logging.error(e)
+            self.fail(f"RPC failed: {e}")
 
+        # First message must be the handshake
         handshake = next(generator_response)
-        # assert that handshake response is received.
         self.assertTrue(handshake.handshake.sot)
-        data_resp = []
-        for r in generator_response:
-            data_resp.append(r)
 
-        self.assertEqual(11, len(data_resp))
+        # Expected: 10 results per request + 1 EOT per request
+        expected_result_msgs = req_count * 10
+        expected_eots = req_count
 
-        idx = 0
-        while idx < len(data_resp) - 1:
+        # Prepare expected payload
+        expected_payload = bytes(
+            "payload:test_mock_message "
+            "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+            encoding="utf-8",
+        )
+
+        from collections import Counter
+
+        id_counter = Counter()
+        result_msg_count = 0
+        eot_count = 0
+
+        for msg in generator_response:
+            # Count EOTs wherever they show up
+            if hasattr(msg, "status") and msg.status.eot:
+                eot_count += 1
+                continue
+
+            # Otherwise, it's a data/result message; validate payload and tally by id
+            self.assertTrue(msg.results, "Expected results in MapResponse.")
+            self.assertEqual(expected_payload, msg.results[0].value)
+            id_counter[msg.id] += 1
+            result_msg_count += 1
+
+        # Validate totals
+        self.assertEqual(
+            expected_result_msgs,
+            result_msg_count,
+            f"Expected {expected_result_msgs} result messages, got {result_msg_count}",
+        )
+        self.assertEqual(
+            expected_eots, eot_count, f"Expected {expected_eots} EOT messages, got {eot_count}"
+        )
+
+        # Validate 10 messages per request id: test-id-0..test-id-(req_count-1)
+        for i in range(req_count):
             self.assertEqual(
-                bytes(
-                    "payload:test_mock_message "
-                    "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
-                    encoding="utf-8",
-                ),
-                data_resp[idx].results[0].value,
+                10,
+                id_counter[f"test-id-{i}"],
+                f"Expected 10 results for test-id-{i}, got {id_counter[f'test-id-{i}']}",
             )
-            _id = data_resp[idx].id
-            self.assertEqual(_id, "test-id-0")
-            # capture the output from the SinkFn generator and assert.
-            idx += 1
-        # EOT Response
-        self.assertEqual(data_resp[len(data_resp) - 1].status.eot, True)
-        # 10 sink responses + 1 EOT response
-        self.assertEqual(11, len(data_resp))
 
     def test_is_ready(self) -> None:
         with grpc.insecure_channel("unix:///tmp/async_map_stream.sock") as channel:

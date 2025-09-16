@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.10.1 (2025-09-16)
+
+ * [bf00b2e](https://github.com/numaproj/numaflow-python/commit/bf00b2e44dce6edfdfaf78466b9e636eebe961e9) feat: parallelized mapstreamer (#242)
+ * [b944a5d](https://github.com/numaproj/numaflow-python/commit/b944a5d5883844c0c7bde0714fc85d60aa0c138a) doc: fix async reducer README examples (#244)
+ * [4982414](https://github.com/numaproj/numaflow-python/commit/49824144e6b1586f612bad601e47aeb2166963ca) feat: add Accumulator (#237)
+
+### Contributors
+
+ * Martin Thøgersen
+ * Sidhant Kohli
+ * shrivardhan
+
 ## v0.10.0a0 (2025-06-25)
 
 

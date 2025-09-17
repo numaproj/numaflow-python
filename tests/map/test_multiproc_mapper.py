@@ -136,10 +136,13 @@ class TestMultiProcMethods(unittest.TestCase):
 
         self.assertTrue(responses[0].handshake.sot)
 
+        result_ids = {
+            f"test-id-{id}"
+            for id in range(1, 4)
+        }
         idx = 1
         while idx < len(responses):
-            _id = "test-id-" + str(idx)
-            self.assertEqual(_id, responses[idx].id)
+            result_ids.remove(responses[idx].id)
             self.assertEqual(
                 bytes(
                     "payload:test_mock_message "
@@ -150,6 +153,7 @@ class TestMultiProcMethods(unittest.TestCase):
             )
             self.assertEqual(1, len(responses[idx].results))
             idx += 1
+        self.assertEqual(len(result_ids), 0)
         self.assertEqual(code, StatusCode.OK)
 
     def test_invalid_input(self):

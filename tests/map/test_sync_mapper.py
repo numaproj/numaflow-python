@@ -130,10 +130,7 @@ class TestSyncMapper(unittest.TestCase):
 
         self.assertTrue(responses[0].handshake.sot)
 
-        result_ids = {
-            f"test-id-{id}"
-            for id in range(1, 4)
-        }
+        result_ids = {f"test-id-{id}" for id in range(1, 4)}
         idx = 1
         while idx < len(responses):
             result_ids.remove(responses[idx].id)

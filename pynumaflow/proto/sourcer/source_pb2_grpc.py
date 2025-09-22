@@ -45,6 +45,11 @@ class SourceStub(object):
                 request_serializer=source__pb2.AckRequest.SerializeToString,
                 response_deserializer=source__pb2.AckResponse.FromString,
                 _registered_method=True)
+        self.NackFn = channel.unary_unary(
+                '/source.v1.Source/NackFn',
+                request_serializer=source__pb2.NackRequest.SerializeToString,
+                response_deserializer=source__pb2.NackResponse.FromString,
+                _registered_method=True)
         self.PendingFn = channel.unary_unary(
                 '/source.v1.Source/PendingFn',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
@@ -88,6 +93,14 @@ class SourceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def NackFn(self, request, context):
+        """NackFn negatively acknowledges a batch of offsets. Invoked during a critical error in the mono vertex or pipeline.
+        Unlike AckFn its not a streaming rpc because this is only invoked when there is a critical error (error path).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def PendingFn(self, request, context):
         """PendingFn returns the number of pending records at the user defined source.
         """
@@ -121,6 +134,11 @@ def add_SourceServicer_to_server(servicer, server):
                     servicer.AckFn,
                     request_deserializer=source__pb2.AckRequest.FromString,
                     response_serializer=source__pb2.AckResponse.SerializeToString,
+            ),
+            'NackFn': grpc.unary_unary_rpc_method_handler(
+                    servicer.NackFn,
+                    request_deserializer=source__pb2.NackRequest.FromString,
+                    response_serializer=source__pb2.NackResponse.SerializeToString,
             ),
             'PendingFn': grpc.unary_unary_rpc_method_handler(
                     servicer.PendingFn,
@@ -192,6 +210,33 @@ class Source(object):
             '/source.v1.Source/AckFn',
             source__pb2.AckRequest.SerializeToString,
             source__pb2.AckResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def NackFn(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/source.v1.Source/NackFn',
+            source__pb2.NackRequest.SerializeToString,
+            source__pb2.NackResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -169,7 +169,7 @@ class AckRequest:
         return self._offsets
 
 
-@dataclass(slots=True)
+@dataclass
 class NackRequest:
     """
     Class for defining the request for negatively acknowledging an offset.
@@ -182,7 +182,16 @@ class NackRequest:
     >>> nack_request = NackRequest(offsets=[offset_val, offset_val])
     """
 
+    __slots__ = ("_offsets",)
     offsets: list[Offset]
+
+    def __init__(self, offsets: list[Offset]):
+        self._offsets = offsets
+
+    @property
+    def offsets(self) -> list[Offset]:
+        """Returns the offsets to be negatively acknowledged."""
+        return self._offsets
 
 
 @dataclass(init=False)

@@ -92,13 +92,6 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 )
                 for _ in generator_response:
                     pass
-            except BaseException as e:
-                self.assertTrue(
-                    f"{ERR_UDF_EXCEPTION_STRING}: TypeError("
-                    '"handle_async_error() missing 1 required positional argument: '
-                    "'exception_type'\")" in e.__str__()
-                )
-                return
             except grpc.RpcError as e:
                 grpc_exception = e
                 self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
@@ -138,12 +131,12 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 resp = stub.AckFn(request_iterator=request_generator(1, request, "ack"))
                 for _ in resp:
                     pass
-            except BaseException as e:
-                self.assertTrue("Got a runtime error from ack handler." in e.__str__())
-                return
             except grpc.RpcError as e:
                 self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
                 print(e.details())
+            except BaseException as e:
+                self.assertTrue("Got a runtime error from ack handler." in e.__str__())
+                return
         self.fail("Expected an exception.")
 
     def test_ack_no_handshake_error(self) -> None:

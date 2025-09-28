@@ -13,6 +13,7 @@ DESCRIPTOR: _descriptor.FileDescriptor
 
 class Payload(_message.Message):
     __slots__ = ("keys", "value", "event_time", "watermark", "id", "headers")
+
     class HeadersEntry(_message.Message):
         __slots__ = ("key", "value")
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -32,12 +33,22 @@ class Payload(_message.Message):
     watermark: _timestamp_pb2.Timestamp
     id: str
     headers: _containers.ScalarMap[str, str]
-    def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., id: _Optional[str] = ..., headers: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    def __init__(
+        self,
+        keys: _Optional[_Iterable[str]] = ...,
+        value: _Optional[bytes] = ...,
+        event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...,
+        watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...,
+        id: _Optional[str] = ...,
+        headers: _Optional[_Mapping[str, str]] = ...,
+    ) -> None: ...
 
 class AccumulatorRequest(_message.Message):
     __slots__ = ("payload", "operation")
+
     class WindowOperation(_message.Message):
         __slots__ = ("event", "keyedWindow")
+
         class Event(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
             __slots__ = ()
             OPEN: _ClassVar[AccumulatorRequest.WindowOperation.Event]
@@ -50,12 +61,20 @@ class AccumulatorRequest(_message.Message):
         KEYEDWINDOW_FIELD_NUMBER: _ClassVar[int]
         event: AccumulatorRequest.WindowOperation.Event
         keyedWindow: KeyedWindow
-        def __init__(self, event: _Optional[_Union[AccumulatorRequest.WindowOperation.Event, str]] = ..., keyedWindow: _Optional[_Union[KeyedWindow, _Mapping]] = ...) -> None: ...
+        def __init__(
+            self,
+            event: _Optional[_Union[AccumulatorRequest.WindowOperation.Event, str]] = ...,
+            keyedWindow: _Optional[_Union[KeyedWindow, _Mapping]] = ...,
+        ) -> None: ...
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
     payload: Payload
     operation: AccumulatorRequest.WindowOperation
-    def __init__(self, payload: _Optional[_Union[Payload, _Mapping]] = ..., operation: _Optional[_Union[AccumulatorRequest.WindowOperation, _Mapping]] = ...) -> None: ...
+    def __init__(
+        self,
+        payload: _Optional[_Union[Payload, _Mapping]] = ...,
+        operation: _Optional[_Union[AccumulatorRequest.WindowOperation, _Mapping]] = ...,
+    ) -> None: ...
 
 class KeyedWindow(_message.Message):
     __slots__ = ("start", "end", "slot", "keys")
@@ -67,7 +86,13 @@ class KeyedWindow(_message.Message):
     end: _timestamp_pb2.Timestamp
     slot: str
     keys: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, start: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., end: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., slot: _Optional[str] = ..., keys: _Optional[_Iterable[str]] = ...) -> None: ...
+    def __init__(
+        self,
+        start: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...,
+        end: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...,
+        slot: _Optional[str] = ...,
+        keys: _Optional[_Iterable[str]] = ...,
+    ) -> None: ...
 
 class AccumulatorResponse(_message.Message):
     __slots__ = ("payload", "window", "tags", "EOF")
@@ -79,7 +104,13 @@ class AccumulatorResponse(_message.Message):
     window: KeyedWindow
     tags: _containers.RepeatedScalarFieldContainer[str]
     EOF: bool
-    def __init__(self, payload: _Optional[_Union[Payload, _Mapping]] = ..., window: _Optional[_Union[KeyedWindow, _Mapping]] = ..., tags: _Optional[_Iterable[str]] = ..., EOF: bool = ...) -> None: ...
+    def __init__(
+        self,
+        payload: _Optional[_Union[Payload, _Mapping]] = ...,
+        window: _Optional[_Union[KeyedWindow, _Mapping]] = ...,
+        tags: _Optional[_Iterable[str]] = ...,
+        EOF: bool = ...,
+    ) -> None: ...
 
 class ReadyResponse(_message.Message):
     __slots__ = ("ready",)

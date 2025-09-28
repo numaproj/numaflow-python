@@ -9,13 +9,9 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    6,
-    31,
-    1,
-    '',
-    'source.proto'
+    _runtime_version.Domain.PUBLIC, 6, 31, 1, "", "source.proto"
 )
 # @@protoc_insertion_point(imports)
 
@@ -26,61 +22,63 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0csource.proto\x12\tsource.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x18\n\tHandshake\x12\x0b\n\x03sot\x18\x01 \x01(\x08\"\xb1\x01\n\x0bReadRequest\x12/\n\x07request\x18\x01 \x01(\x0b\x32\x1e.source.v1.ReadRequest.Request\x12,\n\thandshake\x18\x02 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a\x35\n\x07Request\x12\x13\n\x0bnum_records\x18\x01 \x01(\x04\x12\x15\n\rtimeout_in_ms\x18\x02 \x01(\rB\x0c\n\n_handshake\"\x81\x05\n\x0cReadResponse\x12.\n\x06result\x18\x01 \x01(\x0b\x32\x1e.source.v1.ReadResponse.Result\x12.\n\x06status\x18\x02 \x01(\x0b\x32\x1e.source.v1.ReadResponse.Status\x12,\n\thandshake\x18\x03 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a\xe8\x01\n\x06Result\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\x12!\n\x06offset\x18\x02 \x01(\x0b\x32\x11.source.v1.Offset\x12.\n\nevent_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0c\n\x04keys\x18\x04 \x03(\t\x12<\n\x07headers\x18\x05 \x03(\x0b\x32+.source.v1.ReadResponse.Result.HeadersEntry\x1a.\n\x0cHeadersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\xe9\x01\n\x06Status\x12\x0b\n\x03\x65ot\x18\x01 \x01(\x08\x12\x31\n\x04\x63ode\x18\x02 \x01(\x0e\x32#.source.v1.ReadResponse.Status.Code\x12\x38\n\x05\x65rror\x18\x03 \x01(\x0e\x32$.source.v1.ReadResponse.Status.ErrorH\x00\x88\x01\x01\x12\x10\n\x03msg\x18\x04 \x01(\tH\x01\x88\x01\x01\" \n\x04\x43ode\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x46\x41ILURE\x10\x01\"\x1f\n\x05\x45rror\x12\x0b\n\x07UNACKED\x10\x00\x12\t\n\x05OTHER\x10\x01\x42\x08\n\x06_errorB\x06\n\x04_msgB\x0c\n\n_handshake\"\xa7\x01\n\nAckRequest\x12.\n\x07request\x18\x01 \x01(\x0b\x32\x1d.source.v1.AckRequest.Request\x12,\n\thandshake\x18\x02 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a-\n\x07Request\x12\"\n\x07offsets\x18\x01 \x03(\x0b\x32\x11.source.v1.OffsetB\x0c\n\n_handshake\"\xab\x01\n\x0b\x41\x63kResponse\x12-\n\x06result\x18\x01 \x01(\x0b\x32\x1d.source.v1.AckResponse.Result\x12,\n\thandshake\x18\x02 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a\x31\n\x06Result\x12\'\n\x07success\x18\x01 \x01(\x0b\x32\x16.google.protobuf.EmptyB\x0c\n\n_handshake\"m\n\x0bNackRequest\x12/\n\x07request\x18\x01 \x01(\x0b\x32\x1e.source.v1.NackRequest.Request\x1a-\n\x07Request\x12\"\n\x07offsets\x18\x01 \x03(\x0b\x32\x11.source.v1.Offset\"q\n\x0cNackResponse\x12.\n\x06result\x18\x01 \x01(\x0b\x32\x1e.source.v1.NackResponse.Result\x1a\x31\n\x06Result\x12\'\n\x07success\x18\x01 \x01(\x0b\x32\x16.google.protobuf.Empty\"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\"]\n\x0fPendingResponse\x12\x31\n\x06result\x18\x01 \x01(\x0b\x32!.source.v1.PendingResponse.Result\x1a\x17\n\x06Result\x12\r\n\x05\x63ount\x18\x01 \x01(\x03\"h\n\x12PartitionsResponse\x12\x34\n\x06result\x18\x01 \x01(\x0b\x32$.source.v1.PartitionsResponse.Result\x1a\x1c\n\x06Result\x12\x12\n\npartitions\x18\x01 \x03(\x05\".\n\x06Offset\x12\x0e\n\x06offset\x18\x01 \x01(\x0c\x12\x14\n\x0cpartition_id\x18\x02 \x01(\x05\x32\x83\x03\n\x06Source\x12=\n\x06ReadFn\x12\x16.source.v1.ReadRequest\x1a\x17.source.v1.ReadResponse(\x01\x30\x01\x12:\n\x05\x41\x63kFn\x12\x15.source.v1.AckRequest\x1a\x16.source.v1.AckResponse(\x01\x30\x01\x12\x39\n\x06NackFn\x12\x16.source.v1.NackRequest\x1a\x17.source.v1.NackResponse\x12?\n\tPendingFn\x12\x16.google.protobuf.Empty\x1a\x1a.source.v1.PendingResponse\x12\x45\n\x0cPartitionsFn\x12\x16.google.protobuf.Empty\x1a\x1d.source.v1.PartitionsResponse\x12;\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x18.source.v1.ReadyResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x0csource.proto\x12\tsource.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto"\x18\n\tHandshake\x12\x0b\n\x03sot\x18\x01 \x01(\x08"\xb1\x01\n\x0bReadRequest\x12/\n\x07request\x18\x01 \x01(\x0b\x32\x1e.source.v1.ReadRequest.Request\x12,\n\thandshake\x18\x02 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a\x35\n\x07Request\x12\x13\n\x0bnum_records\x18\x01 \x01(\x04\x12\x15\n\rtimeout_in_ms\x18\x02 \x01(\rB\x0c\n\n_handshake"\x81\x05\n\x0cReadResponse\x12.\n\x06result\x18\x01 \x01(\x0b\x32\x1e.source.v1.ReadResponse.Result\x12.\n\x06status\x18\x02 \x01(\x0b\x32\x1e.source.v1.ReadResponse.Status\x12,\n\thandshake\x18\x03 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a\xe8\x01\n\x06Result\x12\x0f\n\x07payload\x18\x01 \x01(\x0c\x12!\n\x06offset\x18\x02 \x01(\x0b\x32\x11.source.v1.Offset\x12.\n\nevent_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0c\n\x04keys\x18\x04 \x03(\t\x12<\n\x07headers\x18\x05 \x03(\x0b\x32+.source.v1.ReadResponse.Result.HeadersEntry\x1a.\n\x0cHeadersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x1a\xe9\x01\n\x06Status\x12\x0b\n\x03\x65ot\x18\x01 \x01(\x08\x12\x31\n\x04\x63ode\x18\x02 \x01(\x0e\x32#.source.v1.ReadResponse.Status.Code\x12\x38\n\x05\x65rror\x18\x03 \x01(\x0e\x32$.source.v1.ReadResponse.Status.ErrorH\x00\x88\x01\x01\x12\x10\n\x03msg\x18\x04 \x01(\tH\x01\x88\x01\x01" \n\x04\x43ode\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x46\x41ILURE\x10\x01"\x1f\n\x05\x45rror\x12\x0b\n\x07UNACKED\x10\x00\x12\t\n\x05OTHER\x10\x01\x42\x08\n\x06_errorB\x06\n\x04_msgB\x0c\n\n_handshake"\xa7\x01\n\nAckRequest\x12.\n\x07request\x18\x01 \x01(\x0b\x32\x1d.source.v1.AckRequest.Request\x12,\n\thandshake\x18\x02 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a-\n\x07Request\x12"\n\x07offsets\x18\x01 \x03(\x0b\x32\x11.source.v1.OffsetB\x0c\n\n_handshake"\xab\x01\n\x0b\x41\x63kResponse\x12-\n\x06result\x18\x01 \x01(\x0b\x32\x1d.source.v1.AckResponse.Result\x12,\n\thandshake\x18\x02 \x01(\x0b\x32\x14.source.v1.HandshakeH\x00\x88\x01\x01\x1a\x31\n\x06Result\x12\'\n\x07success\x18\x01 \x01(\x0b\x32\x16.google.protobuf.EmptyB\x0c\n\n_handshake"m\n\x0bNackRequest\x12/\n\x07request\x18\x01 \x01(\x0b\x32\x1e.source.v1.NackRequest.Request\x1a-\n\x07Request\x12"\n\x07offsets\x18\x01 \x03(\x0b\x32\x11.source.v1.Offset"q\n\x0cNackResponse\x12.\n\x06result\x18\x01 \x01(\x0b\x32\x1e.source.v1.NackResponse.Result\x1a\x31\n\x06Result\x12\'\n\x07success\x18\x01 \x01(\x0b\x32\x16.google.protobuf.Empty"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08"]\n\x0fPendingResponse\x12\x31\n\x06result\x18\x01 \x01(\x0b\x32!.source.v1.PendingResponse.Result\x1a\x17\n\x06Result\x12\r\n\x05\x63ount\x18\x01 \x01(\x03"h\n\x12PartitionsResponse\x12\x34\n\x06result\x18\x01 \x01(\x0b\x32$.source.v1.PartitionsResponse.Result\x1a\x1c\n\x06Result\x12\x12\n\npartitions\x18\x01 \x03(\x05".\n\x06Offset\x12\x0e\n\x06offset\x18\x01 \x01(\x0c\x12\x14\n\x0cpartition_id\x18\x02 \x01(\x05\x32\x83\x03\n\x06Source\x12=\n\x06ReadFn\x12\x16.source.v1.ReadRequest\x1a\x17.source.v1.ReadResponse(\x01\x30\x01\x12:\n\x05\x41\x63kFn\x12\x15.source.v1.AckRequest\x1a\x16.source.v1.AckResponse(\x01\x30\x01\x12\x39\n\x06NackFn\x12\x16.source.v1.NackRequest\x1a\x17.source.v1.NackResponse\x12?\n\tPendingFn\x12\x16.google.protobuf.Empty\x1a\x1a.source.v1.PendingResponse\x12\x45\n\x0cPartitionsFn\x12\x16.google.protobuf.Empty\x1a\x1d.source.v1.PartitionsResponse\x12;\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x18.source.v1.ReadyResponseb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'source_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "source_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
-  _globals['_READRESPONSE_RESULT_HEADERSENTRY']._loaded_options = None
-  _globals['_READRESPONSE_RESULT_HEADERSENTRY']._serialized_options = b'8\001'
-  _globals['_HANDSHAKE']._serialized_start=89
-  _globals['_HANDSHAKE']._serialized_end=113
-  _globals['_READREQUEST']._serialized_start=116
-  _globals['_READREQUEST']._serialized_end=293
-  _globals['_READREQUEST_REQUEST']._serialized_start=226
-  _globals['_READREQUEST_REQUEST']._serialized_end=279
-  _globals['_READRESPONSE']._serialized_start=296
-  _globals['_READRESPONSE']._serialized_end=937
-  _globals['_READRESPONSE_RESULT']._serialized_start=455
-  _globals['_READRESPONSE_RESULT']._serialized_end=687
-  _globals['_READRESPONSE_RESULT_HEADERSENTRY']._serialized_start=641
-  _globals['_READRESPONSE_RESULT_HEADERSENTRY']._serialized_end=687
-  _globals['_READRESPONSE_STATUS']._serialized_start=690
-  _globals['_READRESPONSE_STATUS']._serialized_end=923
-  _globals['_READRESPONSE_STATUS_CODE']._serialized_start=840
-  _globals['_READRESPONSE_STATUS_CODE']._serialized_end=872
-  _globals['_READRESPONSE_STATUS_ERROR']._serialized_start=874
-  _globals['_READRESPONSE_STATUS_ERROR']._serialized_end=905
-  _globals['_ACKREQUEST']._serialized_start=940
-  _globals['_ACKREQUEST']._serialized_end=1107
-  _globals['_ACKREQUEST_REQUEST']._serialized_start=1048
-  _globals['_ACKREQUEST_REQUEST']._serialized_end=1093
-  _globals['_ACKRESPONSE']._serialized_start=1110
-  _globals['_ACKRESPONSE']._serialized_end=1281
-  _globals['_ACKRESPONSE_RESULT']._serialized_start=1218
-  _globals['_ACKRESPONSE_RESULT']._serialized_end=1267
-  _globals['_NACKREQUEST']._serialized_start=1283
-  _globals['_NACKREQUEST']._serialized_end=1392
-  _globals['_NACKREQUEST_REQUEST']._serialized_start=1048
-  _globals['_NACKREQUEST_REQUEST']._serialized_end=1093
-  _globals['_NACKRESPONSE']._serialized_start=1394
-  _globals['_NACKRESPONSE']._serialized_end=1507
-  _globals['_NACKRESPONSE_RESULT']._serialized_start=1218
-  _globals['_NACKRESPONSE_RESULT']._serialized_end=1267
-  _globals['_READYRESPONSE']._serialized_start=1509
-  _globals['_READYRESPONSE']._serialized_end=1539
-  _globals['_PENDINGRESPONSE']._serialized_start=1541
-  _globals['_PENDINGRESPONSE']._serialized_end=1634
-  _globals['_PENDINGRESPONSE_RESULT']._serialized_start=1611
-  _globals['_PENDINGRESPONSE_RESULT']._serialized_end=1634
-  _globals['_PARTITIONSRESPONSE']._serialized_start=1636
-  _globals['_PARTITIONSRESPONSE']._serialized_end=1740
-  _globals['_PARTITIONSRESPONSE_RESULT']._serialized_start=1712
-  _globals['_PARTITIONSRESPONSE_RESULT']._serialized_end=1740
-  _globals['_OFFSET']._serialized_start=1742
-  _globals['_OFFSET']._serialized_end=1788
-  _globals['_SOURCE']._serialized_start=1791
-  _globals['_SOURCE']._serialized_end=2178
+    DESCRIPTOR._loaded_options = None
+    _globals["_READRESPONSE_RESULT_HEADERSENTRY"]._loaded_options = None
+    _globals["_READRESPONSE_RESULT_HEADERSENTRY"]._serialized_options = b"8\001"
+    _globals["_HANDSHAKE"]._serialized_start = 89
+    _globals["_HANDSHAKE"]._serialized_end = 113
+    _globals["_READREQUEST"]._serialized_start = 116
+    _globals["_READREQUEST"]._serialized_end = 293
+    _globals["_READREQUEST_REQUEST"]._serialized_start = 226
+    _globals["_READREQUEST_REQUEST"]._serialized_end = 279
+    _globals["_READRESPONSE"]._serialized_start = 296
+    _globals["_READRESPONSE"]._serialized_end = 937
+    _globals["_READRESPONSE_RESULT"]._serialized_start = 455
+    _globals["_READRESPONSE_RESULT"]._serialized_end = 687
+    _globals["_READRESPONSE_RESULT_HEADERSENTRY"]._serialized_start = 641
+    _globals["_READRESPONSE_RESULT_HEADERSENTRY"]._serialized_end = 687
+    _globals["_READRESPONSE_STATUS"]._serialized_start = 690
+    _globals["_READRESPONSE_STATUS"]._serialized_end = 923
+    _globals["_READRESPONSE_STATUS_CODE"]._serialized_start = 840
+    _globals["_READRESPONSE_STATUS_CODE"]._serialized_end = 872
+    _globals["_READRESPONSE_STATUS_ERROR"]._serialized_start = 874
+    _globals["_READRESPONSE_STATUS_ERROR"]._serialized_end = 905
+    _globals["_ACKREQUEST"]._serialized_start = 940
+    _globals["_ACKREQUEST"]._serialized_end = 1107
+    _globals["_ACKREQUEST_REQUEST"]._serialized_start = 1048
+    _globals["_ACKREQUEST_REQUEST"]._serialized_end = 1093
+    _globals["_ACKRESPONSE"]._serialized_start = 1110
+    _globals["_ACKRESPONSE"]._serialized_end = 1281
+    _globals["_ACKRESPONSE_RESULT"]._serialized_start = 1218
+    _globals["_ACKRESPONSE_RESULT"]._serialized_end = 1267
+    _globals["_NACKREQUEST"]._serialized_start = 1283
+    _globals["_NACKREQUEST"]._serialized_end = 1392
+    _globals["_NACKREQUEST_REQUEST"]._serialized_start = 1048
+    _globals["_NACKREQUEST_REQUEST"]._serialized_end = 1093
+    _globals["_NACKRESPONSE"]._serialized_start = 1394
+    _globals["_NACKRESPONSE"]._serialized_end = 1507
+    _globals["_NACKRESPONSE_RESULT"]._serialized_start = 1218
+    _globals["_NACKRESPONSE_RESULT"]._serialized_end = 1267
+    _globals["_READYRESPONSE"]._serialized_start = 1509
+    _globals["_READYRESPONSE"]._serialized_end = 1539
+    _globals["_PENDINGRESPONSE"]._serialized_start = 1541
+    _globals["_PENDINGRESPONSE"]._serialized_end = 1634
+    _globals["_PENDINGRESPONSE_RESULT"]._serialized_start = 1611
+    _globals["_PENDINGRESPONSE_RESULT"]._serialized_end = 1634
+    _globals["_PARTITIONSRESPONSE"]._serialized_start = 1636
+    _globals["_PARTITIONSRESPONSE"]._serialized_end = 1740
+    _globals["_PARTITIONSRESPONSE_RESULT"]._serialized_start = 1712
+    _globals["_PARTITIONSRESPONSE_RESULT"]._serialized_end = 1740
+    _globals["_OFFSET"]._serialized_start = 1742
+    _globals["_OFFSET"]._serialized_end = 1788
+    _globals["_SOURCE"]._serialized_start = 1791
+    _globals["_SOURCE"]._serialized_end = 2178
 # @@protoc_insertion_point(module_scope)

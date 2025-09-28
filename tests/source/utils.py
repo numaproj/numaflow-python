@@ -81,6 +81,7 @@ def ack_req_source_fn():
     request = source_pb2.AckRequest.Request(offsets=[msg])
     return request
 
+
 def nack_req_source_fn():
     msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)
     request = source_pb2.NackRequest.Request(offsets=[msg])

@@ -177,7 +177,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         Handles the Nack function for user-defined source.
         """
         try:
-            offsets = [Offset(offset.offset, offset.partition_id) for offset in request.request.offsets]
+            offsets = [
+                Offset(offset.offset, offset.partition_id) for offset in request.request.offsets
+            ]
             await self.__source_nack_handler(NackRequest(offsets=offsets))
         except Exception as err:
             _LOGGER.critical("User-Defined Source NackFn error", exc_info=True)

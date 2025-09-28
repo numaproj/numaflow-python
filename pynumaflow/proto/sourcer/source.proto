@@ -21,7 +21,7 @@ service Source {
   // Clients sends n requests and expects n responses.
   rpc AckFn(stream AckRequest) returns (stream AckResponse);
 
-  // NackFn negatively acknowledges a batch of offsets. Invoked during a critical error in the mono vertex or pipeline.
+  // NackFn negatively acknowledges a batch of offsets. Invoked during a critical error in the monovertex or pipeline.
   // Unlike AckFn its not a streaming rpc because this is only invoked when there is a critical error (error path).
   rpc NackFn(NackRequest) returns (NackResponse);
 

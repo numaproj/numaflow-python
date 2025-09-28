@@ -94,7 +94,7 @@ class SourceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def NackFn(self, request, context):
-        """NackFn negatively acknowledges a batch of offsets. Invoked during a critical error in the mono vertex or pipeline.
+        """NackFn negatively acknowledges a batch of offsets. Invoked during a critical error in the monovertex or pipeline.
         Unlike AckFn its not a streaming rpc because this is only invoked when there is a critical error (error path).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

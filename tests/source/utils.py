@@ -1,5 +1,7 @@
 from collections.abc import Iterable
 
+from google.protobuf import empty_pb2
+
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.sourcer import ReadRequest, Message
@@ -9,6 +11,7 @@ from pynumaflow.sourcer._dtypes import (
     Offset,
     PartitionsResponse,
     Sourcer,
+    NackRequest,
 )
 from pynumaflow.proto.sourcer import source_pb2
 from tests.testing_utils import mock_event_time
@@ -35,6 +38,9 @@ class AsyncSource(Sourcer):
 
     async def ack_handler(self, ack_request: AckRequest):
         return
+
+    async def nack_handler(self, nack_request: NackRequest):
+        return source_pb2.NackResponse.Result(success=empty_pb2.Empty())
 
     async def pending_handler(self) -> PendingResponse:
         return PendingResponse(count=10)
@@ -75,6 +81,11 @@ def ack_req_source_fn():
     request = source_pb2.AckRequest.Request(offsets=[msg])
     return request
 
+def nack_req_source_fn():
+    msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)
+    request = source_pb2.NackRequest.Request(offsets=[msg])
+    return source_pb2.NackRequest(request=request)
+
 
 class AsyncSourceError(Sourcer):
     # This handler mimics the scenario where map stream UDF throws a runtime error.
@@ -92,6 +103,9 @@ class AsyncSourceError(Sourcer):
     async def ack_handler(self, ack_request: AckRequest):
         raise RuntimeError("Got a runtime error from ack handler.")
 
+    async def nack_handler(self, nack_request: NackRequest):
+        raise RuntimeError("Got a runtime error from nack handler.")
+
     async def pending_handler(self) -> PendingResponse:
         raise RuntimeError("Got a runtime error from pending handler.")
 
@@ -105,6 +119,9 @@ class SyncSourceError(Sourcer):
 
     def ack_handler(self, ack_request: AckRequest):
         raise RuntimeError("Got a runtime error from ack handler.")
+
+    def nack_handler(self, nack_request: NackRequest):
+        raise RuntimeError("Got a runtime error from nack handler.")
 
     def pending_handler(self) -> PendingResponse:
         raise RuntimeError("Got a runtime error from pending handler.")

@@ -6,7 +6,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.shared.server import handle_async_error
-from pynumaflow.sourcer._dtypes import ReadRequest, Offset
+from pynumaflow.sourcer._dtypes import NackRequest, ReadRequest, Offset
 from pynumaflow.sourcer._dtypes import AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
@@ -75,6 +75,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         """Initialize handler methods from the provided source handler."""
         self.__source_read_handler = self.source_handler.read_handler
         self.__source_ack_handler = self.source_handler.ack_handler
+        self.__source_nack_handler = self.source_handler.nack_handler
         self.__source_pending_handler = self.source_handler.pending_handler
         self.__source_partitions_handler = self.source_handler.partitions_handler
 
@@ -108,7 +109,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
                 async for resp in riter:
                     if isinstance(resp, BaseException):
-                        await handle_async_error(context, resp)
+                        await handle_async_error(context, resp, ERR_UDF_EXCEPTION_STRING)
                         return
 
                     yield _create_read_response(resp)
@@ -166,6 +167,23 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         except BaseException as err:
             _LOGGER.critical("User-Defined Source AckFn error", exc_info=True)
             await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+
+    async def NackFn(
+        self,
+        request: source_pb2.NackRequest,
+        context: NumaflowServicerContext,
+    ) -> source_pb2.NackResponse:
+        """
+        Handles the Nack function for user-defined source.
+        """
+        try:
+            offsets = [Offset(offset.offset, offset.partition_id) for offset in request.request.offsets]
+            await self.__source_nack_handler(NackRequest(offsets=offsets))
+        except Exception as err:
+            _LOGGER.critical("User-Defined Source NackFn error", exc_info=True)
+            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+        resp = source_pb2.NackResponse.Result(success=_empty_pb2.Empty())
+        return source_pb2.NackResponse(result=resp)
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

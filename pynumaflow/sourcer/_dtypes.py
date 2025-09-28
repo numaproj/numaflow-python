@@ -1,10 +1,9 @@
 import os
 from abc import ABCMeta, abstractmethod
-from collections.abc import Iterable
+from collections.abc import AsyncIterable, Iterable
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
-from collections.abc import AsyncIterable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
@@ -170,6 +169,22 @@ class AckRequest:
         return self._offsets
 
 
+@dataclass(slots=True)
+class NackRequest:
+    """
+    Class for defining the request for negatively acknowledging an offset.
+    It takes a list of offsets that need to be negatively acknowledged on the source.
+    Args:
+        offsets: the offsets to be negatively acknowledged.
+    >>> # Example usage
+    >>> from pynumaflow.sourcer import NackRequest, Offset
+    >>> offset_val = Offset(offset=b"123", partition_id=0)
+    >>> nack_request = NackRequest(offsets=[offset_val, offset_val])
+    """
+
+    offsets: list[Offset]
+
+
 @dataclass(init=False)
 class PendingResponse:
     """
@@ -248,6 +263,13 @@ class Sourcer(metaclass=ABCMeta):
         """
         The ack handler is used acknowledge the offsets that have been read, and remove them
         from the to_ack_set
+        """
+        pass
+
+    @abstractmethod
+    def nack_handler(self, nack_request: NackRequest):
+        """
+        The nack handler is used negatively acknowledge the offsets on the source
         """
         pass
 

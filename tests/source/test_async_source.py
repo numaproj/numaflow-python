@@ -15,6 +15,7 @@ from pynumaflow.sourcer import (
 from tests.source.utils import (
     read_req_source_fn,
     ack_req_source_fn,
+    nack_req_source_fn,
     mock_partitions,
     AsyncSource,
     mock_offset,
@@ -179,6 +180,17 @@ class TestAsyncSourcer(unittest.TestCase):
 
             self.assertEqual(count, 2)
             self.assertFalse(first)
+
+    def test_nack(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = nack_req_source_fn()
+            try:
+                response = stub.NackFn(request=request)
+            except grpc.RpcError as e:
+                logging.error(e)
+                self.fail("Received an unexpected error")
+            self.assertTrue(response.result.success)
 
     def test_pending(self) -> None:
         with grpc.insecure_channel(server_port) as channel:

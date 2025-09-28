@@ -9,7 +9,6 @@ import grpc
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import ERR_UDF_EXCEPTION_STRING
 from pynumaflow.sourcer import SourceAsyncServer
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from google.protobuf import empty_pb2 as _empty_pb2

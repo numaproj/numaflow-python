@@ -6,24 +6,23 @@ import warnings
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 from . import sink_pb2 as sink__pb2
 
-GRPC_GENERATED_VERSION = "1.75.0"
+GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
 try:
     from grpc._utilities import first_version_is_lower
-
     _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
 except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
     raise RuntimeError(
-        f"The grpc package installed is at version {GRPC_VERSION},"
-        + f" but the generated code in sink_pb2_grpc.py depends on"
-        + f" grpcio>={GRPC_GENERATED_VERSION}."
-        + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
-        + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
+        f'The grpc package installed is at version {GRPC_VERSION},'
+        + f' but the generated code in sink_pb2_grpc.py depends on'
+        + f' grpcio>={GRPC_GENERATED_VERSION}.'
+        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
@@ -37,74 +36,73 @@ class SinkStub(object):
             channel: A grpc.Channel.
         """
         self.SinkFn = channel.stream_stream(
-            "/sink.v1.Sink/SinkFn",
-            request_serializer=sink__pb2.SinkRequest.SerializeToString,
-            response_deserializer=sink__pb2.SinkResponse.FromString,
-            _registered_method=True,
-        )
+                '/sink.v1.Sink/SinkFn',
+                request_serializer=sink__pb2.SinkRequest.SerializeToString,
+                response_deserializer=sink__pb2.SinkResponse.FromString,
+                _registered_method=True)
         self.IsReady = channel.unary_unary(
-            "/sink.v1.Sink/IsReady",
-            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            response_deserializer=sink__pb2.ReadyResponse.FromString,
-            _registered_method=True,
-        )
+                '/sink.v1.Sink/IsReady',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=sink__pb2.ReadyResponse.FromString,
+                _registered_method=True)
 
 
 class SinkServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def SinkFn(self, request_iterator, context):
-        """SinkFn writes the request to a user defined sink."""
+        """SinkFn writes the request to a user defined sink.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def IsReady(self, request, context):
-        """IsReady is the heartbeat endpoint for gRPC."""
+        """IsReady is the heartbeat endpoint for gRPC.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_SinkServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "SinkFn": grpc.stream_stream_rpc_method_handler(
-            servicer.SinkFn,
-            request_deserializer=sink__pb2.SinkRequest.FromString,
-            response_serializer=sink__pb2.SinkResponse.SerializeToString,
-        ),
-        "IsReady": grpc.unary_unary_rpc_method_handler(
-            servicer.IsReady,
-            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            response_serializer=sink__pb2.ReadyResponse.SerializeToString,
-        ),
+            'SinkFn': grpc.stream_stream_rpc_method_handler(
+                    servicer.SinkFn,
+                    request_deserializer=sink__pb2.SinkRequest.FromString,
+                    response_serializer=sink__pb2.SinkResponse.SerializeToString,
+            ),
+            'IsReady': grpc.unary_unary_rpc_method_handler(
+                    servicer.IsReady,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=sink__pb2.ReadyResponse.SerializeToString,
+            ),
     }
-    generic_handler = grpc.method_handlers_generic_handler("sink.v1.Sink", rpc_method_handlers)
+    generic_handler = grpc.method_handlers_generic_handler(
+            'sink.v1.Sink', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers("sink.v1.Sink", rpc_method_handlers)
+    server.add_registered_method_handlers('sink.v1.Sink', rpc_method_handlers)
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class Sink(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def SinkFn(
-        request_iterator,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
+    def SinkFn(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.stream_stream(
             request_iterator,
             target,
-            "/sink.v1.Sink/SinkFn",
+            '/sink.v1.Sink/SinkFn',
             sink__pb2.SinkRequest.SerializeToString,
             sink__pb2.SinkResponse.FromString,
             options,
@@ -115,26 +113,23 @@ class Sink(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True,
-        )
+            _registered_method=True)
 
     @staticmethod
-    def IsReady(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
+    def IsReady(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/sink.v1.Sink/IsReady",
+            '/sink.v1.Sink/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             sink__pb2.ReadyResponse.FromString,
             options,
@@ -145,5 +140,4 @@ class Sink(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True,
-        )
+            _registered_method=True)

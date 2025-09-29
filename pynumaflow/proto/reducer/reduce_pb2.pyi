@@ -13,10 +13,8 @@ DESCRIPTOR: _descriptor.FileDescriptor
 
 class ReduceRequest(_message.Message):
     __slots__ = ("payload", "operation")
-
     class WindowOperation(_message.Message):
         __slots__ = ("event", "windows")
-
         class Event(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
             __slots__ = ()
             OPEN: _ClassVar[ReduceRequest.WindowOperation.Event]
@@ -29,15 +27,9 @@ class ReduceRequest(_message.Message):
         WINDOWS_FIELD_NUMBER: _ClassVar[int]
         event: ReduceRequest.WindowOperation.Event
         windows: _containers.RepeatedCompositeFieldContainer[Window]
-        def __init__(
-            self,
-            event: _Optional[_Union[ReduceRequest.WindowOperation.Event, str]] = ...,
-            windows: _Optional[_Iterable[_Union[Window, _Mapping]]] = ...,
-        ) -> None: ...
-
+        def __init__(self, event: _Optional[_Union[ReduceRequest.WindowOperation.Event, str]] = ..., windows: _Optional[_Iterable[_Union[Window, _Mapping]]] = ...) -> None: ...
     class Payload(_message.Message):
         __slots__ = ("keys", "value", "event_time", "watermark", "headers")
-
         class HeadersEntry(_message.Message):
             __slots__ = ("key", "value")
             KEY_FIELD_NUMBER: _ClassVar[int]
@@ -55,27 +47,12 @@ class ReduceRequest(_message.Message):
         event_time: _timestamp_pb2.Timestamp
         watermark: _timestamp_pb2.Timestamp
         headers: _containers.ScalarMap[str, str]
-        def __init__(
-            self,
-            keys: _Optional[_Iterable[str]] = ...,
-            value: _Optional[bytes] = ...,
-            event_time: _Optional[
-                _Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]
-            ] = ...,
-            watermark: _Optional[
-                _Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]
-            ] = ...,
-            headers: _Optional[_Mapping[str, str]] = ...,
-        ) -> None: ...
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., headers: _Optional[_Mapping[str, str]] = ...) -> None: ...
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
     payload: ReduceRequest.Payload
     operation: ReduceRequest.WindowOperation
-    def __init__(
-        self,
-        payload: _Optional[_Union[ReduceRequest.Payload, _Mapping]] = ...,
-        operation: _Optional[_Union[ReduceRequest.WindowOperation, _Mapping]] = ...,
-    ) -> None: ...
+    def __init__(self, payload: _Optional[_Union[ReduceRequest.Payload, _Mapping]] = ..., operation: _Optional[_Union[ReduceRequest.WindowOperation, _Mapping]] = ...) -> None: ...
 
 class Window(_message.Message):
     __slots__ = ("start", "end", "slot")
@@ -85,16 +62,10 @@ class Window(_message.Message):
     start: _timestamp_pb2.Timestamp
     end: _timestamp_pb2.Timestamp
     slot: str
-    def __init__(
-        self,
-        start: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...,
-        end: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...,
-        slot: _Optional[str] = ...,
-    ) -> None: ...
+    def __init__(self, start: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., end: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., slot: _Optional[str] = ...) -> None: ...
 
 class ReduceResponse(_message.Message):
     __slots__ = ("result", "window", "EOF")
-
     class Result(_message.Message):
         __slots__ = ("keys", "value", "tags")
         KEYS_FIELD_NUMBER: _ClassVar[int]
@@ -103,24 +74,14 @@ class ReduceResponse(_message.Message):
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         tags: _containers.RepeatedScalarFieldContainer[str]
-        def __init__(
-            self,
-            keys: _Optional[_Iterable[str]] = ...,
-            value: _Optional[bytes] = ...,
-            tags: _Optional[_Iterable[str]] = ...,
-        ) -> None: ...
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ...) -> None: ...
     RESULT_FIELD_NUMBER: _ClassVar[int]
     WINDOW_FIELD_NUMBER: _ClassVar[int]
     EOF_FIELD_NUMBER: _ClassVar[int]
     result: ReduceResponse.Result
     window: Window
     EOF: bool
-    def __init__(
-        self,
-        result: _Optional[_Union[ReduceResponse.Result, _Mapping]] = ...,
-        window: _Optional[_Union[Window, _Mapping]] = ...,
-        EOF: bool = ...,
-    ) -> None: ...
+    def __init__(self, result: _Optional[_Union[ReduceResponse.Result, _Mapping]] = ..., window: _Optional[_Union[Window, _Mapping]] = ..., EOF: bool = ...) -> None: ...
 
 class ReadyResponse(_message.Message):
     __slots__ = ("ready",)

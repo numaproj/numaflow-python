@@ -6,24 +6,23 @@ import warnings
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 from . import map_pb2 as map__pb2
 
-GRPC_GENERATED_VERSION = "1.75.0"
+GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
 try:
     from grpc._utilities import first_version_is_lower
-
     _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
 except ImportError:
     _version_not_supported = True
 
 if _version_not_supported:
     raise RuntimeError(
-        f"The grpc package installed is at version {GRPC_VERSION},"
-        + f" but the generated code in map_pb2_grpc.py depends on"
-        + f" grpcio>={GRPC_GENERATED_VERSION}."
-        + f" Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}"
-        + f" or downgrade your generated code using grpcio-tools<={GRPC_VERSION}."
+        f'The grpc package installed is at version {GRPC_VERSION},'
+        + f' but the generated code in map_pb2_grpc.py depends on'
+        + f' grpcio>={GRPC_GENERATED_VERSION}.'
+        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
@@ -37,74 +36,73 @@ class MapStub(object):
             channel: A grpc.Channel.
         """
         self.MapFn = channel.stream_stream(
-            "/map.v1.Map/MapFn",
-            request_serializer=map__pb2.MapRequest.SerializeToString,
-            response_deserializer=map__pb2.MapResponse.FromString,
-            _registered_method=True,
-        )
+                '/map.v1.Map/MapFn',
+                request_serializer=map__pb2.MapRequest.SerializeToString,
+                response_deserializer=map__pb2.MapResponse.FromString,
+                _registered_method=True)
         self.IsReady = channel.unary_unary(
-            "/map.v1.Map/IsReady",
-            request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            response_deserializer=map__pb2.ReadyResponse.FromString,
-            _registered_method=True,
-        )
+                '/map.v1.Map/IsReady',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=map__pb2.ReadyResponse.FromString,
+                _registered_method=True)
 
 
 class MapServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def MapFn(self, request_iterator, context):
-        """MapFn applies a function to each map request element."""
+        """MapFn applies a function to each map request element.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def IsReady(self, request, context):
-        """IsReady is the heartbeat endpoint for gRPC."""
+        """IsReady is the heartbeat endpoint for gRPC.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details("Method not implemented!")
-        raise NotImplementedError("Method not implemented!")
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
 
 def add_MapServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "MapFn": grpc.stream_stream_rpc_method_handler(
-            servicer.MapFn,
-            request_deserializer=map__pb2.MapRequest.FromString,
-            response_serializer=map__pb2.MapResponse.SerializeToString,
-        ),
-        "IsReady": grpc.unary_unary_rpc_method_handler(
-            servicer.IsReady,
-            request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-            response_serializer=map__pb2.ReadyResponse.SerializeToString,
-        ),
+            'MapFn': grpc.stream_stream_rpc_method_handler(
+                    servicer.MapFn,
+                    request_deserializer=map__pb2.MapRequest.FromString,
+                    response_serializer=map__pb2.MapResponse.SerializeToString,
+            ),
+            'IsReady': grpc.unary_unary_rpc_method_handler(
+                    servicer.IsReady,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=map__pb2.ReadyResponse.SerializeToString,
+            ),
     }
-    generic_handler = grpc.method_handlers_generic_handler("map.v1.Map", rpc_method_handlers)
+    generic_handler = grpc.method_handlers_generic_handler(
+            'map.v1.Map', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers("map.v1.Map", rpc_method_handlers)
+    server.add_registered_method_handlers('map.v1.Map', rpc_method_handlers)
 
 
-# This class is part of an EXPERIMENTAL API.
+ # This class is part of an EXPERIMENTAL API.
 class Map(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def MapFn(
-        request_iterator,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
+    def MapFn(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.stream_stream(
             request_iterator,
             target,
-            "/map.v1.Map/MapFn",
+            '/map.v1.Map/MapFn',
             map__pb2.MapRequest.SerializeToString,
             map__pb2.MapResponse.FromString,
             options,
@@ -115,26 +113,23 @@ class Map(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True,
-        )
+            _registered_method=True)
 
     @staticmethod
-    def IsReady(
-        request,
-        target,
-        options=(),
-        channel_credentials=None,
-        call_credentials=None,
-        insecure=False,
-        compression=None,
-        wait_for_ready=None,
-        timeout=None,
-        metadata=None,
-    ):
+    def IsReady(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/map.v1.Map/IsReady",
+            '/map.v1.Map/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
             map__pb2.ReadyResponse.FromString,
             options,
@@ -145,5 +140,4 @@ class Map(object):
             wait_for_ready,
             timeout,
             metadata,
-            _registered_method=True,
-        )
+            _registered_method=True)

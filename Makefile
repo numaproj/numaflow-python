@@ -7,7 +7,7 @@ clean:
 	@find . -type f -name "*.py[co]" -exec rm -rf {} +
 
 format: clean
-	poetry run black pynumaflow/ tests/ examples/
+	poetry run black --exclude=pynumaflow/proto/ pynumaflow/ tests/ examples/
 
 
 lint: format

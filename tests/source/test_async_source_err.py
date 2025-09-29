@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import threading
 import unittest
 from unittest.mock import patch
 
@@ -23,156 +22,122 @@ from tests.testing_utils import mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
 
-_s: Server = None
-server_port = "unix:///tmp/async_err_source.sock"
-_channel = grpc.insecure_channel(server_port)
-_loop = None
+# Mock the handle_async_error function to prevent process SIGKILL
+async def mock_handle_async_error(context, exception, exception_type):
+    """Mock handle_async_error to prevent process termination during tests."""
+    from pynumaflow.shared.server import update_context_err
+
+    err_msg = f"{exception_type}: {repr(exception)}"
+    update_context_err(context, exception, err_msg)
 
 
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
-async def start_server():
-    server = grpc.aio.server()
-    class_instance = AsyncSourceError()
-    server_instance = SourceAsyncServer(sourcer_instance=class_instance)
-    udfs = server_instance.servicer
-    source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
+# We are mocking the error handler to not exit the program during testing
+@patch("pynumaflow.sourcer.servicer.async_servicer.handle_async_error", mock_handle_async_error)
+class TestAsyncServerErrorScenario(unittest.IsolatedAsyncioTestCase):
     listen_addr = "unix:///tmp/async_err_source.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
-    await server.start()
-    await server.wait_for_termination()
 
+    async def asyncSetUp(self) -> None:
+        # Create a fresh server for each test to avoid event loop issues
+        self.server = grpc.aio.server()
+        class_instance = AsyncSourceError()
+        server_instance = SourceAsyncServer(sourcer_instance=class_instance)
+        udfs = server_instance.servicer
+        source_pb2_grpc.add_SourceServicer_to_server(udfs, self.server)
+        self.server.add_insecure_port(self.listen_addr)
+        await self.server.start()
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestAsyncServerErrorScenario(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
-        while True:
+        # Wait for server to be ready with timeout
+        max_attempts = 50  # 5 seconds total (50 * 0.1)
+        attempt = 0
+        while attempt < max_attempts:
             try:
-                with grpc.insecure_channel("unix:///tmp/async_err_source.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+                async with grpc.aio.insecure_channel(self.listen_addr) as channel:
+                    await channel.channel_ready()
+                    break
+            except Exception as e:
+                LOGGER.debug("Waiting for server to be ready, attempt %d", attempt + 1)
+                await asyncio.sleep(0.1)
+            attempt += 1
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
-            LOGGER.error(e)
+        if attempt >= max_attempts:
+            raise RuntimeError("Server failed to start within timeout period")
 
-    def test_read_error(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
+    async def asyncTearDown(self) -> None:
+        # Stop the server after each test
+        if hasattr(self, 'server') and self.server is not None:
+            await self.server.stop(0)
+            # Small delay to ensure socket cleanup
+            await asyncio.sleep(0.1)
+
+    async def test_read_error(self) -> None:
+        async with grpc.aio.insecure_channel(self.listen_addr) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = read_req_source_fn()
-            generator_response = None
-            try:
+            with self.assertRaises(grpc.RpcError) as resp_err:
                 generator_response = stub.ReadFn(
                     request_iterator=request_generator(1, request, "read")
                 )
-                for _ in generator_response:
-                    pass
-            except grpc.RpcError as e:
-                self.assertEqual(grpc.StatusCode.INTERNAL, e.code())
-                self.assertTrue("Got a runtime error from read handler." in e.details())
-                return
+                # await anext(aiter(generator_response)) should work for Python >=3.10
+                [_ async for _ in generator_response]
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp_err.exception.code())
+            self.assertTrue("Got a runtime error from read handler." in resp_err.exception.details())
 
-        self.fail("Expected an exception.")
 
-    def test_read_handshake_error(self) -> None:
-        grpc_exception = None
-        with grpc.insecure_channel(server_port) as channel:
+    async def test_read_handshake_error(self) -> None:
+        async with grpc.aio.insecure_channel(self.listen_addr) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = read_req_source_fn()
-            generator_response = None
-            try:
+            with self.assertRaises(grpc.RpcError) as resp_err:
                 generator_response = stub.ReadFn(
                     request_iterator=request_generator(1, request, "read", False)
                 )
-                for _ in generator_response:
-                    pass
-            except BaseException as e:
-                self.assertTrue("ReadFn: expected handshake message" in e.__str__())
-                return
-            except grpc.RpcError as e:
-                grpc_exception = e
-                self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
-                print(e.details())
+                # await anext(aiter(generator_response)) should work for Python >=3.10
+                [_ async for _ in generator_response]
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp_err.exception.code())
+            self.assertTrue("ReadFn: expected handshake message" in resp_err.exception.details())
 
-        self.assertIsNotNone(grpc_exception)
-        self.fail("Expected an exception.")
 
-    def test_ack_error(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
+    async def test_ack_error(self) -> None:
+        async with grpc.aio.insecure_channel(self.listen_addr) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = ack_req_source_fn()
-            try:
+            with self.assertRaises(grpc.RpcError) as resp_err:
                 resp = stub.AckFn(request_iterator=request_generator(1, request, "ack"))
-                for _ in resp:
-                    pass
-            except grpc.RpcError as e:
-                self.assertEqual(grpc.StatusCode.INTERNAL, e.code())
-                self.assertTrue("Got a runtime error from ack handler." in e.details())
-                return
-        self.fail("Expected an exception.")
+                [_ async for _ in resp]
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp_err.exception.code())
+            self.assertTrue("Got a runtime error from ack handler." in resp_err.exception.details())
 
-    def test_ack_no_handshake_error(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
+    async def test_ack_no_handshake_error(self) -> None:
+        async with grpc.aio.insecure_channel(self.listen_addr) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = ack_req_source_fn()
-            try:
+            with self.assertRaises(grpc.RpcError) as resp_err:
                 resp = stub.AckFn(request_iterator=request_generator(1, request, "ack", False))
-                for _ in resp:
-                    pass
-            except BaseException as e:
-                self.assertTrue("AckFn: expected handshake message" in e.__str__())
-                return
-            except grpc.RpcError as e:
-                self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
-                print(e.details())
-        self.fail("Expected an exception.")
+                [_ async for _ in resp]
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp_err.exception.code())
+            self.assertTrue("AckFn: expected handshake message" in resp_err.exception.details())
 
-    def test_pending_error(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
+    async def test_pending_error(self) -> None:
+        async with grpc.aio.insecure_channel(self.listen_addr) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = _empty_pb2.Empty()
-            try:
-                stub.PendingFn(request=request)
-            except Exception as e:
-                self.assertTrue("Got a runtime error from pending handler." in e.__str__())
-                return
-        self.fail("Expected an exception.")
+            with self.assertRaises(grpc.RpcError) as resp_err:
+                await stub.PendingFn(request=request)
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp_err.exception.code())
+            self.assertTrue("Got a runtime error from pending handler." in resp_err.exception.details())
 
-    def test_partition_error(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
+    async def test_partition_error(self) -> None:
+        async with grpc.aio.insecure_channel(self.listen_addr) as channel:
             stub = source_pb2_grpc.SourceStub(channel)
             request = _empty_pb2.Empty()
-            try:
-                stub.PartitionsFn(request=request)
-            except Exception as e:
-                self.assertTrue("Got a runtime error from partition handler." in e.__str__())
-                return
-        self.fail("Expected an exception.")
+            with self.assertRaises(grpc.RpcError) as resp_err:
+                response = await stub.PartitionsFn(request=request)
+                # Force evaluation of the response
+                _ = response.result
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp_err.exception.code())
+            self.assertTrue("Got a runtime error from partition handler." in resp_err.exception.details())
 
-    def test_invalid_server_type(self) -> None:
+    async def test_invalid_server_type(self) -> None:
         with self.assertRaises(TypeError):
             SourceAsyncServer()
 

@@ -71,8 +71,8 @@ class SourceAsyncServer(NumaflowServer):
                 async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
                     '''
                     read_handler is used to read the data from the source and send the data forward
-                    for each read request we process num_records and increment the read_idx to indicate that
-                    the message has been read and the same is added to the ack set
+                    for each read request we process num_records and increment the read_idx to
+                    indicate that the message has been read and the same is added to the ack set
                     '''
                     if self.to_ack_set:
                         return
@@ -97,8 +97,8 @@ class SourceAsyncServer(NumaflowServer):
 
                 async def ack_handler(self, ack_request: AckRequest):
                     '''
-                    The ack handler is used acknowledge the offsets that have been read, and remove them
-                    from the to_ack_set
+                    The ack handler is used acknowledge the offsets that have been read, and remove
+                    them from the to_ack_set
                     '''
                     for req in ack_request.offsets:
                         offset = int(req.offset)

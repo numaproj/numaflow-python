@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -80,9 +80,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
     async def ReadFn(
         self,
-        request_iterator: AsyncIterable[source_pb2.ReadRequest],
+        request_iterator: AsyncIterator[source_pb2.ReadRequest],
         context: NumaflowServicerContext,
-    ) -> AsyncIterable[source_pb2.ReadResponse]:
+    ) -> AsyncIterator[source_pb2.ReadResponse]:
         """
         Handles the Read function, processing incoming requests and sending responses.
         """
@@ -108,7 +108,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
                 async for resp in riter:
                     if isinstance(resp, BaseException):
-                        await handle_async_error(context, resp)
+                        await handle_async_error(context, resp, ERR_UDF_EXCEPTION_STRING)
                         return
 
                     yield _create_read_response(resp)
@@ -139,9 +139,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
     async def AckFn(
         self,
-        request_iterator: AsyncIterable[source_pb2.AckRequest],
+        request_iterator: AsyncIterator[source_pb2.AckRequest],
         context: NumaflowServicerContext,
-    ) -> AsyncIterable[source_pb2.AckResponse]:
+    ) -> AsyncIterator[source_pb2.AckResponse]:
         """
         Handles the Ack function for user-defined source.
         """

@@ -17,7 +17,7 @@ from tests.source.test_async_source import request_generator
 from tests.source.utils import (
     read_req_source_fn,
     ack_req_source_fn,
-    AsyncSourceError,
+    AsyncSourceError, nack_req_source_fn,
 )
 from tests.testing_utils import mock_terminate_on_stop
 
@@ -136,6 +136,15 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                 self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
                 print(e.details())
         self.fail("Expected an exception.")
+
+    def test_nack_error(self):
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = nack_req_source_fn()
+            with self.assertRaisesRegex(grpc.RpcError, "Got a runtime error from nack handler.") as resp:
+                stub.NackFn(request=request)
+
+            self.assertEqual(grpc.StatusCode.INTERNAL, resp.exception.code())
 
     def test_ack_no_handshake_error(self) -> None:
         with grpc.insecure_channel(server_port) as channel:

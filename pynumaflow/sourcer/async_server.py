@@ -48,6 +48,7 @@ class SourceAsyncServer(NumaflowServer):
                 ReadRequest,
                 Message,
                 AckRequest,
+                NacRequest,
                 PendingResponse,
                 Offset,
                 PartitionsResponse,
@@ -85,6 +86,12 @@ class SourceAsyncServer(NumaflowServer):
 
                 async def ack_handler(self, ack_request: AckRequest):
                     # The ack handler is used acknowledge the offsets that have been read,
+                    # and remove them from the to_ack_set
+                    for offset in ack_request.offset:
+                        self.to_ack_set.remove(str(offset.offset, "utf-8"))
+
+                async def nack_handler(self, ack_request: NackRequest):
+                    # The nack handler is used to negatively acknowledge the offsets that have been read
                     # and remove them from the to_ack_set
                     for offset in ack_request.offset:
                         self.to_ack_set.remove(str(offset.offset, "utf-8"))

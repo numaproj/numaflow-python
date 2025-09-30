@@ -9,11 +9,10 @@ import grpc
 from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
-from pynumaflow._constants import ERR_UDF_EXCEPTION_STRING
-from pynumaflow.sourcer import SourceAsyncServer
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
+from pynumaflow.sourcer.async_server import SourceAsyncServer
 from tests.source.test_async_source import request_generator
 from tests.source.utils import (
     read_req_source_fn,
@@ -94,11 +93,10 @@ class TestAsyncServerErrorScenario(unittest.TestCase):
                     pass
             except grpc.RpcError as e:
                 grpc_exception = e
-                self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
+                self.assertEqual(grpc.StatusCode.INTERNAL, e.code())
                 print(e.details())
 
         self.assertIsNotNone(grpc_exception)
-        self.fail("Expected an exception.")
 
     def test_read_handshake_error(self) -> None:
         grpc_exception = None

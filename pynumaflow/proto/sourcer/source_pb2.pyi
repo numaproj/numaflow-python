@@ -111,6 +111,28 @@ class AckResponse(_message.Message):
     handshake: Handshake
     def __init__(self, result: _Optional[_Union[AckResponse.Result, _Mapping]] = ..., handshake: _Optional[_Union[Handshake, _Mapping]] = ...) -> None: ...
 
+class NackRequest(_message.Message):
+    __slots__ = ("request",)
+    class Request(_message.Message):
+        __slots__ = ("offsets",)
+        OFFSETS_FIELD_NUMBER: _ClassVar[int]
+        offsets: _containers.RepeatedCompositeFieldContainer[Offset]
+        def __init__(self, offsets: _Optional[_Iterable[_Union[Offset, _Mapping]]] = ...) -> None: ...
+    REQUEST_FIELD_NUMBER: _ClassVar[int]
+    request: NackRequest.Request
+    def __init__(self, request: _Optional[_Union[NackRequest.Request, _Mapping]] = ...) -> None: ...
+
+class NackResponse(_message.Message):
+    __slots__ = ("result",)
+    class Result(_message.Message):
+        __slots__ = ("success",)
+        SUCCESS_FIELD_NUMBER: _ClassVar[int]
+        success: _empty_pb2.Empty
+        def __init__(self, success: _Optional[_Union[_empty_pb2.Empty, _Mapping]] = ...) -> None: ...
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    result: NackResponse.Result
+    def __init__(self, result: _Optional[_Union[NackResponse.Result, _Mapping]] = ...) -> None: ...
+
 class ReadyResponse(_message.Message):
     __slots__ = ("ready",)
     READY_FIELD_NUMBER: _ClassVar[int]

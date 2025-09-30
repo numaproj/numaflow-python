@@ -12,7 +12,7 @@ from pynumaflow import setup_logging
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow.sourcer.async_server import SourceAsyncServer
+from pynumaflow.sourcer import SourceAsyncServer
 from tests.source.test_async_source import request_generator
 from tests.source.utils import (
     read_req_source_fn,

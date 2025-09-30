@@ -91,8 +91,7 @@ class SourceAsyncServer(NumaflowServer):
                         self.to_ack_set.remove(str(offset.offset, "utf-8"))
 
                 async def nack_handler(self, ack_request: NackRequest):
-                    # The nack handler is used to negatively acknowledge the offsets that have been read
-                    # and remove them from the to_ack_set
+                    # Handler to negatively acknowledge the offsets that have been read
                     for offset in ack_request.offset:
                         self.to_ack_set.remove(str(offset.offset, "utf-8"))
 

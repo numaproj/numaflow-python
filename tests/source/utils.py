@@ -8,7 +8,8 @@ from pynumaflow.sourcer import (
     PendingResponse,
     Offset,
     PartitionsResponse,
-    Sourcer, NackRequest,
+    Sourcer,
+    NackRequest,
 )
 from pynumaflow.proto.sourcer import source_pb2
 from tests.testing_utils import mock_event_time
@@ -80,6 +81,7 @@ def ack_req_source_fn():
     msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)
     request = source_pb2.AckRequest.Request(offsets=[msg])
     return request
+
 
 def nack_req_source_fn():
     msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)

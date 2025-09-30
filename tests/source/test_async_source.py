@@ -17,7 +17,8 @@ from tests.source.utils import (
     ack_req_source_fn,
     mock_partitions,
     AsyncSource,
-    mock_offset, nack_req_source_fn,
+    mock_offset,
+    nack_req_source_fn,
 )
 
 LOGGER = setup_logging(__name__)

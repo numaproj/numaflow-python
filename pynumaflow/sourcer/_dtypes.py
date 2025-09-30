@@ -168,6 +168,7 @@ class AckRequest:
         """Returns the offsets to be acknowledged."""
         return self._offsets
 
+
 @dataclass
 class NackRequest:
     """

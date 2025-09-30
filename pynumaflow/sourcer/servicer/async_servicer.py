@@ -176,12 +176,16 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         Handles the Nack function for user-defined source.
         """
         try:
-            offsets = [Offset(offset.offset, offset.partition_id) for offset in request.request.offsets]
+            offsets = [
+                Offset(offset.offset, offset.partition_id) for offset in request.request.offsets
+            ]
             await self.__source_nack_handler(NackRequest(offsets=offsets))
         except BaseException as err:
             _LOGGER.critical("User-Defined Source NackFn error", exc_info=True)
             await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
-        return source_pb2.NackResponse(result=source_pb2.NackResponse.Result(success=_empty_pb2.Empty()))
+        return source_pb2.NackResponse(
+            result=source_pb2.NackResponse.Result(success=_empty_pb2.Empty())
+        )
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

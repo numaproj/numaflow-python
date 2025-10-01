@@ -3,10 +3,12 @@ from pynumaflow.sourcer._dtypes import (
     ReadRequest,
     PendingResponse,
     AckRequest,
+    NackRequest,
     Offset,
     PartitionsResponse,
     get_default_partitions,
     Sourcer,
+    SourceCallable,
 )
 from pynumaflow.sourcer.async_server import SourceAsyncServer
 
@@ -15,9 +17,11 @@ __all__ = [
     "ReadRequest",
     "PendingResponse",
     "AckRequest",
+    "NackRequest",
     "Offset",
     "PartitionsResponse",
     "get_default_partitions",
     "Sourcer",
     "SourceAsyncServer",
+    "SourceCallable",
 ]

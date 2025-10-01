@@ -18,6 +18,7 @@ from tests.source.utils import (
     mock_partitions,
     AsyncSource,
     mock_offset,
+    nack_req_source_fn,
 )
 
 LOGGER = setup_logging(__name__)
@@ -179,6 +180,13 @@ class TestAsyncSourcer(unittest.TestCase):
 
             self.assertEqual(count, 2)
             self.assertFalse(first)
+
+    def test_nack(self) -> None:
+        with grpc.insecure_channel(server_port) as channel:
+            stub = source_pb2_grpc.SourceStub(channel)
+            request = nack_req_source_fn()
+            response = stub.NackFn(request=request)
+            self.assertTrue(response.result.success)
 
     def test_pending(self) -> None:
         with grpc.insecure_channel(server_port) as channel:

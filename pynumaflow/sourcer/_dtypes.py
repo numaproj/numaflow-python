@@ -1,10 +1,9 @@
 import os
 from abc import ABCMeta, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Iterator, AsyncIterator
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
-from collections.abc import AsyncIterable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
@@ -170,6 +169,31 @@ class AckRequest:
         return self._offsets
 
 
+@dataclass
+class NackRequest:
+    """
+    Class for defining the request for negatively acknowledging an offset.
+    It takes a list of offsets that need to be negatively acknowledged on the source.
+    Args:
+        offsets: the offsets to be negatively acknowledged.
+    >>> # Example usage
+    >>> from pynumaflow.sourcer import NackRequest, Offset
+    >>> offset_val = Offset(offset=b"123", partition_id=0)
+    >>> nack_request = NackRequest(offsets=[offset_val, offset_val])
+    """
+
+    __slots__ = ("_offsets",)
+    _offsets: list[Offset]
+
+    def __init__(self, offsets: list[Offset]):
+        self._offsets = offsets
+
+    @property
+    def offsets(self) -> list[Offset]:
+        """Returns the offsets to be negatively acknowledged."""
+        return self._offsets
+
+
 @dataclass(init=False)
 class PendingResponse:
     """
@@ -246,8 +270,14 @@ class Sourcer(metaclass=ABCMeta):
     @abstractmethod
     def ack_handler(self, ack_request: AckRequest):
         """
-        The ack handler is used acknowledge the offsets that have been read, and remove them
-        from the to_ack_set
+        The ack handler is used to acknowledge the offsets that have been read
+        """
+        pass
+
+    @abstractmethod
+    def nack_handler(self, nack_request: NackRequest):
+        """
+        The nack handler is used to negatively acknowledge the offsets on the source
         """
         pass
 
@@ -268,8 +298,8 @@ class Sourcer(metaclass=ABCMeta):
 
 # Create default partition id from the environment variable "NUMAFLOW_REPLICA"
 DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", "0"))
-SourceReadCallable = Callable[[ReadRequest], Iterable[Message]]
-AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterable[Message]]
+SourceReadCallable = Callable[[ReadRequest], Iterator[Message]]
+AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterator[Message]]
 SourceAckCallable = Callable[[AckRequest], None]
 SourceCallable = Sourcer
 

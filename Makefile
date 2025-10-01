@@ -15,7 +15,7 @@ lint: format
 
 
 test:
-	poetry run pytest tests/
+	poetry run pytest tests/ -rA
 
 
 requirements:

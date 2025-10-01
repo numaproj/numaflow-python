@@ -183,7 +183,7 @@ class NackRequest:
     """
 
     __slots__ = ("_offsets",)
-    offsets: list[Offset]
+    _offsets: list[Offset]
 
     def __init__(self, offsets: list[Offset]):
         self._offsets = offsets

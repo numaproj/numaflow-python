@@ -48,13 +48,13 @@ class SourceAsyncServer(NumaflowServer):
                 ReadRequest,
                 Message,
                 AckRequest,
-                NacRequest,
                 PendingResponse,
                 Offset,
                 PartitionsResponse,
                 get_default_partitions,
                 Sourcer,
                 SourceAsyncServer,
+                NackRequest,
             )
 
             class AsyncSource(Sourcer):

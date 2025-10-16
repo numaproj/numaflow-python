@@ -3,8 +3,8 @@
 import grpc
 import warnings
 
-from . import accumulator_pb2 as accumulator__pb2
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
+from pynumaflow.proto.accumulator import accumulator_pb2 as pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2
 
 GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in accumulator_pb2_grpc.py depends on'
+        + f' but the generated code in pynumaflow/proto/accumulator/accumulator_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -40,13 +40,13 @@ class AccumulatorStub(object):
         """
         self.AccumulateFn = channel.stream_stream(
                 '/accumulator.v1.Accumulator/AccumulateFn',
-                request_serializer=accumulator__pb2.AccumulatorRequest.SerializeToString,
-                response_deserializer=accumulator__pb2.AccumulatorResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.AccumulatorRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.AccumulatorResponse.FromString,
                 _registered_method=True)
         self.IsReady = channel.unary_unary(
                 '/accumulator.v1.Accumulator/IsReady',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=accumulator__pb2.ReadyResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.ReadyResponse.FromString,
                 _registered_method=True)
 
 
@@ -75,13 +75,13 @@ def add_AccumulatorServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'AccumulateFn': grpc.stream_stream_rpc_method_handler(
                     servicer.AccumulateFn,
-                    request_deserializer=accumulator__pb2.AccumulatorRequest.FromString,
-                    response_serializer=accumulator__pb2.AccumulatorResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.AccumulatorRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.AccumulatorResponse.SerializeToString,
             ),
             'IsReady': grpc.unary_unary_rpc_method_handler(
                     servicer.IsReady,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=accumulator__pb2.ReadyResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.ReadyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -112,8 +112,8 @@ class Accumulator(object):
             request_iterator,
             target,
             '/accumulator.v1.Accumulator/AccumulateFn',
-            accumulator__pb2.AccumulatorRequest.SerializeToString,
-            accumulator__pb2.AccumulatorResponse.FromString,
+            pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.AccumulatorRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.AccumulatorResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -140,7 +140,7 @@ class Accumulator(object):
             target,
             '/accumulator.v1.Accumulator/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            accumulator__pb2.ReadyResponse.FromString,
+            pynumaflow_dot_proto_dot_accumulator_dot_accumulator__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

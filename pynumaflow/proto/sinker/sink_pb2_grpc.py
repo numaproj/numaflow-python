@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import sink_pb2 as sink__pb2
+from pynumaflow.proto.sinker import sink_pb2 as pynumaflow_dot_proto_dot_sinker_dot_sink__pb2
 
 GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in sink_pb2_grpc.py depends on'
+        + f' but the generated code in pynumaflow/proto/sinker/sink_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -37,13 +37,13 @@ class SinkStub(object):
         """
         self.SinkFn = channel.stream_stream(
                 '/sink.v1.Sink/SinkFn',
-                request_serializer=sink__pb2.SinkRequest.SerializeToString,
-                response_deserializer=sink__pb2.SinkResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.SinkRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.SinkResponse.FromString,
                 _registered_method=True)
         self.IsReady = channel.unary_unary(
                 '/sink.v1.Sink/IsReady',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=sink__pb2.ReadyResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.ReadyResponse.FromString,
                 _registered_method=True)
 
 
@@ -69,13 +69,13 @@ def add_SinkServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SinkFn': grpc.stream_stream_rpc_method_handler(
                     servicer.SinkFn,
-                    request_deserializer=sink__pb2.SinkRequest.FromString,
-                    response_serializer=sink__pb2.SinkResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.SinkRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.SinkResponse.SerializeToString,
             ),
             'IsReady': grpc.unary_unary_rpc_method_handler(
                     servicer.IsReady,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=sink__pb2.ReadyResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.ReadyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -103,8 +103,8 @@ class Sink(object):
             request_iterator,
             target,
             '/sink.v1.Sink/SinkFn',
-            sink__pb2.SinkRequest.SerializeToString,
-            sink__pb2.SinkResponse.FromString,
+            pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.SinkRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.SinkResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -131,7 +131,7 @@ class Sink(object):
             target,
             '/sink.v1.Sink/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            sink__pb2.ReadyResponse.FromString,
+            pynumaflow_dot_proto_dot_sinker_dot_sink__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

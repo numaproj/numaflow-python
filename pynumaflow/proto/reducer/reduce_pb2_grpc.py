@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import reduce_pb2 as reduce__pb2
+from pynumaflow.proto.reducer import reduce_pb2 as pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2
 
 GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in reduce_pb2_grpc.py depends on'
+        + f' but the generated code in pynumaflow/proto/reducer/reduce_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -37,13 +37,13 @@ class ReduceStub(object):
         """
         self.ReduceFn = channel.stream_stream(
                 '/reduce.v1.Reduce/ReduceFn',
-                request_serializer=reduce__pb2.ReduceRequest.SerializeToString,
-                response_deserializer=reduce__pb2.ReduceResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReduceRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReduceResponse.FromString,
                 _registered_method=True)
         self.IsReady = channel.unary_unary(
                 '/reduce.v1.Reduce/IsReady',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=reduce__pb2.ReadyResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReadyResponse.FromString,
                 _registered_method=True)
 
 
@@ -69,13 +69,13 @@ def add_ReduceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ReduceFn': grpc.stream_stream_rpc_method_handler(
                     servicer.ReduceFn,
-                    request_deserializer=reduce__pb2.ReduceRequest.FromString,
-                    response_serializer=reduce__pb2.ReduceResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReduceRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReduceResponse.SerializeToString,
             ),
             'IsReady': grpc.unary_unary_rpc_method_handler(
                     servicer.IsReady,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=reduce__pb2.ReadyResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReadyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -103,8 +103,8 @@ class Reduce(object):
             request_iterator,
             target,
             '/reduce.v1.Reduce/ReduceFn',
-            reduce__pb2.ReduceRequest.SerializeToString,
-            reduce__pb2.ReduceResponse.FromString,
+            pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReduceRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReduceResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -131,7 +131,7 @@ class Reduce(object):
             target,
             '/reduce.v1.Reduce/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            reduce__pb2.ReadyResponse.FromString,
+            pynumaflow_dot_proto_dot_reducer_dot_reduce__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

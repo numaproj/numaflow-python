@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import sideinput_pb2 as sideinput__pb2
+from pynumaflow.proto.sideinput import sideinput_pb2 as pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2
 
 GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in sideinput_pb2_grpc.py depends on'
+        + f' but the generated code in pynumaflow/proto/sideinput/sideinput_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -46,12 +46,12 @@ class SideInputStub(object):
         self.RetrieveSideInput = channel.unary_unary(
                 '/sideinput.v1.SideInput/RetrieveSideInput',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=sideinput__pb2.SideInputResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2.SideInputResponse.FromString,
                 _registered_method=True)
         self.IsReady = channel.unary_unary(
                 '/sideinput.v1.SideInput/IsReady',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=sideinput__pb2.ReadyResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2.ReadyResponse.FromString,
                 _registered_method=True)
 
 
@@ -86,12 +86,12 @@ def add_SideInputServicer_to_server(servicer, server):
             'RetrieveSideInput': grpc.unary_unary_rpc_method_handler(
                     servicer.RetrieveSideInput,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=sideinput__pb2.SideInputResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2.SideInputResponse.SerializeToString,
             ),
             'IsReady': grpc.unary_unary_rpc_method_handler(
                     servicer.IsReady,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=sideinput__pb2.ReadyResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2.ReadyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -128,7 +128,7 @@ class SideInput(object):
             target,
             '/sideinput.v1.SideInput/RetrieveSideInput',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            sideinput__pb2.SideInputResponse.FromString,
+            pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2.SideInputResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -155,7 +155,7 @@ class SideInput(object):
             target,
             '/sideinput.v1.SideInput/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            sideinput__pb2.ReadyResponse.FromString,
+            pynumaflow_dot_proto_dot_sideinput_dot_sideinput__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

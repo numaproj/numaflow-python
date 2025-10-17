@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import source_pb2 as source__pb2
+from pynumaflow.proto.sourcer import source_pb2 as pynumaflow_dot_proto_dot_sourcer_dot_source__pb2
 
 GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in source_pb2_grpc.py depends on'
+        + f' but the generated code in pynumaflow/proto/sourcer/source_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -37,33 +37,33 @@ class SourceStub(object):
         """
         self.ReadFn = channel.stream_stream(
                 '/source.v1.Source/ReadFn',
-                request_serializer=source__pb2.ReadRequest.SerializeToString,
-                response_deserializer=source__pb2.ReadResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadResponse.FromString,
                 _registered_method=True)
         self.AckFn = channel.stream_stream(
                 '/source.v1.Source/AckFn',
-                request_serializer=source__pb2.AckRequest.SerializeToString,
-                response_deserializer=source__pb2.AckResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.AckRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.AckResponse.FromString,
                 _registered_method=True)
         self.NackFn = channel.unary_unary(
                 '/source.v1.Source/NackFn',
-                request_serializer=source__pb2.NackRequest.SerializeToString,
-                response_deserializer=source__pb2.NackResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.NackRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.NackResponse.FromString,
                 _registered_method=True)
         self.PendingFn = channel.unary_unary(
                 '/source.v1.Source/PendingFn',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=source__pb2.PendingResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.PendingResponse.FromString,
                 _registered_method=True)
         self.PartitionsFn = channel.unary_unary(
                 '/source.v1.Source/PartitionsFn',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=source__pb2.PartitionsResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.PartitionsResponse.FromString,
                 _registered_method=True)
         self.IsReady = channel.unary_unary(
                 '/source.v1.Source/IsReady',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=source__pb2.ReadyResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadyResponse.FromString,
                 _registered_method=True)
 
 
@@ -127,33 +127,33 @@ def add_SourceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'ReadFn': grpc.stream_stream_rpc_method_handler(
                     servicer.ReadFn,
-                    request_deserializer=source__pb2.ReadRequest.FromString,
-                    response_serializer=source__pb2.ReadResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadResponse.SerializeToString,
             ),
             'AckFn': grpc.stream_stream_rpc_method_handler(
                     servicer.AckFn,
-                    request_deserializer=source__pb2.AckRequest.FromString,
-                    response_serializer=source__pb2.AckResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.AckRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.AckResponse.SerializeToString,
             ),
             'NackFn': grpc.unary_unary_rpc_method_handler(
                     servicer.NackFn,
-                    request_deserializer=source__pb2.NackRequest.FromString,
-                    response_serializer=source__pb2.NackResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.NackRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.NackResponse.SerializeToString,
             ),
             'PendingFn': grpc.unary_unary_rpc_method_handler(
                     servicer.PendingFn,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=source__pb2.PendingResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.PendingResponse.SerializeToString,
             ),
             'PartitionsFn': grpc.unary_unary_rpc_method_handler(
                     servicer.PartitionsFn,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=source__pb2.PartitionsResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.PartitionsResponse.SerializeToString,
             ),
             'IsReady': grpc.unary_unary_rpc_method_handler(
                     servicer.IsReady,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=source__pb2.ReadyResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -181,8 +181,8 @@ class Source(object):
             request_iterator,
             target,
             '/source.v1.Source/ReadFn',
-            source__pb2.ReadRequest.SerializeToString,
-            source__pb2.ReadResponse.FromString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -208,8 +208,8 @@ class Source(object):
             request_iterator,
             target,
             '/source.v1.Source/AckFn',
-            source__pb2.AckRequest.SerializeToString,
-            source__pb2.AckResponse.FromString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.AckRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.AckResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -235,8 +235,8 @@ class Source(object):
             request,
             target,
             '/source.v1.Source/NackFn',
-            source__pb2.NackRequest.SerializeToString,
-            source__pb2.NackResponse.FromString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.NackRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.NackResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -263,7 +263,7 @@ class Source(object):
             target,
             '/source.v1.Source/PendingFn',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            source__pb2.PendingResponse.FromString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.PendingResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -290,7 +290,7 @@ class Source(object):
             target,
             '/source.v1.Source/PartitionsFn',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            source__pb2.PartitionsResponse.FromString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.PartitionsResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -317,7 +317,7 @@ class Source(object):
             target,
             '/source.v1.Source/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            source__pb2.ReadyResponse.FromString,
+            pynumaflow_dot_proto_dot_sourcer_dot_source__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

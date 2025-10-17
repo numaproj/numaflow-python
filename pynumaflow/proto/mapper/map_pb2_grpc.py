@@ -4,7 +4,7 @@ import grpc
 import warnings
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
-from . import map_pb2 as map__pb2
+from pynumaflow.proto.mapper import map_pb2 as pynumaflow_dot_proto_dot_mapper_dot_map__pb2
 
 GRPC_GENERATED_VERSION = '1.75.0'
 GRPC_VERSION = grpc.__version__
@@ -19,7 +19,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in map_pb2_grpc.py depends on'
+        + f' but the generated code in pynumaflow/proto/mapper/map_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -37,13 +37,13 @@ class MapStub(object):
         """
         self.MapFn = channel.stream_stream(
                 '/map.v1.Map/MapFn',
-                request_serializer=map__pb2.MapRequest.SerializeToString,
-                response_deserializer=map__pb2.MapResponse.FromString,
+                request_serializer=pynumaflow_dot_proto_dot_mapper_dot_map__pb2.MapRequest.SerializeToString,
+                response_deserializer=pynumaflow_dot_proto_dot_mapper_dot_map__pb2.MapResponse.FromString,
                 _registered_method=True)
         self.IsReady = channel.unary_unary(
                 '/map.v1.Map/IsReady',
                 request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-                response_deserializer=map__pb2.ReadyResponse.FromString,
+                response_deserializer=pynumaflow_dot_proto_dot_mapper_dot_map__pb2.ReadyResponse.FromString,
                 _registered_method=True)
 
 
@@ -69,13 +69,13 @@ def add_MapServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'MapFn': grpc.stream_stream_rpc_method_handler(
                     servicer.MapFn,
-                    request_deserializer=map__pb2.MapRequest.FromString,
-                    response_serializer=map__pb2.MapResponse.SerializeToString,
+                    request_deserializer=pynumaflow_dot_proto_dot_mapper_dot_map__pb2.MapRequest.FromString,
+                    response_serializer=pynumaflow_dot_proto_dot_mapper_dot_map__pb2.MapResponse.SerializeToString,
             ),
             'IsReady': grpc.unary_unary_rpc_method_handler(
                     servicer.IsReady,
                     request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
-                    response_serializer=map__pb2.ReadyResponse.SerializeToString,
+                    response_serializer=pynumaflow_dot_proto_dot_mapper_dot_map__pb2.ReadyResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -103,8 +103,8 @@ class Map(object):
             request_iterator,
             target,
             '/map.v1.Map/MapFn',
-            map__pb2.MapRequest.SerializeToString,
-            map__pb2.MapResponse.FromString,
+            pynumaflow_dot_proto_dot_mapper_dot_map__pb2.MapRequest.SerializeToString,
+            pynumaflow_dot_proto_dot_mapper_dot_map__pb2.MapResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -131,7 +131,7 @@ class Map(object):
             target,
             '/map.v1.Map/IsReady',
             google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
-            map__pb2.ReadyResponse.FromString,
+            pynumaflow_dot_proto_dot_mapper_dot_map__pb2.ReadyResponse.FromString,
             options,
             channel_credentials,
             insecure,

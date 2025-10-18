@@ -17,6 +17,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: psf/black@stable
         with:
+          src: packages/pynumaflow/
           options: "--check --verbose --exclude=pynumaflow/proto/"
           version: "~= 23.3"
 
@@ -29,3 +30,5 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: chartboost/ruff-action@v1
+        with:
+          src: packages/pynumaflow/

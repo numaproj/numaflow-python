@@ -10,6 +10,9 @@ jobs:
   build:
     name: Python version
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     strategy:
       fail-fast: false
       matrix:

@@ -10,6 +10,9 @@ jobs:
   black:
     name: Black format
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     steps:
       - uses: actions/checkout@v3
       - uses: psf/black@stable
@@ -20,6 +23,9 @@ jobs:
   ruff:
     name: Ruff lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     steps:
       - uses: actions/checkout@v3
       - uses: chartboost/ruff-action@v1

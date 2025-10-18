@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, multiple-packages ]
     tags:
       - '*'
 
@@ -12,6 +12,9 @@ jobs:
     if: ${{ github.repository }} == "numaproj/numaflow-python"
     name: Build, Tag, and Push Image
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
 
     strategy:
       matrix:
@@ -50,4 +53,4 @@ jobs:
           password: ${{ secrets.NUMAIO_PASSWORD }}
       - name: Build, tag, and push images
         run: |
-          ./hack/update_examples.sh --build-push-example ${{ matrix.example_directories }}
+          ../../hack/update_examples.sh --build-push-example ${{ matrix.example_directories }}

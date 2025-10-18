@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [ main, multiple-packages ]
+    branches: [ main ]
     tags:
       - '*'
 

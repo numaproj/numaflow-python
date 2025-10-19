@@ -10,16 +10,25 @@ jobs:
   black:
     name: Black format
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     steps:
       - uses: actions/checkout@v3
       - uses: psf/black@stable
         with:
+          src: packages/pynumaflow/
           options: "--check --verbose --exclude=pynumaflow/proto/"
           version: "~= 23.3"
 
   ruff:
     name: Ruff lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     steps:
       - uses: actions/checkout@v3
       - uses: chartboost/ruff-action@v1
+        with:
+          src: packages/pynumaflow/

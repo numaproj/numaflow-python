@@ -9,6 +9,9 @@ jobs:
     if: github.repository == 'numaproj/numaflow-python'
     runs-on: ubuntu-latest
     environment: production
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     strategy:
       fail-fast: false
       matrix:

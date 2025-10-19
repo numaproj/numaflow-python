@@ -10,6 +10,9 @@ jobs:
   build:
     name: Codecov
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/pynumaflow/
     strategy:
       fail-fast: false
       matrix:
@@ -40,6 +43,6 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        files: ./coverage.xml
+        files: ./packages/pynumaflow/coverage.xml
         fail_ci_if_error: true
         verbose: true

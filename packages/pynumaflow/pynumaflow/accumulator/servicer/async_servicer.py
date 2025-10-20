@@ -57,9 +57,9 @@ class AsyncAccumulatorServicer(accumulator_pb2_grpc.AccumulatorServicer):
         handler: Union[AccumulatorAsyncCallable, _AccumulatorBuilderClass],
     ):
         # The accumulator handler can be a function or a builder class instance.
-        self.__accumulator_handler: Union[
-            AccumulatorAsyncCallable, _AccumulatorBuilderClass
-        ] = handler
+        self.__accumulator_handler: Union[AccumulatorAsyncCallable, _AccumulatorBuilderClass] = (
+            handler
+        )
 
     async def AccumulateFn(
         self,

@@ -1,0 +1,50 @@
+[package]
+name = "pynumaflow-lite"
+version = "0.1.0"
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "pynumaflow_lite"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+numaflow = { git = "https://github.com/numaproj/numaflow-rs.git", branch = "export-accum-items" }
+pyo3 = { version = "0.26.0", features = ["chrono", "experimental-inspect"] }
+tokio = "1.47.1"
+tonic = "0.14.2"
+tokio-stream = "0.1.17"
+tower = "0.5.2"
+hyper-util = "0.1.16"
+prost-types = "0.14.1"
+chrono = "0.4.42"
+pyo3-async-runtimes = { version = "0.26.0", features = ["tokio-runtime"] }
+futures-core = "0.3.31"
+pin-project = "1.1.10"
+
+
+[[bin]]
+name = "test_map"
+path = "tests/bin/map.rs"
+
+[[bin]]
+name = "test_batchmap"
+path = "tests/bin/batchmap.rs"
+
+
+[[bin]]
+name = "test_mapstream"
+path = "tests/bin/mapstream.rs"
+
+
+[[bin]]
+name = "test_reduce"
+path = "tests/bin/reduce.rs"
+
+[[bin]]
+name = "test_session_reduce"
+path = "tests/bin/session_reduce.rs"
+
+[[bin]]
+name = "test_accumulator"
+path = "tests/bin/accumulator.rs"

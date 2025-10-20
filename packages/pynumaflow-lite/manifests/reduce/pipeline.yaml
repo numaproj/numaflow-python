@@ -1,0 +1,36 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: reduce-counter
+spec:
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        generator:
+          rpu: 500
+          duration: 1s
+    - name: reduce
+      partitions: 1 # keyed: false
+      udf:
+        container:
+          image: quay.io/numaio/numaflow/pynumaflow-lite-reduce-counter:v1
+          imagePullPolicy: Never
+        groupBy:
+          window:
+            fixed:
+              length: 10s
+          keyed: false
+          storage:
+            emptyDir: { }
+    - name: sink
+      scale:
+        min: 1
+      sink:
+        log: { }
+  edges:
+    - from: in
+      to: reduce
+    - from: reduce
+      to: sink
+

@@ -3,6 +3,7 @@ from pynumaflow.mapper.multiproc_server import MapMultiprocServer
 from pynumaflow.mapper.sync_server import MapServer
 
 from pynumaflow.mapper._dtypes import Message, Messages, Datum, DROP, Mapper
+from pynumaflow.mapper.metadata import UserMetadata, SystemMetadata
 
 __all__ = [
     "Message",
@@ -13,4 +14,6 @@ __all__ = [
     "MapServer",
     "MapAsyncServer",
     "MapMultiprocServer",
+    "UserMetadata",
+    "SystemMetadata",
 ]

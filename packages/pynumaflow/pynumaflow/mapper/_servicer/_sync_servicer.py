@@ -1,6 +1,6 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from collections.abc import Iterable
+from collections.abc import Iterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.server import exit_on_error
@@ -28,9 +28,9 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
 
     def MapFn(
         self,
-        request_iterator: Iterable[map_pb2.MapRequest],
+        request_iterator: Iterator[map_pb2.MapRequest],
         context: NumaflowServicerContext,
-    ) -> Iterable[map_pb2.MapResponse]:
+    ) -> Iterator[map_pb2.MapResponse]:
         """
         Applies a function to each datum element.
         The pascal case function name comes from the proto map_pb2_grpc.py file.
@@ -79,7 +79,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
     def _process_requests(
         self,
         context: NumaflowServicerContext,
-        request_iterator: Iterable[map_pb2.MapRequest],
+        request_iterator: Iterator[map_pb2.MapRequest],
         result_queue: SyncIterator,
     ):
         try:

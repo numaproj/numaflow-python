@@ -1,12 +1,13 @@
 import asyncio
 import logging
 import threading
+from typing import Iterator
 import unittest
 from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio._server import Server
+from grpc.aio import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import MAX_MESSAGE_SIZE
@@ -16,7 +17,8 @@ from pynumaflow.mapper import (
     Message,
 )
 from pynumaflow.mapper.async_server import MapAsyncServer
-from pynumaflow.proto.mapper import map_pb2_grpc
+from pynumaflow.proto.common import metadata_pb2
+from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from tests.map.utils import get_test_datums
 from tests.testing_utils import (
     mock_terminate_on_stop,
@@ -43,7 +45,7 @@ async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
     )
     val = bytes(msg, encoding="utf-8")
     messages = Messages()
-    messages.append(Message(str.encode(msg), keys=keys))
+    messages.append(Message(str.encode(msg), keys=keys, user_metadata=datum.user_metadata))
     return messages
 
 
@@ -149,13 +151,13 @@ class TestAsyncMapper(unittest.TestCase):
     def test_map(self) -> None:
         stub = map_pb2_grpc.MapStub(_channel)
         request = get_test_datums()
-        generator_response = None
         try:
-            generator_response = stub.MapFn(request_iterator=request_generator(request))
+            generator_response: Iterator[map_pb2.MapResponse] = stub.MapFn(request_iterator=request_generator(request))
         except grpc.RpcError as e:
             logging.error(e)
+            raise
 
-        responses = []
+        responses: list[map_pb2.MapResponse] = []
         # capture the output from the ReadFn generator and assert.
         for r in generator_response:
             responses.append(r)
@@ -165,20 +167,21 @@ class TestAsyncMapper(unittest.TestCase):
 
         self.assertTrue(responses[0].handshake.sot)
 
-        idx = 1
-        while idx < len(responses):
+        for idx, resp in enumerate(responses[1:], 1):
             _id = "test-id-" + str(idx)
-            self.assertEqual(_id, responses[idx].id)
+            self.assertEqual(_id, resp.id)
             self.assertEqual(
                 bytes(
                     "payload:test_mock_message "
                     "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
                     encoding="utf-8",
                 ),
-                responses[idx].results[0].value,
+                resp.results[0].value,
             )
-            self.assertEqual(1, len(responses[idx].results))
-            idx += 1
+            self.assertEqual(1, len(resp.results))
+            self.assertEqual(resp.results[0].metadata.user_metadata['custom_info'], metadata_pb2.KeyValueGroup(key_value={"version": f'{idx}.0.0'.encode('utf-8')}))
+            # System metadata will be empty for user responses
+            self.assertEqual(resp.results[0].metadata.sys_metadata, {})
 
     def test_map_grpc_error_no_handshake(self) -> None:
         stub = map_pb2_grpc.MapStub(_channel)

@@ -1,0 +1,30 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: batchmap-cat
+spec:
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        generator:
+          rpu: 500
+          duration: 1s
+    - name: batchmap
+      partitions: 2
+      scale:
+        min: 1
+      udf:
+        container:
+          image: quay.io/numaio/numaflow/pynumaflow-lite-batchmap-cat:v2
+          imagePullPolicy: Never
+    - name: sink
+      scale:
+        min: 1
+      sink:
+        log: { }
+  edges:
+    - from: in
+      to: batchmap
+    - from: batchmap
+      to: sink

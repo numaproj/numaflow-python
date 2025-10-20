@@ -1,0 +1,39 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: simple-session-reduce
+spec:
+  watermark:
+    idleSource:
+      threshold: 5s
+      incrementBy: 3s
+      stepInterval: 2s
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        http: { }
+    - name: session-counter
+      udf:
+        container:
+          # count element in sessions
+          image: quay.io/numaio/numaflow/pynumaflow-lite-session-reduce-counter:v1
+        groupBy:
+          window:
+            session:
+              timeout: 30s
+          keyed: true
+          storage:
+            persistentVolumeClaim:
+              volumeSize: 1Gi
+              accessMode: ReadWriteOnce
+    - name: out
+      sink:
+        # A simple log printing sink
+        log: { }
+  edges:
+    - from: in
+      to: session-counter
+    - from: session-counter
+      to: out
+

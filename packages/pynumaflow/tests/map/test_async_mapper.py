@@ -152,7 +152,9 @@ class TestAsyncMapper(unittest.TestCase):
         stub = map_pb2_grpc.MapStub(_channel)
         request = get_test_datums()
         try:
-            generator_response: Iterator[map_pb2.MapResponse] = stub.MapFn(request_iterator=request_generator(request))
+            generator_response: Iterator[map_pb2.MapResponse] = stub.MapFn(
+                request_iterator=request_generator(request)
+            )
         except grpc.RpcError as e:
             logging.error(e)
             raise
@@ -179,7 +181,10 @@ class TestAsyncMapper(unittest.TestCase):
                 resp.results[0].value,
             )
             self.assertEqual(1, len(resp.results))
-            self.assertEqual(resp.results[0].metadata.user_metadata['custom_info'], metadata_pb2.KeyValueGroup(key_value={"version": f'{idx}.0.0'.encode('utf-8')}))
+            self.assertEqual(
+                resp.results[0].metadata.user_metadata["custom_info"],
+                metadata_pb2.KeyValueGroup(key_value={"version": f"{idx}.0.0".encode("utf-8")}),
+            )
             # System metadata will be empty for user responses
             self.assertEqual(resp.results[0].metadata.sys_metadata, {})
 

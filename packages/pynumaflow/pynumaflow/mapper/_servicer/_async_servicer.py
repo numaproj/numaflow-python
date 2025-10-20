@@ -115,7 +115,12 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
             datums = []
             for msg in msgs:
                 datums.append(
-                    map_pb2.MapResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags, metadata=msg.user_metadata._to_proto())
+                    map_pb2.MapResponse.Result(
+                        keys=msg.keys,
+                        value=msg.value,
+                        tags=msg.tags,
+                        metadata=msg.user_metadata._to_proto(),
+                    )
                 )
             await result_queue.put(map_pb2.MapResponse(results=datums, id=req.id))
         except BaseException as err:

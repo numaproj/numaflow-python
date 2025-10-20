@@ -31,7 +31,13 @@ class Message:
     _tags: list[str]
     _user_metadata: UserMetadata
 
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None, user_metadata: Optional[UserMetadata] = None):
+    def __init__(
+        self,
+        value: bytes,
+        keys: list[str] = None,
+        tags: list[str] = None,
+        user_metadata: Optional[UserMetadata] = None,
+    ):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -132,7 +138,15 @@ class Datum:
     ...    )
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers", "_user_metadata", "_system_metadata")
+    __slots__ = (
+        "_keys",
+        "_value",
+        "_event_time",
+        "_watermark",
+        "_headers",
+        "_user_metadata",
+        "_system_metadata",
+    )
 
     _keys: list[str]
     _value: bytes

@@ -26,12 +26,14 @@ from pynumaflow.proto.common import metadata_pb2
 	|
 """
 
+
 @dataclass
 class SystemMetadata:
     """
     System metadata is the mapping of group name to key-value pairs for a given group.
     System metadata wraps the system-generated metadata groups per message. It is read-only to UDFs.
     """
+
     _data: dict[str, dict[str, bytes]] = field(default_factory=dict)
 
     def groups(self) -> list[str]:
@@ -58,6 +60,7 @@ class UserMetadata:
     """
     UserMetadata wraps the user-generated metadata groups per message. It is read-write to UDFs.
     """
+
     _data: defaultdict[str, dict[str, bytes]] = field(default_factory=lambda: defaultdict(dict))
 
     def groups(self) -> list[str]:
@@ -110,11 +113,16 @@ class UserMetadata:
 
     def _to_proto(self) -> metadata_pb2.Metadata:
         return metadata_pb2.Metadata(
-            user_metadata={group: metadata_pb2.KeyValueGroup(key_value=value) for group, value in self._data.items()},
+            user_metadata={
+                group: metadata_pb2.KeyValueGroup(key_value=value)
+                for group, value in self._data.items()
+            },
         )
 
 
-def _user_and_system_metadata_from_proto(proto: metadata_pb2.Metadata) -> tuple[UserMetadata, SystemMetadata]:
+def _user_and_system_metadata_from_proto(
+    proto: metadata_pb2.Metadata,
+) -> tuple[UserMetadata, SystemMetadata]:
     """
     Converts the protobuf metadata to the UserMetadata and SystemMetadata objects.
     """

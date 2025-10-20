@@ -85,7 +85,7 @@ def get_test_datums(handshake=True):
                                 "key1": b"value1",
                                 "key2": b"value2",
                             }
-                        )
+                        ),
                     },
                 ),
             ),
@@ -119,7 +119,7 @@ def get_test_datums(handshake=True):
                                 "key1": b"value1",
                                 "key2": b"value2",
                             }
-                        )
+                        ),
                     },
                 ),
             ),
@@ -153,7 +153,7 @@ def get_test_datums(handshake=True):
                                 "key1": b"value1",
                                 "key2": b"value2",
                             }
-                        )
+                        ),
                     },
                 ),
             ),

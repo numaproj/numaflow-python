@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import threading
-from typing import Iterator
+from collections.abc import Iterator
 import unittest
 from unittest.mock import patch
 
@@ -183,7 +183,7 @@ class TestAsyncMapper(unittest.TestCase):
             self.assertEqual(1, len(resp.results))
             self.assertEqual(
                 resp.results[0].metadata.user_metadata["custom_info"],
-                metadata_pb2.KeyValueGroup(key_value={"version": f"{idx}.0.0".encode("utf-8")}),
+                metadata_pb2.KeyValueGroup(key_value={"version": f"{idx}.0.0".encode()}),
             )
             # System metadata will be empty for user responses
             self.assertEqual(resp.results[0].metadata.sys_metadata, {})

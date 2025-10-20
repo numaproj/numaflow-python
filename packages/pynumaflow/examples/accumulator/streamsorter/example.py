@@ -57,7 +57,7 @@ class StreamSorter(Accumulator):
                 left = mid + 1
         self.sorted_buffer.insert(left, datum)
 
-    async def flush_buffer(self, output: NonBlockingIterator, flush_all: bool=False):
+    async def flush_buffer(self, output: NonBlockingIterator, flush_all: bool = False):
         if flush_all:
             _LOGGER.info("Flushing entire sortedBuffer")
         else:

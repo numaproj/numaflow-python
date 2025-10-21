@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.11.0 (2025-10-20)
+
+ * [96f966e](https://github.com/numaproj/numaflow-python/commit/96f966ec7642f7a5827e282d531145682911ac0d) v0.11.0 release (#275)
+ * [792abc5](https://github.com/numaproj/numaflow-python/commit/792abc576d1ca4b22f8e9509230c90947aaf8cbc) feat: Rust SDK based implementation of - accumulator, batchmap, map, mapstream, reduce, session_reduce (#273)
+ * [5571d8c](https://github.com/numaproj/numaflow-python/commit/5571d8cfed38f1d873ff585984ab5c0ad5bd38ff) doc: README for numaflow-python project (#259)
+ * [5f2c89a](https://github.com/numaproj/numaflow-python/commit/5f2c89a62aa8ab82b4c7ffff7d9d428bdf696270) feat: Nack support for Sources (#252)
+ * [c7ca40a](https://github.com/numaproj/numaflow-python/commit/c7ca40abf4d306664c952ec968e5cf1ffcbdfaa6) fix: Function call syntax error (#251)
+
+### Contributors
+
+ * Sreekanth
+ * Vigith Maurice
+
 ## v0.10.1 (2025-09-16)
 
  * [bf00b2e](https://github.com/numaproj/numaflow-python/commit/bf00b2e44dce6edfdfaf78466b9e636eebe961e9) feat: parallelized mapstreamer (#242)

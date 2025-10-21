@@ -102,7 +102,9 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
         result_queue: SyncIterator,
     ):
         try:
-            (user_metadata, system_metadata) = _user_and_system_metadata_from_proto(request.request.metadata)
+            (user_metadata, system_metadata) = _user_and_system_metadata_from_proto(
+                request.request.metadata
+            )
             d = Datum(
                 keys=list(request.request.keys),
                 value=request.request.value,

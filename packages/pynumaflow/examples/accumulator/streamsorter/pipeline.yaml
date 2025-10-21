@@ -5,6 +5,12 @@ metadata:
 spec:
   limits:
     readBatchSize: 1
+  watermark:
+    maxDelay: 5s
+    idleSource:
+      incrementBy: 1s
+      stepInterval: 1s
+      threshold: 5s
   vertices:
     - name: http-one
       scale:

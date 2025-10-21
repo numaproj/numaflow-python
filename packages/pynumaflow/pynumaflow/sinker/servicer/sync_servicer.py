@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterator
 
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF
@@ -26,8 +26,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         self.handler: SinkSyncCallable = handler
 
     def SinkFn(
-        self, request_iterator: Iterable[sink_pb2.SinkRequest], context: NumaflowServicerContext
-    ) -> Iterable[sink_pb2.SinkResponse]:
+        self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
+    ) -> Iterator[sink_pb2.SinkResponse]:
         """
         Applies a sink function to datum elements.
         """

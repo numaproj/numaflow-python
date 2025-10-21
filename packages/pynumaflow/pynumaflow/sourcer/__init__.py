@@ -10,6 +10,7 @@ from pynumaflow.sourcer._dtypes import (
     Sourcer,
     SourceCallable,
 )
+from pynumaflow._metadata import UserMetadata
 from pynumaflow.sourcer.async_server import SourceAsyncServer
 
 __all__ = [
@@ -24,4 +25,5 @@ __all__ = [
     "Sourcer",
     "SourceAsyncServer",
     "SourceCallable",
+    "UserMetadata",
 ]

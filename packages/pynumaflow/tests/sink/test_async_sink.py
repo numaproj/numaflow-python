@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio._server import Server
+from grpc.aio import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -16,6 +16,7 @@ from pynumaflow._constants import (
     FALLBACK_SINK_SOCK_PATH,
     FALLBACK_SINK_SERVER_INFO_FILE_PATH,
 )
+from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.sinker import (
     Datum,
 )
@@ -41,6 +42,10 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
         elif msg.value.decode("utf-8") == "test_mock_fallback_message":
             responses.append(Response.as_fallback(msg.id))
         else:
+            if msg.user_metadata.groups() != ["custom_info"]:
+                raise ValueError("user metadata groups do not match")
+            if msg.system_metadata.groups() != ["numaflow_version_info"]:
+                raise ValueError("system metadata groups do not match")
             responses.append(Response.as_success(msg.id))
     return responses
 
@@ -55,7 +60,21 @@ def start_sink_streaming_request(_id: str, req_type) -> (Datum, tuple):
         value = mock_fallback_message()
 
     request = sink_pb2.SinkRequest.Request(
-        value=value, event_time=event_time_timestamp, watermark=watermark_timestamp, id=_id
+        value=value,
+        event_time=event_time_timestamp,
+        watermark=watermark_timestamp,
+        id=_id,
+        metadata=metadata_pb2.Metadata(
+            previous_vertex="test-source",
+            user_metadata={
+                "custom_info": metadata_pb2.KeyValueGroup(key_value={"version": b"1.0.0"}),
+            },
+            sys_metadata={
+                "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                    key_value={"version": b"1.0.0"}
+                ),
+            },
+        ),
     )
     return sink_pb2.SinkRequest(request=request)
 
@@ -64,10 +83,8 @@ def request_generator(count, req_type="success", session=1, handshake=True):
     if handshake:
         yield sink_pb2.SinkRequest(handshake=sink_pb2.Handshake(sot=True))
 
-    for j in range(session):
-        for i in range(count):
-            yield start_sink_streaming_request(str(i), req_type)
-
+    for _ in range(session):
+        yield from (start_sink_streaming_request(str(i), req_type) for i in range(count))
         yield sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True))
 
 

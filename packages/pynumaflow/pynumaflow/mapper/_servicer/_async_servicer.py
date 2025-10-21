@@ -1,11 +1,12 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
-from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError
+from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError, Message, Messages
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext
@@ -27,9 +28,9 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
 
     async def MapFn(
         self,
-        request_iterator: AsyncIterable[map_pb2.MapRequest],
+        request_iterator: AsyncIterator[map_pb2.MapRequest],
         context: NumaflowServicerContext,
-    ) -> AsyncIterable[map_pb2.MapResponse]:
+    ) -> AsyncIterator[map_pb2.MapResponse]:
         """
         Applies a function to each datum element.
         The pascal case function name comes from the proto map_pb2_grpc.py file.
@@ -70,7 +71,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
 
     async def _process_inputs(
         self,
-        request_iterator: AsyncIterable[map_pb2.MapRequest],
+        request_iterator: AsyncIterator[map_pb2.MapRequest],
         result_queue: NonBlockingIterator,
     ):
         """
@@ -99,6 +100,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
         """
         Invokes the user defined function.
         """
+        user_metadata, system_metadata = _user_and_system_metadata_from_proto(req.request.metadata)
         try:
             datum = Datum(
                 keys=list(req.request.keys),
@@ -106,12 +108,19 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                 event_time=req.request.event_time.ToDatetime(),
                 watermark=req.request.watermark.ToDatetime(),
                 headers=dict(req.request.headers),
+                user_metadata=user_metadata,
+                system_metadata=system_metadata,
             )
-            msgs = await self.__map_handler(list(req.request.keys), datum)
+            msgs: Messages[Message] = await self.__map_handler(list(req.request.keys), datum)
             datums = []
             for msg in msgs:
                 datums.append(
-                    map_pb2.MapResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
+                    map_pb2.MapResponse.Result(
+                        keys=msg.keys,
+                        value=msg.value,
+                        tags=msg.tags,
+                        metadata=msg.user_metadata._to_proto(),
+                    )
                 )
             await result_queue.put(map_pb2.MapResponse(results=datums, id=req.id))
         except BaseException as err:

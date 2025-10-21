@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/empty.proto";
+import "pynumaflow/proto/common/metadata.proto";
 
 package sideinput.v1;
 
@@ -30,6 +31,8 @@ message SideInputResponse {
   // True if value should not be broadcasted
   // False if value should be broadcasted
   bool no_broadcast = 2;
+  // metadata of the message
+  common.Metadata metadata = 3;
 }
 
 /**

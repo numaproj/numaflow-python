@@ -6,6 +6,7 @@ from typing import TypeVar, Callable, Union, Optional
 from warnings import warn
 
 from pynumaflow._constants import DROP
+from pynumaflow._metadata import UserMetadata, SystemMetadata
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -20,21 +21,30 @@ class Message:
         value: data in bytes
         keys: []string keys for vertex (optional)
         tags: []string tags for conditional forwarding (optional)
+        user_metadata: metadata for the message (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags")
+    __slots__ = ("_value", "_keys", "_tags", "_user_metadata")
 
     _value: bytes
     _keys: list[str]
     _tags: list[str]
+    _user_metadata: UserMetadata
 
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
+    def __init__(
+        self,
+        value: bytes,
+        keys: list[str] = None,
+        tags: list[str] = None,
+        user_metadata: Optional[UserMetadata] = None,
+    ):
         """
         Creates a Message object to send value to a vertex.
         """
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""
+        self._user_metadata = user_metadata or UserMetadata()
 
     # returns the Message Object which will be dropped
     @classmethod
@@ -52,6 +62,10 @@ class Message:
     @property
     def tags(self) -> list[str]:
         return self._tags
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        return self._user_metadata
 
 
 class Messages(Sequence[M]):
@@ -84,10 +98,10 @@ class Messages(Sequence[M]):
             raise TypeError("Slicing is not supported for Messages")
         return self._messages[index]
 
-    def append(self, message: Message) -> None:
+    def append(self, message: M) -> None:
         self._messages.append(message)
 
-    def items(self) -> list[Message]:
+    def items(self) -> Sequence[M]:
         warn(
             "Using items is deprecated and will be removed in v0.5. "
             "Iterate or index the Messages object instead.",
@@ -124,13 +138,23 @@ class Datum:
     ...    )
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")
+    __slots__ = (
+        "_keys",
+        "_value",
+        "_event_time",
+        "_watermark",
+        "_headers",
+        "_user_metadata",
+        "_system_metadata",
+    )
 
     _keys: list[str]
     _value: bytes
     _event_time: datetime
     _watermark: datetime
     _headers: dict[str, str]
+    _user_metadata: UserMetadata
+    _system_metadata: SystemMetadata
 
     def __init__(
         self,
@@ -139,6 +163,8 @@ class Datum:
         event_time: datetime,
         watermark: datetime,
         headers: Optional[dict[str, str]] = None,
+        user_metadata: Optional[UserMetadata] = None,
+        system_metadata: Optional[SystemMetadata] = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -149,6 +175,8 @@ class Datum:
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
         self._headers = headers or {}
+        self._user_metadata = user_metadata or UserMetadata()
+        self._system_metadata = system_metadata or SystemMetadata()
 
     @property
     def keys(self) -> list[str]:
@@ -174,6 +202,16 @@ class Datum:
     def headers(self) -> dict[str, str]:
         """Returns the headers of the event."""
         return self._headers.copy()
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        """Returns the user metadata of the event."""
+        return self._user_metadata
+
+    @property
+    def system_metadata(self) -> SystemMetadata:
+        """Returns the system metadata of the event."""
+        return self._system_metadata
 
 
 class Mapper(metaclass=ABCMeta):

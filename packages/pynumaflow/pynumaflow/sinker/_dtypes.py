@@ -6,6 +6,8 @@ from collections.abc import AsyncIterable, Awaitable
 from collections.abc import Sequence, Iterator
 from warnings import warn
 
+from pynumaflow._metadata import SystemMetadata, UserMetadata
+
 R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
 
@@ -120,7 +122,16 @@ class Datum:
     ...    )
     """
 
-    __slots__ = ("_keys", "_id", "_value", "_event_time", "_watermark", "_headers")
+    __slots__ = (
+        "_keys",
+        "_id",
+        "_value",
+        "_event_time",
+        "_watermark",
+        "_headers",
+        "_user_metadata",
+        "_system_metadata",
+    )
 
     _keys: list[str]
     _id: str
@@ -128,6 +139,8 @@ class Datum:
     _event_time: datetime
     _watermark: datetime
     _headers: dict[str, str]
+    _user_metadata: UserMetadata
+    _system_metadata: SystemMetadata
 
     def __init__(
         self,
@@ -137,6 +150,8 @@ class Datum:
         event_time: datetime,
         watermark: datetime,
         headers: Optional[dict[str, str]] = None,
+        user_metadata: Optional[UserMetadata] = None,
+        system_metadata: Optional[SystemMetadata] = None,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""
@@ -148,6 +163,8 @@ class Datum:
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
         self._headers = headers or {}
+        self._user_metadata = user_metadata or UserMetadata()
+        self._system_metadata = system_metadata or SystemMetadata()
 
     def __str__(self):
         value_string = self._value.decode("utf-8")
@@ -191,6 +208,16 @@ class Datum:
     def headers(self) -> dict[str, str]:
         """Returns the headers of the event."""
         return self._headers.copy()
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        """Returns the user metadata of the event."""
+        return self._user_metadata
+
+    @property
+    def system_metadata(self) -> SystemMetadata:
+        """Returns the system metadata of the event."""
+        return self._system_metadata
 
 
 class Sinker(metaclass=ABCMeta):

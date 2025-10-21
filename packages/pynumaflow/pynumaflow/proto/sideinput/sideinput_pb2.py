@@ -23,19 +23,20 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
+from pynumaflow.proto.common import metadata_pb2 as pynumaflow_dot_proto_dot_common_dot_metadata__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*pynumaflow/proto/sideinput/sideinput.proto\x12\x0csideinput.v1\x1a\x1bgoogle/protobuf/empty.proto\"8\n\x11SideInputResponse\x12\r\n\x05value\x18\x01 \x01(\x0c\x12\x14\n\x0cno_broadcast\x18\x02 \x01(\x08\"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\x99\x01\n\tSideInput\x12L\n\x11RetrieveSideInput\x12\x16.google.protobuf.Empty\x1a\x1f.sideinput.v1.SideInputResponse\x12>\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x1b.sideinput.v1.ReadyResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*pynumaflow/proto/sideinput/sideinput.proto\x12\x0csideinput.v1\x1a\x1bgoogle/protobuf/empty.proto\x1a&pynumaflow/proto/common/metadata.proto\"\\\n\x11SideInputResponse\x12\r\n\x05value\x18\x01 \x01(\x0c\x12\x14\n\x0cno_broadcast\x18\x02 \x01(\x08\x12\"\n\x08metadata\x18\x03 \x01(\x0b\x32\x10.common.Metadata\"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\x32\x99\x01\n\tSideInput\x12L\n\x11RetrieveSideInput\x12\x16.google.protobuf.Empty\x1a\x1f.sideinput.v1.SideInputResponse\x12>\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x1b.sideinput.v1.ReadyResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'pynumaflow.proto.sideinput.sideinput_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_SIDEINPUTRESPONSE']._serialized_start=89
-  _globals['_SIDEINPUTRESPONSE']._serialized_end=145
-  _globals['_READYRESPONSE']._serialized_start=147
-  _globals['_READYRESPONSE']._serialized_end=177
-  _globals['_SIDEINPUT']._serialized_start=180
-  _globals['_SIDEINPUT']._serialized_end=333
+  _globals['_SIDEINPUTRESPONSE']._serialized_start=129
+  _globals['_SIDEINPUTRESPONSE']._serialized_end=221
+  _globals['_READYRESPONSE']._serialized_start=223
+  _globals['_READYRESPONSE']._serialized_end=253
+  _globals['_SIDEINPUT']._serialized_start=256
+  _globals['_SIDEINPUT']._serialized_end=409
 # @@protoc_insertion_point(module_scope)

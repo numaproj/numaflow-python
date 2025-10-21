@@ -26,10 +26,11 @@ setup:
 	poetry install --with dev --no-root
 
 proto:
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sinker=pynumaflow/proto/sinker --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sinker/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/mapper=pynumaflow/proto/mapper --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/mapper/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/reducer=pynumaflow/proto/reducer --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/reducer/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcetransformer=pynumaflow/proto/sourcetransformer --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcetransformer/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sideinput=pynumaflow/proto/sideinput --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sideinput/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcer=pynumaflow/proto/sourcer --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcer/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/accumulator=pynumaflow/proto/accumulator --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/accumulator/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/common/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sinker=pynumaflow/proto/sinker -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sinker/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/mapper=pynumaflow/proto/mapper -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/mapper/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/reducer=pynumaflow/proto/reducer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/reducer/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcetransformer=pynumaflow/proto/sourcetransformer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcetransformer/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sideinput=pynumaflow/proto/sideinput -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sideinput/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcer=pynumaflow/proto/sourcer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcer/*.proto
+	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/accumulator=pynumaflow/proto/accumulator -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/accumulator/*.proto

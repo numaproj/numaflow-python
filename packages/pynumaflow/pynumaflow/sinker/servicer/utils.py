@@ -1,3 +1,4 @@
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker._dtypes import Response, Datum, Responses
 
@@ -47,6 +48,7 @@ def datum_from_sink_req(d: sink_pb2.SinkRequest) -> Datum:
     Returns:
     Datum: A Datum object populated with the data from the input SinkRequest object.
     """
+    user_metadata, system_metadata = _user_and_system_metadata_from_proto(d.request.metadata)
     datum = Datum(
         keys=list(d.request.keys),
         sink_msg_id=d.request.id,
@@ -54,6 +56,8 @@ def datum_from_sink_req(d: sink_pb2.SinkRequest) -> Datum:
         event_time=d.request.event_time.ToDatetime(),
         watermark=d.request.watermark.ToDatetime(),
         headers=dict(d.request.headers),
+        user_metadata=user_metadata,
+        system_metadata=system_metadata,
     )
     return datum
 

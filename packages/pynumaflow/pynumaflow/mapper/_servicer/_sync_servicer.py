@@ -4,6 +4,7 @@ from collections.abc import Iterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.server import exit_on_error
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 
 from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapper._dtypes import MapSyncCallable, Datum, MapError
@@ -101,12 +102,15 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
         result_queue: SyncIterator,
     ):
         try:
+            (user_metadata, system_metadata) = _user_and_system_metadata_from_proto(request.request.metadata)
             d = Datum(
                 keys=list(request.request.keys),
                 value=request.request.value,
                 event_time=request.request.event_time.ToDatetime(),
                 watermark=request.request.watermark.ToDatetime(),
                 headers=dict(request.request.headers),
+                user_metadata=user_metadata,
+                system_metadata=system_metadata,
             )
 
             responses = self.__map_handler(list(request.request.keys), d)
@@ -117,6 +121,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
                         keys=list(resp.keys),
                         value=resp.value,
                         tags=resp.tags,
+                        metadata=resp.user_metadata._to_proto(),
                     )
                 )
             result_queue.put(map_pb2.MapResponse(results=results, id=request.id))

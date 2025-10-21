@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Callable, Optional
 
+from pynumaflow._metadata import UserMetadata
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 
@@ -56,15 +57,17 @@ class Message:
         event_time: event time of the message, usually extracted from the payload.
         keys: []string keys for vertex (optional)
         headers: dict of headers for the message (optional)
+        user_metadata: metadata for the message (optional)
     """
 
-    __slots__ = ("_payload", "_offset", "_event_time", "_keys", "_headers")
+    __slots__ = ("_payload", "_offset", "_event_time", "_keys", "_headers", "_user_metadata")
 
     _payload: bytes
     _offset: Offset
     _event_time: datetime
     _keys: list[str]
     _headers: dict[str, str]
+    _user_metadata: UserMetadata
 
     def __init__(
         self,
@@ -73,6 +76,7 @@ class Message:
         event_time: datetime,
         keys: list[str] = None,
         headers: Optional[dict[str, str]] = None,
+        user_metadata: Optional[UserMetadata] = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -82,6 +86,7 @@ class Message:
         self._event_time = event_time
         self._keys = keys or []
         self._headers = headers or {}
+        self._user_metadata = user_metadata or UserMetadata()
 
     @property
     def payload(self) -> bytes:
@@ -102,6 +107,11 @@ class Message:
     @property
     def headers(self) -> dict[str, str]:
         return self._headers
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        """Returns the user metadata of the message."""
+        return self._user_metadata
 
 
 @dataclass(init=False)

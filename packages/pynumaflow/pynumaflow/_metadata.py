@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from collections import defaultdict
+from typing import Optional
 from pynumaflow.proto.common import metadata_pb2
 
 """
@@ -46,13 +46,13 @@ class SystemMetadata:
         """
         Returns the list of keys for a given group.
         """
-        return list(self._data[group].keys())
+        return list(self._data.get(group, {}).keys())
 
-    def value(self, group: str, key: str) -> bytes:
+    def value(self, group: str, key: str) -> Optional[bytes]:
         """
         Returns the value for a given group and key.
         """
-        return self._data[group][key]
+        return self._data.get(group, {}).get(key)
 
 
 @dataclass
@@ -61,7 +61,7 @@ class UserMetadata:
     UserMetadata wraps the user-generated metadata groups per message. It is read-write to UDFs.
     """
 
-    _data: defaultdict[str, dict[str, bytes]] = field(default_factory=lambda: defaultdict(dict))
+    _data: dict[str, dict[str, bytes]] = field(default_factory=dict)
 
     def groups(self) -> list[str]:
         """
@@ -69,23 +69,61 @@ class UserMetadata:
         """
         return list(self._data.keys())
 
-    def keys(self, group: str) -> list[str]:
+    def keys(self, group: str) -> Optional[list[str]]:
         """
         Returns the list of keys for a given group.
         """
-        return list(self._data[group].keys())
+        keys = self._data.get(group)
+        if keys is None:
+            return None
+        return list(keys.keys())
 
-    def value(self, group: str, key: str) -> bytes:
+    def __contains__(self, group: str) -> bool:
         """
-        Returns the value for a given group and key.
+        Returns True if the group exists.
         """
-        return self._data[group][key]
+        return group in self._data
+
+    def __getitem__(self, group: str) -> dict[str, bytes]:
+        """
+        Returns the data for a given group.
+        Raises KeyError if the group does not exist.
+        """
+        return self._data[group]
+
+    def __setitem__(self, group: str, data: dict[str, bytes]):
+        """
+        Sets the data for a given group.
+        """
+        self._data[group] = data
+
+    def __delitem__(self, group: str):
+        """
+        Removes the group and all its keys and values.
+        Raises KeyError if the group does not exist.
+        """
+        del self._data[group]
+
+    def __len__(self) -> int:
+        """
+        Returns the number of groups.
+        """
+        return len(self._data)
+
+    def value(self, group: str, key: str) -> Optional[bytes]:
+        """
+        Returns the value for a given group and key. If the group or key does not exist, returns None.
+        """
+        value = self._data.get(group)
+        if value is None:
+            return None
+        return value.get(key)
 
     def add(self, group: str, key: str, value: bytes):
         """
         Adds the value for a given group and key.
         """
-        self._data[group][key] = value
+        self._data.setdefault(group, {})[key] = value
 
     def set_group(self, group: str, data: dict[str, bytes]):
         """
@@ -93,17 +131,25 @@ class UserMetadata:
         """
         self._data[group] = data
 
-    def remove(self, group: str, key: str):
+    def remove(self, group: str, key: str) -> Optional[bytes]:
         """
-        Removes the key and its value for a given group.
+        Removes the key and its value for a given group and returns the value. If this key is the only key in the group, the group will be removed.
+        Returns None if the group or key does not exist.
         """
-        del self._data[group][key]
+        group_data = self._data.pop(group, None)
+        if group_data is None:
+            return None
+        value = group_data.pop(key, None)
+        if group_data:
+            self._data[group] = group_data
+        return value
 
-    def remove_group(self, group: str):
+    def remove_group(self, group: str) -> Optional[dict[str, bytes]]:
         """
-        Removes the group and all its keys and values.
+        Removes the group and all its keys and values and returns the data.
+        Returns None if the group does not exist.
         """
-        del self._data[group]
+        return self._data.pop(group, None)
 
     def clear(self):
         """

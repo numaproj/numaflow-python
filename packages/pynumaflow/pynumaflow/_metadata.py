@@ -112,7 +112,8 @@ class UserMetadata:
 
     def value(self, group: str, key: str) -> Optional[bytes]:
         """
-        Returns the value for a given group and key. If the group or key does not exist, returns None.
+        Returns the value for a given group and key.
+        If the group or key does not exist, returns None.
         """
         value = self._data.get(group)
         if value is None:
@@ -133,7 +134,8 @@ class UserMetadata:
 
     def remove(self, group: str, key: str) -> Optional[bytes]:
         """
-        Removes the key and its value for a given group and returns the value. If this key is the only key in the group, the group will be removed.
+        Removes the key and its value for a given group and returns the value.
+        If this key is the only key in the group, the group will be removed.
         Returns None if the group or key does not exist.
         """
         group_data = self._data.pop(group, None)

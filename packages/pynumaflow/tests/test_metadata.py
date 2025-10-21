@@ -14,10 +14,9 @@ class TestSystemMetadata:
 
     def test_system_metadata_groups(self):
         """Test groups() method"""
-        metadata = SystemMetadata(_data={
-            "group1": {"key1": b"value1"},
-            "group2": {"key2": b"value2"}
-        })
+        metadata = SystemMetadata(
+            _data={"group1": {"key1": b"value1"}, "group2": {"key2": b"value2"}}
+        )
         groups = metadata.groups()
         assert len(groups) == 2
         assert "group1" in groups
@@ -25,9 +24,7 @@ class TestSystemMetadata:
 
     def test_system_metadata_keys_existing_group(self):
         """Test keys() method with existing group"""
-        metadata = SystemMetadata(_data={
-            "group1": {"key1": b"value1", "key2": b"value2"}
-        })
+        metadata = SystemMetadata(_data={"group1": {"key1": b"value1", "key2": b"value2"}})
         keys = metadata.keys("group1")
         assert len(keys) == 2
         assert "key1" in keys
@@ -41,9 +38,7 @@ class TestSystemMetadata:
 
     def test_system_metadata_value_existing(self):
         """Test value() method with existing group and key"""
-        metadata = SystemMetadata(_data={
-            "group1": {"key1": b"value1"}
-        })
+        metadata = SystemMetadata(_data={"group1": {"key1": b"value1"}})
         assert metadata.value("group1", "key1") == b"value1"
 
     def test_system_metadata_value_nonexistent_group(self):

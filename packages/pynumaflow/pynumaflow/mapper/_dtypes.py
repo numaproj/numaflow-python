@@ -6,7 +6,7 @@ from typing import TypeVar, Callable, Union, Optional
 from warnings import warn
 
 from pynumaflow._constants import DROP
-from .metadata import UserMetadata, SystemMetadata
+from pynumaflow._metadata import UserMetadata, SystemMetadata
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")

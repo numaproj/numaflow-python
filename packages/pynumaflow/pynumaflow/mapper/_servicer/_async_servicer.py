@@ -6,7 +6,7 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError, Message, Messages
-from pynumaflow.mapper.metadata import _user_and_system_metadata_from_proto
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.server import handle_async_error
 from pynumaflow.types import NumaflowServicerContext

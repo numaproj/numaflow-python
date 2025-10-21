@@ -45,6 +45,8 @@ async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
     )
     val = bytes(msg, encoding="utf-8")
     messages = Messages()
+    if datum.system_metadata.value("numaflow_version_info", "version") != b"1.0.0":
+        raise ValueError("System metadata version mismatch")
     messages.append(Message(str.encode(msg), keys=keys, user_metadata=datum.user_metadata))
     return messages
 

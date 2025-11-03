@@ -458,9 +458,10 @@ class TestAsyncAccumulator(unittest.TestCase):
         server = AccumulatorAsyncServer(ExampleClass)
 
         # Mock aiorun.run to prevent actual server startup
-        with patch("pynumaflow.accumulator.async_server.aiorun") as mock_aiorun, patch(
-            "pynumaflow.accumulator.async_server._LOGGER"
-        ) as mock_logger:
+        with (
+            patch("pynumaflow.accumulator.async_server.aiorun") as mock_aiorun,
+            patch("pynumaflow.accumulator.async_server._LOGGER") as mock_logger,
+        ):
             server.start()
 
             # Verify logging was called

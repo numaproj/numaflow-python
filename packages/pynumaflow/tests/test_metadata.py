@@ -205,20 +205,6 @@ class TestUserMetadata:
         assert metadata.value("group1", "key1") == b"new_value"
         assert len(metadata["group1"]) == 1
 
-    def test_user_metadata_set_group(self):
-        """Test set_group() method"""
-        metadata = UserMetadata()
-        metadata.set_group("group1", {"key1": b"value1", "key2": b"value2"})
-        assert metadata["group1"] == {"key1": b"value1", "key2": b"value2"}
-
-    def test_user_metadata_set_group_overwrites(self):
-        """Test set_group() overwrites existing group"""
-        metadata = UserMetadata()
-        metadata.set_group("group1", {"key1": b"value1"})
-        metadata.set_group("group1", {"key2": b"value2"})
-        assert metadata["group1"] == {"key2": b"value2"}
-        assert "key1" not in metadata["group1"]
-
     def test_user_metadata_remove_existing_key(self):
         """Test remove() method with existing key"""
         metadata = UserMetadata()

@@ -124,12 +124,6 @@ class UserMetadata:
         """
         self._data.setdefault(group, {})[key] = value
 
-    def set_group(self, group: str, data: dict[str, bytes]):
-        """
-        Sets the data for a given group.
-        """
-        self._data[group] = data
-
     def remove_key(self, group: str, key: str) -> Optional[bytes]:
         """
         Removes the key and its value for a given group and returns the value.

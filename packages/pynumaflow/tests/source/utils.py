@@ -29,9 +29,9 @@ class AsyncSource(Sourcer):
         offset = mock_offset()
         event_time = mock_event_time()
         metadata = UserMetadata()
-        metadata.add("custom_info", "custom_key", b"custom_value")
-        metadata.add("custom_info", "custom_key2", b"custom_value2")
-        metadata.add("test_info", "test_key", b"test_value")
+        metadata.add_key("custom_info", "custom_key", b"custom_value")
+        metadata.add_key("custom_info", "custom_key2", b"custom_value2")
+        metadata.add_key("test_info", "test_key", b"test_value")
         for i in range(10):
             await output.put(
                 Message(

@@ -69,13 +69,11 @@ class UserMetadata:
         """
         return list(self._data.keys())
 
-    def keys(self, group: str) -> Optional[list[str]]:
+    def keys(self, group: str) -> list[str]:
         """
         Returns the list of keys for a given group.
         """
-        keys = self._data.get(group)
-        if keys is None:
-            return None
+        keys = self._data.get(group) or {}
         return list(keys.keys())
 
     def __contains__(self, group: str) -> bool:
@@ -120,7 +118,7 @@ class UserMetadata:
             return None
         return value.get(key)
 
-    def add(self, group: str, key: str, value: bytes):
+    def add_key(self, group: str, key: str, value: bytes):
         """
         Adds the value for a given group and key.
         """
@@ -132,7 +130,7 @@ class UserMetadata:
         """
         self._data[group] = data
 
-    def remove(self, group: str, key: str) -> Optional[bytes]:
+    def remove_key(self, group: str, key: str) -> Optional[bytes]:
         """
         Removes the key and its value for a given group and returns the value.
         If this key is the only key in the group, the group will be removed.

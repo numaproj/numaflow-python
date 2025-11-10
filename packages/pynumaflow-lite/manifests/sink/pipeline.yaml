@@ -1,0 +1,25 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: simple-sink-log
+spec:
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        generator:
+          rpu: 100
+          duration: 1s
+          msgSize: 8
+    - name: log-sink
+      scale:
+        min: 1
+      sink:
+        udsink:
+          container:
+            image: quay.io/numaio/numaflow/pynumaflow-lite-sink-log:v1
+            imagePullPolicy: Never
+  edges:
+    - from: in
+      to: log-sink
+

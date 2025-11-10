@@ -6,6 +6,7 @@ pub mod pyiterables;
 pub mod pyrs;
 pub mod reduce;
 pub mod session_reduce;
+pub mod sink;
 
 use pyo3::prelude::*;
 
@@ -51,6 +52,13 @@ fn accumulator(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+/// Submodule: pynumaflow_lite.sinker
+#[pymodule]
+fn sinker(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
+    crate::sink::populate_py_module(m)?;
+    Ok(())
+}
+
 /// Top-level Python module `pynumaflow_lite` with submodules like `mapper`, `batchmapper`, and `mapstreamer`.
 #[pymodule]
 fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
@@ -61,6 +69,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_wrapped(pyo3::wrap_pymodule!(reducer))?;
     m.add_wrapped(pyo3::wrap_pymodule!(session_reducer))?;
     m.add_wrapped(pyo3::wrap_pymodule!(accumulator))?;
+    m.add_wrapped(pyo3::wrap_pymodule!(sinker))?;
 
     // Ensure it's importable as `pynumaflow_lite.mapper` as well as attribute access
     let binding = m.getattr("mapper")?;
@@ -111,6 +120,15 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     let binding = m.getattr("accumulator")?;
     let sub = binding.downcast::<PyModule>()?;
     let fullname = "pynumaflow_lite.accumulator";
+    sub.setattr("__name__", fullname)?;
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item(fullname, &sub)?;
+
+    // Ensure it's importable as `pynumaflow_lite.sinker` as well
+    let binding = m.getattr("sinker")?;
+    let sub = binding.downcast::<PyModule>()?;
+    let fullname = "pynumaflow_lite.sinker";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
         .getattr("modules")?

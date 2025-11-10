@@ -9,7 +9,7 @@ name = "pynumaflow_lite"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-numaflow = { git = "https://github.com/numaproj/numaflow-rs.git", branch = "export-accum-items" }
+numaflow = { git = "https://github.com/numaproj/numaflow-rs.git", rev = "fde3deafea634abbc347032ff409d33d4e1514b1" }
 pyo3 = { version = "0.26.0", features = ["chrono", "experimental-inspect"] }
 tokio = "1.47.1"
 tonic = "0.14.2"
@@ -22,6 +22,7 @@ pyo3-async-runtimes = { version = "0.26.0", features = ["tokio-runtime"] }
 futures-core = "0.3.31"
 pin-project = "1.1.10"
 
+## Binaries for testing
 
 [[bin]]
 name = "test_map"
@@ -31,11 +32,9 @@ path = "tests/bin/map.rs"
 name = "test_batchmap"
 path = "tests/bin/batchmap.rs"
 
-
 [[bin]]
 name = "test_mapstream"
 path = "tests/bin/mapstream.rs"
-
 
 [[bin]]
 name = "test_reduce"
@@ -48,3 +47,7 @@ path = "tests/bin/session_reduce.rs"
 [[bin]]
 name = "test_accumulator"
 path = "tests/bin/accumulator.rs"
+
+[[bin]]
+name = "test_sink"
+path = "tests/bin/sink.rs"

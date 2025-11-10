@@ -15,6 +15,7 @@ from pynumaflow._constants import (
     FALLBACK_SINK_SOCK_PATH,
     FALLBACK_SINK_SERVER_INFO_FILE_PATH,
 )
+from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker import Responses, Datum, Response, SinkServer
 from tests.testing_utils import mock_terminate_on_stop
@@ -32,6 +33,10 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
         elif "fallback" in msg.value.decode("utf-8"):
             results.append(Response.as_fallback(msg.id))
         else:
+            if msg.user_metadata.groups() != ["custom_info"]:
+                raise ValueError("user metadata groups do not match")
+            if msg.system_metadata.groups() != ["numaflow_version_info"]:
+                raise ValueError("system metadata groups do not match")
             results.append(Response.as_success(msg.id))
     return results
 
@@ -68,6 +73,16 @@ def mock_watermark():
 # We are mocking the terminate function from the psutil to not exit the program during testing
 @patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestServer(unittest.TestCase):
+    metadata = metadata_pb2.Metadata(
+        previous_vertex="test-source",
+        user_metadata={
+            "custom_info": metadata_pb2.KeyValueGroup(key_value={"version": b"1.0.0"}),
+        },
+        sys_metadata={
+            "numaflow_version_info": metadata_pb2.KeyValueGroup(key_value={"version": b"1.0.0"}),
+        },
+    )
+
     def setUp(self) -> None:
         server = SinkServer(sinker_instance=udsink_handler)
         my_servicer = server.servicer
@@ -147,6 +162,7 @@ class TestServer(unittest.TestCase):
                     value=mock_message(),
                     event_time=event_time_timestamp,
                     watermark=watermark_timestamp,
+                    metadata=self.metadata,
                 )
             ),
             sink_pb2.SinkRequest(
@@ -155,6 +171,7 @@ class TestServer(unittest.TestCase):
                     value=mock_err_message(),
                     event_time=event_time_timestamp,
                     watermark=watermark_timestamp,
+                    metadata=self.metadata,
                 )
             ),
             sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
@@ -201,6 +218,7 @@ class TestServer(unittest.TestCase):
                     value=mock_message(),
                     event_time=event_time_timestamp,
                     watermark=watermark_timestamp,
+                    metadata=self.metadata,
                 )
             ),
             sink_pb2.SinkRequest(
@@ -209,6 +227,7 @@ class TestServer(unittest.TestCase):
                     value=mock_err_message(),
                     event_time=event_time_timestamp,
                     watermark=watermark_timestamp,
+                    metadata=self.metadata,
                 )
             ),
             sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),

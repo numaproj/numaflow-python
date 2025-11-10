@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -33,7 +33,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
     async def SinkFn(
         self,
-        request_iterator: AsyncIterable[sink_pb2.SinkRequest],
+        request_iterator: AsyncIterator[sink_pb2.SinkRequest],
         context: NumaflowServicerContext,
     ) -> sink_pb2.SinkResponse:
         """
@@ -89,7 +89,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             return
 
     async def __invoke_sink(
-        self, request_queue: AsyncIterable[Datum], context: NumaflowServicerContext
+        self, request_queue: AsyncIterator[Datum], context: NumaflowServicerContext
     ):
         try:
             # invoke the user function with the request queue

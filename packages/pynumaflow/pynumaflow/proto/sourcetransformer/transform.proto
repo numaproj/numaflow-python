@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
+import "pynumaflow/proto/common/metadata.proto";
 
 package sourcetransformer.v1;
 
@@ -35,6 +36,8 @@ message SourceTransformRequest {
     map<string, string> headers = 5;
     // This ID is used to uniquely identify a transform request
     string id = 6;
+    // metadata of the message
+    common.Metadata metadata = 7;
   }
   Request request = 1;
   optional Handshake handshake = 2;
@@ -49,6 +52,8 @@ message SourceTransformResponse {
     bytes value = 2;
     google.protobuf.Timestamp event_time = 3;
     repeated string tags = 4;
+    // metadata of the message
+    common.Metadata metadata = 5;
   }
   repeated Result results = 1;
   // This ID is used to refer the responses to the request it corresponds to.

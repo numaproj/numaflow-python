@@ -2,6 +2,7 @@ import datetime
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from pynumaflow.proto.common import metadata_pb2 as _metadata_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -29,7 +30,7 @@ class ReduceRequest(_message.Message):
         windows: _containers.RepeatedCompositeFieldContainer[Window]
         def __init__(self, event: _Optional[_Union[ReduceRequest.WindowOperation.Event, str]] = ..., windows: _Optional[_Iterable[_Union[Window, _Mapping]]] = ...) -> None: ...
     class Payload(_message.Message):
-        __slots__ = ("keys", "value", "event_time", "watermark", "headers")
+        __slots__ = ("keys", "value", "event_time", "watermark", "headers", "metadata")
         class HeadersEntry(_message.Message):
             __slots__ = ("key", "value")
             KEY_FIELD_NUMBER: _ClassVar[int]
@@ -42,12 +43,14 @@ class ReduceRequest(_message.Message):
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
         WATERMARK_FIELD_NUMBER: _ClassVar[int]
         HEADERS_FIELD_NUMBER: _ClassVar[int]
+        METADATA_FIELD_NUMBER: _ClassVar[int]
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         event_time: _timestamp_pb2.Timestamp
         watermark: _timestamp_pb2.Timestamp
         headers: _containers.ScalarMap[str, str]
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., headers: _Optional[_Mapping[str, str]] = ...) -> None: ...
+        metadata: _metadata_pb2.Metadata
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., headers: _Optional[_Mapping[str, str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
     OPERATION_FIELD_NUMBER: _ClassVar[int]
     payload: ReduceRequest.Payload
@@ -67,14 +70,16 @@ class Window(_message.Message):
 class ReduceResponse(_message.Message):
     __slots__ = ("result", "window", "EOF")
     class Result(_message.Message):
-        __slots__ = ("keys", "value", "tags")
+        __slots__ = ("keys", "value", "tags", "metadata")
         KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         TAGS_FIELD_NUMBER: _ClassVar[int]
+        METADATA_FIELD_NUMBER: _ClassVar[int]
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         tags: _containers.RepeatedScalarFieldContainer[str]
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ...) -> None: ...
+        metadata: _metadata_pb2.Metadata
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
     RESULT_FIELD_NUMBER: _ClassVar[int]
     WINDOW_FIELD_NUMBER: _ClassVar[int]
     EOF_FIELD_NUMBER: _ClassVar[int]

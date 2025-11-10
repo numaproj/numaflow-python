@@ -1,13 +1,15 @@
 import asyncio
+from collections.abc import Iterator
 import logging
 import threading
 import unittest
 
 import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio._server import Server
+from grpc.aio import Server
 
 from pynumaflow import setup_logging
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from pynumaflow.sourcer import (
     SourceAsyncServer,
@@ -100,13 +102,13 @@ class TestAsyncSourcer(unittest.TestCase):
             stub = source_pb2_grpc.SourceStub(channel)
 
             request = read_req_source_fn()
-            generator_response = None
             try:
-                generator_response = stub.ReadFn(
+                generator_response: Iterator[source_pb2.ReadResponse] = stub.ReadFn(
                     request_iterator=request_generator(1, request, "read")
                 )
             except grpc.RpcError as e:
                 logging.error(e)
+                raise
 
             counter = 0
             first = True
@@ -138,6 +140,20 @@ class TestAsyncSourcer(unittest.TestCase):
                     mock_offset().partition_id,
                     r.result.offset.partition_id,
                 )
+
+                print(r.result)
+                (user_metadata, sys_metadata) = _user_and_system_metadata_from_proto(
+                    r.result.metadata
+                )
+                print(user_metadata)
+
+                self.assertCountEqual(user_metadata.groups(), ["custom_info", "test_info"])
+                self.assertCountEqual(
+                    user_metadata.keys("custom_info"), ["custom_key", "custom_key2"]
+                )
+                self.assertIsNone(user_metadata.value("custom_info", "test_key"))
+                self.assertEqual(user_metadata.value("custom_info", "custom_key"), b"custom_value")
+                self.assertEqual(user_metadata.value("test_info", "test_key"), b"test_value")
 
             self.assertFalse(first)
             self.assertTrue(last)

@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterator
+from typing import Union
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -9,6 +10,7 @@ from pynumaflow.shared.server import handle_async_error
 from pynumaflow.sourcer import ReadRequest, Offset, NackRequest, AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
+from pynumaflow.sourcer._dtypes import Message
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 
@@ -31,7 +33,7 @@ def _create_ack_handshake_response():
     )
 
 
-def _create_read_response(response):
+def _create_read_response(response: Message):
     """Create a read response from the handler result."""
     event_time_timestamp = _timestamp_pb2.Timestamp()
     event_time_timestamp.FromDatetime(dt=response.event_time)
@@ -41,6 +43,7 @@ def _create_read_response(response):
         offset=response.offset.as_dict,
         event_time=event_time_timestamp,
         headers=response.headers,
+        metadata=response.user_metadata._to_proto(),
     )
     status = source_pb2.ReadResponse.Status(eot=False, code=source_pb2.ReadResponse.Status.SUCCESS)
     return source_pb2.ReadResponse(result=result, status=status)
@@ -98,7 +101,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             async for req in request_iterator:
                 # create an iterator to be provided to the user function where the responses will
                 # be streamed
-                niter = NonBlockingIterator()
+                niter: NonBlockingIterator[Union[Message, Exception]] = NonBlockingIterator()
                 riter = niter.read_iterator()
                 task = asyncio.create_task(self.__invoke_read(req, niter))
                 # Save a reference to the result of this function, to avoid a
@@ -121,7 +124,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             _LOGGER.critical("User-Defined Source ReadFn error", exc_info=True)
             await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
 
-    async def __invoke_read(self, req, niter):
+    async def __invoke_read(
+        self, req: source_pb2.ReadRequest, niter: NonBlockingIterator[Union[Message, Exception]]
+    ):
         """Invoke the read handler and manage the iterator."""
         try:
             await self.__source_read_handler(

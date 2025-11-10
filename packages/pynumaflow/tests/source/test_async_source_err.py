@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 import grpc
 
-from grpc.aio._server import Server
+from grpc.aio import Server
 
 from pynumaflow import setup_logging
 from pynumaflow.proto.sourcer import source_pb2_grpc

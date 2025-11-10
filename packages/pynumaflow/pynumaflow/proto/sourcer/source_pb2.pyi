@@ -2,6 +2,7 @@ import datetime
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
+from pynumaflow.proto.common import metadata_pb2 as _metadata_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -35,7 +36,7 @@ class ReadRequest(_message.Message):
 class ReadResponse(_message.Message):
     __slots__ = ("result", "status", "handshake")
     class Result(_message.Message):
-        __slots__ = ("payload", "offset", "event_time", "keys", "headers")
+        __slots__ = ("payload", "offset", "event_time", "keys", "headers", "metadata")
         class HeadersEntry(_message.Message):
             __slots__ = ("key", "value")
             KEY_FIELD_NUMBER: _ClassVar[int]
@@ -48,12 +49,14 @@ class ReadResponse(_message.Message):
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
         KEYS_FIELD_NUMBER: _ClassVar[int]
         HEADERS_FIELD_NUMBER: _ClassVar[int]
+        METADATA_FIELD_NUMBER: _ClassVar[int]
         payload: bytes
         offset: Offset
         event_time: _timestamp_pb2.Timestamp
         keys: _containers.RepeatedScalarFieldContainer[str]
         headers: _containers.ScalarMap[str, str]
-        def __init__(self, payload: _Optional[bytes] = ..., offset: _Optional[_Union[Offset, _Mapping]] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., keys: _Optional[_Iterable[str]] = ..., headers: _Optional[_Mapping[str, str]] = ...) -> None: ...
+        metadata: _metadata_pb2.Metadata
+        def __init__(self, payload: _Optional[bytes] = ..., offset: _Optional[_Union[Offset, _Mapping]] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., keys: _Optional[_Iterable[str]] = ..., headers: _Optional[_Mapping[str, str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
     class Status(_message.Message):
         __slots__ = ("eot", "code", "error", "msg")
         class Code(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):

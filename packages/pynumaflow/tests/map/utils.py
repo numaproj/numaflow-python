@@ -1,3 +1,4 @@
+from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.mapper import map_pb2
 
 from pynumaflow.mapper import Datum, Messages, Message, Mapper
@@ -62,6 +63,31 @@ def get_test_datums(handshake=True):
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
                 headers=mock_headers(),
+                metadata=metadata_pb2.Metadata(
+                    previous_vertex="test-source",
+                    sys_metadata={
+                        "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "version": b"1.0.0",
+                                "build_time": b"2021-01-01 00:00:00",
+                                "commit_hash": b"1234567890",
+                            }
+                        ),
+                    },
+                    user_metadata={
+                        "custom_info": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "version": b"1.0.0",
+                            }
+                        ),
+                        "test_group": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "key1": b"value1",
+                                "key2": b"value2",
+                            }
+                        ),
+                    },
+                ),
             ),
             id="test-id-1",
         ),
@@ -71,6 +97,31 @@ def get_test_datums(handshake=True):
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
                 headers=mock_headers(),
+                metadata=metadata_pb2.Metadata(
+                    previous_vertex="test-source",
+                    sys_metadata={
+                        "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "version": b"1.0.0",
+                                "build_time": b"2021-01-01 00:00:00",
+                                "commit_hash": b"1234567890",
+                            }
+                        ),
+                    },
+                    user_metadata={
+                        "custom_info": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "version": b"2.0.0",
+                            }
+                        ),
+                        "test_group": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "key1": b"value1",
+                                "key2": b"value2",
+                            }
+                        ),
+                    },
+                ),
             ),
             id="test-id-2",
         ),
@@ -80,6 +131,31 @@ def get_test_datums(handshake=True):
                 event_time=event_time_timestamp,
                 watermark=watermark_timestamp,
                 headers=mock_headers(),
+                metadata=metadata_pb2.Metadata(
+                    previous_vertex="test-source",
+                    sys_metadata={
+                        "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "version": b"1.0.0",
+                                "build_time": b"2021-01-01 00:00:00",
+                                "commit_hash": b"1234567890",
+                            }
+                        ),
+                    },
+                    user_metadata={
+                        "custom_info": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "version": b"3.0.0",
+                            }
+                        ),
+                        "test_group": metadata_pb2.KeyValueGroup(
+                            key_value={
+                                "key1": b"value1",
+                                "key2": b"value2",
+                            }
+                        ),
+                    },
+                ),
             ),
             id="test-id-3",
         ),

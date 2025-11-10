@@ -2,6 +2,7 @@ import datetime
 
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
+from pynumaflow.proto.common import metadata_pb2 as _metadata_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -13,7 +14,7 @@ DESCRIPTOR: _descriptor.FileDescriptor
 class MapRequest(_message.Message):
     __slots__ = ("request", "id", "handshake", "status")
     class Request(_message.Message):
-        __slots__ = ("keys", "value", "event_time", "watermark", "headers")
+        __slots__ = ("keys", "value", "event_time", "watermark", "headers", "metadata")
         class HeadersEntry(_message.Message):
             __slots__ = ("key", "value")
             KEY_FIELD_NUMBER: _ClassVar[int]
@@ -26,12 +27,14 @@ class MapRequest(_message.Message):
         EVENT_TIME_FIELD_NUMBER: _ClassVar[int]
         WATERMARK_FIELD_NUMBER: _ClassVar[int]
         HEADERS_FIELD_NUMBER: _ClassVar[int]
+        METADATA_FIELD_NUMBER: _ClassVar[int]
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         event_time: _timestamp_pb2.Timestamp
         watermark: _timestamp_pb2.Timestamp
         headers: _containers.ScalarMap[str, str]
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., headers: _Optional[_Mapping[str, str]] = ...) -> None: ...
+        metadata: _metadata_pb2.Metadata
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., event_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., watermark: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., headers: _Optional[_Mapping[str, str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
@@ -57,14 +60,16 @@ class TransmissionStatus(_message.Message):
 class MapResponse(_message.Message):
     __slots__ = ("results", "id", "handshake", "status")
     class Result(_message.Message):
-        __slots__ = ("keys", "value", "tags")
+        __slots__ = ("keys", "value", "tags", "metadata")
         KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         TAGS_FIELD_NUMBER: _ClassVar[int]
+        METADATA_FIELD_NUMBER: _ClassVar[int]
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         tags: _containers.RepeatedScalarFieldContainer[str]
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ...) -> None: ...
+        metadata: _metadata_pb2.Metadata
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]

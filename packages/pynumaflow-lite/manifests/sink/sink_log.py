@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import logging
 import signal
 from collections.abc import AsyncIterable
@@ -34,7 +35,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: collections.abc.Callable):
     server = sinker.SinkAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run

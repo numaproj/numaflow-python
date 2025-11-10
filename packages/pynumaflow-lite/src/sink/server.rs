@@ -1,5 +1,5 @@
-use numaflow::sink;
 use numaflow::shared::ServerExtras;
+use numaflow::sink;
 
 use pyo3::prelude::*;
 use std::sync::Arc;
@@ -98,9 +98,8 @@ pub(super) async fn start(
     // if not finished, abort it
     if !sig_handle.is_finished() {
         println!("Aborting signal handler");
-        let _ = sig_handle.abort();
+        sig_handle.abort();
     }
 
     result
 }
-

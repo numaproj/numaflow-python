@@ -51,3 +51,7 @@ path = "tests/bin/accumulator.rs"
 [[bin]]
 name = "test_sink"
 path = "tests/bin/sink.rs"
+
+[[bin]]
+name = "test_source"
+path = "tests/bin/source.rs"

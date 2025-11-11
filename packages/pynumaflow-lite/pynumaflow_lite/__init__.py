@@ -33,13 +33,25 @@ try:
 except Exception:  # pragma: no cover
     accumulator = None
 
-# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, and Accumulator classes under the extension submodules for convenient access
+try:
+    sinker = _import_module(__name__ + ".sinker")
+except Exception:  # pragma: no cover
+    sinker = None
+
+try:
+    sourcer = _import_module(__name__ + ".sourcer")
+except Exception:  # pragma: no cover
+    sourcer = None
+
+# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, Accumulator, Sinker, and Sourcer classes under the extension submodules for convenient access
 from ._map_dtypes import Mapper
 from ._batchmapper_dtypes import BatchMapper
 from ._mapstream_dtypes import MapStreamer
 from ._reduce_dtypes import Reducer
 from ._session_reduce_dtypes import SessionReducer
 from ._accumulator_dtypes import Accumulator
+from ._sink_dtypes import Sinker
+from ._source_dtypes import Sourcer
 
 if mapper is not None:
     try:
@@ -77,8 +89,20 @@ if accumulator is not None:
     except Exception:
         pass
 
+if sinker is not None:
+    try:
+        setattr(sinker, "Sinker", Sinker)
+    except Exception:
+        pass
+
+if sourcer is not None:
+    try:
+        setattr(sourcer, "Sourcer", Sourcer)
+    except Exception:
+        pass
+
 # Public API
-__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "accumulator"]
+__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "accumulator", "sinker", "sourcer"]
 
 __doc__ = pynumaflow_lite.__doc__
 if hasattr(pynumaflow_lite, "__all__"):

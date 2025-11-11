@@ -89,7 +89,7 @@ impl From<Message> for numaflow::source::Message {
 }
 
 /// The offset of a message.
-#[pyclass(module = "pynumaflow_lite.sourcer", name = "Offset")]
+#[pyclass(module = "pynumaflow_lite.sourcer", name = "Offset")] // this to avoid conflict with the Offset in the source module
 #[derive(Clone, Debug)]
 pub struct PyOffset {
     /// Offset value in bytes.

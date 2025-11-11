@@ -221,7 +221,7 @@ pub(super) async fn start(
     // if not finished, abort it
     if !sig_handle.is_finished() {
         println!("Aborting signal handler");
-        let _ = sig_handle.abort();
+        sig_handle.abort();
     }
 
     result

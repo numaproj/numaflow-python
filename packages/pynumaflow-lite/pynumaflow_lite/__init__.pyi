@@ -9,5 +9,6 @@ from . import reducer as reducer
 from . import session_reducer as session_reducer
 from . import accumulator as accumulator
 from . import sinker as sinker
+from . import sourcer as sourcer
 
-__all__ = ['mapper', 'batchmapper', 'mapstreamer', 'reducer', 'session_reducer', 'accumulator', 'sinker']
+__all__ = ['mapper', 'batchmapper', 'mapstreamer', 'reducer', 'session_reducer', 'accumulator', 'sinker', 'sourcer']

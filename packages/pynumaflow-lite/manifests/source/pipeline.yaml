@@ -1,0 +1,21 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: simple-source
+spec:
+  vertices:
+    - name: in
+      source:
+        udsource:
+          container:
+            image: quay.io/numaio/numaflow/pynumaflow-lite-simple-source:v1
+            imagePullPolicy: Never
+      limits:
+        readBatchSize: 5
+    - name: out
+      sink:
+        log: {}
+  edges:
+    - from: in
+      to: out
+

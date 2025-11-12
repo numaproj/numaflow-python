@@ -1,10 +1,10 @@
 # numaflow-python
 
-Python SDK for Numaflow SDK.
+Python SDK for Numaflow.
 
 ## `pynumaflow`
-Pure Python implementation for Numaflow SDK - [pynumaflow](packages/pynumaflow/README.md)
+Pure Python SDK implementation for Numaflow - [pynumaflow](packages/pynumaflow/README.md)
 
 ## `pynumaflow-lite`
 
-Coming shorty (Rust based Python SDK with better performance)
+Coming shortly (Rust based Python SDK) with better performance

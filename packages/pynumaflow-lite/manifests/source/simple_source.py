@@ -27,18 +27,18 @@ class SimpleSource(Sourcer):
         The simple source generates messages with incrementing numbers.
         """
         _LOGGER.info(f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}")
-        
+
         # Generate the requested number of messages
         for i in range(datum.num_records):
             # Create message payload
             payload = f"message-{self.counter}".encode("utf-8")
-            
+
             # Create offset
             offset = sourcer.Offset(
                 offset=str(self.counter).encode("utf-8"),
                 partition_id=self.partition_idx
             )
-            
+
             # Create message
             message = sourcer.Message(
                 payload=payload,
@@ -47,12 +47,12 @@ class SimpleSource(Sourcer):
                 keys=["key1"],
                 headers={"source": "simple"}
             )
-            
+
             _LOGGER.info(f"Generated message: {self.counter}")
             self.counter += 1
-            
+
             yield message
-            
+
             # Small delay to simulate real source
             await asyncio.sleep(0.1)
 
@@ -94,9 +94,7 @@ except AttributeError:
 
 
 async def start():
-    sock_file = "/var/run/numaflow/source.sock"
-    server_info_file = "/var/run/numaflow/sourcer-server-info"
-    server = sourcer.SourceAsyncServer(sock_file, server_info_file)
+    server = sourcer.SourceAsyncServer()
 
     # Create an instance of the source handler
     handler = SimpleSource()
@@ -122,4 +120,3 @@ async def start():
 
 if __name__ == "__main__":
     asyncio.run(start())
-

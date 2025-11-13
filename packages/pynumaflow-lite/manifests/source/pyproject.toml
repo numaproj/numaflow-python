@@ -1,0 +1,17 @@
+[project]
+name = "simple-source"
+version = "0.1.0"
+description = "User-defined source example using pynumaflow-lite"
+authors = [
+    { name = "Vigith Maurice", email = "vigith@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+

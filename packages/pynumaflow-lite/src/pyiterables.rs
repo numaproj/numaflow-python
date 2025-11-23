@@ -31,7 +31,7 @@ pub struct PyAsyncIterStream<M> {
 
 impl<M> PyAsyncIterStream<M>
 where
-    M: for<'py> FromPyObject<'py> + Send + 'static,
+    M: for<'a, 'py> FromPyObject<'a, 'py> + Send + 'static,
 {
     /// Given a Python AsyncIterator and the event loop, build a stream over its items.
     /// It calls `__aiter__` on the `async_iterable` to get the iterator.
@@ -48,7 +48,7 @@ where
 
 impl<M> Stream for PyAsyncIterStream<M>
 where
-    M: for<'py> FromPyObject<'py> + Send + 'static,
+    M: for<'a, 'py> FromPyObject<'a, 'py> + Send + 'static,
 {
     type Item = PyResult<M>;
 
@@ -117,7 +117,7 @@ where
                     match res {
                         Ok(obj) => {
                             // Convert PyObject -> M
-                            let m = Python::attach(|py| obj.extract::<M>(py));
+                            let m = Python::attach(|py| obj.extract::<M>(py).map_err(Into::into));
                             Poll::Ready(Some(m))
                         }
                         Err(err) => {

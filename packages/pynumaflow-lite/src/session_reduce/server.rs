@@ -33,7 +33,7 @@ impl session_reduce::SessionReducerCreator for PySessionReduceCreator {
             match &self.init_args {
                 Some(args) => {
                     let bound = args.as_ref().bind(py);
-                    let py_tuple = bound.downcast::<PyTuple>()?;
+                    let py_tuple = bound.cast::<PyTuple>()?;
                     class.call1(py, py_tuple)
                 }
                 None => class.call0(py),

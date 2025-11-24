@@ -8,9 +8,14 @@ spec:
   watermark:
     maxDelay: 5s
     idleSource:
+       # Duration to be added to the current watermark to progress the watermark when source is idling
       incrementBy: 1s
+       # Duration between the subsequent increment of the watermark as long the source remains idle.
       stepInterval: 1s
+       # Duration after which a source is marked as idle due to lack of data. If determined idle then the watermark is progressed by `incrementBy`
       threshold: 5s
+       # Duration after which, if source doesn't produce any data (from the pipeline's inception), the watermark is initialized with the current wall clock time.
+      initSourceDelay: 30s
   vertices:
     - name: http-one
       scale:

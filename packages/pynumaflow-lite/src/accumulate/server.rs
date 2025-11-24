@@ -33,7 +33,7 @@ impl accumulator::AccumulatorCreator for PyAccumulatorCreator {
             match &self.init_args {
                 Some(args) => {
                     let bound = args.as_ref().bind(py);
-                    let py_tuple = bound.downcast::<PyTuple>()?;
+                    let py_tuple = bound.cast::<PyTuple>()?;
                     class.call1(py, py_tuple)
                 }
                 None => class.call0(py),
@@ -82,7 +82,7 @@ impl accumulator::Accumulator for PyAccumulatorRunner {
                 .expect("python handler method raised before returning async iterable");
 
             // Keep as Py<PyAny>
-            agen.extract(py).unwrap_or(agen)
+            agen.clone_ref(py).extract(py).unwrap_or(agen)
         });
 
         // Wrap the Python AsyncIterable in a Rust Stream that yields incrementally

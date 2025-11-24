@@ -82,7 +82,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.mapper` as well as attribute access
     let binding = m.getattr("mapper")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.mapper";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -91,7 +91,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.batchmapper` as well
     let binding = m.getattr("batchmapper")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.batchmapper";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -100,7 +100,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.mapstreamer` as well
     let binding = m.getattr("mapstreamer")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.mapstreamer";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -109,7 +109,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.reducer` as well
     let binding = m.getattr("reducer")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.reducer";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -118,7 +118,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.session_reducer` as well
     let binding = m.getattr("session_reducer")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.session_reducer";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -127,7 +127,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.accumulator` as well
     let binding = m.getattr("accumulator")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.accumulator";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -136,7 +136,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.sinker` as well
     let binding = m.getattr("sinker")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.sinker";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
@@ -145,7 +145,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     // Ensure it's importable as `pynumaflow_lite.sourcer` as well
     let binding = m.getattr("sourcer")?;
-    let sub = binding.downcast::<PyModule>()?;
+    let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.sourcer";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?

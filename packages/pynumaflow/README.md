@@ -41,15 +41,15 @@ pre-commit install
 ```
 
 ## Implementing different functionalities
-- [Implement User Defined Sources](https://github.com/numaproj/numaflow-python/tree/main/examples/source)
-- [Implement User Defined Source Transformers](https://github.com/numaproj/numaflow-python/tree/main/examples/sourcetransform)
+- [Implement User Defined Sources](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/source)
+- [Implement User Defined Source Transformers](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sourcetransform)
 - Implement User Defined Functions
-    - [Map](https://github.com/numaproj/numaflow-python/tree/main/examples/map)
-    - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/examples/reduce)
-    - [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/examples/mapstream)
-    - [Batch Map](https://github.com/numaproj/numaflow-python/tree/main/examples/batchmap)
-- [Implement User Defined Sinks](https://github.com/numaproj/numaflow-python/tree/main/examples/sink)
-- [Implement User Defined SideInputs](https://github.com/numaproj/numaflow-python/tree/main/examples/sideinput)
+    - [Map](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/map)
+    - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/reduce)
+    - [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/mapstream)
+    - [Batch Map](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/batchmap)
+- [Implement User Defined Sinks](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sink)
+- [Implement User Defined SideInputs](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sideinput)
 
 ## Server Types
 

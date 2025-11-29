@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 watermark: Some(prost_types::Timestamp::default()),
                 event_time: Some(prost_types::Timestamp::default()),
                 headers: HashMap::new(),
+                metadata: None,
             }),
             id: id.to_string(),
             handshake: None,

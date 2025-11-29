@@ -61,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 event_time: Some(prost_types::Timestamp::default()),
                 id: id.to_string(),
                 headers: HashMap::new(),
+                metadata: None,
             }),
             handshake: None,
             status: None,
@@ -117,4 +118,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

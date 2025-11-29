@@ -84,6 +84,7 @@ impl From<Message> for numaflow::source::Message {
             event_time: value.event_time,
             keys: value.keys,
             headers: value.headers,
+            user_metadata: None,
         }
     }
 }

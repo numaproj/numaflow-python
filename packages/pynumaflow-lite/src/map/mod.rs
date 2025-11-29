@@ -82,6 +82,7 @@ impl From<Message> for map::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
+            user_metadata: None,
         }
     }
 }

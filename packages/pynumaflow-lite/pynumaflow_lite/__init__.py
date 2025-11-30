@@ -29,6 +29,11 @@ except Exception:  # pragma: no cover
     session_reducer = None
 
 try:
+    reducestreamer = _import_module(__name__ + ".reducestreamer")
+except Exception:  # pragma: no cover
+    reducestreamer = None
+
+try:
     accumulator = _import_module(__name__ + ".accumulator")
 except Exception:  # pragma: no cover
     accumulator = None
@@ -43,12 +48,13 @@ try:
 except Exception:  # pragma: no cover
     sourcer = None
 
-# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, Accumulator, Sinker, and Sourcer classes under the extension submodules for convenient access
+# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, ReduceStreamer, Accumulator, Sinker, and Sourcer classes under the extension submodules for convenient access
 from ._map_dtypes import Mapper
 from ._batchmapper_dtypes import BatchMapper
 from ._mapstream_dtypes import MapStreamer
 from ._reduce_dtypes import Reducer
 from ._session_reduce_dtypes import SessionReducer
+from ._reducestreamer_dtypes import ReduceStreamer
 from ._accumulator_dtypes import Accumulator
 from ._sink_dtypes import Sinker
 from ._source_dtypes import Sourcer
@@ -83,6 +89,12 @@ if session_reducer is not None:
     except Exception:
         pass
 
+if reducestreamer is not None:
+    try:
+        setattr(reducestreamer, "ReduceStreamer", ReduceStreamer)
+    except Exception:
+        pass
+
 if accumulator is not None:
     try:
         setattr(accumulator, "Accumulator", Accumulator)
@@ -102,7 +114,7 @@ if sourcer is not None:
         pass
 
 # Public API
-__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "accumulator", "sinker", "sourcer"]
+__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "reducestreamer", "accumulator", "sinker", "sourcer"]
 
 __doc__ = pynumaflow_lite.__doc__
 if hasattr(pynumaflow_lite, "__all__"):

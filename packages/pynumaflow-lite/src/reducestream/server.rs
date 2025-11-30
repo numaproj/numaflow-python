@@ -1,0 +1,171 @@
+use crate::pyiterables::PyAsyncIterStream;
+use crate::reducestream::{
+    Datum as PyDatum, IntervalWindow as PyIntervalWindow, Message as PyMessage,
+    Metadata as PyMetadata, PyAsyncDatumStream,
+};
+use numaflow::reducestream;
+use numaflow::shared::ServerExtras;
+use pyo3::prelude::*;
+use std::sync::Arc;
+use tokio_stream::StreamExt;
+
+pub(crate) struct PyReduceStreamerCreator {
+    /// handle to Python event loop
+    pub(crate) event_loop: Arc<Py<PyAny>>,
+    /// Python class to instantiate per window
+    pub(crate) py_creator: Arc<Py<PyAny>>,
+    /// optional tuple of positional args
+    pub(crate) init_args: Option<Arc<Py<PyAny>>>,
+}
+
+pub(crate) struct PyReduceStreamerRunner {
+    /// handle to Python event loop
+    pub(crate) event_loop: Arc<Py<PyAny>>,
+    /// Instance of class per window
+    pub(crate) py_instance: Arc<Py<PyAny>>,
+}
+
+impl reducestream::ReduceStreamerCreator for PyReduceStreamerCreator {
+    type R = PyReduceStreamerRunner;
+
+    fn create(&self) -> Self::R {
+        // Instantiate the Python class synchronously under the GIL.
+        let inst = Python::attach(|py| {
+            let class = self.py_creator.as_ref();
+            match &self.init_args {
+                Some(args) => {
+                    let bound = args.as_ref().bind(py);
+                    let py_tuple = bound.cast()?;
+                    class.call1(py, py_tuple)
+                }
+                None => class.call0(py),
+            }
+        })
+        .expect("failed to instantiate Python reduce streamer class");
+
+        PyReduceStreamerRunner {
+            event_loop: self.event_loop.clone(),
+            py_instance: Arc::new(inst),
+        }
+    }
+}
+
+#[tonic::async_trait]
+impl reducestream::ReduceStreamer for PyReduceStreamerRunner {
+    async fn reducestream(
+        &self,
+        keys: Vec<String>,
+        mut input: tokio::sync::mpsc::Receiver<reducestream::ReduceStreamRequest>,
+        output: tokio::sync::mpsc::Sender<reducestream::Message>,
+        md: &reducestream::Metadata,
+    ) {
+        // Create a channel to stream Datum into Python as an async iterator
+        let (tx, rx) = tokio::sync::mpsc::channel::<PyDatum>(64);
+
+        // Spawn a task forwarding incoming datums to the Python-facing channel
+        let forwarder = tokio::spawn(async move {
+            while let Some(req) = input.recv().await {
+                let datum = PyDatum::from(req);
+                if tx.send(datum).await.is_err() {
+                    break;
+                }
+            }
+            // When input ends, dropping tx closes the channel and that is when
+            // the Python async iterable will stop.
+        });
+
+        // Call the Python coroutine:
+        // obj.handler(keys, datums: AsyncIterable[Datum], md: Metadata) -> AsyncIterator[Message]
+        let agen_obj = Python::attach(|py| {
+            let obj = self.py_instance.clone();
+            let stream = PyAsyncDatumStream::new_with(rx);
+
+            // Build metadata object
+            let interval =
+                PyIntervalWindow::new(md.interval_window.start_time, md.interval_window.end_time);
+            let md_py = PyMetadata::new(interval);
+
+            // Call handler method
+            let agen = obj
+                .call_method1(py, "handler", (keys, stream, md_py))
+                .expect("python handler method raised before returning async iterable");
+
+            // Keep as Py<PyAny>
+            agen.clone_ref(py).extract(py).unwrap_or(agen)
+        });
+
+        // Wrap the Python AsyncIterable in a Rust Stream that yields incrementally
+        let mut stream = PyAsyncIterStream::<PyMessage>::new(agen_obj, self.event_loop.clone())
+            .expect("failed to construct PyAsyncIterStream");
+
+        // Forward each yielded message immediately to the output sender
+        while let Some(item) = stream.next().await {
+            match item {
+                Ok(py_msg) => {
+                    let out: reducestream::Message = py_msg.into();
+                    if output.send(out).await.is_err() {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    // Non-stop errors are surfaced per-item; log and stop this stream.
+                    eprintln!("Python async iteration error in reduce streamer: {:?}", e);
+                    break;
+                }
+            }
+        }
+
+        // Ensure forwarder completes
+        let _ = forwarder.await;
+    }
+}
+
+/// Start the reduce stream server by spinning up a dedicated Python asyncio loop and wiring shutdown.
+pub(super) async fn start(
+    py_creator: Py<PyAny>,
+    init_args: Option<Py<PyAny>>,
+    sock_file: String,
+    info_file: String,
+    shutdown_rx: tokio::sync::oneshot::Receiver<()>,
+) -> Result<(), pyo3::PyErr> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let event_loop = rx.await.unwrap();
+
+    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
+
+    let creator = PyReduceStreamerCreator {
+        event_loop: event_loop.clone(),
+        py_creator: Arc::new(py_creator),
+        init_args: init_args.map(Arc::new),
+    };
+
+    let server = reducestream::Server::new(creator)
+        .with_socket_file(sock_file)
+        .with_server_info_file(info_file);
+
+    let result = server
+        .start_with_shutdown(combined_rx)
+        .await
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
+
+    // Ensure the event loop is stopped even if shutdown came from elsewhere.
+    Python::attach(|py| {
+        if let Ok(stop_cb) = event_loop.getattr(py, "stop") {
+            let _ = event_loop.call_method1(py, "call_soon_threadsafe", (stop_cb,));
+        }
+    });
+
+    println!("Numaflow Core (reduce stream) has shutdown...");
+
+    // Wait for the blocking asyncio thread to finish.
+    let _ = py_asyncio_loop_handle.await;
+
+    // if not finished, abort it
+    if !sig_handle.is_finished() {
+        println!("Aborting signal handler");
+        let _ = sig_handle.abort();
+    }
+
+    result
+}

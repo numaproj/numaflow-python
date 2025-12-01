@@ -5,6 +5,7 @@ pub mod mapstream;
 pub mod pyiterables;
 pub mod pyrs;
 pub mod reduce;
+pub mod reducestream;
 pub mod session_reduce;
 pub mod sink;
 pub mod source;
@@ -46,6 +47,13 @@ fn session_reducer(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+/// Submodule: pynumaflow_lite.reducestreamer
+#[pymodule]
+fn reducestreamer(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
+    crate::reducestream::populate_py_module(m)?;
+    Ok(())
+}
+
 /// Submodule: pynumaflow_lite.accumulator
 #[pymodule]
 fn accumulator(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
@@ -76,6 +84,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_wrapped(pyo3::wrap_pymodule!(mapstreamer))?;
     m.add_wrapped(pyo3::wrap_pymodule!(reducer))?;
     m.add_wrapped(pyo3::wrap_pymodule!(session_reducer))?;
+    m.add_wrapped(pyo3::wrap_pymodule!(reducestreamer))?;
     m.add_wrapped(pyo3::wrap_pymodule!(accumulator))?;
     m.add_wrapped(pyo3::wrap_pymodule!(sinker))?;
     m.add_wrapped(pyo3::wrap_pymodule!(sourcer))?;
@@ -120,6 +129,15 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     let binding = m.getattr("session_reducer")?;
     let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.session_reducer";
+    sub.setattr("__name__", fullname)?;
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item(fullname, &sub)?;
+
+    // Ensure it's importable as `pynumaflow_lite.reducestreamer` as well
+    let binding = m.getattr("reducestreamer")?;
+    let sub = binding.cast::<PyModule>()?;
+    let fullname = "pynumaflow_lite.reducestreamer";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
         .getattr("modules")?

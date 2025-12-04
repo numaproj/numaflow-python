@@ -48,7 +48,12 @@ try:
 except Exception:  # pragma: no cover
     sourcer = None
 
-# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, ReduceStreamer, Accumulator, Sinker, and Sourcer classes under the extension submodules for convenient access
+try:
+    sourcetransformer = _import_module(__name__ + ".sourcetransformer")
+except Exception:  # pragma: no cover
+    sourcetransformer = None
+
+# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, ReduceStreamer, Accumulator, Sinker, Sourcer, and SourceTransformer classes under the extension submodules for convenient access
 from ._map_dtypes import Mapper
 from ._batchmapper_dtypes import BatchMapper
 from ._mapstream_dtypes import MapStreamer
@@ -58,6 +63,7 @@ from ._reducestreamer_dtypes import ReduceStreamer
 from ._accumulator_dtypes import Accumulator
 from ._sink_dtypes import Sinker
 from ._source_dtypes import Sourcer
+from ._sourcetransformer_dtypes import SourceTransformer
 
 if mapper is not None:
     try:
@@ -113,8 +119,14 @@ if sourcer is not None:
     except Exception:
         pass
 
+if sourcetransformer is not None:
+    try:
+        setattr(sourcetransformer, "SourceTransformer", SourceTransformer)
+    except Exception:
+        pass
+
 # Public API
-__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "reducestreamer", "accumulator", "sinker", "sourcer"]
+__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "reducestreamer", "accumulator", "sinker", "sourcer", "sourcetransformer"]
 
 __doc__ = pynumaflow_lite.__doc__
 if hasattr(pynumaflow_lite, "__all__"):

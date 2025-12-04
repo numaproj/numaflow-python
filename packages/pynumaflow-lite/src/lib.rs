@@ -9,6 +9,7 @@ pub mod reducestream;
 pub mod session_reduce;
 pub mod sink;
 pub mod source;
+pub mod sourcetransform;
 
 use pyo3::prelude::*;
 
@@ -75,6 +76,13 @@ fn sourcer(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+/// Submodule: pynumaflow_lite.sourcetransformer
+#[pymodule]
+fn sourcetransformer(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
+    crate::sourcetransform::populate_py_module(m)?;
+    Ok(())
+}
+
 /// Top-level Python module `pynumaflow_lite` with submodules like `mapper`, `batchmapper`, and `mapstreamer`.
 #[pymodule]
 fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
@@ -88,6 +96,7 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_wrapped(pyo3::wrap_pymodule!(accumulator))?;
     m.add_wrapped(pyo3::wrap_pymodule!(sinker))?;
     m.add_wrapped(pyo3::wrap_pymodule!(sourcer))?;
+    m.add_wrapped(pyo3::wrap_pymodule!(sourcetransformer))?;
 
     // Ensure it's importable as `pynumaflow_lite.mapper` as well as attribute access
     let binding = m.getattr("mapper")?;
@@ -165,6 +174,15 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     let binding = m.getattr("sourcer")?;
     let sub = binding.cast::<PyModule>()?;
     let fullname = "pynumaflow_lite.sourcer";
+    sub.setattr("__name__", fullname)?;
+    py.import("sys")?
+        .getattr("modules")?
+        .set_item(fullname, &sub)?;
+
+    // Ensure it's importable as `pynumaflow_lite.sourcetransformer` as well
+    let binding = m.getattr("sourcetransformer")?;
+    let sub = binding.cast::<PyModule>()?;
+    let fullname = "pynumaflow_lite.sourcetransformer";
     sub.setattr("__name__", fullname)?;
     py.import("sys")?
         .getattr("modules")?

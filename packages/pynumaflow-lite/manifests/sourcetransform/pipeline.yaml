@@ -1,0 +1,23 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: sourcetransform-event-filter
+spec:
+  vertices:
+    - name: in
+      source:
+        # HTTP Source to control the event time
+        http: { }
+        transformer:
+          container:
+            image: quay.io/numaio/numaflow/pynumaflow-lite-sourcetransform-event-filter:v1
+            imagePullPolicy: Never
+    - name: sink
+      scale:
+        min: 1
+      sink:
+        log: { }
+  edges:
+    - from: in
+      to: sink
+

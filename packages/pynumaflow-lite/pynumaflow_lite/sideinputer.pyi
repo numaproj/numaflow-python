@@ -41,9 +41,13 @@ class SideInputAsyncServer:
     def stop(self) -> None: ...
 
 
+DIR_PATH: str
+"""Default directory path where side input files are stored."""
+
 __all__ = [
     "Response",
     "SideInputAsyncServer",
     "SideInput",
+    "DIR_PATH",
 ]
 

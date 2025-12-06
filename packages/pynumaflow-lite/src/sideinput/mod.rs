@@ -111,6 +111,7 @@ impl SideInputAsyncServer {
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<Response>()?;
     m.add_class::<SideInputAsyncServer>()?;
+    m.add("DIR_PATH", numaflow::sideinput::DIR_PATH)?;
 
     Ok(())
 }

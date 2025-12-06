@@ -9,7 +9,7 @@ name = "pynumaflow_lite"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-numaflow = { git = "https://github.com/numaproj/numaflow-rs.git", rev = "42a1e814459d18b89eb6ca874fd0a989fd134303" }
+numaflow = { git = "https://github.com/numaproj/numaflow-rs.git", rev = "03937f9b87653046425b78871535aa86541859cc" }
 pyo3 = { version = "0.27.1", features = ["chrono", "experimental-inspect"] }
 tokio = "1.47.1"
 tonic = "0.14.2"

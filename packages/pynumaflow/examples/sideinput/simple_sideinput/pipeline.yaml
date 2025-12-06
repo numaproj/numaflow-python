@@ -9,7 +9,7 @@ spec:
         image: quay.io/numaio/numaflow-python/sideinput-example:stable
         imagePullPolicy: Always
       trigger:
-        schedule: "*/2 * * * *"
+        schedule: "0 */2 * * * *"
         # timezone: America/Los_Angeles
   vertices:
     - name: in

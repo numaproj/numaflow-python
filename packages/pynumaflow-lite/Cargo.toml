@@ -63,3 +63,7 @@ path = "tests/bin/source.rs"
 [[bin]]
 name = "test_sourcetransform"
 path = "tests/bin/sourcetransform.rs"
+
+[[bin]]
+name = "test_sideinput"
+path = "tests/bin/sideinput.rs"

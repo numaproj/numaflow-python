@@ -63,7 +63,7 @@ pub struct SideInputAsyncServer {
 #[pymethods]
 impl SideInputAsyncServer {
     /// Create a new SideInputAsyncServer.
-    /// 
+    ///
     /// Args:
     ///     sock_file: Path to the Unix domain socket file.
     ///     info_file: Path to the server info file.
@@ -71,8 +71,7 @@ impl SideInputAsyncServer {
     #[pyo3(signature = (sock_file=None, info_file=None))]
     fn new(sock_file: Option<String>, info_file: Option<String>) -> Self {
         Self {
-            sock_file: sock_file
-                .unwrap_or_else(|| "/var/run/numaflow/sideinput.sock".to_string()),
+            sock_file: sock_file.unwrap_or_else(|| "/var/run/numaflow/sideinput.sock".to_string()),
             info_file: info_file
                 .unwrap_or_else(|| "/var/run/numaflow/sideinput-server-info".to_string()),
             shutdown_tx: Mutex::new(None),
@@ -115,4 +114,3 @@ pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
 
     Ok(())
 }
-

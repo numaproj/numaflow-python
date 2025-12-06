@@ -32,7 +32,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test 1: First call should broadcast (counter = 1, odd)
     let response = client.retrieve_side_input(()).await?;
     let resp = response.into_inner();
-    println!("Response 1: value={:?}, no_broadcast={}", String::from_utf8_lossy(&resp.value), resp.no_broadcast);
+    println!(
+        "Response 1: value={:?}, no_broadcast={}",
+        String::from_utf8_lossy(&resp.value),
+        resp.no_broadcast
+    );
     assert!(!resp.no_broadcast, "First call should broadcast");
     assert!(!resp.value.is_empty(), "First call should have a value");
     assert!(
@@ -43,21 +47,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Test 2: Second call should NOT broadcast (counter = 2, even)
     let response = client.retrieve_side_input(()).await?;
     let resp = response.into_inner();
-    println!("Response 2: value={:?}, no_broadcast={}", String::from_utf8_lossy(&resp.value), resp.no_broadcast);
+    println!(
+        "Response 2: value={:?}, no_broadcast={}",
+        String::from_utf8_lossy(&resp.value),
+        resp.no_broadcast
+    );
     assert!(resp.no_broadcast, "Second call should not broadcast");
     assert!(resp.value.is_empty(), "Second call should have empty value");
 
     // Test 3: Third call should broadcast again (counter = 3, odd)
     let response = client.retrieve_side_input(()).await?;
     let resp = response.into_inner();
-    println!("Response 3: value={:?}, no_broadcast={}", String::from_utf8_lossy(&resp.value), resp.no_broadcast);
+    println!(
+        "Response 3: value={:?}, no_broadcast={}",
+        String::from_utf8_lossy(&resp.value),
+        resp.no_broadcast
+    );
     assert!(!resp.no_broadcast, "Third call should broadcast");
     assert!(!resp.value.is_empty(), "Third call should have a value");
 
     // Test 4: Fourth call should NOT broadcast (counter = 4, even)
     let response = client.retrieve_side_input(()).await?;
     let resp = response.into_inner();
-    println!("Response 4: value={:?}, no_broadcast={}", String::from_utf8_lossy(&resp.value), resp.no_broadcast);
+    println!(
+        "Response 4: value={:?}, no_broadcast={}",
+        String::from_utf8_lossy(&resp.value),
+        resp.no_broadcast
+    );
     assert!(resp.no_broadcast, "Fourth call should not broadcast");
 
     // Test is_ready endpoint
@@ -70,4 +86,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-

@@ -1,0 +1,19 @@
+[project]
+name = "sideinput-example"
+version = "0.1.0"
+description = "Side Input Example with Retriever and Mapper"
+authors = [
+    { name = "Vigith Maurice", email = "vigith@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "watchfiles",
+    "watchdog",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+

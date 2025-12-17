@@ -405,18 +405,6 @@ reauth = ["pyu2f (>=0.1.5)"]
 requests = ["requests (>=2.20.0,<3.0.0.dev0)"]
 
 [[package]]
-name = "google-cloud"
-version = "0.34.0"
-description = "API Client library for Google Cloud"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "google-cloud-0.34.0.tar.gz", hash = "sha256:01430187cf56df10a9ba775dd547393185d4b40741db0ea5889301f8e7a9d5d3"},
-    {file = "google_cloud-0.34.0-py2.py3-none-any.whl", hash = "sha256:fb1ab7b0548fe44b3d538041f0a374505b7f990d448a935ea36649c5ccab5acf"},
-]
-
-[[package]]
 name = "googleapis-common-protos"
 version = "1.70.0"
 description = "Common protobufs used in Google APIs"
@@ -1276,4 +1264,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9, <3.15"
-content-hash = "46d9b0b86df1b83df8ac12ea9feac6a88bcfdbf3505bec5ff19cd104429dcbf6"
+content-hash = "00b1a973942e94a9f9f568cd3e1e7053162cad9fcf7c73d33fd9fda9e2964fc9"

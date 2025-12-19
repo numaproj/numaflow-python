@@ -209,7 +209,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         at the user defined source.
         """
         try:
-            count = await self.__source_pending_handler()
+            count = self.__source_pending_handler()
         except BaseException as err:
             _LOGGER.critical("PendingFn Error", exc_info=True)
             await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
@@ -224,7 +224,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         PartitionsFn returns the partitions of the user defined source.
         """
         try:
-            partitions = await self.__source_partitions_handler()
+            partitions = self.__source_partitions_handler()
         except BaseException as err:
             _LOGGER.critical("PartitionsFn Error", exc_info=True)
             await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)

@@ -74,7 +74,7 @@ class Message:
         payload: bytes,
         offset: Offset,
         event_time: datetime,
-        keys: list[str] = None,
+        keys: Optional[list[str]] = None,
         headers: Optional[dict[str, str]] = None,
         user_metadata: Optional[UserMetadata] = None,
     ):
@@ -260,12 +260,6 @@ class Sourcer(metaclass=ABCMeta):
     Args:
 
     """
-
-    def __call__(self, *args, **kwargs):
-        """
-        Allow to call handler function directly if class instance is sent
-        """
-        return self.handler(*args, **kwargs)
 
     @abstractmethod
     async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):

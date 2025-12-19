@@ -272,28 +272,28 @@ class Sourcer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def ack_handler(self, ack_request: AckRequest):
+    async def ack_handler(self, ack_request: AckRequest):
         """
         The ack handler is used to acknowledge the offsets that have been read
         """
         pass
 
     @abstractmethod
-    def nack_handler(self, nack_request: NackRequest):
+    async def nack_handler(self, nack_request: NackRequest):
         """
         The nack handler is used to negatively acknowledge the offsets on the source
         """
         pass
 
     @abstractmethod
-    def pending_handler(self) -> PendingResponse:
+    async def pending_handler(self) -> PendingResponse:
         """
         The simple source always returns zero to indicate there is no pending record.
         """
         pass
 
     @abstractmethod
-    def partitions_handler(self) -> PartitionsResponse:
+    async def partitions_handler(self) -> PartitionsResponse:
         """
         The simple source always returns zero to indicate there is no pending record.
         """

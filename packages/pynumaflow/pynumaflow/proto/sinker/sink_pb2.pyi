@@ -18,10 +18,12 @@ class Status(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FAILURE: _ClassVar[Status]
     FALLBACK: _ClassVar[Status]
     SERVE: _ClassVar[Status]
+    ON_SUCCESS: _ClassVar[Status]
 SUCCESS: Status
 FAILURE: Status
 FALLBACK: Status
 SERVE: Status
+ON_SUCCESS: Status
 
 class SinkRequest(_message.Message):
     __slots__ = ("request", "status", "handshake")
@@ -78,16 +80,27 @@ class TransmissionStatus(_message.Message):
 class SinkResponse(_message.Message):
     __slots__ = ("results", "handshake", "status")
     class Result(_message.Message):
-        __slots__ = ("id", "status", "err_msg", "serve_response")
+        __slots__ = ("id", "status", "err_msg", "serve_response", "on_success_msg")
+        class Message(_message.Message):
+            __slots__ = ("value", "keys", "metadata")
+            VALUE_FIELD_NUMBER: _ClassVar[int]
+            KEYS_FIELD_NUMBER: _ClassVar[int]
+            METADATA_FIELD_NUMBER: _ClassVar[int]
+            value: bytes
+            keys: _containers.RepeatedScalarFieldContainer[str]
+            metadata: _metadata_pb2.Metadata
+            def __init__(self, value: _Optional[bytes] = ..., keys: _Optional[_Iterable[str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
         ID_FIELD_NUMBER: _ClassVar[int]
         STATUS_FIELD_NUMBER: _ClassVar[int]
         ERR_MSG_FIELD_NUMBER: _ClassVar[int]
         SERVE_RESPONSE_FIELD_NUMBER: _ClassVar[int]
+        ON_SUCCESS_MSG_FIELD_NUMBER: _ClassVar[int]
         id: str
         status: Status
         err_msg: str
         serve_response: bytes
-        def __init__(self, id: _Optional[str] = ..., status: _Optional[_Union[Status, str]] = ..., err_msg: _Optional[str] = ..., serve_response: _Optional[bytes] = ...) -> None: ...
+        on_success_msg: SinkResponse.Result.Message
+        def __init__(self, id: _Optional[str] = ..., status: _Optional[_Union[Status, str]] = ..., err_msg: _Optional[str] = ..., serve_response: _Optional[bytes] = ..., on_success_msg: _Optional[_Union[SinkResponse.Result.Message, _Mapping]] = ...) -> None: ...
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]

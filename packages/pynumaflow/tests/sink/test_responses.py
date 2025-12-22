@@ -40,10 +40,11 @@ class TestResponses(unittest.TestCase):
         self.assertEqual(self.resps[3].id, "4")
 
         self.assertEqual(
-            "[Response(id='2', success=True, err=None, fallback=False), "
-            "Response(id='3', success=False, err='RuntimeError encountered!', fallback=False), "
-            "Response(id='5', success=False, err=None, fallback=True), "
-            "Response(id='4', success=True, err=None, fallback=False)]",
+            "[Response(id='2', success=True, err=None, fallback=False, on_success=None), "
+            "Response(id='3', success=False, err='RuntimeError encountered!', "
+            "fallback=False, on_success=None), "
+            "Response(id='5', success=False, err=None, fallback=True, on_success=None), "
+            "Response(id='4', success=True, err=None, fallback=False, on_success=None)]",
             repr(self.resps),
         )
 

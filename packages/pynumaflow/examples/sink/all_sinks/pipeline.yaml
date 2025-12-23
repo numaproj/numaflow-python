@@ -1,0 +1,44 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: all-sinks-pipeline
+spec:
+  vertices:
+    - name: in
+      source:
+        generator:
+          rpu: 1
+          duration: 1s
+          msgSize: 10
+    - name: out
+      sink:
+        udsink:
+          container:
+            args:
+              - python
+              - example.py
+            image: quay.io/numaio/numaflow-python/all-sinks:stable
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: PYTHONDEBUG
+                value: "true"
+              - name: INVOKE
+                value: "func_handler"
+        fallback:
+          udsink:
+            container:
+              image: quay.io/numaio/numaflow-python/sink-log:stable
+              imagePullPolicy: IfNotPresent
+        onSuccess:
+          udsink:
+            container:
+              image: quay.io/numaio/numaflow-rs/sink-log:stable
+              imagePullPolicy: IfNotPresent
+    - name: log-output
+      sink:
+        log: {}
+  edges:
+    - from: in
+      to: out
+    - from: in
+      to: log-output

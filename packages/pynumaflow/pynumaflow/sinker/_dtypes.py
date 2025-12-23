@@ -23,29 +23,44 @@ class Message:
         user_metadata: the user metadata of the on_success message.
     """
 
-    keys: Optional[list[str]]
-    value: bytes
-    user_metadata: Optional[UserMetadata]
+    _keys: Optional[list[str]]
+    _value: bytes
+    _user_metadata: Optional[UserMetadata]
 
-    __slots__ = ("keys", "value", "user_metadata")
+    __slots__ = ("_keys", "_value", "_user_metadata")
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[list[str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        keys: list[str] = None,
+        user_metadata: UserMetadata = None,
     ):
-        self.value = value
-        self.keys = keys
-        self.user_metadata = user_metadata
+        self._value = value
+        self._keys = keys
+        self._user_metadata = user_metadata
 
     def with_keys(self, keys: Optional[list[str]]):
-        self.keys = keys
+        self._keys = keys
         return self
 
     def with_user_metadata(self, user_metadata: Optional[UserMetadata]):
-        self.user_metadata = user_metadata
+        self._user_metadata = user_metadata
         return self
+
+    @property
+    def keys(self) -> Optional[list[str]]:
+        """Returns the id of the event."""
+        return self._keys
+
+    @property
+    def value(self) -> bytes:
+        """Returns the id of the event."""
+        return self._value
+
+    @property
+    def user_metadata(self) -> Optional[UserMetadata]:
+        """Returns the id of the event."""
+        return self._user_metadata
 
 
 @dataclass
@@ -64,33 +79,52 @@ class Response:
     success: bool
     err: Optional[str]
     fallback: bool
-    on_success: Optional[Message]
+    on_success: bool
+    on_success_msg: Optional[Message]
 
-    __slots__ = ("id", "success", "err", "fallback", "on_success")
+    __slots__ = ("id", "success", "err", "fallback", "on_success", "on_success_msg")
 
     # as_success creates a successful Response with the given id.
     # The Success field is set to true.
     @classmethod
     def as_success(cls: type[R], id_: str) -> R:
-        return Response(id=id_, success=True, err=None, fallback=False, on_success=None)
+        return Response(
+            id=id_, success=True, err=None, fallback=False, on_success=False, on_success_msg=None
+        )
 
     # as_failure creates a failed Response with the given id and error message.
     # The success field is set to false and the err field is set to the provided error message.
     @classmethod
     def as_failure(cls: type[R], id_: str, err_msg: str) -> R:
-        return Response(id=id_, success=False, err=err_msg, fallback=False, on_success=None)
+        return Response(
+            id=id_,
+            success=False,
+            err=err_msg,
+            fallback=False,
+            on_success=False,
+            on_success_msg=None,
+        )
 
     # as_fallback creates a Response with the fallback field set to true.
     # This indicates that the message should be sent to the fallback sink.
     @classmethod
     def as_fallback(cls: type[R], id_: str) -> R:
-        return Response(id=id_, fallback=True, err=None, success=False, on_success=None)
+        return Response(
+            id=id_, fallback=True, err=None, success=False, on_success=False, on_success_msg=None
+        )
 
     # as_on_success creates a Response with the on_success field set to true.
     # This indicates that the message should be sent to the on_success sink.
     @classmethod
     def as_on_success(cls: type[R], id_: str, on_success: Optional[Message] = None) -> R:
-        return Response(id=id_, fallback=False, err=None, success=False, on_success=on_success)
+        return Response(
+            id=id_,
+            fallback=False,
+            err=None,
+            success=False,
+            on_success=True,
+            on_success_msg=on_success,
+        )
 
 
 class Responses(Sequence[R]):

@@ -10,10 +10,6 @@ spec:
           rpu: 1
           duration: 1s
           msgSize: 10
-    - name: p1
-      udf:
-        builtin:
-          name: cat
     - name: out
       sink:
         udsink:
@@ -28,23 +24,21 @@ spec:
                 value: "true"
               - name: INVOKE
                 value: "func_handler"
-          fallback:
-            udsink:
-              container:
-                image: quay.io/numaio/numaflow-python/sink-log:stable
-                imagePullPolicy: IfNotPresent
-          onSuccess:
-            udsink:
-              container:
-                image: quay.io/numaio/numaflow-python/sink-log:stable
-                imagePullPolicy: IfNotPresent
+        fallback:
+          udsink:
+            container:
+              image: quay.io/numaio/numaflow-python/sink-log:stable
+              imagePullPolicy: IfNotPresent
+        onSuccess:
+          udsink:
+            container:
+              image: quay.io/numaio/numaflow-rs/sink-log:stable
+              imagePullPolicy: IfNotPresent
     - name: log-output
       sink:
         log: {}
   edges:
     - from: in
-      to: p1
-    - from: p1
       to: out
-    - from: p1
+    - from: in
       to: log-output

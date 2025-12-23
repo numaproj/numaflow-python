@@ -15,12 +15,15 @@ from pynumaflow._constants import (
     UD_CONTAINER_FALLBACK_SINK,
     FALLBACK_SINK_SOCK_PATH,
     FALLBACK_SINK_SERVER_INFO_FILE_PATH,
+    UD_CONTAINER_ON_SUCCESS_SINK,
+    ON_SUCCESS_SINK_SOCK_PATH,
+    ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH,
 )
 from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.sinker import (
     Datum,
 )
-from pynumaflow.sinker import Responses, Response
+from pynumaflow.sinker import Responses, Response, Message, UserMetadata
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.async_server import SinkAsyncServer
 from tests.sink.test_server import (
@@ -41,6 +44,10 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
             raise ValueError("test_mock_err_message")
         elif msg.value.decode("utf-8") == "test_mock_fallback_message":
             responses.append(Response.as_fallback(msg.id))
+        elif msg.value.decode("utf-8") == "test_mock_on_success1_message":
+            responses.append(Response.as_on_success(msg.id, None))
+        elif msg.value.decode("utf-8") == "test_mock_on_success2_message":
+            responses.append(Response.as_on_success(msg.id, Message(b"value", ["key"], UserMetadata())))
         else:
             if msg.user_metadata.groups() != ["custom_info"]:
                 raise ValueError("user metadata groups do not match")
@@ -58,6 +65,12 @@ def start_sink_streaming_request(_id: str, req_type) -> (Datum, tuple):
 
     if req_type == "fallback":
         value = mock_fallback_message()
+
+    if req_type == "on_success1":
+        value = bytes("test_mock_on_success1_message", encoding="utf-8")
+
+    if req_type == "on_success2":
+        value = bytes("test_mock_on_success2_message", encoding="utf-8")
 
     request = sink_pb2.SinkRequest.Request(
         value=value,
@@ -259,6 +272,64 @@ class TestAsyncSink(unittest.TestCase):
         except grpc.RpcError as e:
             logging.error(e)
 
+    def test_sink_on_success1(self) -> None:
+        stub = self.__stub()
+        try:
+            generator_response = stub.SinkFn(
+                request_iterator=request_generator(count=10, req_type="on_success1", session=1)
+            )
+            handshake = next(generator_response)
+            # assert that handshake response is received.
+            self.assertTrue(handshake.handshake.sot)
+
+            data_resp = []
+            for r in generator_response:
+                data_resp.append(r)
+
+            # 1 sink data response + 1 EOT response
+            self.assertEqual(2, len(data_resp))
+
+            idx = 0
+            # capture the output from the SinkFn generator and assert.
+            for resp in data_resp[0].results:
+                self.assertEqual(resp.id, str(idx))
+                self.assertEqual(resp.status, sink_pb2.Status.ON_SUCCESS)
+                idx += 1
+            # EOT Response
+            self.assertEqual(data_resp[1].status.eot, True)
+
+        except grpc.RpcError as e:
+            logging.error(e)
+
+    def test_sink_on_success2(self) -> None:
+        stub = self.__stub()
+        try:
+            generator_response = stub.SinkFn(
+                request_iterator=request_generator(count=10, req_type="on_success2", session=1)
+            )
+            handshake = next(generator_response)
+            # assert that handshake response is received.
+            self.assertTrue(handshake.handshake.sot)
+
+            data_resp = []
+            for r in generator_response:
+                data_resp.append(r)
+
+            # 1 sink data response + 1 EOT response
+            self.assertEqual(2, len(data_resp))
+
+            idx = 0
+            # capture the output from the SinkFn generator and assert.
+            for resp in data_resp[0].results:
+                self.assertEqual(resp.id, str(idx))
+                self.assertEqual(resp.status, sink_pb2.Status.ON_SUCCESS)
+                idx += 1
+            # EOT Response
+            self.assertEqual(data_resp[1].status.eot, True)
+
+        except grpc.RpcError as e:
+            logging.error(e)
+
     def __stub(self):
         return sink_pb2_grpc.SinkStub(_channel)
 
@@ -271,6 +342,12 @@ class TestAsyncSink(unittest.TestCase):
         server = SinkAsyncServer(sinker_instance=udsink_handler)
         self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
         self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
+
+    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_ON_SUCCESS_SINK)
+    def test_start_on_success_sink(self):
+        server = SinkAsyncServer(sinker_instance=udsink_handler)
+        self.assertEqual(server.sock_path, f"unix://{ON_SUCCESS_SINK_SOCK_PATH}")
+        self.assertEqual(server.server_info_file, ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH)
 
     def test_max_threads(self):
         # max cap at 16

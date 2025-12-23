@@ -21,9 +21,7 @@ class UserDefinedSink(Sinker):
                 # create a message to be sent to onSuccess sink
                 on_success_message = Response.as_on_success(
                     msg.id,
-                    Message(msg.value)
-                    .with_keys(["on_success"])
-                    .with_user_metadata(msg.user_metadata),
+                    Message(msg.value, ["on_success"], msg.user_metadata),
                 )
                 responses.append(on_success_message)
                 # Sending `None`, on the other hand, specifies that simply send

@@ -59,7 +59,8 @@ class TestResponses(unittest.TestCase):
             "Response(id='4', success=True, err=None, fallback=False, "
             "on_success=False, on_success_msg=None), "
             "Response(id='6', success=False, err=None, fallback=False, "
-            "on_success=True, on_success_msg=Message(_keys=['key'], _value=b'value', _user_metadata=UserMetadata(_data={}))), "
+            "on_success=True, on_success_msg=Message(_keys=['key'], _value=b'value', "
+            "_user_metadata=UserMetadata(_data={}))), "
             "Response(id='7', success=False, err=None, fallback=False, "
             "on_success=True, on_success_msg=None)]",
             repr(self.resps),

@@ -47,7 +47,9 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
         elif msg.value.decode("utf-8") == "test_mock_on_success1_message":
             responses.append(Response.as_on_success(msg.id, None))
         elif msg.value.decode("utf-8") == "test_mock_on_success2_message":
-            responses.append(Response.as_on_success(msg.id, Message(b"value", ["key"], UserMetadata())))
+            responses.append(
+                Response.as_on_success(msg.id, Message(b"value", ["key"], UserMetadata()))
+            )
         else:
             if msg.user_metadata.groups() != ["custom_info"]:
                 raise ValueError("user metadata groups do not match")

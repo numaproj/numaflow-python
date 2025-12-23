@@ -1,7 +1,6 @@
 from typing import Optional
 
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
-from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker._dtypes import Response, Datum, Responses, Message
 

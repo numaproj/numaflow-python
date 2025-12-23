@@ -38,7 +38,9 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
         elif "on_success1" in msg.value.decode("utf-8"):
             results.append(Response.as_on_success(msg.id, None))
         elif "on_success2" in msg.value.decode("utf-8"):
-            results.append(Response.as_on_success(msg.id, Message(b"value", ["key"], UserMetadata())))
+            results.append(
+                Response.as_on_success(msg.id, Message(b"value", ["key"], UserMetadata()))
+            )
         else:
             if msg.user_metadata.groups() != ["custom_info"]:
                 raise ValueError("user metadata groups do not match")

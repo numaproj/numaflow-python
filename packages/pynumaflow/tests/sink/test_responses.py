@@ -1,7 +1,7 @@
 import unittest
 from collections.abc import Iterator
 
-from pynumaflow.sinker import Response, Responses, Sinker, Datum
+from pynumaflow.sinker import Response, Responses, Sinker, Datum, Message, UserMetadata
 
 
 class TestResponse(unittest.TestCase):
@@ -18,6 +18,12 @@ class TestResponse(unittest.TestCase):
         self.assertFalse(_response.success)
         self.assertTrue(_response.fallback)
 
+    def test_as_on_success(self):
+        _response = Response.as_on_success("5", Message(b"value", ["key"], UserMetadata()))
+        self.assertFalse(_response.success)
+        self.assertFalse(_response.fallback)
+        self.assertTrue(_response.on_success)
+
 
 class TestResponses(unittest.TestCase):
     def setUp(self) -> None:
@@ -29,7 +35,9 @@ class TestResponses(unittest.TestCase):
 
     def test_responses(self):
         self.resps.append(Response.as_success("4"))
-        self.assertEqual(4, len(self.resps))
+        self.resps.append(Response.as_on_success("6", Message(b"value", ["key"], UserMetadata())))
+        self.resps.append(Response.as_on_success("7", None))
+        self.assertEqual(6, len(self.resps))
 
         for resp in self.resps:
             self.assertIsInstance(resp, Response)
@@ -38,12 +46,23 @@ class TestResponses(unittest.TestCase):
         self.assertEqual(self.resps[1].id, "3")
         self.assertEqual(self.resps[2].id, "5")
         self.assertEqual(self.resps[3].id, "4")
+        self.assertEqual(self.resps[4].id, "6")
+        self.assertEqual(self.resps[5].id, "7")
 
         self.assertEqual(
-            "[Response(id='2', success=True, err=None, fallback=False), "
-            "Response(id='3', success=False, err='RuntimeError encountered!', fallback=False), "
-            "Response(id='5', success=False, err=None, fallback=True), "
-            "Response(id='4', success=True, err=None, fallback=False)]",
+            "[Response(id='2', success=True, err=None, fallback=False, "
+            "on_success=False, on_success_msg=None), "
+            "Response(id='3', success=False, err='RuntimeError encountered!', "
+            "fallback=False, on_success=False, on_success_msg=None), "
+            "Response(id='5', success=False, err=None, fallback=True, "
+            "on_success=False, on_success_msg=None), "
+            "Response(id='4', success=True, err=None, fallback=False, "
+            "on_success=False, on_success_msg=None), "
+            "Response(id='6', success=False, err=None, fallback=False, "
+            "on_success=True, on_success_msg=Message(_keys=['key'], _value=b'value', "
+            "_user_metadata=UserMetadata(_data={}))), "
+            "Response(id='7', success=False, err=None, fallback=False, "
+            "on_success=True, on_success_msg=None)]",
             repr(self.resps),
         )
 

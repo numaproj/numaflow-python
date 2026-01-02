@@ -47,9 +47,8 @@ COPY --from=udf-builder $VENV_PATH $VENV_PATH
 COPY --from=udf-builder $EXAMPLE_PATH $EXAMPLE_PATH
 
 WORKDIR $EXAMPLE_PATH
-RUN chmod +x entry.sh
 
 ENTRYPOINT ["/dumb-init", "--"]
-CMD ["sh", "-c", "$EXAMPLE_PATH/entry.sh"]
+CMD ["python", "$EXAMPLE_PATH/example.py"]
 
 EXPOSE 5000

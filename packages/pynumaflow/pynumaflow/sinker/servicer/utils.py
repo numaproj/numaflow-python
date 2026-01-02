@@ -49,13 +49,10 @@ def build_sink_response(rspn: Response) -> sink_pb2.SinkResponse.Result:
 def build_on_success_message(
     msg: Optional[Message],
 ) -> Optional[sink_pb2.SinkResponse.Result.Message]:
-    if not msg:
+    if msg is None:
         return None
 
-    if msg.user_metadata is not None:
-        metadata = msg.user_metadata._to_proto()
-    else:
-        metadata = None
+    metadata = msg.user_metadata._to_proto() if msg.user_metadata is not None else None
 
     return sink_pb2.SinkResponse.Result.Message(
         keys=msg.keys,

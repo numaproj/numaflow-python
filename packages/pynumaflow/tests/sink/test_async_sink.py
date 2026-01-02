@@ -69,10 +69,10 @@ def start_sink_streaming_request(_id: str, req_type) -> (Datum, tuple):
         value = mock_fallback_message()
 
     if req_type == "on_success1":
-        value = bytes("test_mock_on_success1_message", encoding="utf-8")
+        value = b"test_mock_on_success1_message"
 
     if req_type == "on_success2":
-        value = bytes("test_mock_on_success2_message", encoding="utf-8")
+        value = b"test_mock_on_success2_message"
 
     request = sink_pb2.SinkRequest.Request(
         value=value,
@@ -276,6 +276,7 @@ class TestAsyncSink(unittest.TestCase):
 
     def test_sink_on_success1(self) -> None:
         stub = self.__stub()
+        grpc_exception = None
         try:
             generator_response = stub.SinkFn(
                 request_iterator=request_generator(count=10, req_type="on_success1", session=1)
@@ -302,9 +303,13 @@ class TestAsyncSink(unittest.TestCase):
 
         except grpc.RpcError as e:
             logging.error(e)
+            grpc_exception = e
+
+        self.assertIsNone(grpc_exception)
 
     def test_sink_on_success2(self) -> None:
         stub = self.__stub()
+        grpc_exception = None
         try:
             generator_response = stub.SinkFn(
                 request_iterator=request_generator(count=10, req_type="on_success2", session=1)
@@ -331,6 +336,9 @@ class TestAsyncSink(unittest.TestCase):
 
         except grpc.RpcError as e:
             logging.error(e)
+            grpc_exception = e
+
+        self.assertIsNone(grpc_exception)
 
     def __stub(self):
         return sink_pb2_grpc.SinkStub(_channel)

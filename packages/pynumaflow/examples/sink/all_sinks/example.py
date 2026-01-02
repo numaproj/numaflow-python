@@ -1,4 +1,3 @@
-import os
 from collections.abc import AsyncIterable
 from pynumaflow.sinker import Datum, Responses, Response, Sinker, Message
 from pynumaflow.sinker import SinkAsyncServer
@@ -6,7 +5,7 @@ import logging
 import random
 
 logging.basicConfig(level=logging.DEBUG)
-_LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class UserDefinedSink(Sinker):
@@ -14,7 +13,7 @@ class UserDefinedSink(Sinker):
         responses = Responses()
         async for msg in datums:
             if primary_sink_write_status():
-                _LOGGER.info(
+                logger.info(
                     "Write to User Defined Sink succeeded, writing %s to onSuccess sink",
                     msg.value.decode("utf-8"),
                 )
@@ -28,7 +27,7 @@ class UserDefinedSink(Sinker):
                 # the original message to the onSuccess sink
                 # `responses.append(Response.as_on_success(msg.id, None))`
             else:
-                _LOGGER.info(
+                logger.info(
                     "Write to User Defined Sink failed, writing %s to fallback sink",
                     msg.value.decode("utf-8"),
                 )
@@ -40,7 +39,7 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
     responses = Responses()
     async for msg in datums:
         if primary_sink_write_status():
-            _LOGGER.info(
+            logger.info(
                 "Write to User Defined Sink succeeded, writing %s to onSuccess sink",
                 msg.value.decode("utf-8"),
             )
@@ -54,7 +53,7 @@ async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
             # the original message to the onSuccess sink
             # `responses.append(Response.as_on_success(msg.id, None))`
         else:
-            _LOGGER.info(
+            logger.info(
                 "Write to User Defined Sink failed, writing %s to fallback sink",
                 msg.value.decode("utf-8"),
             )
@@ -70,10 +69,6 @@ def primary_sink_write_status():
 
 
 if __name__ == "__main__":
-    invoke = os.getenv("INVOKE", "func_handler")
-    if invoke == "class":
-        sink_handler = UserDefinedSink()
-    else:
-        sink_handler = udsink_handler
+    sink_handler = UserDefinedSink()
     grpc_server = SinkAsyncServer(sink_handler)
     grpc_server.start()

@@ -242,7 +242,7 @@ class TestServer(unittest.TestCase):
             sink_pb2.SinkRequest(
                 request=sink_pb2.SinkRequest.Request(
                     id="test_id_2",
-                    value=bytes("test_mock_on_success1_message", encoding="utf-8"),
+                    value=b"test_mock_on_success1_message",
                     event_time=event_time_timestamp,
                     watermark=watermark_timestamp,
                     metadata=self.metadata,
@@ -251,7 +251,7 @@ class TestServer(unittest.TestCase):
             sink_pb2.SinkRequest(
                 request=sink_pb2.SinkRequest.Request(
                     id="test_id_3",
-                    value=bytes("test_mock_on_success2_message", encoding="utf-8"),
+                    value=b"test_mock_on_success2_message",
                     event_time=event_time_timestamp,
                     watermark=watermark_timestamp,
                     metadata=self.metadata,

@@ -32,8 +32,8 @@ class Message:
     def __init__(
         self,
         value: bytes,
-        keys: list[str] = None,
-        user_metadata: UserMetadata = None,
+        keys: Optional[list[str]] = None,
+        user_metadata: Optional[UserMetadata] = None,
     ):
         self._value = value
         self._keys = keys
@@ -87,7 +87,7 @@ class Response:
     # as_success creates a successful Response with the given id.
     # The Success field is set to true.
     @classmethod
-    def as_success(cls: type[R], id_: str) -> R:
+    def as_success(cls, id_: str) -> "Response":
         return Response(
             id=id_, success=True, err=None, fallback=False, on_success=False, on_success_msg=None
         )
@@ -95,7 +95,7 @@ class Response:
     # as_failure creates a failed Response with the given id and error message.
     # The success field is set to false and the err field is set to the provided error message.
     @classmethod
-    def as_failure(cls: type[R], id_: str, err_msg: str) -> R:
+    def as_failure(cls, id_: str, err_msg: str) -> "Response":
         return Response(
             id=id_,
             success=False,
@@ -108,7 +108,7 @@ class Response:
     # as_fallback creates a Response with the fallback field set to true.
     # This indicates that the message should be sent to the fallback sink.
     @classmethod
-    def as_fallback(cls: type[R], id_: str) -> R:
+    def as_fallback(cls, id_: str) -> "Response":
         return Response(
             id=id_, fallback=True, err=None, success=False, on_success=False, on_success_msg=None
         )
@@ -116,7 +116,7 @@ class Response:
     # as_on_success creates a Response with the on_success field set to true.
     # This indicates that the message should be sent to the on_success sink.
     @classmethod
-    def as_on_success(cls: type[R], id_: str, on_success: Optional[Message] = None) -> R:
+    def as_on_success(cls, id_: str, on_success: Optional[Message] = None) -> "Response":
         return Response(
             id=id_,
             fallback=False,

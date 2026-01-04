@@ -14,10 +14,13 @@ from pynumaflow._constants import (
     UD_CONTAINER_FALLBACK_SINK,
     FALLBACK_SINK_SOCK_PATH,
     FALLBACK_SINK_SERVER_INFO_FILE_PATH,
+    UD_CONTAINER_ON_SUCCESS_SINK,
+    ON_SUCCESS_SINK_SOCK_PATH,
+    ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH,
 )
 from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sinker import sink_pb2
-from pynumaflow.sinker import Responses, Datum, Response, SinkServer
+from pynumaflow.sinker import Responses, Datum, Response, SinkServer, Message, UserMetadata
 from tests.testing_utils import mock_terminate_on_stop
 
 
@@ -32,6 +35,12 @@ def udsink_handler(datums: Iterator[Datum]) -> Responses:
             results.append(Response.as_failure(msg.id, "mock sink message error"))
         elif "fallback" in msg.value.decode("utf-8"):
             results.append(Response.as_fallback(msg.id))
+        elif "on_success1" in msg.value.decode("utf-8"):
+            results.append(Response.as_on_success(msg.id, None))
+        elif "on_success2" in msg.value.decode("utf-8"):
+            results.append(
+                Response.as_on_success(msg.id, Message(b"value", ["key"], UserMetadata()))
+            )
         else:
             if msg.user_metadata.groups() != ["custom_info"]:
                 raise ValueError("user metadata groups do not match")
@@ -230,6 +239,24 @@ class TestServer(unittest.TestCase):
                     metadata=self.metadata,
                 )
             ),
+            sink_pb2.SinkRequest(
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_2",
+                    value=b"test_mock_on_success1_message",
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    metadata=self.metadata,
+                )
+            ),
+            sink_pb2.SinkRequest(
+                request=sink_pb2.SinkRequest.Request(
+                    id="test_id_3",
+                    value=b"test_mock_on_success2_message",
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    metadata=self.metadata,
+                )
+            ),
             sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
         ]
 
@@ -258,9 +285,13 @@ class TestServer(unittest.TestCase):
         # first message should be handshake response
         self.assertTrue(responses[0].handshake.sot)
 
+        self.assertEqual(4, len(responses[1].results))
+
         # assert the values for the corresponding messages
         self.assertEqual("test_id_0", responses[1].results[0].id)
         self.assertEqual("test_id_1", responses[1].results[1].id)
+        self.assertEqual("test_id_2", responses[1].results[2].id)
+        self.assertEqual("test_id_3", responses[1].results[3].id)
         self.assertEqual(responses[1].results[0].status, sink_pb2.Status.SUCCESS)
         self.assertEqual(responses[1].results[1].status, sink_pb2.Status.FAILURE)
         self.assertEqual("", responses[1].results[0].err_msg)
@@ -281,6 +312,12 @@ class TestServer(unittest.TestCase):
         server = SinkServer(sinker_instance=udsink_handler)
         self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
         self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
+
+    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_ON_SUCCESS_SINK)
+    def test_start_on_success_sink(self):
+        server = SinkServer(sinker_instance=udsink_handler)
+        self.assertEqual(server.sock_path, f"unix://{ON_SUCCESS_SINK_SOCK_PATH}")
+        self.assertEqual(server.server_info_file, ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH)
 
     def test_max_threads(self):
         # max cap at 16

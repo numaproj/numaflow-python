@@ -1,6 +1,8 @@
+from typing import Optional
+
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sinker import sink_pb2
-from pynumaflow.sinker._dtypes import Response, Datum, Responses
+from pynumaflow.sinker._dtypes import Response, Datum, Responses, Message
 
 
 def build_sink_resp_results(responses: Responses) -> list[sink_pb2.SinkResponse.Result]:
@@ -32,10 +34,31 @@ def build_sink_response(rspn: Response) -> sink_pb2.SinkResponse.Result:
         return sink_pb2.SinkResponse.Result(id=rid, status=sink_pb2.Status.SUCCESS)
     elif rspn.fallback:
         return sink_pb2.SinkResponse.Result(id=rid, status=sink_pb2.Status.FALLBACK)
+    elif rspn.on_success:
+        return sink_pb2.SinkResponse.Result(
+            id=rid,
+            status=sink_pb2.Status.ON_SUCCESS,
+            on_success_msg=build_on_success_message(rspn.on_success_msg),
+        )
     else:
         return sink_pb2.SinkResponse.Result(
             id=rid, status=sink_pb2.Status.FAILURE, err_msg=rspn.err
         )
+
+
+def build_on_success_message(
+    msg: Optional[Message],
+) -> Optional[sink_pb2.SinkResponse.Result.Message]:
+    if msg is None:
+        return None
+
+    metadata = msg.user_metadata._to_proto() if msg.user_metadata is not None else None
+
+    return sink_pb2.SinkResponse.Result.Message(
+        keys=msg.keys,
+        value=msg.value,
+        metadata=metadata,
+    )
 
 
 def datum_from_sink_req(d: sink_pb2.SinkRequest) -> Datum:

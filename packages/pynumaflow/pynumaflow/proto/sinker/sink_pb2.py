@@ -27,7 +27,7 @@ from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__
 from pynumaflow.proto.common import metadata_pb2 as pynumaflow_dot_proto_dot_common_dot_metadata__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"pynumaflow/proto/sinker/sink.proto\x12\x07sink.v1\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a&pynumaflow/proto/common/metadata.proto\"\xc7\x03\n\x0bSinkRequest\x12-\n\x07request\x18\x01 \x01(\x0b\x32\x1c.sink.v1.SinkRequest.Request\x12+\n\x06status\x18\x02 \x01(\x0b\x32\x1b.sink.v1.TransmissionStatus\x12*\n\thandshake\x18\x03 \x01(\x0b\x32\x12.sink.v1.HandshakeH\x00\x88\x01\x01\x1a\xa1\x02\n\x07Request\x12\x0c\n\x04keys\x18\x01 \x03(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12.\n\nevent_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12-\n\twatermark\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\n\n\x02id\x18\x05 \x01(\t\x12:\n\x07headers\x18\x06 \x03(\x0b\x32).sink.v1.SinkRequest.Request.HeadersEntry\x12\"\n\x08metadata\x18\x07 \x01(\x0b\x32\x10.common.Metadata\x1a.\n\x0cHeadersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x0c\n\n_handshake\"\x18\n\tHandshake\x12\x0b\n\x03sot\x18\x01 \x01(\x08\"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\"!\n\x12TransmissionStatus\x12\x0b\n\x03\x65ot\x18\x01 \x01(\x08\"\xac\x02\n\x0cSinkResponse\x12-\n\x07results\x18\x01 \x03(\x0b\x32\x1c.sink.v1.SinkResponse.Result\x12*\n\thandshake\x18\x02 \x01(\x0b\x32\x12.sink.v1.HandshakeH\x00\x88\x01\x01\x12\x30\n\x06status\x18\x03 \x01(\x0b\x32\x1b.sink.v1.TransmissionStatusH\x01\x88\x01\x01\x1av\n\x06Result\x12\n\n\x02id\x18\x01 \x01(\t\x12\x1f\n\x06status\x18\x02 \x01(\x0e\x32\x0f.sink.v1.Status\x12\x0f\n\x07\x65rr_msg\x18\x03 \x01(\t\x12\x1b\n\x0eserve_response\x18\x04 \x01(\x0cH\x00\x88\x01\x01\x42\x11\n\x0f_serve_responseB\x0c\n\n_handshakeB\t\n\x07_status*;\n\x06Status\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x46\x41ILURE\x10\x01\x12\x0c\n\x08\x46\x41LLBACK\x10\x02\x12\t\n\x05SERVE\x10\x03\x32|\n\x04Sink\x12\x39\n\x06SinkFn\x12\x14.sink.v1.SinkRequest\x1a\x15.sink.v1.SinkResponse(\x01\x30\x01\x12\x39\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x16.sink.v1.ReadyResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"pynumaflow/proto/sinker/sink.proto\x12\x07sink.v1\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a&pynumaflow/proto/common/metadata.proto\"\xc7\x03\n\x0bSinkRequest\x12-\n\x07request\x18\x01 \x01(\x0b\x32\x1c.sink.v1.SinkRequest.Request\x12+\n\x06status\x18\x02 \x01(\x0b\x32\x1b.sink.v1.TransmissionStatus\x12*\n\thandshake\x18\x03 \x01(\x0b\x32\x12.sink.v1.HandshakeH\x00\x88\x01\x01\x1a\xa1\x02\n\x07Request\x12\x0c\n\x04keys\x18\x01 \x03(\t\x12\r\n\x05value\x18\x02 \x01(\x0c\x12.\n\nevent_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12-\n\twatermark\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\n\n\x02id\x18\x05 \x01(\t\x12:\n\x07headers\x18\x06 \x03(\x0b\x32).sink.v1.SinkRequest.Request.HeadersEntry\x12\"\n\x08metadata\x18\x07 \x01(\x0b\x32\x10.common.Metadata\x1a.\n\x0cHeadersEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\x42\x0c\n\n_handshake\"\x18\n\tHandshake\x12\x0b\n\x03sot\x18\x01 \x01(\x08\"\x1e\n\rReadyResponse\x12\r\n\x05ready\x18\x01 \x01(\x08\"!\n\x12TransmissionStatus\x12\x0b\n\x03\x65ot\x18\x01 \x01(\x08\"\xcf\x03\n\x0cSinkResponse\x12-\n\x07results\x18\x01 \x03(\x0b\x32\x1c.sink.v1.SinkResponse.Result\x12*\n\thandshake\x18\x02 \x01(\x0b\x32\x12.sink.v1.HandshakeH\x00\x88\x01\x01\x12\x30\n\x06status\x18\x03 \x01(\x0b\x32\x1b.sink.v1.TransmissionStatusH\x01\x88\x01\x01\x1a\x98\x02\n\x06Result\x12\n\n\x02id\x18\x01 \x01(\t\x12\x1f\n\x06status\x18\x02 \x01(\x0e\x32\x0f.sink.v1.Status\x12\x0f\n\x07\x65rr_msg\x18\x03 \x01(\t\x12\x1b\n\x0eserve_response\x18\x04 \x01(\x0cH\x00\x88\x01\x01\x12\x41\n\x0eon_success_msg\x18\x05 \x01(\x0b\x32$.sink.v1.SinkResponse.Result.MessageH\x01\x88\x01\x01\x1aJ\n\x07Message\x12\r\n\x05value\x18\x01 \x01(\x0c\x12\x0c\n\x04keys\x18\x02 \x03(\t\x12\"\n\x08metadata\x18\x03 \x01(\x0b\x32\x10.common.MetadataB\x11\n\x0f_serve_responseB\x11\n\x0f_on_success_msgB\x0c\n\n_handshakeB\t\n\x07_status*K\n\x06Status\x12\x0b\n\x07SUCCESS\x10\x00\x12\x0b\n\x07\x46\x41ILURE\x10\x01\x12\x0c\n\x08\x46\x41LLBACK\x10\x02\x12\t\n\x05SERVE\x10\x03\x12\x0e\n\nON_SUCCESS\x10\x04\x32|\n\x04Sink\x12\x39\n\x06SinkFn\x12\x14.sink.v1.SinkRequest\x1a\x15.sink.v1.SinkResponse(\x01\x30\x01\x12\x39\n\x07IsReady\x12\x16.google.protobuf.Empty\x1a\x16.sink.v1.ReadyResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,8 +36,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_SINKREQUEST_REQUEST_HEADERSENTRY']._loaded_options = None
   _globals['_SINKREQUEST_REQUEST_HEADERSENTRY']._serialized_options = b'8\001'
-  _globals['_STATUS']._serialized_start=1003
-  _globals['_STATUS']._serialized_end=1062
+  _globals['_STATUS']._serialized_start=1166
+  _globals['_STATUS']._serialized_end=1241
   _globals['_SINKREQUEST']._serialized_start=150
   _globals['_SINKREQUEST']._serialized_end=605
   _globals['_SINKREQUEST_REQUEST']._serialized_start=302
@@ -51,9 +51,11 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_TRANSMISSIONSTATUS']._serialized_start=665
   _globals['_TRANSMISSIONSTATUS']._serialized_end=698
   _globals['_SINKRESPONSE']._serialized_start=701
-  _globals['_SINKRESPONSE']._serialized_end=1001
-  _globals['_SINKRESPONSE_RESULT']._serialized_start=858
-  _globals['_SINKRESPONSE_RESULT']._serialized_end=976
-  _globals['_SINK']._serialized_start=1064
-  _globals['_SINK']._serialized_end=1188
+  _globals['_SINKRESPONSE']._serialized_end=1164
+  _globals['_SINKRESPONSE_RESULT']._serialized_start=859
+  _globals['_SINKRESPONSE_RESULT']._serialized_end=1139
+  _globals['_SINKRESPONSE_RESULT_MESSAGE']._serialized_start=1027
+  _globals['_SINKRESPONSE_RESULT_MESSAGE']._serialized_end=1101
+  _globals['_SINK']._serialized_start=1243
+  _globals['_SINK']._serialized_end=1367
 # @@protoc_insertion_point(module_scope)

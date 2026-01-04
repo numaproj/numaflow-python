@@ -14,6 +14,9 @@ from pynumaflow._constants import (
     UD_CONTAINER_FALLBACK_SINK,
     FALLBACK_SINK_SOCK_PATH,
     FALLBACK_SINK_SERVER_INFO_FILE_PATH,
+    UD_CONTAINER_ON_SUCCESS_SINK,
+    ON_SUCCESS_SINK_SOCK_PATH,
+    ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH,
     MAX_NUM_THREADS,
 )
 
@@ -82,6 +85,10 @@ class SinkServer(NumaflowServer):
             _LOGGER.info("Using Fallback Sink")
             sock_path = FALLBACK_SINK_SOCK_PATH
             server_info_file = FALLBACK_SINK_SERVER_INFO_FILE_PATH
+        elif os.getenv(ENV_UD_CONTAINER_TYPE, "") == UD_CONTAINER_ON_SUCCESS_SINK:
+            _LOGGER.info("Using On Success Sink")
+            sock_path = ON_SUCCESS_SINK_SOCK_PATH
+            server_info_file = ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH
 
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, MAX_NUM_THREADS)

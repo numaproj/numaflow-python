@@ -19,8 +19,8 @@ class Message:
 
     Args:
         value: data in bytes
-        keys: []string keys for vertex (optional)
-        tags: []string tags for conditional forwarding (optional)
+        keys: list of keys for vertex (optional)
+        tags: list of tags for conditional forwarding (optional)
     """
 
     __slots__ = ("_value", "_keys", "_tags")
@@ -61,6 +61,7 @@ class Message:
 class Datum:
     """
     Class to define the important information for the event.
+
     Args:
         keys: the keys of the event.
         value: the payload of the event.

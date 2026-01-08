@@ -9,12 +9,18 @@ R = TypeVar("R", bound="Response")
 class Response:
     """
     Class to define the important information for the event.
+
     Args:
         value: the payload of the event.
         no_broadcast: the flag to indicate whether the event should be broadcasted.
-    >>> # Example usage
-    >>> Response.broadcast_message(b"hello")
-    >>> Response.no_broadcast_message()
+
+    Example usage
+    ```py
+    from pynumaflow.sideinput import Response
+
+    Response.broadcast_message(b"hello")
+    Response.no_broadcast_message()
+    ```
     """
 
     __slots__ = ("value", "no_broadcast")

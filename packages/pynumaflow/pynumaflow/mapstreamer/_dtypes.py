@@ -19,8 +19,8 @@ class Message:
 
     Args:
         value: data in bytes
-        keys: []string keys for vertex (optional)
-        tags: []string tags for conditional forwarding (optional)
+        keys: list of keys for vertex (optional)
+        tags: list of tags for conditional forwarding (optional)
     """
 
     __slots__ = ("_value", "_keys", "_tags")
@@ -29,7 +29,7 @@ class Message:
     _keys: list[str]
     _tags: list[str]
 
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
+    def __init__(self, value: bytes, keys: Optional[list[str]] = None, tags: Optional[list[str]] = None):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -102,6 +102,7 @@ class Messages(Sequence[M]):
 class Datum:
     """
     Class to define the important information for the event.
+
     Args:
         keys: the keys of the event.
         value: the payload of the event.
@@ -109,20 +110,19 @@ class Datum:
         watermark: the watermark of the event.
         headers: the headers of the event.
 
-    >>> # Example usage
-    >>> from pynumaflow.mapstreamer import Datum
-    >>> from datetime import datetime, timezone
-    >>> payload = bytes("test_mock_message", encoding="utf-8")
-    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
-    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> msg_headers = {"key1": "value1", "key2": "value2"}
-    >>> d = Datum(
-    ...       keys=["test_key"],
-    ...       value=payload,
-    ...       event_time=t1,
-    ...       watermark=t2,
-    ...       headers=msg_headers,
-    ...    )
+    Example:
+    ```py
+    from pynumaflow.mapstreamer import Datum
+    from datetime import datetime, timezone
+
+    d = Datum(
+          keys=["test_key"],
+          value=b"test_mock_message",
+          event_time=datetime.fromtimestamp(1662998400, timezone.utc),
+          watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+          headers={"key1": "value1", "key2": "value2"},
+       )
+    ```
     """
 
     __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")

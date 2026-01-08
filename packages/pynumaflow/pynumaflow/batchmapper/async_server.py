@@ -39,6 +39,7 @@ class BatchMapAsyncServer(NumaflowServer):
         Create a new grpc Async Batch Map Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
+
         Args:
             batch_mapper_instance: The batch map stream instance to be used for Batch Map UDF
             sock_path: The UNIX socket path to be used for the server
@@ -47,30 +48,31 @@ class BatchMapAsyncServer(NumaflowServer):
                             defaults to 4 and max capped at 16
 
         Example invocation:
-         class Flatmap(BatchMapper):
-            async def handler(
-                self,
-                datums: AsyncIterable[Datum],
-            ) -> BatchResponses:
-                batch_responses = BatchResponses()
-                async for datum in datums:
-                    val = datum.value
-                    _ = datum.event_time
-                    _ = datum.watermark
-                    strs = val.decode("utf-8").split(",")
-                    batch_response = BatchResponse.from_id(datum.id)
-                    if len(strs) == 0:
-                        batch_response.append(Message.to_drop())
-                    else:
-                        for s in strs:
-                            batch_response.append(Message(str.encode(s)))
-                    batch_responses.append(batch_response)
+        ```py
+        class Flatmap(BatchMapper):
+           async def handler(
+               self,
+               datums: AsyncIterable[Datum],
+           ) -> BatchResponses:
+               batch_responses = BatchResponses()
+               async for datum in datums:
+                   val = datum.value
+                   _ = datum.event_time
+                   _ = datum.watermark
+                   strs = val.decode("utf-8").split(",")
+                   batch_response = BatchResponse.from_id(datum.id)
+                   if len(strs) == 0:
+                       batch_response.append(Message.to_drop())
+                   else:
+                       for s in strs:
+                           batch_response.append(Message(str.encode(s)))
+                   batch_responses.append(batch_response)
 
-                return batch_responses
-
+               return batch_responses
         if __name__ == "__main__":
             grpc_server = BatchMapAsyncServer(Flatmap())
             grpc_server.start()
+        ```
         """
         self.batch_mapper_instance: BatchMapCallable = batch_mapper_instance
         self.sock_path = f"unix://{sock_path}"

@@ -42,6 +42,7 @@ class MapStreamAsyncServer(NumaflowServer):
         Create a new grpc Async Map Stream Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
+
         Args:
             map_stream_instance: The map stream instance to be used for Map Stream UDF
             sock_path: The UNIX socket path to be used for the server
@@ -51,25 +52,13 @@ class MapStreamAsyncServer(NumaflowServer):
             server_type: The type of server to be used
 
         Example invocation:
-            import os
-            from collections.abc import AsyncIterable
-            from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer, MapStreamer
+        ```py
+        import os
+        from collections.abc import AsyncIterable
+        from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer, MapStreamer
 
-            class FlatMapStream(MapStreamer):
-                async def handler(self, keys: list[str], datum: Datum) -> AsyncIterable[Message]:
-                    val = datum.value
-                    _ = datum.event_time
-                    _ = datum.watermark
-                    strs = val.decode("utf-8").split(",")
-
-                    if len(strs) == 0:
-                        yield Message.to_drop()
-                        return
-                    for s in strs:
-                        yield Message(str.encode(s))
-
-            async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Message]:
-
+        class FlatMapStream(MapStreamer):
+            async def handler(self, keys: list[str], datum: Datum) -> AsyncIterable[Message]:
                 val = datum.value
                 _ = datum.event_time
                 _ = datum.watermark
@@ -81,15 +70,28 @@ class MapStreamAsyncServer(NumaflowServer):
                 for s in strs:
                     yield Message(str.encode(s))
 
-            if __name__ == "__main__":
-                invoke = os.getenv("INVOKE", "func_handler")
-                if invoke == "class":
-                    handler = FlatMapStream()
-                else:
-                    handler = map_stream_handler
-                grpc_server = MapStreamAsyncServer(handler)
-                grpc_server.start()
+        async def map_stream_handler(_: list[str], datum: Datum) -> AsyncIterable[Message]:
 
+            val = datum.value
+            _ = datum.event_time
+            _ = datum.watermark
+            strs = val.decode("utf-8").split(",")
+
+            if len(strs) == 0:
+                yield Message.to_drop()
+                return
+            for s in strs:
+                yield Message(str.encode(s))
+
+        if __name__ == "__main__":
+            invoke = os.getenv("INVOKE", "func_handler")
+            if invoke == "class":
+                handler = FlatMapStream()
+            else:
+                handler = map_stream_handler
+            grpc_server = MapStreamAsyncServer(handler)
+            grpc_server.start()
+        ```
         """
         self.map_stream_instance: MapStreamCallable = map_stream_instance
         self.sock_path = f"unix://{sock_path}"

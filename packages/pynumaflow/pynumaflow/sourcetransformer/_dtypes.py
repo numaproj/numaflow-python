@@ -112,26 +112,27 @@ class Messages(Sequence[M]):
 class Datum:
     """
     Class to define the important information for the event.
+
     Args:
         keys: the keys of the event.
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
         headers: the headers of the event.
-    >>> # Example usage
-    >>> from pynumaflow.sourcetransformer import Datum
-    >>> from datetime import datetime, timezone
-    >>> payload = bytes("test_mock_message", encoding="utf-8")
-    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
-    >>> msg_headers = {"key1": "value1", "key2": "value2"}
-    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> d = Datum(
-    ...       keys=["test_key"],
-    ...       value=payload,
-    ...       event_time=t1,
-    ...       watermark=t2,
-    ...      headers=msg_headers,
-    ...    )
+
+    Example:
+    ```py
+    from pynumaflow.sourcetransformer import Datum
+    from datetime import datetime, timezone
+
+    d = Datum(
+            keys=["test_key"],
+            value=b"test_mock_message",
+            event_time=datetime.fromtimestamp(1662998400, timezone.utc),
+            watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+            headers={"key1": "value1", "key2": "value2"},
+       )
+    ```
     """
 
     __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")

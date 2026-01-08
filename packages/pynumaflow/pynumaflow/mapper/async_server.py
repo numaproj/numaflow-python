@@ -35,20 +35,18 @@ class MapAsyncServer(NumaflowServer):
                         defaults to 4 and max capped at 16
 
     Example invocation:
-        from pynumaflow.mapper import Messages, Message, Datum, MapAsyncServer
-        async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
-            val = datum.value
-            msg = "payload:{} event_time:{} watermark:{}".format(
-                val.decode("utf-8"),
-                datum.event_time,
-                datum.watermark,
-            )
-            val = bytes(msg, encoding="utf-8")
-            return Messages(Message(value=val, keys=keys))
+    ```py
+    from pynumaflow.mapper import Messages, Message, Datum, MapAsyncServer
 
-        if __name__ == "__main__":
-            grpc_server = MapAsyncServer(async_map_handler)
-            grpc_server.start()
+    async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
+        val = datum.value
+        msg = f"payload:{val.decode('utf-8')} event_time:{datum.event_time} watermark:{datum.watermark}"
+        return Messages(Message(value=msg.encode('utf-8'), keys=keys))
+
+    if __name__ == "__main__":
+        grpc_server = MapAsyncServer(async_map_handler)
+        grpc_server.start()
+    ```
     """
 
     def __init__(
@@ -63,12 +61,13 @@ class MapAsyncServer(NumaflowServer):
         Create a new grpc Asynchronous Map Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
+
         Args:
-        mapper_instance: The mapper instance to be used for Map UDF
-        sock_path: The UNIX socket path to be used for the server
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to 4 and max capped at 16
+            mapper_instance: The mapper instance to be used for Map UDF
+            sock_path: The UNIX socket path to be used for the server
+            max_message_size: The max message size in bytes the server can receive and send
+            max_threads: The max number of threads to be spawned;
+                        defaults to 4 and max capped at 16
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, MAX_NUM_THREADS)

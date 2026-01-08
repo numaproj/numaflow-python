@@ -23,7 +23,7 @@ To build the package locally, run the following command from the root of the pro
 
 ```bash
 make setup
-````
+```
 
 To run unit tests:
 ```bash
@@ -57,6 +57,7 @@ There are different types of gRPC server mechanisms which can be used to serve t
 These have different functionalities and are used for different use cases.
 
 Currently we support the following server types:
+
 - Sync Server
 - Asyncronous Server
 - MultiProcessing Server
@@ -64,15 +65,13 @@ Currently we support the following server types:
 Not all of the above are supported for all UDFs, UDSource and UDSinks.
 
 For each of the UDFs, UDSource and UDSinks, there are seperate classes for each of the server types.
-This helps in keeping the interface simple and easy to use, and the user can start the specific server type based
-on the use case.
+This helps in keeping the interface simple and easy to use, and the user can start the specific server type based on the use case.
 
 
 #### SyncServer
 
 Syncronous Server is the simplest server type. It is a multithreaded threaded server which can be used for simple UDFs and UDSinks.
-Here the server will invoke the handler function for each message. The messaging is synchronous and the server will wait
-for the handler to return before processing the next message.
+Here the server will invoke the handler function for each message. The messaging is synchronous and the server will wait for the handler to return before processing the next message.
 
 ```
 grpc_server = MapServer(handler)
@@ -83,13 +82,13 @@ grpc_server = MapServer(handler)
 Asyncronous Server is a multi threaded server which can be used for UDFs which are asyncronous. Here we utilize the asyncronous capabilities of Python to process multiple messages in parallel. The server will invoke the handler function for each message. The messaging is asyncronous and the server will not wait for the handler to return before processing the next message. Thus this server type is useful for UDFs which are asyncronous.
 The handler function for such a server should be an async function.
 
-```
+```py
 grpc_server = MapAsyncServer(handler)
 ```
 
 #### MultiProcessServer
 
-MultiProcess Server is a multi process server which can be used for UDFs which are CPU intensive. Here we utilize the multi process capabilities of Python to process multiple messages in parallel by forking multiple servers in different processes. 
+MultiProcess Server is a multi process server which can be used for UDFs which are CPU intensive. Here we utilize the multi process capabilities of Python to process multiple messages in parallel by forking multiple servers in different processes.
 The server will invoke the handler function for each message. Individually at the server level the messaging is synchronous and the server will wait for the handler to return before processing the next message. But since we have multiple servers running in parallel, the overall messaging also executes in parallel.
 
 This could be an alternative to creating multiple replicas of the same UDF container as here we are using the multi processing capabilities of the system to process multiple messages in parallel but within the same container.
@@ -140,7 +139,8 @@ should follow the same signature.
 
 For using the class based handlers the user can inherit from the base handler class for each of the functionalities and implement the handler function.
 The base handler class for each of the functionalities has the same signature as the handler function for the respective server type.
-The list of base handler classes for each of the functionalities is given below -
+The list of base handler classes for each of the functionalities is given below:
+
 - UDFs
     - Map
         - Mapper
@@ -159,5 +159,5 @@ The list of base handler classes for each of the functionalities is given below 
 - SideInput
     - SideInput
 
-More details about the signature of the handler function for each of the server types is given in the 
+More details about the signature of the handler function for each of the server types is given in the
 documentation of the respective server type.

@@ -36,6 +36,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         Create a new grpc Source Transformer Multiproc Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
+
         Args:
             source_transform_instance: The source transformer instance to be used for
             Source Transformer UDF
@@ -46,57 +47,67 @@ class SourceTransformMultiProcServer(NumaflowServer):
                             defaults to 4 and max capped at 16
 
         Example invocation:
-            import datetime
-            import logging
+        ```py
+        import datetime
+        import logging
 
-            from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
+        from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
 
-            # This is a simple User Defined Function example which receives a message,
-            # applies the following
-            # data transformation, and returns the message.
-            # If the message event time is before year 2022, drop the message
-            # with event time unchanged.
-            # If it's within year 2022, update the tag to "within_year_2022" and
-            # update the message event time to Jan 1st 2022.
-            # Otherwise, (exclusively after year 2022), update the tag to
-            # "after_year_2022" and update the
-
-
-            january_first_2022 = datetime.datetime.fromtimestamp(1640995200)
-            january_first_2023 = datetime.datetime.fromtimestamp(1672531200)
+        # This is a simple User Defined Function example which receives a message,
+        # applies the following data transformation, and returns the message.
+        # If the message event time is before year 2022, drop the message
+        # with event time unchanged.
+        # If it's within year 2022, update the tag to "within_year_2022" and
+        # update the message event time to Jan 1st 2022.
+        # Otherwise, (exclusively after year 2022), update the tag to
+        # "after_year_2022" and update the
 
 
-            def my_handler(keys: list[str], datum: Datum) -> Messages:
-                val = datum.value
-                event_time = datum.event_time
-                messages = Messages()
+        january_first_2022 = datetime.datetime.fromtimestamp(1640995200)
+        january_first_2023 = datetime.datetime.fromtimestamp(1672531200)
 
-                if event_time < january_first_2022:
-                    logging.info("Got event time:%s, it is before 2022, so dropping", event_time)
-                    messages.append(Message.to_drop(event_time))
-                elif event_time < january_first_2023:
-                    logging.info(
-                        "Got event time:%s, it is within year 2022, so
-                        forwarding to within_year_2022",
-                        event_time,
-                    )
-                    messages.append(
-                        Message(value=val, event_time=january_first_2022, tags=["within_year_2022"])
-                    )
-                else:
-                    logging.info(
-                        "Got event time:%s, it is after year 2022, so forwarding to
-                        after_year_2022", event_time
-                    )
-                    messages.append(Message(value=val, event_time=january_first_2023,
-                    tags=["after_year_2022"]))
 
-                return messages
+        def my_handler(keys: list[str], datum: Datum) -> Messages:
+            val = datum.value
+            event_time = datum.event_time
+            messages = Messages()
 
-            if __name__ == "__main__":
-                grpc_server = SourceTransformMultiProcServer(source_transform_instance=my_handler
-                                                            ,server_count = 2)
-                grpc_server.start()
+            if event_time < january_first_2022:
+                logging.info("Got event time:%s, it is before 2022, so dropping", event_time)
+                messages.append(Message.to_drop(event_time))
+            elif event_time < january_first_2023:
+                logging.info(
+                    "Got event time:%s, it is within year 2022, so
+                    forwarding to within_year_2022",
+                    event_time,
+                )
+                message = Message(
+                    value=val,
+                    event_time=january_first_2022,
+                    tags=["within_year_2022"],
+                )
+                messages.append(message)
+            else:
+                logging.info(
+                    "Got event time:%s, it is after year 2022, so forwarding to after_year_2022",
+                    event_time,
+                )
+                message = Message(
+                    value=val,
+                    event_time=january_first_2023,
+                    tags=["after_year_2022"],
+                )
+                messages.append(message)
+
+            return messages
+
+        if __name__ == "__main__":
+            grpc_server = SourceTransformMultiProcServer(
+                source_transform_instance=my_handler,
+                server_count=2,
+            )
+            grpc_server.start()
+        ```
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
@@ -120,9 +131,8 @@ class SourceTransformMultiProcServer(NumaflowServer):
 
     def start(self):
         """
-        Starts the N grpc servers gRPC serves on the with
-        given max threads.
-        where N = The number of CPUs or the value of the parameter server_count
+        Starts the N gRPC servers on the given socket path with given max threads.
+        Here N = The number of CPUs or the value of the parameter `server_count`
         defined by the user. The max value is capped to 2 * CPU count.
         """
 

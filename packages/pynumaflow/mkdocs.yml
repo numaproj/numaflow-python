@@ -1,0 +1,131 @@
+site_name: pynumaflow
+site_description: Python SDK for Numaflow - Build real-time data processing pipelines
+site_url: https://numaproj.github.io/numaflow-python/
+strict: false  # Set to false to allow build with minor docstring warnings
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+repo_name: numaproj/numaflow-python
+repo_url: https://github.com/numaproj/numaflow-python
+edit_uri: edit/main/packages/pynumaflow/docs/
+
+extra:
+  version:
+    provider: mike
+    default: latest
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/numaproj/numaflow-python
+    - icon: fontawesome/brands/slack
+      link: https://numaproj.slack.com
+
+nav:
+  - Home: index.md
+  - API Reference:
+      - api/index.md
+      - Sourcer: api/sourcer.md
+      - Source Transformer: api/sourcetransformer.md
+      - Mapper: api/mapper.md
+      - Map Streamer: api/mapstreamer.md
+      - Batch Mapper: api/batchmapper.md
+      - Sinker: api/sinker.md
+      - Reducer: api/reducer.md
+      - Reduce Streamer: api/reducestreamer.md
+      - Accumulator: api/accumulator.md
+      - Side Input: api/sideinput.md
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
+  - mike:
+      alias_type: symlink
+      canonical_version: latest
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [.]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://grpc.github.io/grpc/python/objects.inv
+          options:
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            docstring_style: google
+            docstring_options:
+              ignore_init_summary: true
+              returns_named_value: false
+              trim_doctest_flags: true
+            docstring_section_style: table
+            merge_init_into_class: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            filters:
+              - "!^_"  # Exclude private/dunder members (starting with _)
+  - exclude:
+      glob:
+        - "*.tmp"
+        - "*.bak"
+
+watch:
+  - pynumaflow

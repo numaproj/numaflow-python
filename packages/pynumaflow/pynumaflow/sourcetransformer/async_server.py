@@ -27,6 +27,7 @@ class SourceTransformAsyncServer(NumaflowServer):
     Create a new grpc Source Transformer Server instance.
     A new servicer instance is created and attached to the server.
     The server instance is returned.
+
     Args:
         source_transform_instance: The source transformer instance to be used for
         Source Transformer UDF
@@ -35,21 +36,18 @@ class SourceTransformAsyncServer(NumaflowServer):
         max_threads: The max number of threads to be spawned;
                         defaults to 4 and max capped at 16
 
-    Example Invocation:
 
+    Below is a simple User Defined Function example which receives a message, applies the
+    following data transformation, and returns the message.
+
+    - If the message event time is before year 2022, drop the message with event time unchanged.
+    - If it's within year 2022, update the tag to `within_year_2022` and update the message event time to Jan 1st 2022.
+    - Otherwise, (exclusively after year 2022), update the tag to `after_year_2022` and update the message event time to Jan 1st 2023.
+
+    ```py
     import datetime
     import logging
-
     from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer
-    # This is a simple User Defined Function example which receives a message,
-    # applies the following
-    # data transformation, and returns the message.
-    # If the message event time is before year 2022, drop the message with event time unchanged.
-    # If it's within year 2022, update the tag to "within_year_2022" and
-    # update the message event time to Jan 1st 2022.
-    # Otherwise, (exclusively after year 2022), update the tag to
-    # "after_year_2022" and update the
-    # message event time to Jan 1st 2023.
 
     january_first_2022 = datetime.datetime.fromtimestamp(1640995200)
     january_first_2023 = datetime.datetime.fromtimestamp(1672531200)
@@ -86,6 +84,7 @@ class SourceTransformAsyncServer(NumaflowServer):
     if __name__ == "__main__":
         grpc_server = SourceTransformAsyncServer(my_handler)
         grpc_server.start()
+    ```
     """
 
     def __init__(
@@ -96,17 +95,6 @@ class SourceTransformAsyncServer(NumaflowServer):
         max_threads=NUM_THREADS_DEFAULT,
         server_info_file=SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH,
     ):
-        """
-        Create a new grpc Asynchronous Map Server instance.
-        A new servicer instance is created and attached to the server.
-        The server instance is returned.
-        Args:
-        mapper_instance: The mapper instance to be used for Map UDF
-        sock_path: The UNIX socket path to be used for the server
-        max_message_size: The max message size in bytes the server can receive and send
-        max_threads: The max number of threads to be spawned;
-                     defaults to 4 and max capped at 16
-        """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size

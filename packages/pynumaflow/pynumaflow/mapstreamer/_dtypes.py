@@ -29,7 +29,9 @@ class Message:
     _keys: list[str]
     _tags: list[str]
 
-    def __init__(self, value: bytes, keys: Optional[list[str]] = None, tags: Optional[list[str]] = None):
+    def __init__(
+        self, value: bytes, keys: Optional[list[str]] = None, tags: Optional[list[str]] = None
+    ):
         """
         Creates a Message object to send value to a vertex.
         """

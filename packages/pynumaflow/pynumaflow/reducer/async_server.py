@@ -88,7 +88,9 @@ class ReduceAsyncServer(NumaflowServer):
             )
             return Messages(Message(str.encode(msg), keys=keys))
 
-    async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> Messages:
+    async def reduce_handler(
+        keys: list[str], datums: AsyncIterable[Datum], md: Metadata
+    ) -> Messages:
         interval_window = md.interval_window
         counter = 0
         async for _ in datums:
@@ -117,14 +119,13 @@ class ReduceAsyncServer(NumaflowServer):
         self,
         reducer_instance: ReduceCallable,
         init_args: tuple = (),
-        init_kwargs: dict = None,
+        init_kwargs: Optional[dict] = None,
         sock_path=REDUCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,
         server_info_file=REDUCE_SERVER_INFO_FILE_PATH,
     ):
-        if init_kwargs is None:
-            init_kwargs = {}
+        init_kwargs = init_kwargs or {}
         self.reducer_handler = get_handler(reducer_instance, init_args, init_kwargs)
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size

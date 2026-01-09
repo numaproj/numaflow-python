@@ -40,7 +40,11 @@ class MapAsyncServer(NumaflowServer):
 
     async def async_map_handler(keys: list[str], datum: Datum) -> Messages:
         val = datum.value
-        msg = f"payload:{val.decode('utf-8')} event_time:{datum.event_time} watermark:{datum.watermark}"
+        msg = (
+            f"payload:{val.decode('utf-8')} "
+            f"event_time:{datum.event_time} "
+            f"watermark:{datum.watermark}"
+        )
         return Messages(Message(value=msg.encode('utf-8'), keys=keys))
 
     if __name__ == "__main__":

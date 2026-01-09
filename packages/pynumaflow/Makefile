@@ -58,7 +58,8 @@ docs-deploy-version:  ## Deploy versioned docs (usage: make docs-deploy-version 
 ifndef VERSION
 	$(error VERSION is required. Usage: make docs-deploy-version VERSION=0.11)
 endif
-	poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases --push
+	# poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases --push
+	poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases
 
 docs-list:  ## List all deployed documentation versions
 	poetry run mike list -b docs-site

@@ -1364,7 +1364,12 @@
   </span>
 
 <a href="#pynumaflow.sourcetransformer.Message" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Message</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">,</span> <span class="n">event_time</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Message</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">event_time</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">keys</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">tags</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1600,7 +1605,13 @@
   </span>
 
 <a href="#pynumaflow.sourcetransformer.Datum" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Datum</span><span class="p">(</span><span class="n">keys</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">],</span> <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">,</span> <span class="n">event_time</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span><span class="p">,</span> <span class="n">watermark</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Datum</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">keys</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">value</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">event_time</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">watermark</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">headers</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -1986,7 +1997,14 @@ SourceTransformCallable interface.</p>
 
 
 <a href="#pynumaflow.sourcetransformer.SourceTransformMultiProcServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SourceTransformMultiProcServer</span><span class="p">(</span><span class="n">source_transform_instance</span><span class="p">:</span> <span class="n"><span title="pynumaflow.sourcetransformer._dtypes.SourceTransformCallable">SourceTransformCallable</span></span><span class="p">,</span> <span class="n">server_count</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">=</span> <span class="n"><span title="pynumaflow._constants._PROCESS_COUNT">_PROCESS_COUNT</span></span><span class="p">,</span> <span class="n">sock_path</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SOCK_PATH">SOURCE_TRANSFORMER_SOCK_PATH</span></span><span class="p">,</span> <span class="n">max_message_size</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.MAX_MESSAGE_SIZE">MAX_MESSAGE_SIZE</span></span><span class="p">,</span> <span class="n">max_threads</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.NUM_THREADS_DEFAULT">NUM_THREADS_DEFAULT</span></span><span class="p">,</span> <span class="n">server_info_file</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SourceTransformMultiProcServer</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">source_transform_instance</span><span class="p">:</span> <span class="n"><span title="pynumaflow.sourcetransformer._dtypes.SourceTransformCallable">SourceTransformCallable</span></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">server_count</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></span> <span class="o">=</span> <span class="n"><span title="pynumaflow._constants._PROCESS_COUNT">_PROCESS_COUNT</span></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">sock_path</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SOCK_PATH">SOURCE_TRANSFORMER_SOCK_PATH</span></span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">max_message_size</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.MAX_MESSAGE_SIZE">MAX_MESSAGE_SIZE</span></span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">max_threads</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.NUM_THREADS_DEFAULT">NUM_THREADS_DEFAULT</span></span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">server_info_file</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span></span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2464,7 +2482,13 @@ defined by the user. The max value is capped to 2 * CPU count.</p>
 
 
 <a href="#pynumaflow.sourcetransformer.SourceTransformServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SourceTransformServer</span><span class="p">(</span><span class="n">source_transform_instance</span><span class="p">:</span> <span class="n"><span title="pynumaflow.sourcetransformer._dtypes.SourceTransformCallable">SourceTransformCallable</span></span><span class="p">,</span> <span class="n">sock_path</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SOCK_PATH">SOURCE_TRANSFORMER_SOCK_PATH</span></span><span class="p">,</span> <span class="n">max_message_size</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.MAX_MESSAGE_SIZE">MAX_MESSAGE_SIZE</span></span><span class="p">,</span> <span class="n">max_threads</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.NUM_THREADS_DEFAULT">NUM_THREADS_DEFAULT</span></span><span class="p">,</span> <span class="n">server_info_file</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SourceTransformServer</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">source_transform_instance</span><span class="p">:</span> <span class="n"><span title="pynumaflow.sourcetransformer._dtypes.SourceTransformCallable">SourceTransformCallable</span></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">sock_path</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SOCK_PATH">SOURCE_TRANSFORMER_SOCK_PATH</span></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">max_message_size</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.MAX_MESSAGE_SIZE">MAX_MESSAGE_SIZE</span></span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">max_threads</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.NUM_THREADS_DEFAULT">NUM_THREADS_DEFAULT</span></span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">server_info_file</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span></span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2556,8 +2580,10 @@ defined by the user. The max value is capped to 2 * CPU count.</p>
 following data transformation, and returns the message.</p>
 <ul>
 <li>If the message event time is before year 2022, drop the message with event time unchanged.</li>
-<li>If it's within year 2022, update the tag to <code>within_year_2022</code> and update the message event time to Jan 1st 2022.</li>
-<li>Otherwise, (exclusively after year 2022), update the tag to <code>after_year_2022</code> and update the message event time to Jan 1st 2023.</li>
+<li>If it's within year 2022, update the tag to <code>within_year_2022</code> and update the message
+  event time to Jan 1st 2022.</li>
+<li>Otherwise, (exclusively after year 2022), update the tag to <code>after_year_2022</code> and update
+  the message event time to Jan 1st 2023.</li>
 </ul>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -2692,7 +2718,9 @@ following data transformation, and returns the message.</p>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
 <span class="normal"><a href="#__codelineno-0-103">103</a></span>
 <span class="normal"><a href="#__codelineno-0-104">104</a></span>
-<span class="normal"><a href="#__codelineno-0-105">105</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#__codelineno-0-107">107</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24"></a>    <span class="n">source_transform_instance</span><span class="p">:</span> <span class="n">SourceTransformCallable</span><span class="p">,</span>
 </span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a>    <span class="n">sock_path</span><span class="o">=</span><span class="n">SOURCE_TRANSFORMER_SOCK_PATH</span><span class="p">,</span>
@@ -2717,65 +2745,67 @@ following data transformation, and returns the message.</p>
 </span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="sd">    following data transformation, and returns the message.</span>
 </span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a>
 </span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="sd">    - If the message event time is before year 2022, drop the message with event time unchanged.</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">    - If it&#39;s within year 2022, update the tag to `within_year_2022` and update the message event time to Jan 1st 2022.</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">    - Otherwise, (exclusively after year 2022), update the tag to `after_year_2022` and update the message event time to Jan 1st 2023.</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">    ```py</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    import datetime</span>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    import logging</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="sd">    - If it&#39;s within year 2022, update the tag to `within_year_2022` and update the message</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="sd">      event time to Jan 1st 2022.</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="sd">    - Otherwise, (exclusively after year 2022), update the tag to `after_year_2022` and update</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="sd">      the message event time to Jan 1st 2023.</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    ```py</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">    import datetime</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    import logging</span>
 </span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    january_first_2022 = datetime.datetime.fromtimestamp(1640995200)</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">    january_first_2023 = datetime.datetime.fromtimestamp(1672531200)</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    def my_handler(keys: list[str], datum: Datum) -&gt; Messages:</span>
-</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        val = datum.value</span>
-</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">        event_time = datum.event_time</span>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        messages = Messages()</span>
-</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        if event_time &lt; january_first_2022:</span>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">            logging.info(&quot;Got event time:%s, it is before 2022, so dropping&quot;, event_time)</span>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">            messages.append(Message.to_drop(event_time))</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">        elif event_time &lt; january_first_2023:</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            logging.info(</span>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">                &quot;Got event time:%s, it is within year 2022, so forwarding to within_year_2022&quot;,</span>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">                event_time,</span>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">            )</span>
-</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">            messages.append(</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">                Message(value=val, event_time=january_first_2022,</span>
-</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">                        tags=[&quot;within_year_2022&quot;])</span>
-</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">            )</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">        else:</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            logging.info(</span>
-</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">                &quot;Got event time:%s, it is after year 2022, so forwarding to</span>
-</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">                after_year_2022&quot;, event_time</span>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">            )</span>
-</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">            messages.append(Message(value=val, event_time=january_first_2023,</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">                            tags=[&quot;after_year_2022&quot;]))</span>
-</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a>
-</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">        return messages</span>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">    from pynumaflow.sourcetransformer import Messages, Message, Datum, SourceTransformServer</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    january_first_2022 = datetime.datetime.fromtimestamp(1640995200)</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    january_first_2023 = datetime.datetime.fromtimestamp(1672531200)</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="sd">    def my_handler(keys: list[str], datum: Datum) -&gt; Messages:</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">        val = datum.value</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        event_time = datum.event_time</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">        messages = Messages()</span>
+</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>
+</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">        if event_time &lt; january_first_2022:</span>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">            logging.info(&quot;Got event time:%s, it is before 2022, so dropping&quot;, event_time)</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">            messages.append(Message.to_drop(event_time))</span>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">        elif event_time &lt; january_first_2023:</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">            logging.info(</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">                &quot;Got event time:%s, it is within year 2022, so forwarding to within_year_2022&quot;,</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">                event_time,</span>
+</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="sd">            )</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="sd">            messages.append(</span>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="sd">                Message(value=val, event_time=january_first_2022,</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="sd">                        tags=[&quot;within_year_2022&quot;])</span>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="sd">            )</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a><span class="sd">        else:</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">            logging.info(</span>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="sd">                &quot;Got event time:%s, it is after year 2022, so forwarding to</span>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">                after_year_2022&quot;, event_time</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">            )</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">            messages.append(Message(value=val, event_time=january_first_2023,</span>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="sd">                            tags=[&quot;after_year_2022&quot;]))</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>
-</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>
-</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="sd">    if __name__ == &quot;__main__&quot;:</span>
-</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="sd">        grpc_server = SourceTransformServer(my_handler)</span>
-</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">        grpc_server.start()</span>
-</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">    ```</span>
-</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;unix://</span><span class="si">{</span><span class="n">sock_path</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_threads</span><span class="p">,</span> <span class="n">MAX_NUM_THREADS</span><span class="p">)</span>
-</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span> <span class="o">=</span> <span class="n">max_message_size</span>
-</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span> <span class="o">=</span> <span class="n">server_info_file</span>
-</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">source_transform_instance</span> <span class="o">=</span> <span class="n">source_transform_instance</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a><span class="sd">        return messages</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a>
+</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a><span class="sd">    if __name__ == &quot;__main__&quot;:</span>
+</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="sd">        grpc_server = SourceTransformServer(my_handler)</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="sd">        grpc_server.start()</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="sd">    ```</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;unix://</span><span class="si">{</span><span class="n">sock_path</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_threads</span><span class="p">,</span> <span class="n">MAX_NUM_THREADS</span><span class="p">)</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span> <span class="o">=</span> <span class="n">max_message_size</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span> <span class="o">=</span> <span class="n">server_info_file</span>
 </span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>
-</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_send_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_receive_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
-</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="p">]</span>
-</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">servicer</span> <span class="o">=</span> <span class="n">SourceTransformServicer</span><span class="p">(</span><span class="n">handler</span><span class="o">=</span><span class="n">source_transform_instance</span><span class="p">)</span>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">source_transform_instance</span> <span class="o">=</span> <span class="n">source_transform_instance</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_send_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_receive_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>    <span class="p">]</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">servicer</span> <span class="o">=</span> <span class="n">SourceTransformServicer</span><span class="p">(</span><span class="n">handler</span><span class="o">=</span><span class="n">source_transform_instance</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
                   </details>
 
@@ -2808,9 +2838,7 @@ following data transformation, and returns the message.</p>
 
             <details class="quote">
               <summary>Source code in <code>pynumaflow/sourcetransformer/server.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-107">107</a></span>
-<span class="normal"><a href="#__codelineno-0-108">108</a></span>
-<span class="normal"><a href="#__codelineno-0-109">109</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-109">109</a></span>
 <span class="normal"><a href="#__codelineno-0-110">110</a></span>
 <span class="normal"><a href="#__codelineno-0-111">111</a></span>
 <span class="normal"><a href="#__codelineno-0-112">112</a></span>
@@ -2830,29 +2858,31 @@ following data transformation, and returns the message.</p>
 <span class="normal"><a href="#__codelineno-0-126">126</a></span>
 <span class="normal"><a href="#__codelineno-0-127">127</a></span>
 <span class="normal"><a href="#__codelineno-0-128">128</a></span>
-<span class="normal"><a href="#__codelineno-0-129">129</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">    Starts the Synchronous gRPC server on the given UNIX socket with given max threads.</span>
-</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>        <span class="s2">&quot;Sync GRPC Server listening on: </span><span class="si">%s</span><span class="s2"> with max threads: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
-</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">,</span>
-</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span><span class="p">,</span>
-</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a>    <span class="p">)</span>
-</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="n">serv_info</span> <span class="o">=</span> <span class="n">ServerInfo</span><span class="o">.</span><span class="n">get_default_server_info</span><span class="p">()</span>
-</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="n">serv_info</span><span class="o">.</span><span class="n">minimum_numaflow_version</span> <span class="o">=</span> <span class="n">MINIMUM_NUMAFLOW_VERSION</span><span class="p">[</span>
-</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a>        <span class="n">ContainerType</span><span class="o">.</span><span class="n">Sourcetransformer</span>
-</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="p">]</span>
-</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a>    <span class="c1"># Start the sync server</span>
-</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="n">sync_server_start</span><span class="p">(</span>
-</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a>        <span class="n">servicer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">servicer</span><span class="p">,</span>
-</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a>        <span class="n">bind_address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">,</span>
-</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">max_threads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span><span class="p">,</span>
-</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="n">server_info_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span><span class="p">,</span>
-</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>        <span class="n">server_options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span><span class="p">,</span>
-</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="n">udf_type</span><span class="o">=</span><span class="n">UDFType</span><span class="o">.</span><span class="n">SourceTransformer</span><span class="p">,</span>
-</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>        <span class="n">server_info</span><span class="o">=</span><span class="n">serv_info</span><span class="p">,</span>
-</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#__codelineno-0-130">130</a></span>
+<span class="normal"><a href="#__codelineno-0-131">131</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">    Starts the Synchronous gRPC server on the given UNIX socket with given max threads.</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="n">_LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="s2">&quot;Sync GRPC Server listening on: </span><span class="si">%s</span><span class="s2"> with max threads: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">,</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span><span class="p">,</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="p">)</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">serv_info</span> <span class="o">=</span> <span class="n">ServerInfo</span><span class="o">.</span><span class="n">get_default_server_info</span><span class="p">()</span>
+</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="n">serv_info</span><span class="o">.</span><span class="n">minimum_numaflow_version</span> <span class="o">=</span> <span class="n">MINIMUM_NUMAFLOW_VERSION</span><span class="p">[</span>
+</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a>        <span class="n">ContainerType</span><span class="o">.</span><span class="n">Sourcetransformer</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a>    <span class="p">]</span>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a>    <span class="c1"># Start the sync server</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a>    <span class="n">sync_server_start</span><span class="p">(</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a>        <span class="n">servicer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">servicer</span><span class="p">,</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>        <span class="n">bind_address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">,</span>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>        <span class="n">max_threads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span><span class="p">,</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>        <span class="n">server_info_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span><span class="p">,</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>        <span class="n">server_options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span><span class="p">,</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>        <span class="n">udf_type</span><span class="o">=</span><span class="n">UDFType</span><span class="o">.</span><span class="n">SourceTransformer</span><span class="p">,</span>
+</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a>        <span class="n">server_info</span><span class="o">=</span><span class="n">serv_info</span><span class="p">,</span>
+</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -2876,7 +2906,13 @@ following data transformation, and returns the message.</p>
 
 
 <a href="#pynumaflow.sourcetransformer.SourceTransformAsyncServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SourceTransformAsyncServer</span><span class="p">(</span><span class="n">source_transform_instance</span><span class="p">:</span> <span class="n"><span title="pynumaflow.sourcetransformer._dtypes.SourceTransformAsyncCallable">SourceTransformAsyncCallable</span></span><span class="p">,</span> <span class="n">sock_path</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SOCK_PATH">SOURCE_TRANSFORMER_SOCK_PATH</span></span><span class="p">,</span> <span class="n">max_message_size</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.MAX_MESSAGE_SIZE">MAX_MESSAGE_SIZE</span></span><span class="p">,</span> <span class="n">max_threads</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.NUM_THREADS_DEFAULT">NUM_THREADS_DEFAULT</span></span><span class="p">,</span> <span class="n">server_info_file</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">SourceTransformAsyncServer</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">source_transform_instance</span><span class="p">:</span> <span class="n"><span title="pynumaflow.sourcetransformer._dtypes.SourceTransformAsyncCallable">SourceTransformAsyncCallable</span></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">sock_path</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SOCK_PATH">SOURCE_TRANSFORMER_SOCK_PATH</span></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">max_message_size</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.MAX_MESSAGE_SIZE">MAX_MESSAGE_SIZE</span></span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">max_threads</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.NUM_THREADS_DEFAULT">NUM_THREADS_DEFAULT</span></span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">server_info_file</span><span class="o">=</span><span class="n"><span title="pynumaflow._constants.SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span></span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -2968,8 +3004,10 @@ The server instance is returned.</p>
 following data transformation, and returns the message.</p>
 <ul>
 <li>If the message event time is before year 2022, drop the message with event time unchanged.</li>
-<li>If it's within year 2022, update the tag to <code>within_year_2022</code> and update the message event time to Jan 1st 2022.</li>
-<li>Otherwise, (exclusively after year 2022), update the tag to <code>after_year_2022</code> and update the message event time to Jan 1st 2023.</li>
+<li>If it's within year 2022, update the tag to <code>within_year_2022</code> and update the message
+  event time to Jan 1st 2022.</li>
+<li>Otherwise, (exclusively after year 2022), update the tag to <code>after_year_2022</code> and update
+  the message event time to Jan 1st 2023.</li>
 </ul>
 <div class="language-py highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
@@ -3019,9 +3057,7 @@ following data transformation, and returns the message.</p>
 
                   <details class="quote">
                     <summary>Source code in <code>pynumaflow/sourcetransformer/async_server.py</code></summary>
-                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
-<span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
-<span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
+                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
 <span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
 <span class="normal"><a href="#__codelineno-0-94"> 94</a></span>
 <span class="normal"><a href="#__codelineno-0-95"> 95</a></span>
@@ -3038,26 +3074,28 @@ following data transformation, and returns the message.</p>
 <span class="normal"><a href="#__codelineno-0-106">106</a></span>
 <span class="normal"><a href="#__codelineno-0-107">107</a></span>
 <span class="normal"><a href="#__codelineno-0-108">108</a></span>
-<span class="normal"><a href="#__codelineno-0-109">109</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a>    <span class="n">source_transform_instance</span><span class="p">:</span> <span class="n">SourceTransformAsyncCallable</span><span class="p">,</span>
-</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a>    <span class="n">sock_path</span><span class="o">=</span><span class="n">SOURCE_TRANSFORMER_SOCK_PATH</span><span class="p">,</span>
-</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="n">max_message_size</span><span class="o">=</span><span class="n">MAX_MESSAGE_SIZE</span><span class="p">,</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">max_threads</span><span class="o">=</span><span class="n">NUM_THREADS_DEFAULT</span><span class="p">,</span>
-</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="n">server_info_file</span><span class="o">=</span><span class="n">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span><span class="p">,</span>
-</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="p">):</span>
-</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;unix://</span><span class="si">{</span><span class="n">sock_path</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_threads</span><span class="p">,</span> <span class="n">MAX_NUM_THREADS</span><span class="p">)</span>
-</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span> <span class="o">=</span> <span class="n">max_message_size</span>
-</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span> <span class="o">=</span> <span class="n">server_info_file</span>
-</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">source_transform_instance</span> <span class="o">=</span> <span class="n">source_transform_instance</span>
+<span class="normal"><a href="#__codelineno-0-109">109</a></span>
+<span class="normal"><a href="#__codelineno-0-110">110</a></span>
+<span class="normal"><a href="#__codelineno-0-111">111</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="n">source_transform_instance</span><span class="p">:</span> <span class="n">SourceTransformAsyncCallable</span><span class="p">,</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">sock_path</span><span class="o">=</span><span class="n">SOURCE_TRANSFORMER_SOCK_PATH</span><span class="p">,</span>
+</span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>    <span class="n">max_message_size</span><span class="o">=</span><span class="n">MAX_MESSAGE_SIZE</span><span class="p">,</span>
+</span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="n">max_threads</span><span class="o">=</span><span class="n">NUM_THREADS_DEFAULT</span><span class="p">,</span>
+</span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="n">server_info_file</span><span class="o">=</span><span class="n">SOURCE_TRANSFORMER_SERVER_INFO_FILE_PATH</span><span class="p">,</span>
+</span><span id="__span-0-99"><a id="__codelineno-0-99" name="__codelineno-0-99"></a><span class="p">):</span>
+</span><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;unix://</span><span class="si">{</span><span class="n">sock_path</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_threads</span><span class="p">,</span> <span class="n">MAX_NUM_THREADS</span><span class="p">)</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span> <span class="o">=</span> <span class="n">max_message_size</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span> <span class="o">=</span> <span class="n">server_info_file</span>
 </span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>
-</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span> <span class="o">=</span> <span class="p">[</span>
-</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_send_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
-</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_receive_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
-</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="p">]</span>
-</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">servicer</span> <span class="o">=</span> <span class="n">SourceTransformAsyncServicer</span><span class="p">(</span><span class="n">handler</span><span class="o">=</span><span class="n">source_transform_instance</span><span class="p">)</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">source_transform_instance</span> <span class="o">=</span> <span class="n">source_transform_instance</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_send_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a>        <span class="p">(</span><span class="s2">&quot;grpc.max_receive_message_length&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_message_size</span><span class="p">),</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="p">]</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">servicer</span> <span class="o">=</span> <span class="n">SourceTransformAsyncServicer</span><span class="p">(</span><span class="n">handler</span><span class="o">=</span><span class="n">source_transform_instance</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
                   </details>
 
@@ -3091,17 +3129,17 @@ so that all the async coroutines can be started from a single context</p>
 
             <details class="quote">
               <summary>Source code in <code>pynumaflow/sourcetransformer/async_server.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-111">111</a></span>
-<span class="normal"><a href="#__codelineno-0-112">112</a></span>
-<span class="normal"><a href="#__codelineno-0-113">113</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-113">113</a></span>
 <span class="normal"><a href="#__codelineno-0-114">114</a></span>
 <span class="normal"><a href="#__codelineno-0-115">115</a></span>
-<span class="normal"><a href="#__codelineno-0-116">116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">    Starter function for the Async server class, need a separate caller</span>
-</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">    so that all the async coroutines can be started from a single context</span>
-</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a>    <span class="n">aiorun</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aexec</span><span class="p">(),</span> <span class="n">use_uvloop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-116">116</a></span>
+<span class="normal"><a href="#__codelineno-0-117">117</a></span>
+<span class="normal"><a href="#__codelineno-0-118">118</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">    Starter function for the Async server class, need a separate caller</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><span class="sd">    so that all the async coroutines can be started from a single context</span>
+</span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">aiorun</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">aexec</span><span class="p">(),</span> <span class="n">use_uvloop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3130,9 +3168,7 @@ given max threads.</p>
 
             <details class="quote">
               <summary>Source code in <code>pynumaflow/sourcetransformer/async_server.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-118">118</a></span>
-<span class="normal"><a href="#__codelineno-0-119">119</a></span>
-<span class="normal"><a href="#__codelineno-0-120">120</a></span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-120">120</a></span>
 <span class="normal"><a href="#__codelineno-0-121">121</a></span>
 <span class="normal"><a href="#__codelineno-0-122">122</a></span>
 <span class="normal"><a href="#__codelineno-0-123">123</a></span>
@@ -3157,34 +3193,36 @@ given max threads.</p>
 <span class="normal"><a href="#__codelineno-0-142">142</a></span>
 <span class="normal"><a href="#__codelineno-0-143">143</a></span>
 <span class="normal"><a href="#__codelineno-0-144">144</a></span>
-<span class="normal"><a href="#__codelineno-0-145">145</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">aexec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="sd">    Starts the Async gRPC server on the given UNIX socket with</span>
-</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="sd">    given max threads.</span>
-</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a>
-</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a>    <span class="c1"># As the server is async, we need to create a new server instance in the</span>
-</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="c1"># same thread as the event loop so that all the async calls are made in the</span>
-</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="c1"># same context</span>
-</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>
-</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="n">server_new</span> <span class="o">=</span> <span class="n">grpc</span><span class="o">.</span><span class="n">aio</span><span class="o">.</span><span class="n">server</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span><span class="p">)</span>
-</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>    <span class="n">server_new</span><span class="o">.</span><span class="n">add_insecure_port</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">)</span>
-</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a>    <span class="n">transform_pb2_grpc</span><span class="o">.</span><span class="n">add_SourceTransformServicer_to_server</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">servicer</span><span class="p">,</span> <span class="n">server_new</span><span class="p">)</span>
-</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a>
-</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a>    <span class="n">serv_info</span> <span class="o">=</span> <span class="n">ServerInfo</span><span class="o">.</span><span class="n">get_default_server_info</span><span class="p">()</span>
-</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a>    <span class="n">serv_info</span><span class="o">.</span><span class="n">minimum_numaflow_version</span> <span class="o">=</span> <span class="n">MINIMUM_NUMAFLOW_VERSION</span><span class="p">[</span>
-</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>        <span class="n">ContainerType</span><span class="o">.</span><span class="n">Sourcetransformer</span>
-</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a>    <span class="p">]</span>
-</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a>
-</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a>    <span class="c1"># Start the async server</span>
-</span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a>    <span class="k">await</span> <span class="n">start_async_server</span><span class="p">(</span>
-</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a>        <span class="n">server_async</span><span class="o">=</span><span class="n">server_new</span><span class="p">,</span>
-</span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a>        <span class="n">sock_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">,</span>
-</span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a>        <span class="n">max_threads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span><span class="p">,</span>
-</span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a>        <span class="n">cleanup_coroutines</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span>
-</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a>        <span class="n">server_info_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span><span class="p">,</span>
-</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a>        <span class="n">server_info</span><span class="o">=</span><span class="n">serv_info</span><span class="p">,</span>
-</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a>    <span class="p">)</span>
+<span class="normal"><a href="#__codelineno-0-145">145</a></span>
+<span class="normal"><a href="#__codelineno-0-146">146</a></span>
+<span class="normal"><a href="#__codelineno-0-147">147</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">aexec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-121"><a id="__codelineno-0-121" name="__codelineno-0-121"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="__span-0-122"><a id="__codelineno-0-122" name="__codelineno-0-122"></a><span class="sd">    Starts the Async gRPC server on the given UNIX socket with</span>
+</span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a><span class="sd">    given max threads.</span>
+</span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>
+</span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="c1"># As the server is async, we need to create a new server instance in the</span>
+</span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="c1"># same thread as the event loop so that all the async calls are made in the</span>
+</span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="c1"># same context</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>
+</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a>    <span class="n">server_new</span> <span class="o">=</span> <span class="n">grpc</span><span class="o">.</span><span class="n">aio</span><span class="o">.</span><span class="n">server</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_server_options</span><span class="p">)</span>
+</span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a>    <span class="n">server_new</span><span class="o">.</span><span class="n">add_insecure_port</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">)</span>
+</span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a>    <span class="n">transform_pb2_grpc</span><span class="o">.</span><span class="n">add_SourceTransformServicer_to_server</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">servicer</span><span class="p">,</span> <span class="n">server_new</span><span class="p">)</span>
+</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="n">serv_info</span> <span class="o">=</span> <span class="n">ServerInfo</span><span class="o">.</span><span class="n">get_default_server_info</span><span class="p">()</span>
+</span><span id="__span-0-135"><a id="__codelineno-0-135" name="__codelineno-0-135"></a>    <span class="n">serv_info</span><span class="o">.</span><span class="n">minimum_numaflow_version</span> <span class="o">=</span> <span class="n">MINIMUM_NUMAFLOW_VERSION</span><span class="p">[</span>
+</span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a>        <span class="n">ContainerType</span><span class="o">.</span><span class="n">Sourcetransformer</span>
+</span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a>    <span class="p">]</span>
+</span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a>
+</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a>    <span class="c1"># Start the async server</span>
+</span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a>    <span class="k">await</span> <span class="n">start_async_server</span><span class="p">(</span>
+</span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a>        <span class="n">server_async</span><span class="o">=</span><span class="n">server_new</span><span class="p">,</span>
+</span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a>        <span class="n">sock_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sock_path</span><span class="p">,</span>
+</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a>        <span class="n">max_threads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_threads</span><span class="p">,</span>
+</span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a>        <span class="n">cleanup_coroutines</span><span class="o">=</span><span class="nb">list</span><span class="p">(),</span>
+</span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a>        <span class="n">server_info_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">server_info_file</span><span class="p">,</span>
+</span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a>        <span class="n">server_info</span><span class="o">=</span><span class="n">serv_info</span><span class="p">,</span>
+</span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

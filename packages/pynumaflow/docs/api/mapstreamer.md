@@ -1,9 +1,6 @@
 # Map Streamer
 
 The Map Streamer module provides classes and functions for implementing MapStream UDFs that stream results as they're produced.
-
-## Overview
-
 Unlike regular Map which returns all messages at once, Map Stream yields messages one at a time as they're ready, reducing latency for downstream consumers.
 
 ## Classes

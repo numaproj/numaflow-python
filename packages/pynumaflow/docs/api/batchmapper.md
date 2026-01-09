@@ -1,10 +1,6 @@
 # Batch Mapper
 
-The Batch Mapper module provides classes and functions for implementing BatchMap UDFs that process multiple messages at once.
-
-## Overview
-
-Batch Map processes multiple messages together, enabling efficient batch operations like bulk API calls or batch database queries.
+The Batch Mapper module offers tools for building BatchMap UDFs, allowing you to process multiple messages simultaneously. This enables more efficient handling of workloads such as bulk API requests or batch database operations by grouping messages and processing them together in a single operation.
 
 ## Classes
 

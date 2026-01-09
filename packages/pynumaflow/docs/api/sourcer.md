@@ -2,14 +2,6 @@
 
 The Sourcer module provides classes and functions for implementing User Defined Sources that produce messages for Numaflow pipelines.
 
-## Overview
-
-A Source must implement three handlers:
-
-- **read_handler** - Read messages from the source
-- **ack_handler** - Acknowledge successfully processed messages
-- **pending_handler** - Report number of pending messages
-
 ## Classes
 
 ::: pynumaflow.sourcer

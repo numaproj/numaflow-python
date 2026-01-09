@@ -51,22 +51,19 @@ docs-build:  ## Build documentation locally
 	poetry run mkdocs build
 
 docs-deploy-dev:  ## Deploy dev docs to docs-site branch
-	#poetry run mike deploy -b docs-site dev --push
-	poetry run mike deploy -b docs-site dev
+	poetry run mike deploy -b docs-site dev --push
 
 docs-deploy-version:  ## Deploy versioned docs (usage: make docs-deploy-version VERSION=0.11)
 ifndef VERSION
 	$(error VERSION is required. Usage: make docs-deploy-version VERSION=0.11)
 endif
-	# poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases --push
-	poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases
+	poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases --push
 
 docs-list:  ## List all deployed documentation versions
 	poetry run mike list -b docs-site
 
 docs-set-default:  ## Set the default documentation version to 'latest'
-	#poetry run mike set-default -b docs-site latest --push
-	poetry run mike set-default -b docs-site latest
+	poetry run mike set-default -b docs-site latest --push
 
 docs-delete:  ## Delete a documentation version (usage: make docs-delete VERSION=0.10)
 ifndef VERSION

@@ -48,6 +48,16 @@ mypy = "^1.18.2"
 grpc-stubs = "^1.53.0.6"
 types-psutil = "^7.0.0.20251001"
 
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.6"
+mkdocs-material = {version = "^9.5", extras = ["imaging"]}
+mkdocs-exclude = "^1.0"
+mkdocstrings = {version = "^0.27", extras = ["python"]}
+mike = "^2.1"
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

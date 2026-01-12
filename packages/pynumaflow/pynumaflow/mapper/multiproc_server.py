@@ -43,6 +43,7 @@ class MapMultiprocServer(NumaflowServer):
         Create a new grpc Multiproc Map Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
+
         Args:
             mapper_instance: The mapper instance to be used for Map UDF
             server_count: The number of grpc server instances to be forked for multiproc
@@ -52,35 +53,36 @@ class MapMultiprocServer(NumaflowServer):
                         defaults to 4 and max capped at 16
 
         Example invocation:
-            import math
-            import os
-            from pynumaflow.mapper import Messages, Message, Datum, Mapper, MapMultiprocServer
+        ```py
+        import math
+        import os
+        from pynumaflow.mapper import Messages, Message, Datum, Mapper, MapMultiprocServer
 
-            def is_prime(n):
-                for i in range(2, int(math.ceil(math.sqrt(n)))):
-                    if n % i == 0:
-                        return False
-                else:
-                    return True
+        def is_prime(n):
+            for i in range(2, int(math.ceil(math.sqrt(n)))):
+                if n % i == 0:
+                    return False
+            else:
+                return True
 
-            class PrimeMap(Mapper):
-                def handler(self, keys: list[str], datum: Datum) -> Messages:
-                    val = datum.value
-                    _ = datum.event_time
-                    _ = datum.watermark
-                    messages = Messages()
-                    for i in range(2, 100000):
-                        is_prime(i)
-                    messages.append(Message(val, keys=keys))
-                    return messages
+        class PrimeMap(Mapper):
+            def handler(self, keys: list[str], datum: Datum) -> Messages:
+                val = datum.value
+                _ = datum.event_time
+                _ = datum.watermark
+                messages = Messages()
+                for i in range(2, 100000):
+                    is_prime(i)
+                messages.append(Message(val, keys=keys))
+                return messages
 
-            if __name__ == "__main__":
-                server_count = 2
-                prime_class = PrimeMap()
-                # Server count is the number of server processes to start
-                grpc_server = MapMultiprocServer(prime_class, server_count=server_count)
-                grpc_server.start()
-
+        if __name__ == "__main__":
+            server_count = 2
+            prime_class = PrimeMap()
+            # Server count is the number of server processes to start
+            grpc_server = MapMultiprocServer(prime_class, server_count=server_count)
+            grpc_server.start()
+        ```
         """
         self.sock_path = f"unix://{sock_path}"
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
@@ -104,9 +106,8 @@ class MapMultiprocServer(NumaflowServer):
 
     def start(self) -> None:
         """
-        Starts the N grpc servers gRPC serves on the with
-        given max threads.
-        where N = The number of CPUs or the value of the parameter server_count
+        Starts the N grpc servers gRPC serves on the with given max threads.
+        Here N = The number of CPUs or the value of the parameter server_count
         defined by the user. The max value is capped to 2 * CPU count.
         """
 

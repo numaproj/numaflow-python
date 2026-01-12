@@ -41,6 +41,7 @@ class SinkServer(NumaflowServer):
         Create a new grpc Sink Server instance.
         A new servicer instance is created and attached to the server.
         The server instance is returned.
+
         Args:
             sinker_instance: The sinker instance to be used for Sink UDF
             sock_path: The UNIX socket path to be used for the server
@@ -48,37 +49,41 @@ class SinkServer(NumaflowServer):
             max_threads: The max number of threads to be spawned;
                             defaults to 4 and max capped at 16
         Example invocation:
-            import os
-            from collections.abc import Iterator
+        ```py
+        import os
+        import logging
+        from collections.abc import Iterator
 
-            from pynumaflow.sinker import Datum, Responses, Response, SinkServer
-            from pynumaflow.sinker import Sinker
-            from pynumaflow._constants import _LOGGER
+        from pynumaflow.sinker import Datum, Responses, Response, SinkServer
+        from pynumaflow.sinker import Sinker
+        from pynumaflow._constants import _LOGGER
 
-            class UserDefinedSink(Sinker):
-                def handler(self, datums: Iterator[Datum]) -> Responses:
-                    responses = Responses()
-                    for msg in datums:
-                        _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
-                        responses.append(Response.as_success(msg.id))
-                    return responses
+        logging.basicConfig(level=logging.INFO)
 
-            def udsink_handler(datums: Iterator[Datum]) -> Responses:
+        class UserDefinedSink(Sinker):
+            def handler(self, datums: Iterator[Datum]) -> Responses:
                 responses = Responses()
                 for msg in datums:
-                    _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
+                    logging.info("User Defined Sink %s", msg.value.decode("utf-8"))
                     responses.append(Response.as_success(msg.id))
                 return responses
 
-            if __name__ == "__main__":
-                invoke = os.getenv("INVOKE", "func_handler")
-                if invoke == "class":
-                    sink_handler = UserDefinedSink()
-                else:
-                    sink_handler = udsink_handler
-                grpc_server = SinkServer(sink_handler)
-                grpc_server.start()
+        def udsink_handler(datums: Iterator[Datum]) -> Responses:
+            responses = Responses()
+            for msg in datums:
+                logging.info("User Defined Sink %s", msg.value.decode("utf-8"))
+                responses.append(Response.as_success(msg.id))
+            return responses
 
+        if __name__ == "__main__":
+            invoke = os.getenv("INVOKE", "func_handler")
+            if invoke == "class":
+                sink_handler = UserDefinedSink()
+            else:
+                sink_handler = udsink_handler
+            grpc_server = SinkServer(sink_handler)
+            grpc_server.start()
+        ```
         """
         # If the container type is fallback sink, then use the fallback sink address and path.
         if os.getenv(ENV_UD_CONTAINER_TYPE, "") == UD_CONTAINER_FALLBACK_SINK:

@@ -18,9 +18,9 @@ class Message:
     Basic datatype for OnSuccess UDSink message.
 
     Args:
-        keys: the keys of the on_success message.
-        value: the payload of the on_success message.
-        user_metadata: the user metadata of the on_success message.
+        keys: list of keys for the on_success message.
+        value: payload of the on_success message.
+        user_metadata: user metadata of the on_success message.
     """
 
     _keys: Optional[list[str]]
@@ -174,29 +174,28 @@ class Responses(Sequence[R]):
 class Datum:
     """
     Class to define the important information for the event.
+
     Args:
         keys: the keys of the event.
         value: the payload of the event.
         event_time: the event time of the event.
         watermark: the watermark of the event.
         headers: the headers of the event.
-    >>> # Example usage
-    >>> from pynumaflow.sinker import Datum
-    >>> from datetime import datetime, timezone
-    >>> payload = bytes("test_mock_message", encoding="utf-8")
-    >>> t1 = datetime.fromtimestamp(1662998400, timezone.utc)
-    >>> t2 = datetime.fromtimestamp(1662998460, timezone.utc)
-    >>> msg_headers = {"key1": "value1", "key2": "value2"}
-    >>> msg_id = "test_id"
-    >>> output_keys = ["test_key"]
-    >>> d = Datum(
-    ...       keys=output_keys,
-    ...       sink_msg_id=msg_id,
-    ...       value=payload,
-    ...       event_time=t1,
-    ...       watermark=t2,
-    ...       headers=msg_headers
-    ...    )
+
+    Example usage
+    ```py
+    from pynumaflow.sinker import Datum
+    from datetime import datetime, timezone
+
+    d = Datum(
+          keys=["test_key"],
+          sink_msg_id="test_id",
+          value=b"test_mock_message",
+          event_time=datetime.fromtimestamp(1662998400, timezone.utc),
+          watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+          headers={"key1": "value1", "key2": "value2"},
+       )
+    ```
     """
 
     __slots__ = (

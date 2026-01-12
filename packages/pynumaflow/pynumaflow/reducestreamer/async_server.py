@@ -59,6 +59,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
     Class for a new Reduce Stream Server instance.
     A new servicer instance is created and attached to the server.
     The server instance is returned.
+
     Args:
         reduce_stream_instance: The reducer instance to be used for
                 Reduce Streaming UDF
@@ -70,90 +71,75 @@ class ReduceStreamAsyncServer(NumaflowServer):
         max_threads: The max number of threads to be spawned;
         defaults to 4 and max capped at 16
         server_info_file: The path to the server info file
+
     Example invocation:
-        import os
-        from collections.abc import AsyncIterable
-        from pynumaflow.reducestreamer import Messages, Message, Datum, Metadata,
-        ReduceStreamAsyncServer, ReduceStreamer
+    ```py
+    import os
+    from collections.abc import AsyncIterable
+    from pynumaflow.reducestreamer import Messages, Message, Datum, Metadata,
+    ReduceStreamAsyncServer, ReduceStreamer
 
-        class ReduceCounter(ReduceStreamer):
-            def __init__(self, counter):
-                self.counter = counter
+    class ReduceCounter(ReduceStreamer):
+        def __init__(self, counter):
+            self.counter = counter
 
-            async def handler(
-                self,
-                keys: list[str],
-                datums: AsyncIterable[Datum],
-                output: NonBlockingIterator,
-                md: Metadata,
-            ):
-                async for _ in datums:
-                    self.counter += 1
-                    if self.counter > 20:
-                        msg = f"counter:{self.counter}"
-                        await output.put(Message(str.encode(msg), keys=keys))
-                        self.counter = 0
-                msg = f"counter:{self.counter}"
-                await output.put(Message(str.encode(msg), keys=keys))
-
-        async def reduce_handler(
-                keys: list[str],
-                datums: AsyncIterable[Datum],
-                output: NonBlockingIterator,
-                md: Metadata,
-            ):
-            counter = 0
+        async def handler(
+            self,
+            keys: list[str],
+            datums: AsyncIterable[Datum],
+            output: NonBlockingIterator,
+            md: Metadata,
+        ):
             async for _ in datums:
-                counter += 1
-                if counter > 20:
-                    msg = f"counter:{counter}"
+                self.counter += 1
+                if self.counter > 20:
+                    msg = f"counter:{self.counter}"
                     await output.put(Message(str.encode(msg), keys=keys))
-                    counter = 0
-            msg = f"counter:{counter}"
+                    self.counter = 0
+            msg = f"counter:{self.counter}"
             await output.put(Message(str.encode(msg), keys=keys))
 
-        if __name__ == "__main__":
-            invoke = os.getenv("INVOKE", "func_handler")
-            if invoke == "class":
-                # Here we are using the class instance as the reducer_instance
-                # which will be used to invoke the handler function.
-                # We are passing the init_args for the class instance.
-                grpc_server = ReduceStreamAsyncServer(ReduceCounter, init_args=(0,))
-            else:
-                # Here we are using the handler function directly as the reducer_instance.
-                grpc_server = ReduceStreamAsyncServer(reduce_handler)
-            grpc_server.start()
+    async def reduce_handler(
+            keys: list[str],
+            datums: AsyncIterable[Datum],
+            output: NonBlockingIterator,
+            md: Metadata,
+        ):
+        counter = 0
+        async for _ in datums:
+            counter += 1
+            if counter > 20:
+                msg = f"counter:{counter}"
+                await output.put(Message(str.encode(msg), keys=keys))
+                counter = 0
+        msg = f"counter:{counter}"
+        await output.put(Message(str.encode(msg), keys=keys))
 
+    if __name__ == "__main__":
+        invoke = os.getenv("INVOKE", "func_handler")
+        if invoke == "class":
+            # Here we are using the class instance as the reducer_instance
+            # which will be used to invoke the handler function.
+            # We are passing the init_args for the class instance.
+            grpc_server = ReduceStreamAsyncServer(ReduceCounter, init_args=(0,))
+        else:
+            # Here we are using the handler function directly as the reducer_instance.
+            grpc_server = ReduceStreamAsyncServer(reduce_handler)
+        grpc_server.start()
+    ```
     """
 
     def __init__(
         self,
         reduce_stream_instance: ReduceStreamCallable,
         init_args: tuple = (),
-        init_kwargs: dict = None,
+        init_kwargs: Optional[dict] = None,
         sock_path=REDUCE_STREAM_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,
         server_info_file=REDUCE_STREAM_SERVER_INFO_FILE_PATH,
     ):
-        """
-        Create a new grpc Reduce Streamer Server instance.
-        A new servicer instance is created and attached to the server.
-        The server instance is returned.
-        Args:
-            reduce_stream_instance: The reducer instance to be used for
-                    Reduce Streaming UDF
-            init_args: The arguments to be passed to the reduce_stream_handler
-            init_kwargs: The keyword arguments to be passed to the
-                reduce_stream_handler
-            sock_path: The UNIX socket path to be used for the server
-            max_message_size: The max message size in bytes the server can receive and send
-            max_threads: The max number of threads to be spawned;
-            defaults to 4 and max capped at 16
-            server_info_file: The path to the server info file
-        """
-        if init_kwargs is None:
-            init_kwargs = {}
+        init_kwargs = init_kwargs or {}
         self.reduce_stream_handler = get_handler(reduce_stream_instance, init_args, init_kwargs)
         self.sock_path = f"unix://{sock_path}"
         self.max_message_size = max_message_size

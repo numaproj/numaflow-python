@@ -55,7 +55,7 @@ class Message:
         payload: data in bytes
         offset: the offset of the datum.
         event_time: event time of the message, usually extracted from the payload.
-        keys: []string keys for vertex (optional)
+        keys: list of string keys for the vertex (optional)
         headers: dict of headers for the message (optional)
         user_metadata: metadata for the message (optional)
     """
@@ -74,7 +74,7 @@ class Message:
         payload: bytes,
         offset: Offset,
         event_time: datetime,
-        keys: list[str] = None,
+        keys: Optional[list[str]] = None,
         headers: Optional[dict[str, str]] = None,
         user_metadata: Optional[UserMetadata] = None,
     ):
@@ -118,12 +118,16 @@ class Message:
 class ReadRequest:
     """
     Class to define the request for reading datum stream from user defined source.
+
     Args:
         num_records: the number of records to read.
         timeout_in_ms: the request timeout in milliseconds.
-    >>> # Example usage
-    >>> from pynumaflow.sourcer import ReadRequest
-    >>> read_request = ReadRequest(num_records=10, timeout_in_ms=1000)
+
+    Example:
+    ```py
+    from pynumaflow.sourcer import ReadRequest
+    read_request = ReadRequest(num_records=10, timeout_in_ms=1000)
+    ```
     """
 
     __slots__ = ("_num_records", "_timeout_in_ms")
@@ -159,12 +163,17 @@ class AckRequest:
     """
     Class for defining the request for acknowledging datum.
     It takes a list of offsets that need to be acknowledged.
+
     Args:
         offsets: the offsets to be acknowledged.
-    >>> # Example usage
-    >>> from pynumaflow.sourcer import AckRequest, Offset
-    >>> offset_val = Offset(offset=b"123", partition_id=0)
-    >>> ack_request = AckRequest(offsets=[offset_val, offset_val])
+
+    Example:
+    ```py
+    from pynumaflow.sourcer import AckRequest, Offset
+
+    offset_val = Offset(offset=b"123", partition_id=0)
+    ack_request = AckRequest(offsets=[offset_val, offset_val])
+    ```
     """
 
     __slots__ = ("_offsets",)
@@ -184,12 +193,16 @@ class NackRequest:
     """
     Class for defining the request for negatively acknowledging an offset.
     It takes a list of offsets that need to be negatively acknowledged on the source.
+
     Args:
         offsets: the offsets to be negatively acknowledged.
-    >>> # Example usage
-    >>> from pynumaflow.sourcer import NackRequest, Offset
-    >>> offset_val = Offset(offset=b"123", partition_id=0)
-    >>> nack_request = NackRequest(offsets=[offset_val, offset_val])
+
+    Example:
+    ```py
+    from pynumaflow.sourcer import NackRequest, Offset
+    offset_val = Offset(offset=b"123", partition_id=0)
+    nack_request = NackRequest(offsets=[offset_val, offset_val])
+    ```
     """
 
     __slots__ = ("_offsets",)
@@ -210,6 +223,7 @@ class PendingResponse:
     PendingResponse is the response for the pending request.
     It indicates the number of pending records at the user defined source.
     A negative count indicates that the pending information is not available.
+
     Args:
         count: the number of pending records.
     """
@@ -234,6 +248,7 @@ class PartitionsResponse:
     PartitionsResponse is the response for the partition request.
     It indicates the number of partitions at the user defined source.
     A negative count indicates that the partition information is not available.
+
     Args:
         count: the number of partitions.
     """
@@ -256,9 +271,6 @@ class Sourcer(metaclass=ABCMeta):
     """
     Provides an interface to write a Sourcer
     which will be exposed over an gRPC server.
-
-    Args:
-
     """
 
     def __call__(self, *args, **kwargs):

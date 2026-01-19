@@ -15,12 +15,28 @@ class SimpleLogSink(Sinker):
     """
     Simple log sink that logs each message and returns success responses.
     This is the class-based approach matching the user's example.
+    Also demonstrates reading metadata (read-only for sink).
     """
 
     async def handler(self, datums: AsyncIterable[sinker.Datum]) -> sinker.Responses:
         responses = sinker.Responses()
         async for msg in datums:
             _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
+
+            # Read system metadata (read-only)
+            _LOGGER.info("System metadata groups: %s", msg.system_metadata.groups())
+            for group in msg.system_metadata.groups():
+                for key in msg.system_metadata.keys(group):
+                    value = msg.system_metadata.value(group, key)
+                    _LOGGER.info("  System[%s][%s] = %s", group, key, value)
+
+            # Read user metadata (read-only)
+            _LOGGER.info("User metadata groups: %s", msg.user_metadata.groups())
+            for group in msg.user_metadata.groups():
+                for key in msg.user_metadata.keys(group):
+                    value = msg.user_metadata.value(group, key)
+                    _LOGGER.info("  User[%s][%s] = %s", group, key, value)
+
             responses.append(sinker.Response.as_success(msg.id))
             # if we are not able to write to sink and if we have a fallback sink configured
             # we can use Response.as_fallback(msg.id) to write the message to fallback sink

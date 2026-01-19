@@ -7,6 +7,62 @@ import datetime as _dt
 from ._sourcetransformer_dtypes import SourceTransformer as SourceTransformer
 
 
+class SystemMetadata:
+    """System-generated metadata groups per message (read-only)."""
+
+    def __init__(self) -> None: ...
+
+    def groups(self) -> List[str]:
+        """Returns the groups of the system metadata."""
+        ...
+
+    def keys(self, group: str) -> List[str]:
+        """Returns the keys of the system metadata for the given group."""
+        ...
+
+    def value(self, group: str, key: str) -> bytes:
+        """Returns the value of the system metadata for the given group and key."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+
+class UserMetadata:
+    """User-defined metadata groups per message (read-write)."""
+
+    def __init__(self) -> None: ...
+
+    def groups(self) -> List[str]:
+        """Returns the groups of the user metadata."""
+        ...
+
+    def keys(self, group: str) -> List[str]:
+        """Returns the keys of the user metadata for the given group."""
+        ...
+
+    def value(self, group: str, key: str) -> bytes:
+        """Returns the value of the user metadata for the given group and key."""
+        ...
+
+    def create_group(self, group: str) -> None:
+        """Creates a new group in the user metadata."""
+        ...
+
+    def add_kv(self, group: str, key: str, value: bytes) -> None:
+        """Adds a key-value pair to the user metadata."""
+        ...
+
+    def remove_key(self, group: str, key: str) -> None:
+        """Removes a key from a group in the user metadata."""
+        ...
+
+    def remove_group(self, group: str) -> None:
+        """Removes a group from the user metadata."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+
 class Messages:
     def __init__(self) -> None: ...
 
@@ -22,6 +78,7 @@ class Message:
     value: bytes
     event_time: _dt.datetime
     tags: Optional[List[str]]
+    user_metadata: Optional[UserMetadata]
 
     def __init__(
             self,
@@ -29,6 +86,7 @@ class Message:
             event_time: _dt.datetime,
             keys: Optional[List[str]] = ...,
             tags: Optional[List[str]] = ...,
+            user_metadata: Optional[UserMetadata] = ...,
     ) -> None: ...
 
     @staticmethod
@@ -42,6 +100,8 @@ class Datum:
     watermark: _dt.datetime
     event_time: _dt.datetime
     headers: Dict[str, str]
+    user_metadata: UserMetadata
+    system_metadata: SystemMetadata
 
     def __repr__(self) -> str: ...
 
@@ -61,6 +121,8 @@ class SourceTransformAsyncServer:
 
 
 __all__ = [
+    "SystemMetadata",
+    "UserMetadata",
     "Messages",
     "Message",
     "Datum",

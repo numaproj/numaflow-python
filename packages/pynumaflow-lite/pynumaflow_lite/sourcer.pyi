@@ -7,6 +7,42 @@ import datetime as _dt
 from ._source_dtypes import Sourcer as Sourcer
 
 
+class UserMetadata:
+    """User-defined metadata groups per message (read-write for source)."""
+
+    def __init__(self) -> None: ...
+
+    def groups(self) -> List[str]:
+        """Returns the groups of the user metadata."""
+        ...
+
+    def keys(self, group: str) -> List[str]:
+        """Returns the keys of the user metadata for the given group."""
+        ...
+
+    def value(self, group: str, key: str) -> bytes:
+        """Returns the value of the user metadata for the given group and key."""
+        ...
+
+    def create_group(self, group: str) -> None:
+        """Creates a new group in the user metadata."""
+        ...
+
+    def add_kv(self, group: str, key: str, value: bytes) -> None:
+        """Adds a key-value pair to the user metadata."""
+        ...
+
+    def remove_key(self, group: str, key: str) -> None:
+        """Removes a key from a group in the user metadata."""
+        ...
+
+    def remove_group(self, group: str) -> None:
+        """Removes a group from the user metadata."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+
 class Message:
     """A message to be sent from the source."""
     payload: bytes
@@ -14,6 +50,7 @@ class Message:
     event_time: _dt.datetime
     keys: List[str]
     headers: Dict[str, str]
+    user_metadata: Optional[UserMetadata]
 
     def __init__(
         self,
@@ -22,6 +59,7 @@ class Message:
         event_time: _dt.datetime,
         keys: Optional[List[str]] = ...,
         headers: Optional[Dict[str, str]] = ...,
+        user_metadata: Optional[UserMetadata] = ...,
     ) -> None: ...
 
     def __repr__(self) -> str: ...
@@ -122,6 +160,7 @@ class SourceAsyncServer:
 
 
 __all__ = [
+    "UserMetadata",
     "Message",
     "Offset",
     "ReadRequest",

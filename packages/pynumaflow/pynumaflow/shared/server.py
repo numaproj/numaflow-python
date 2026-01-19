@@ -288,6 +288,7 @@ def exit_on_error(
         p = psutil.Process(os.getppid())
     _LOGGER.info("Killing process: Got exception %s", err)
     p.kill()
+    p.wait()
 
 
 def update_context_err(context: NumaflowServicerContext, e: BaseException, err_msg: str):

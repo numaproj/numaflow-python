@@ -9,6 +9,98 @@ pub mod server;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+/// UserMetadata wraps user-defined metadata groups per message.
+/// Source is the origin or the first vertex in the pipeline.
+/// Here, for the first time, the user metadata can be set by the user.
+#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[derive(Clone, Default, Debug)]
+pub struct UserMetadata {
+    data: HashMap<String, HashMap<String, Vec<u8>>>,
+}
+
+#[pymethods]
+impl UserMetadata {
+    #[new]
+    #[pyo3(signature = () -> "UserMetadata")]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the groups of the user metadata.
+    /// If there are no groups, it returns an empty list.
+    #[pyo3(signature = () -> "list[str]")]
+    fn groups(&self) -> Vec<String> {
+        self.data.keys().cloned().collect()
+    }
+
+    /// Returns the keys of the user metadata for the given group.
+    /// If there are no keys or the group is not present, it returns an empty list.
+    #[pyo3(signature = (group: "str") -> "list[str]")]
+    fn keys(&self, group: &str) -> Vec<String> {
+        self.data
+            .get(group)
+            .map(|kv| kv.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Returns the value of the user metadata for the given group and key.
+    /// If there is no value or the group or key is not present, it returns an empty bytes.
+    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
+    fn value(&self, group: &str, key: &str) -> Vec<u8> {
+        self.data
+            .get(group)
+            .and_then(|kv| kv.get(key))
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Creates a new group in the user metadata.
+    /// If the group already exists, this is a no-op.
+    #[pyo3(signature = (group: "str"))]
+    fn create_group(&mut self, group: String) {
+        self.data.entry(group).or_default();
+    }
+
+    /// Adds a key-value pair to the user metadata.
+    /// If the group is not present, it creates a new group.
+    #[pyo3(signature = (group: "str", key: "str", value: "bytes"))]
+    fn add_kv(&mut self, group: String, key: String, value: Vec<u8>) {
+        self.data.entry(group).or_default().insert(key, value);
+    }
+
+    /// Removes a key from a group in the user metadata.
+    /// If the key or group is not present, it's a no-op.
+    #[pyo3(signature = (group: "str", key: "str"))]
+    fn remove_key(&mut self, group: &str, key: &str) {
+        if let Some(kv) = self.data.get_mut(group) {
+            kv.remove(key);
+        }
+    }
+
+    /// Removes a group from the user metadata.
+    /// If the group is not present, it's a no-op.
+    #[pyo3(signature = (group: "str"))]
+    fn remove_group(&mut self, group: &str) {
+        self.data.remove(group);
+    }
+
+    fn __repr__(&self) -> String {
+        format!("UserMetadata(groups={:?})", self.groups())
+    }
+}
+
+impl From<UserMetadata> for numaflow::source::UserMetadata {
+    fn from(value: UserMetadata) -> Self {
+        let mut user_metadata = numaflow::source::UserMetadata::new();
+        for (group, kv_map) in value.data {
+            for (key, val) in kv_map {
+                user_metadata.add_kv(group.clone(), key, val);
+            }
+        }
+        user_metadata
+    }
+}
+
 /// A message to be sent from the source.
 #[pyclass(module = "pynumaflow_lite.sourcer")]
 #[derive(Clone, Debug)]
@@ -27,13 +119,15 @@ pub struct Message {
     /// Headers of the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
+    /// User metadata for the message.
+    pub user_metadata: Option<UserMetadata>,
 }
 
 #[pymethods]
 impl Message {
-    /// Create a new [Message] with the given payload, offset, event_time, keys, and headers.
+    /// Create a new [Message] with the given payload, offset, event_time, keys, headers, and user_metadata.
     #[new]
-    #[pyo3(signature = (payload: "bytes", offset: "Offset", event_time: "datetime", keys: "list[str] | None"=None, headers: "dict[str, str] | None"=None) -> "Message"
+    #[pyo3(signature = (payload: "bytes", offset: "Offset", event_time: "datetime", keys: "list[str] | None"=None, headers: "dict[str, str] | None"=None, user_metadata: "UserMetadata | None"=None) -> "Message"
     )]
     fn new(
         payload: Vec<u8>,
@@ -41,6 +135,7 @@ impl Message {
         event_time: DateTime<Utc>,
         keys: Option<Vec<String>>,
         headers: Option<HashMap<String, String>>,
+        user_metadata: Option<UserMetadata>,
     ) -> Self {
         Self {
             payload,
@@ -48,6 +143,7 @@ impl Message {
             event_time,
             keys: keys.unwrap_or_default(),
             headers: headers.unwrap_or_default(),
+            user_metadata,
         }
     }
 
@@ -59,19 +155,20 @@ impl Message {
 
     fn __repr__(&self) -> String {
         format!(
-            "Message(payload={:?}, offset={:?}, event_time={}, keys={:?}, headers={:?})",
-            self.payload, self.offset, self.event_time, self.keys, self.headers
+            "Message(payload={:?}, offset={:?}, event_time={}, keys={:?}, headers={:?}, user_metadata={:?})",
+            self.payload, self.offset, self.event_time, self.keys, self.headers, self.user_metadata
         )
     }
 
     fn __str__(&self) -> String {
         format!(
-            "Message(payload={:?}, offset={:?}, event_time={}, keys={:?}, headers={:?})",
+            "Message(payload={:?}, offset={:?}, event_time={}, keys={:?}, headers={:?}, user_metadata={:?})",
             String::from_utf8_lossy(&self.payload),
             self.offset,
             self.event_time,
             self.keys,
-            self.headers
+            self.headers,
+            self.user_metadata
         )
     }
 }
@@ -84,7 +181,7 @@ impl From<Message> for numaflow::source::Message {
             event_time: value.event_time,
             keys: value.keys,
             headers: value.headers,
-            user_metadata: None,
+            user_metadata: value.user_metadata.map(|m| m.into()),
         }
     }
 }
@@ -332,6 +429,7 @@ impl SourceAsyncServer {
 
 /// Helper to populate a PyModule with source types/functions.
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
+    m.add_class::<UserMetadata>()?;
     m.add_class::<Message>()?;
     m.add_class::<PyOffset>()?;
     m.add_class::<ReadRequest>()?;

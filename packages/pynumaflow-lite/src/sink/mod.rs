@@ -13,6 +13,132 @@ use tokio::sync::mpsc;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+/// SystemMetadata wraps system-generated metadata groups per message.
+/// Since sink is the last vertex in the pipeline, only GET methods are available.
+#[pyclass(module = "pynumaflow_lite.sinker")]
+#[derive(Clone, Default, Debug)]
+pub struct SystemMetadata {
+    data: HashMap<String, HashMap<String, Vec<u8>>>,
+}
+
+#[pymethods]
+impl SystemMetadata {
+    #[new]
+    #[pyo3(signature = () -> "SystemMetadata")]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the groups of the system metadata.
+    /// If there are no groups, it returns an empty list.
+    #[pyo3(signature = () -> "list[str]")]
+    fn groups(&self) -> Vec<String> {
+        self.data.keys().cloned().collect()
+    }
+
+    /// Returns the keys of the system metadata for the given group.
+    /// If there are no keys or the group is not present, it returns an empty list.
+    #[pyo3(signature = (group: "str") -> "list[str]")]
+    fn keys(&self, group: &str) -> Vec<String> {
+        self.data
+            .get(group)
+            .map(|kv| kv.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Returns the value of the system metadata for the given group and key.
+    /// If there is no value or the group or key is not present, it returns an empty bytes.
+    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
+    fn value(&self, group: &str, key: &str) -> Vec<u8> {
+        self.data
+            .get(group)
+            .and_then(|kv| kv.get(key))
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("SystemMetadata(groups={:?})", self.groups())
+    }
+}
+
+impl From<sink::SystemMetadata> for SystemMetadata {
+    fn from(value: sink::SystemMetadata) -> Self {
+        let mut data = HashMap::new();
+        for group in value.groups() {
+            let mut kv = HashMap::new();
+            for key in value.keys(&group) {
+                kv.insert(key.clone(), value.value(&group, &key));
+            }
+            data.insert(group, kv);
+        }
+        Self { data }
+    }
+}
+
+/// UserMetadata wraps user-defined metadata groups per message.
+/// Since sink is the last vertex in the pipeline, only GET methods are available.
+#[pyclass(module = "pynumaflow_lite.sinker")]
+#[derive(Clone, Default, Debug)]
+pub struct UserMetadata {
+    data: HashMap<String, HashMap<String, Vec<u8>>>,
+}
+
+#[pymethods]
+impl UserMetadata {
+    #[new]
+    #[pyo3(signature = () -> "UserMetadata")]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the groups of the user metadata.
+    /// If there are no groups, it returns an empty list.
+    #[pyo3(signature = () -> "list[str]")]
+    fn groups(&self) -> Vec<String> {
+        self.data.keys().cloned().collect()
+    }
+
+    /// Returns the keys of the user metadata for the given group.
+    /// If there are no keys or the group is not present, it returns an empty list.
+    #[pyo3(signature = (group: "str") -> "list[str]")]
+    fn keys(&self, group: &str) -> Vec<String> {
+        self.data
+            .get(group)
+            .map(|kv| kv.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Returns the value of the user metadata for the given group and key.
+    /// If there is no value or the group or key is not present, it returns an empty bytes.
+    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
+    fn value(&self, group: &str, key: &str) -> Vec<u8> {
+        self.data
+            .get(group)
+            .and_then(|kv| kv.get(key))
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("UserMetadata(groups={:?})", self.groups())
+    }
+}
+
+impl From<sink::UserMetadata> for UserMetadata {
+    fn from(value: sink::UserMetadata) -> Self {
+        let mut data = HashMap::new();
+        for group in value.groups() {
+            let mut kv = HashMap::new();
+            for key in value.keys(&group) {
+                kv.insert(key.clone(), value.value(&group, &key));
+            }
+            data.insert(group, kv);
+        }
+        Self { data }
+    }
+}
+
 /// KeyValueGroup represents a group of key-value pairs for user metadata.
 #[pyclass(module = "pynumaflow_lite.sinker")]
 #[derive(Clone, Default, Debug)]
@@ -248,6 +374,12 @@ pub struct Datum {
     /// Headers for the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
+    /// User metadata for the message.
+    #[pyo3(get)]
+    pub user_metadata: UserMetadata,
+    /// System metadata for the message.
+    #[pyo3(get)]
+    pub system_metadata: SystemMetadata,
 }
 
 impl Datum {
@@ -258,6 +390,8 @@ impl Datum {
         eventtime: DateTime<Utc>,
         id: String,
         headers: HashMap<String, String>,
+        user_metadata: UserMetadata,
+        system_metadata: SystemMetadata,
     ) -> Self {
         Self {
             keys,
@@ -266,25 +400,36 @@ impl Datum {
             eventtime,
             id,
             headers,
+            user_metadata,
+            system_metadata,
         }
     }
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?})",
-            self.keys, self.value, self.watermark, self.eventtime, self.id, self.headers
+            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
+            self.keys,
+            self.value,
+            self.watermark,
+            self.eventtime,
+            self.id,
+            self.headers,
+            self.user_metadata,
+            self.system_metadata
         )
     }
 
     fn __str__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?})",
+            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
             self.keys,
             String::from_utf8_lossy(&self.value),
             self.watermark,
             self.eventtime,
             self.id,
-            self.headers
+            self.headers,
+            self.user_metadata,
+            self.system_metadata
         )
     }
 }
@@ -298,6 +443,8 @@ impl From<sink::SinkRequest> for Datum {
             value.event_time,
             value.id,
             value.headers,
+            value.user_metadata.into(),
+            value.system_metadata.into(),
         )
     }
 }
@@ -388,6 +535,8 @@ impl SinkAsyncServer {
 
 /// Helper to populate a PyModule with sink types/functions.
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
+    m.add_class::<SystemMetadata>()?;
+    m.add_class::<UserMetadata>()?;
     m.add_class::<KeyValueGroup>()?;
     m.add_class::<Message>()?;
     m.add_class::<Response>()?;

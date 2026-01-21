@@ -11,6 +11,174 @@ pub mod server;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+/// SystemMetadata wraps system-generated metadata groups per message.
+/// It is read-only to UDFs.
+#[pyclass(module = "pynumaflow_lite.mapper")]
+#[derive(Clone, Default, Debug)]
+pub struct SystemMetadata {
+    data: HashMap<String, HashMap<String, Vec<u8>>>,
+}
+
+#[pymethods]
+impl SystemMetadata {
+    #[new]
+    #[pyo3(signature = () -> "SystemMetadata")]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the groups of the system metadata.
+    /// If there are no groups, it returns an empty list.
+    #[pyo3(signature = () -> "list[str]")]
+    fn groups(&self) -> Vec<String> {
+        self.data.keys().cloned().collect()
+    }
+
+    /// Returns the keys of the system metadata for the given group.
+    /// If there are no keys or the group is not present, it returns an empty list.
+    #[pyo3(signature = (group: "str") -> "list[str]")]
+    fn keys(&self, group: &str) -> Vec<String> {
+        self.data
+            .get(group)
+            .map(|kv| kv.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Returns the value of the system metadata for the given group and key.
+    /// If there is no value or the group or key is not present, it returns an empty bytes.
+    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
+    fn value(&self, group: &str, key: &str) -> Vec<u8> {
+        self.data
+            .get(group)
+            .and_then(|kv| kv.get(key))
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    fn __repr__(&self) -> String {
+        format!("SystemMetadata(groups={:?})", self.groups())
+    }
+}
+
+impl From<map::SystemMetadata> for SystemMetadata {
+    fn from(value: map::SystemMetadata) -> Self {
+        let mut data = HashMap::new();
+        for group in value.groups() {
+            let mut kv = HashMap::new();
+            for key in value.keys(&group) {
+                kv.insert(key.clone(), value.value(&group, &key));
+            }
+            data.insert(group, kv);
+        }
+        Self { data }
+    }
+}
+
+/// UserMetadata wraps user-defined metadata groups per message.
+/// Users can read and write to this metadata.
+#[pyclass(module = "pynumaflow_lite.mapper")]
+#[derive(Clone, Default, Debug)]
+pub struct UserMetadata {
+    data: HashMap<String, HashMap<String, Vec<u8>>>,
+}
+
+#[pymethods]
+impl UserMetadata {
+    #[new]
+    #[pyo3(signature = () -> "UserMetadata")]
+    fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the groups of the user metadata.
+    /// If there are no groups, it returns an empty list.
+    #[pyo3(signature = () -> "list[str]")]
+    fn groups(&self) -> Vec<String> {
+        self.data.keys().cloned().collect()
+    }
+
+    /// Returns the keys of the user metadata for the given group.
+    /// If there are no keys or the group is not present, it returns an empty list.
+    #[pyo3(signature = (group: "str") -> "list[str]")]
+    fn keys(&self, group: &str) -> Vec<String> {
+        self.data
+            .get(group)
+            .map(|kv| kv.keys().cloned().collect())
+            .unwrap_or_default()
+    }
+
+    /// Returns the value of the user metadata for the given group and key.
+    /// If there is no value or the group or key is not present, it returns an empty bytes.
+    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
+    fn value(&self, group: &str, key: &str) -> Vec<u8> {
+        self.data
+            .get(group)
+            .and_then(|kv| kv.get(key))
+            .cloned()
+            .unwrap_or_default()
+    }
+
+    /// Creates a new group in the user metadata.
+    /// If the group already exists, this is a no-op.
+    #[pyo3(signature = (group: "str"))]
+    fn create_group(&mut self, group: String) {
+        self.data.entry(group).or_default();
+    }
+
+    /// Adds a key-value pair to the user metadata.
+    /// If the group is not present, it creates a new group.
+    #[pyo3(signature = (group: "str", key: "str", value: "bytes"))]
+    fn add_kv(&mut self, group: String, key: String, value: Vec<u8>) {
+        self.data.entry(group).or_default().insert(key, value);
+    }
+
+    /// Removes a key from a group in the user metadata.
+    /// If the key or group is not present, it's a no-op.
+    #[pyo3(signature = (group: "str", key: "str"))]
+    fn remove_key(&mut self, group: &str, key: &str) {
+        if let Some(kv) = self.data.get_mut(group) {
+            kv.remove(key);
+        }
+    }
+
+    /// Removes a group from the user metadata.
+    /// If the group is not present, it's a no-op.
+    #[pyo3(signature = (group: "str"))]
+    fn remove_group(&mut self, group: &str) {
+        self.data.remove(group);
+    }
+
+    fn __repr__(&self) -> String {
+        format!("UserMetadata(groups={:?})", self.groups())
+    }
+}
+
+impl From<map::UserMetadata> for UserMetadata {
+    fn from(value: map::UserMetadata) -> Self {
+        let mut data = HashMap::new();
+        for group in value.groups() {
+            let mut kv = HashMap::new();
+            for key in value.keys(&group) {
+                kv.insert(key.clone(), value.value(&group, &key));
+            }
+            data.insert(group, kv);
+        }
+        Self { data }
+    }
+}
+
+impl From<UserMetadata> for map::UserMetadata {
+    fn from(value: UserMetadata) -> Self {
+        let mut user_metadata = map::UserMetadata::new();
+        for (group, kv_map) in value.data {
+            for (key, val) in kv_map {
+                user_metadata.add_kv(group.clone(), key, val);
+            }
+        }
+        user_metadata
+    }
+}
+
 /// A collection of [Message]s.
 #[pyclass(module = "pynumaflow_lite.mapper")]
 #[derive(Clone, Debug)]
@@ -52,16 +220,28 @@ pub struct Message {
     pub value: Vec<u8>,
     /// Tags are used for [conditional forwarding](https://numaflow.numaproj.io/user-guide/reference/conditional-forwarding/).
     pub tags: Option<Vec<String>>,
+    /// User metadata for the message.
+    pub user_metadata: Option<UserMetadata>,
 }
 
 #[pymethods]
 impl Message {
-    /// Create a new [Message] with the given value, keys, and tags.
+    /// Create a new [Message] with the given value, keys, tags, and user_metadata.
     #[new]
-    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None) -> "Message"
+    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "UserMetadata | None"=None) -> "Message"
     )]
-    fn new(value: Vec<u8>, keys: Option<Vec<String>>, tags: Option<Vec<String>>) -> Self {
-        Self { keys, value, tags }
+    fn new(
+        value: Vec<u8>,
+        keys: Option<Vec<String>>,
+        tags: Option<Vec<String>>,
+        user_metadata: Option<UserMetadata>,
+    ) -> Self {
+        Self {
+            keys,
+            value,
+            tags,
+            user_metadata,
+        }
     }
 
     /// Drop a [Message], do not forward to the next vertex.
@@ -72,6 +252,7 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
+            user_metadata: None,
         }
     }
 }
@@ -82,7 +263,7 @@ impl From<Message> for map::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
-            user_metadata: None,
+            user_metadata: value.user_metadata.map(|m| m.into()),
         }
     }
 }
@@ -106,6 +287,12 @@ pub struct Datum {
     /// Headers for the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
+    /// User metadata for the message.
+    #[pyo3(get)]
+    pub user_metadata: UserMetadata,
+    /// System metadata for the message.
+    #[pyo3(get)]
+    pub system_metadata: SystemMetadata,
 }
 
 impl Datum {
@@ -115,6 +302,8 @@ impl Datum {
         watermark: DateTime<Utc>,
         eventtime: DateTime<Utc>,
         headers: HashMap<String, String>,
+        user_metadata: UserMetadata,
+        system_metadata: SystemMetadata,
     ) -> Self {
         Self {
             keys,
@@ -122,24 +311,34 @@ impl Datum {
             watermark,
             eventtime,
             headers,
+            user_metadata,
+            system_metadata,
         }
     }
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?})",
-            self.keys, self.value, self.watermark, self.eventtime, self.headers
+            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
+            self.keys,
+            self.value,
+            self.watermark,
+            self.eventtime,
+            self.headers,
+            self.user_metadata,
+            self.system_metadata
         )
     }
 
     fn __str__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?})",
+            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
             self.keys,
             String::from_utf8_lossy(&self.value),
             self.watermark,
             self.eventtime,
-            self.headers
+            self.headers,
+            self.user_metadata,
+            self.system_metadata
         )
     }
 }
@@ -152,6 +351,8 @@ impl From<map::MapRequest> for Datum {
             value.watermark,
             value.eventtime,
             value.headers,
+            value.user_metadata.into(),
+            value.system_metadata.into(),
         )
     }
 }
@@ -208,6 +409,8 @@ impl MapAsyncServer {
 
 /// Helper to populate a PyModule with map types/functions.
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
+    m.add_class::<SystemMetadata>()?;
+    m.add_class::<UserMetadata>()?;
     m.add_class::<Messages>()?;
     m.add_class::<Message>()?;
     m.add_class::<Datum>()?;

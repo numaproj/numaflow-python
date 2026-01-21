@@ -25,34 +25,43 @@ class SimpleSource(Sourcer):
     async def read_handler(self, datum: sourcer.ReadRequest) -> AsyncIterator[sourcer.Message]:
         """
         The simple source generates messages with incrementing numbers.
+        Also demonstrates creating user metadata (source is origin, so only user metadata).
         """
         _LOGGER.info(f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}")
-        
+
         # Generate the requested number of messages
         for i in range(datum.num_records):
             # Create message payload
             payload = f"message-{self.counter}".encode("utf-8")
-            
+
             # Create offset
             offset = sourcer.Offset(
                 offset=str(self.counter).encode("utf-8"),
                 partition_id=self.partition_idx
             )
-            
+
+            # Create user metadata for the message
+            user_metadata = sourcer.UserMetadata()
+            user_metadata.create_group("source_info")
+            user_metadata.add_kv("source_info", "source_name", b"simple_source")
+            user_metadata.add_kv("source_info", "message_id", str(self.counter).encode())
+            user_metadata.add_kv("source_info", "partition", str(self.partition_idx).encode())
+
             # Create message
             message = sourcer.Message(
                 payload=payload,
                 offset=offset,
                 event_time=datetime.now(timezone.utc),
                 keys=["key1"],
-                headers={"source": "simple"}
+                headers={"source": "simple"},
+                user_metadata=user_metadata
             )
-            
+
             _LOGGER.info(f"Generated message: {self.counter}")
             self.counter += 1
-            
+
             yield message
-            
+
             # Small delay to simulate real source
             await asyncio.sleep(0.1)
 

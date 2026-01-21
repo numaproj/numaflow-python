@@ -4,6 +4,46 @@ from typing import Optional, List, Dict, Callable, Awaitable, Any, AsyncIterator
 import datetime as _dt
 
 
+class SystemMetadata:
+    """System-generated metadata groups per message (read-only for sink)."""
+
+    def __init__(self) -> None: ...
+
+    def groups(self) -> List[str]:
+        """Returns the groups of the system metadata."""
+        ...
+
+    def keys(self, group: str) -> List[str]:
+        """Returns the keys of the system metadata for the given group."""
+        ...
+
+    def value(self, group: str, key: str) -> bytes:
+        """Returns the value of the system metadata for the given group and key."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+
+class UserMetadata:
+    """User-defined metadata groups per message (read-only for sink)."""
+
+    def __init__(self) -> None: ...
+
+    def groups(self) -> List[str]:
+        """Returns the groups of the user metadata."""
+        ...
+
+    def keys(self, group: str) -> List[str]:
+        """Returns the keys of the user metadata for the given group."""
+        ...
+
+    def value(self, group: str, key: str) -> bytes:
+        """Returns the value of the user metadata for the given group and key."""
+        ...
+
+    def __repr__(self) -> str: ...
+
+
 class KeyValueGroup:
     key_value: Dict[str, bytes]
 
@@ -58,6 +98,8 @@ class Datum:
     eventtime: _dt.datetime
     id: str
     headers: Dict[str, str]
+    user_metadata: UserMetadata
+    system_metadata: SystemMetadata
 
     def __repr__(self) -> str: ...
 
@@ -81,6 +123,8 @@ class Sinker:
 
 
 __all__ = [
+    "SystemMetadata",
+    "UserMetadata",
     "KeyValueGroup",
     "Message",
     "Response",

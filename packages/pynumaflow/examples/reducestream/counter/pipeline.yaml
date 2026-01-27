@@ -30,6 +30,7 @@ spec:
           window:
             fixed:
               length: 60s
+              streaming: true
           keyed: true
           storage:
             persistentVolumeClaim:

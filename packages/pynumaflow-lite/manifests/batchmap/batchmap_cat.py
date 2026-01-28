@@ -1,6 +1,7 @@
 import asyncio
 import signal
 from collections.abc import AsyncIterable
+from typing import Awaitable, Callable
 
 from pynumaflow_lite import batchmapper
 from pynumaflow_lite.batchmapper import Message
@@ -28,7 +29,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: Callable[[AsyncIterable[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]]):
     server = batchmapper.BatchMapAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run

@@ -2,6 +2,7 @@ import asyncio
 import collections.abc
 import logging
 import signal
+from typing import Awaitable, Callable
 
 from pynumaflow_lite import sinker
 
@@ -39,7 +40,7 @@ async def async_handler(datums: collections.abc.AsyncIterator[sinker.Datum]) -> 
     return responses
 
 
-async def start(f: callable):
+async def start(f: Callable[[collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]]):
     sock_file = "/tmp/var/run/numaflow/sink.sock"
     server_info_file = "/tmp/var/run/numaflow/sinker-server-info"
     server = sinker.SinkAsyncServer(sock_file, server_info_file)

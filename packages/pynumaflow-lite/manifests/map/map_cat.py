@@ -1,5 +1,7 @@
 import asyncio
 import signal
+from typing import Awaitable, Callable
+
 from pynumaflow_lite import mapper
 
 
@@ -26,7 +28,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
     server = mapper.MapAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run

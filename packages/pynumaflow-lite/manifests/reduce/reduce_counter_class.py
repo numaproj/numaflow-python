@@ -32,7 +32,7 @@ except AttributeError:
     pass
 
 
-async def start(creator: type, init_args: tuple):
+async def start(creator: type[reducer.Reducer], init_args: tuple):
     sock_file = "/var/run/numaflow/reduce.sock"
     server_info_file = "/var/run/numaflow/reducer-server-info"
     server = reducer.ReduceAsyncServer(sock_file, server_info_file)

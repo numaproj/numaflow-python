@@ -1,6 +1,7 @@
 import asyncio
 import signal
 from collections.abc import AsyncIterator
+from typing import Awaitable, Callable
 
 from pynumaflow_lite import batchmapper
 from pynumaflow_lite.batchmapper import Message
@@ -28,7 +29,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: Callable[[AsyncIterator[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]]):
     sock_file = "/tmp/var/run/numaflow/batchmap.sock"
     server_info_file = "/tmp/var/run/numaflow/mapper-server-info"
     server = batchmapper.BatchMapAsyncServer(sock_file, server_info_file)

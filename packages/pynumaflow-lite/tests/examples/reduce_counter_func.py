@@ -1,6 +1,7 @@
 import asyncio
 import signal
 from collections.abc import AsyncIterable
+from typing import Awaitable, Callable
 
 from pynumaflow_lite import reducer
 
@@ -29,7 +30,9 @@ except AttributeError:
     pass
 
 
-async def start(handler: callable):
+async def start(
+    handler: Callable[[list[str], AsyncIterable[reducer.Datum], reducer.Metadata], Awaitable[reducer.Messages]]
+):
     sock_file = "/tmp/var/run/numaflow/reduce.sock"
     server_info_file = "/tmp/var/run/numaflow/reducer-server-info"
     server = reducer.ReduceAsyncServer(sock_file, server_info_file)

@@ -2,7 +2,8 @@ import asyncio
 import collections
 import logging
 import signal
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, AsyncIterator
+from typing import Awaitable, Callable
 
 from pynumaflow_lite import sinker
 from pynumaflow_lite._sink_dtypes import Sinker
@@ -35,7 +36,7 @@ except AttributeError:
     pass
 
 
-async def start(f: collections.abc.Callable):
+async def start(f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]]):
     server = sinker.SinkAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run

@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, Optional, Callable, Awaitable
+from collections.abc import AsyncIterable
 
 class Message:
     """
@@ -74,13 +75,13 @@ class AccumulatorAsyncServer:
         info_file: str | None = "/var/run/numaflow/accumulator-server-info",
     ) -> None: ...
     async def start(
-        self, py_creator: object, init_args: object | None = None
+        self, py_creator: type[Accumulator] | Callable[[AsyncIterable[Datum]], AsyncIterator[Message]], init_args: tuple | None = None
     ) -> None:
         """
-        Start the server with the given Python class (creator).
+        Start the server with the given Python class (creator) or function.
 
         Args:
-            py_creator: The Python class to instantiate per key
+            py_creator: The Python class to instantiate per key or a function
             init_args: Optional tuple of positional arguments for class instantiation
         """
         ...

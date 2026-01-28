@@ -1,6 +1,7 @@
 import asyncio
 import signal
 from collections.abc import AsyncIterator
+from typing import Callable
 
 from pynumaflow_lite import mapstreamer
 from pynumaflow_lite.mapstreamer import Message
@@ -24,7 +25,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: Callable[[list[str], mapstreamer.Datum], AsyncIterator[Message]]):
     # Use default socket/info file locations; no explicit sock file passed
     server = mapstreamer.MapStreamAsyncServer()
 

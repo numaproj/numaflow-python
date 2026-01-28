@@ -1,6 +1,8 @@
 import asyncio
 import signal
 from datetime import datetime, timezone
+from typing import Callable
+
 from pynumaflow_lite import sourcetransformer
 
 # Define epoch timestamps for filtering
@@ -91,7 +93,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages]):
     sock_file = "/tmp/var/run/numaflow/sourcetransform.sock"
     server_info_file = "/tmp/var/run/numaflow/sourcetransformer-server-info"
     server = sourcetransformer.SourceTransformAsyncServer(sock_file, server_info_file)

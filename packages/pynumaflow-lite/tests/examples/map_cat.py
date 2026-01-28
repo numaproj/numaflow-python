@@ -1,5 +1,6 @@
 import asyncio
 import signal
+from typing import Awaitable, Callable
 
 from pynumaflow_lite import mapper
 
@@ -37,7 +38,7 @@ async def async_handler(
     return messages
 
 
-async def start(f: callable):
+async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
     sock_file = "/tmp/var/run/numaflow/map.sock"
     server_info_file = "/tmp/var/run/numaflow/mapper-server-info"
     server = mapper.MapAsyncServer(sock_file, server_info_file)

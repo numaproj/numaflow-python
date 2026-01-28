@@ -1,6 +1,8 @@
 import asyncio
 import signal
 from datetime import datetime, timezone
+from typing import Callable
+
 from pynumaflow_lite import sourcetransformer
 
 # Define epoch timestamps for filtering
@@ -59,7 +61,7 @@ except AttributeError:
     pass
 
 
-async def start(f: callable):
+async def start(f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages]):
     server = sourcetransformer.SourceTransformAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run

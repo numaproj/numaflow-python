@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import datetime as _dt
-from typing import Optional, List, Dict, Awaitable
+from typing import Optional, List, Dict, Awaitable, Callable
+from collections.abc import AsyncIterable
 
 # Re-export the Python ABC for user convenience and typing
 from ._reduce_dtypes import Reducer as Reducer
@@ -64,7 +65,11 @@ class ReduceAsyncServer:
             info_file: str | None = ...,
     ) -> None: ...
 
-    def start(self, py_creator: type, init_args: tuple | None = ...) -> Awaitable[None]: ...
+    def start(
+        self,
+        py_creator: type[Reducer] | Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]],
+        init_args: tuple | None = ...,
+    ) -> Awaitable[None]: ...
 
     def stop(self) -> None: ...
 

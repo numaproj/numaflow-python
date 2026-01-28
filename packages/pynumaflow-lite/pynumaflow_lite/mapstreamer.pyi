@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable, Any, AsyncIterator
+from typing import Optional, List, Dict, Callable, Awaitable, AsyncIterator
 import datetime as _dt
 
 # Re-export the Python ABC for user convenience and typing
@@ -45,7 +45,7 @@ class MapStreamAsyncServer:
             info_file: str | None = ...,
     ) -> None: ...
 
-    def start(self, py_func: Callable[..., Any]) -> Awaitable[None]: ...
+    def start(self, py_func: Callable[[list[str], Datum], AsyncIterator[Message]]) -> Awaitable[None]: ...
 
     def stop(self) -> None: ...
 

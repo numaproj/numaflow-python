@@ -88,6 +88,7 @@ class SinkAsyncServer(NumaflowServer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,
         server_info_file=SINK_SERVER_INFO_FILE_PATH,
+        shutdown_callback=None,
     ):
         # If the container type is fallback sink, then use the fallback sink address and path.
         if os.getenv(ENV_UD_CONTAINER_TYPE, "") == UD_CONTAINER_FALLBACK_SINK:
@@ -103,6 +104,7 @@ class SinkAsyncServer(NumaflowServer):
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
+        self.shutdwon_callback = shutdown_callback
 
         self.sinker_instance = sinker_instance
 
@@ -118,7 +120,7 @@ class SinkAsyncServer(NumaflowServer):
         Starter function for the Async server class, need a separate caller
         so that all the async coroutines can be started from a single context
         """
-        aiorun.run(self.aexec(), use_uvloop=True)
+        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdwon_callback)
 
     async def aexec(self):
         """

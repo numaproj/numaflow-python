@@ -1,7 +1,15 @@
 import unittest
 from datetime import datetime, timezone
 
-from pynumaflow.sourcetransformer import Messages, Message, DROP, SourceTransformer, Datum
+from pynumaflow.sourcetransformer import (
+    Messages,
+    Message,
+    DROP,
+    SourceTransformer,
+    Datum,
+    UserMetadata,
+    SystemMetadata,
+)
 from tests.testing_utils import mock_new_event_time
 
 
@@ -44,6 +52,28 @@ class TestMessage(unittest.TestCase):
         self.assertEqual(mock_obj["Value"], msgt.value)
         self.assertEqual(mock_obj["Tags"], msgt.tags)
         self.assertEqual(mock_obj["EventTime"], msgt.event_time)
+
+    def test_message_with_user_metadata(self):
+        user_meta = UserMetadata()
+        user_meta.add_key("group1", "key1", b"value1")
+        user_meta.add_key("group1", "key2", b"value2")
+
+        msgt = Message(
+            mock_message_t(),
+            mock_event_time(),
+            keys=["test_key"],
+            user_metadata=user_meta,
+        )
+        self.assertEqual(mock_message_t(), msgt.value)
+        self.assertEqual(["test_key"], msgt.keys)
+        self.assertEqual(b"value1", msgt.user_metadata.value("group1", "key1"))
+        self.assertEqual(b"value2", msgt.user_metadata.value("group1", "key2"))
+        self.assertEqual(["group1"], msgt.user_metadata.groups())
+
+    def test_message_default_user_metadata(self):
+        msgt = Message(mock_message_t(), mock_event_time())
+        self.assertIsNotNone(msgt.user_metadata)
+        self.assertEqual(0, len(msgt.user_metadata))
 
 
 class TestMessages(unittest.TestCase):
@@ -92,6 +122,42 @@ class TestMessages(unittest.TestCase):
         msgts = Messages(self.mock_Message_object(), self.mock_Message_object())
         with self.assertRaises(TypeError):
             msgts[:1]
+
+
+class TestDatum(unittest.TestCase):
+    def test_datum_with_metadata(self):
+        user_meta = UserMetadata()
+        user_meta.add_key("group1", "key1", b"value1")
+
+        sys_meta = SystemMetadata({"sys_group": {"sys_key": b"sys_value"}})
+
+        d = Datum(
+            keys=["test_key"],
+            value=mock_message_t(),
+            event_time=mock_event_time(),
+            watermark=mock_event_time(),
+            headers={"header1": "value1"},
+            user_metadata=user_meta,
+            system_metadata=sys_meta,
+        )
+        self.assertEqual(["test_key"], d.keys)
+        self.assertEqual(mock_message_t(), d.value)
+        self.assertEqual(mock_event_time(), d.event_time)
+        self.assertEqual({"header1": "value1"}, d.headers)
+        self.assertEqual(b"value1", d.user_metadata.value("group1", "key1"))
+        self.assertEqual(b"sys_value", d.system_metadata.value("sys_group", "sys_key"))
+
+    def test_datum_default_metadata(self):
+        d = Datum(
+            keys=["test_key"],
+            value=mock_message_t(),
+            event_time=mock_event_time(),
+            watermark=mock_event_time(),
+        )
+        self.assertIsNotNone(d.user_metadata)
+        self.assertIsNotNone(d.system_metadata)
+        self.assertEqual(0, len(d.user_metadata))
+        self.assertEqual([], d.system_metadata.groups())
 
 
 class ExampleSourceTransformClass(SourceTransformer):

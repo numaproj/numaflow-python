@@ -5,6 +5,7 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sourcetransformer import transform_pb2, transform_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.shared.server import handle_async_error
@@ -105,12 +106,17 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
         Invokes the user defined function.
         """
         try:
+            user_metadata, system_metadata = _user_and_system_metadata_from_proto(
+                request.request.metadata
+            )
             datum = Datum(
                 keys=list(request.request.keys),
                 value=request.request.value,
                 event_time=request.request.event_time.ToDatetime(),
                 watermark=request.request.watermark.ToDatetime(),
                 headers=dict(request.request.headers),
+                user_metadata=user_metadata,
+                system_metadata=system_metadata,
             )
             msgs = await self.__transform_handler(list(request.request.keys), datum)
             results = []
@@ -123,6 +129,7 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
                         value=msg.value,
                         tags=msg.tags,
                         event_time=event_time_timestamp,
+                        metadata=msg.user_metadata._to_proto(),
                     )
                 )
             await result_queue.put(

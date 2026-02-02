@@ -7,6 +7,7 @@ from collections.abc import Awaitable
 from warnings import warn
 
 from pynumaflow._constants import DROP
+from pynumaflow._metadata import UserMetadata, SystemMetadata
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -22,17 +23,24 @@ class Message:
         event_time: event time of the message, usually extracted from the payload.
         keys: []string keys for vertex (optional)
         tags: []string tags for conditional forwarding (optional)
+        user_metadata: metadata for the message (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags", "_event_time")
+    __slots__ = ("_value", "_keys", "_tags", "_event_time", "_user_metadata")
 
     _keys: list[str]
     _tags: list[str]
     _value: bytes
     _event_time: datetime
+    _user_metadata: UserMetadata
 
     def __init__(
-        self, value: bytes, event_time: datetime, keys: list[str] = None, tags: list[str] = None
+        self,
+        value: bytes,
+        event_time: datetime,
+        keys: list[str] = None,
+        tags: list[str] = None,
+        user_metadata: Optional[UserMetadata] = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -43,6 +51,7 @@ class Message:
         # There is no year 0, so setting following as default event time.
         self._event_time = event_time or datetime(1, 1, 1, 0, 0)
         self._value = value or b""
+        self._user_metadata = user_metadata or UserMetadata()
 
     @classmethod
     def to_drop(cls: type[M], event_time: datetime) -> M:
@@ -63,6 +72,10 @@ class Message:
     @property
     def tags(self) -> list[str]:
         return self._tags
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        return self._user_metadata
 
 
 class Messages(Sequence[M]):
@@ -119,6 +132,8 @@ class Datum:
         event_time: the event time of the event.
         watermark: the watermark of the event.
         headers: the headers of the event.
+        user_metadata: the user metadata of the event.
+        system_metadata: the system metadata of the event.
 
     Example:
     ```py
@@ -135,13 +150,23 @@ class Datum:
     ```
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")
+    __slots__ = (
+        "_keys",
+        "_value",
+        "_event_time",
+        "_watermark",
+        "_headers",
+        "_user_metadata",
+        "_system_metadata",
+    )
 
     _keys: list[str]
     _value: bytes
     _event_time: datetime
     _watermark: datetime
     _headers: dict[str, str]
+    _user_metadata: UserMetadata
+    _system_metadata: SystemMetadata
 
     def __init__(
         self,
@@ -150,6 +175,8 @@ class Datum:
         event_time: datetime,
         watermark: datetime,
         headers: Optional[dict[str, str]] = None,
+        user_metadata: Optional[UserMetadata] = None,
+        system_metadata: Optional[SystemMetadata] = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -160,6 +187,8 @@ class Datum:
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
         self._headers = headers or {}
+        self._user_metadata = user_metadata or UserMetadata()
+        self._system_metadata = system_metadata or SystemMetadata()
 
     @property
     def keys(self) -> list[str]:
@@ -185,6 +214,16 @@ class Datum:
     def headers(self) -> dict[str, str]:
         """Returns the headers of the event."""
         return self._headers.copy()
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        """Returns the user metadata of the event."""
+        return self._user_metadata
+
+    @property
+    def system_metadata(self) -> SystemMetadata:
+        """Returns the system metadata of the event."""
+        return self._system_metadata
 
 
 class SourceTransformer(metaclass=ABCMeta):

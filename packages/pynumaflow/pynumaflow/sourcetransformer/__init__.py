@@ -8,6 +8,7 @@ from pynumaflow.sourcetransformer._dtypes import (
 from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiProcServer
 from pynumaflow.sourcetransformer.server import SourceTransformServer
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
+from pynumaflow._metadata import UserMetadata, SystemMetadata
 
 __all__ = [
     "Message",
@@ -18,4 +19,6 @@ __all__ = [
     "SourceTransformer",
     "SourceTransformMultiProcServer",
     "SourceTransformAsyncServer",
+    "UserMetadata",
+    "SystemMetadata",
 ]

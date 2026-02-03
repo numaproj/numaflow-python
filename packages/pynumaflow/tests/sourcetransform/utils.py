@@ -1,3 +1,4 @@
+from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.sourcetransformer import Datum, Messages, Message
 from tests.testing_utils import mock_new_event_time, mock_message, get_time_args
@@ -19,7 +20,7 @@ def err_transform_handler(_: list[str], __: Datum) -> Messages:
     raise RuntimeError("Something is fishy!")
 
 
-def get_test_datums(handshake=True):
+def get_test_datums(handshake=True, with_metadata=False):
     event_time_timestamp, watermark_timestamp = get_time_args()
 
     responses = []
@@ -31,35 +32,117 @@ def get_test_datums(handshake=True):
             )
         )
 
-    test_datum = [
-        transform_pb2.SourceTransformRequest(
-            request=transform_pb2.SourceTransformRequest.Request(
-                keys=["test"],
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
-                id="test-id-1",
-            )
-        ),
-        transform_pb2.SourceTransformRequest(
-            request=transform_pb2.SourceTransformRequest.Request(
-                keys=["test"],
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
-                id="test-id-2",
-            )
-        ),
-        transform_pb2.SourceTransformRequest(
-            request=transform_pb2.SourceTransformRequest.Request(
-                keys=["test"],
-                value=mock_message(),
-                event_time=event_time_timestamp,
-                watermark=watermark_timestamp,
-                id="test-id-3",
-            )
-        ),
-    ]
+    if with_metadata:
+        test_datum = [
+            transform_pb2.SourceTransformRequest(
+                request=transform_pb2.SourceTransformRequest.Request(
+                    keys=["test"],
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    id="test-id-1",
+                    metadata=metadata_pb2.Metadata(
+                        previous_vertex="test-source",
+                        sys_metadata={
+                            "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                                key_value={
+                                    "version": b"1.0.0",
+                                }
+                            ),
+                        },
+                        user_metadata={
+                            "custom_info": metadata_pb2.KeyValueGroup(
+                                key_value={
+                                    "version": b"1.0.0",
+                                }
+                            ),
+                        },
+                    ),
+                )
+            ),
+            transform_pb2.SourceTransformRequest(
+                request=transform_pb2.SourceTransformRequest.Request(
+                    keys=["test"],
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    id="test-id-2",
+                    metadata=metadata_pb2.Metadata(
+                        previous_vertex="test-source",
+                        sys_metadata={
+                            "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                                key_value={
+                                    "version": b"1.0.0",
+                                }
+                            ),
+                        },
+                        user_metadata={
+                            "custom_info": metadata_pb2.KeyValueGroup(
+                                key_value={
+                                    "version": b"2.0.0",
+                                }
+                            ),
+                        },
+                    ),
+                )
+            ),
+            transform_pb2.SourceTransformRequest(
+                request=transform_pb2.SourceTransformRequest.Request(
+                    keys=["test"],
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    id="test-id-3",
+                    metadata=metadata_pb2.Metadata(
+                        previous_vertex="test-source",
+                        sys_metadata={
+                            "numaflow_version_info": metadata_pb2.KeyValueGroup(
+                                key_value={
+                                    "version": b"1.0.0",
+                                }
+                            ),
+                        },
+                        user_metadata={
+                            "custom_info": metadata_pb2.KeyValueGroup(
+                                key_value={
+                                    "version": b"3.0.0",
+                                }
+                            ),
+                        },
+                    ),
+                )
+            ),
+        ]
+    else:
+        test_datum = [
+            transform_pb2.SourceTransformRequest(
+                request=transform_pb2.SourceTransformRequest.Request(
+                    keys=["test"],
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    id="test-id-1",
+                )
+            ),
+            transform_pb2.SourceTransformRequest(
+                request=transform_pb2.SourceTransformRequest.Request(
+                    keys=["test"],
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    id="test-id-2",
+                )
+            ),
+            transform_pb2.SourceTransformRequest(
+                request=transform_pb2.SourceTransformRequest.Request(
+                    keys=["test"],
+                    value=mock_message(),
+                    event_time=event_time_timestamp,
+                    watermark=watermark_timestamp,
+                    id="test-id-3",
+                )
+            ),
+        ]
     for x in test_datum:
         responses.append(x)
     return responses

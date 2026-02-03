@@ -11,6 +11,7 @@ from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import MAX_MESSAGE_SIZE
+from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.sourcetransformer import Datum, Messages, Message, SourceTransformer
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
@@ -265,6 +266,122 @@ class TestAsyncTransformer(unittest.TestCase):
         # defaults to 4
         server = SourceTransformAsyncServer(source_transform_instance=handle)
         self.assertEqual(server.max_threads, 4)
+
+
+class MetadataAsyncSourceTransformer(SourceTransformer):
+    """Source transformer that validates and passes through metadata."""
+
+    async def handler(self, keys: list[str], datum: Datum) -> Messages:
+        # Validate system metadata
+        if datum.system_metadata.value("numaflow_version_info", "version") != b"1.0.0":
+            raise ValueError("System metadata version mismatch")
+
+        val = datum.value
+        msg = "payload:{} event_time:{} ".format(
+            val.decode("utf-8"),
+            datum.event_time,
+        )
+        val = bytes(msg, encoding="utf-8")
+        messages = Messages()
+        # Pass user metadata to the output message
+        messages.append(
+            Message(val, mock_new_event_time(), keys=keys, user_metadata=datum.user_metadata)
+        )
+        return messages
+
+
+_metadata_s: Server = None
+_metadata_channel = grpc.insecure_channel("unix:///tmp/async_st_metadata.sock")
+_metadata_loop = None
+
+
+def metadata_startup_callable(loop):
+    asyncio.set_event_loop(loop)
+    loop.run_forever()
+
+
+def new_metadata_async_st():
+    handle = MetadataAsyncSourceTransformer()
+    server = SourceTransformAsyncServer(source_transform_instance=handle)
+    return server.servicer
+
+
+async def start_metadata_server(udfs):
+    _server_options = [
+        ("grpc.max_send_message_length", MAX_MESSAGE_SIZE),
+        ("grpc.max_receive_message_length", MAX_MESSAGE_SIZE),
+    ]
+    server = grpc.aio.server(options=_server_options)
+    transform_pb2_grpc.add_SourceTransformServicer_to_server(udfs, server)
+    listen_addr = "unix:///tmp/async_st_metadata.sock"
+    server.add_insecure_port(listen_addr)
+    logging.info("Starting metadata server on %s", listen_addr)
+    global _metadata_s
+    _metadata_s = server
+    await server.start()
+    await server.wait_for_termination()
+
+
+@patch("psutil.Process.kill", mock_terminate_on_stop)
+class TestAsyncTransformerMetadata(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        global _metadata_loop
+        loop = asyncio.new_event_loop()
+        _metadata_loop = loop
+        _thread = threading.Thread(target=metadata_startup_callable, args=(loop,), daemon=True)
+        _thread.start()
+        udfs = new_metadata_async_st()
+        asyncio.run_coroutine_threadsafe(start_metadata_server(udfs), loop=loop)
+        while True:
+            try:
+                with grpc.insecure_channel("unix:///tmp/async_st_metadata.sock") as channel:
+                    f = grpc.channel_ready_future(channel)
+                    f.result(timeout=10)
+                    if f.done():
+                        break
+            except grpc.FutureTimeoutError as e:
+                LOGGER.error("error trying to connect to grpc server")
+                LOGGER.error(e)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        try:
+            _metadata_loop.stop()
+            LOGGER.info("stopped the metadata event loop")
+        except Exception as e:
+            LOGGER.error(e)
+
+    def test_source_transformer_with_metadata(self) -> None:
+        stub = transform_pb2_grpc.SourceTransformStub(_metadata_channel)
+        request = get_test_datums(with_metadata=True)
+        generator_response = None
+        try:
+            generator_response = stub.SourceTransformFn(request_iterator=request_generator(request))
+        except grpc.RpcError as e:
+            logging.error(e)
+            raise
+
+        responses = []
+        for r in generator_response:
+            responses.append(r)
+
+        # 1 handshake + 3 data responses
+        self.assertEqual(4, len(responses))
+        self.assertTrue(responses[0].handshake.sot)
+
+        # Verify metadata is passed through correctly
+        for idx, resp in enumerate(responses[1:], 1):
+            _id = "test-id-" + str(idx)
+            self.assertEqual(_id, resp.id)
+            self.assertEqual(1, len(resp.results))
+            # Verify user metadata is returned
+            self.assertEqual(
+                resp.results[0].metadata.user_metadata["custom_info"],
+                metadata_pb2.KeyValueGroup(key_value={"version": f"{idx}.0.0".encode()}),
+            )
+            # System metadata should be empty in responses (user cannot set it)
+            self.assertEqual(resp.results[0].metadata.sys_metadata, {})
 
 
 if __name__ == "__main__":

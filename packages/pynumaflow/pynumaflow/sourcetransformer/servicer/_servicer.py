@@ -9,6 +9,7 @@ from pynumaflow.shared.server import exit_on_error
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.sourcetransformer import Datum
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.types import NumaflowServicerContext
@@ -119,12 +120,17 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         self, context, request: transform_pb2.SourceTransformRequest, result_queue: SyncIterator
     ):
         try:
+            user_metadata, system_metadata = _user_and_system_metadata_from_proto(
+                request.request.metadata
+            )
             d = Datum(
                 keys=list(request.request.keys),
                 value=request.request.value,
                 event_time=request.request.event_time.ToDatetime(),
                 watermark=request.request.watermark.ToDatetime(),
                 headers=dict(request.request.headers),
+                user_metadata=user_metadata,
+                system_metadata=system_metadata,
             )
             responses = self.__transform_handler(list(request.request.keys), d)
 
@@ -138,6 +144,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                         value=resp.value,
                         tags=resp.tags,
                         event_time=event_time_timestamp,
+                        metadata=resp.user_metadata._to_proto(),
                     )
                 )
             result_queue.put(

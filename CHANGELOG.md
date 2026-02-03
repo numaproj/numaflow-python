@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.12.0 (2026-02-03)
+
+ * [298a7f1](https://github.com/numaproj/numaflow-python/commit/298a7f1710f350f39442e2587cde681626e2f439) v0.12.0 release (#313)
+ * [14e369a](https://github.com/numaproj/numaflow-python/commit/14e369a19807db0f6aa5a4593405559ee433bb06) feat: add metadata support for source transformer (#312)
+ * [27ad810](https://github.com/numaproj/numaflow-python/commit/27ad810b7f7298e90487837f1aa98001ceed8d15) fix(typing): pyi, examples, and manifest (#309)
+ * [17b2c22](https://github.com/numaproj/numaflow-python/commit/17b2c22c41cd35421d79b296d7ebe3aed7444d6c) feat: metadata propagation (system/user) in pynumaflow-lite (#305)
+ * [9b043d4](https://github.com/numaproj/numaflow-python/commit/9b043d4865e452a7f58446172e022ee1bdd89785) fix: Sourcer - Change pending/partitions handlers of Source to async (#301)
+ * [eae7222](https://github.com/numaproj/numaflow-python/commit/eae7222f2cc81a2319eed5fac396fa77efa49a44) feat: API documentation site using Github pages (#303)
+ * [2ebe47f](https://github.com/numaproj/numaflow-python/commit/2ebe47f6549fb699c17c375d50b7d31bcff95899) feat: Support for on_success sink in pynumaflow (#302)
+ * [5500636](https://github.com/numaproj/numaflow-python/commit/550063664b69ec3e5aa7ad8bce27094c32568833) Fix Python 3.14 compatibility issue with uvloop dependency (#300)
+ * [5dacaa7](https://github.com/numaproj/numaflow-python/commit/5dacaa74b1f8034e04685f07cca949ebba1939da) feat(example): side-input manifests (#297)
+ * [9311f25](https://github.com/numaproj/numaflow-python/commit/9311f25d9c1675a3d9115431268ea60ebfaa3c9f) feat: side-input for pynumaflow-lite (#296)
+ * [02e5145](https://github.com/numaproj/numaflow-python/commit/02e5145334341cb59acccc420a762167d783acd8) fix(example): update cron schedule format (#295)
+ * [24ce158](https://github.com/numaproj/numaflow-python/commit/24ce158b76a4b40fe0fc41b856fa994ee77626ef) feat: source-transformer for pynumaflow-lite (#293)
+ * [62f698b](https://github.com/numaproj/numaflow-python/commit/62f698b40ed0478b5c35fd56b07ab556f086773d) feat(examples): reduce streaming example (#291)
+ * [0e2bafe](https://github.com/numaproj/numaflow-python/commit/0e2bafe0f3127182fb2cd7d3e7c685eda144b129) feat: Reduce streaming for pynumaflow_lite (#290)
+ * [ee2351d](https://github.com/numaproj/numaflow-python/commit/ee2351d7582312bcb441c1345d32160183472c76) fix(doc): point examples to new location (#288)
+ * [c9dccff](https://github.com/numaproj/numaflow-python/commit/c9dccff0d92981c06becbe54b1cf7b2a1c13b4bb) doc: update README for clarity and corrections (#284)
+ * [de595ad](https://github.com/numaproj/numaflow-python/commit/de595ad477c2fa32c28c748cda632a44d7249218) feat: source using rust sdk (#283)
+ * [d9c9192](https://github.com/numaproj/numaflow-python/commit/d9c9192660bdf19352223385025b6cec810f370e) feat: sink integration for pynumaflow-lite (#281)
+ * [c3c3f19](https://github.com/numaproj/numaflow-python/commit/c3c3f19c320347672f9fba7c09bfc31a20d88023) feat: metadata implementation for source, map and sink (#274)
+ * [83eeb23](https://github.com/numaproj/numaflow-python/commit/83eeb23c791de5121b1b03cd1717234e2c5a5048) fix: add idleness to stream-sorter example (#280)
+ * [fe0bd4e](https://github.com/numaproj/numaflow-python/commit/fe0bd4e3ef70a53e57e88c3020fe02bcb95c0efa) feat(streamsorter): flush on timeout, adjust logging (#279)
+
+### Contributors
+
+ * Martin Thøgersen
+ * Sreekanth
+ * Vaibhav Kant Tiwari
+ * Vigith Maurice
+ * shrivardhan
+
 ## v0.11.0 (2025-10-20)
 
  * [96f966e](https://github.com/numaproj/numaflow-python/commit/96f966ec7642f7a5827e282d531145682911ac0d) v0.11.0 release (#275)

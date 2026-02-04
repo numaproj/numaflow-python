@@ -132,7 +132,7 @@ class ReduceAsyncServer(NumaflowServer):
         self.max_message_size = max_message_size
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.server_info_file = server_info_file
-        self.shutdwon_callback = shutdown_callback
+        self.shutdown_callback = shutdown_callback
 
         self._server_options = [
             ("grpc.max_send_message_length", self.max_message_size),
@@ -149,7 +149,7 @@ class ReduceAsyncServer(NumaflowServer):
         _LOGGER.info(
             "Starting Async Reduce Server",
         )
-        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdwon_callback)
+        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdown_callback)
 
     async def aexec(self):
         """

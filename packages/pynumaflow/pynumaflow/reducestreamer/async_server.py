@@ -69,8 +69,11 @@ class ReduceStreamAsyncServer(NumaflowServer):
         sock_path: The UNIX socket path to be used for the server
         max_message_size: The max message size in bytes the server can receive and send
         max_threads: The max number of threads to be spawned;
-        defaults to 4 and max capped at 16
+            defaults to 4 and max capped at 16
         server_info_file: The path to the server info file
+        shutdown_callback: Callable, executed after loop is stopped, before
+                            cancelling any tasks.
+                            Useful for graceful shutdown.
 
     Example invocation:
     ```py

@@ -73,6 +73,9 @@ class AccumulatorAsyncServer(NumaflowServer):
         max_threads: The max number of threads to be spawned;
         defaults to 4 and max capped at 16
         server_info_file: The path to the server info file
+        shutdown_callback: Callable, executed after loop is stopped, before
+                            cancelling any tasks.
+                            Useful for graceful shutdown.
 
     Example invocation:
     ```py
@@ -139,6 +142,7 @@ class AccumulatorAsyncServer(NumaflowServer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,
         server_info_file=ACCUMULATOR_SERVER_INFO_FILE_PATH,
+        shutdown_callback=None,
     ):
         init_kwargs = init_kwargs or {}
         self.accumulator_handler = get_handler(accumulator_instance, init_args, init_kwargs)
@@ -146,6 +150,7 @@ class AccumulatorAsyncServer(NumaflowServer):
         self.max_message_size = max_message_size
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.server_info_file = server_info_file
+        self.shutdown_callback = shutdown_callback
 
         self._server_options = [
             ("grpc.max_send_message_length", self.max_message_size),
@@ -162,7 +167,7 @@ class AccumulatorAsyncServer(NumaflowServer):
         _LOGGER.info(
             "Starting Async Accumulator Server",
         )
-        aiorun.run(self.aexec(), use_uvloop=True)
+        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdown_callback)
 
     async def aexec(self):
         """

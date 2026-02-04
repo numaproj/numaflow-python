@@ -51,6 +51,10 @@ class MapStreamAsyncServer(NumaflowServer):
             max_threads: The max number of threads to be spawned;
                             defaults to 4 and max capped at 16
             server_type: The type of server to be used
+            server_info_file: The path to the server info file
+            shutdown_callback: Callable, executed after loop is stopped, before
+                            cancelling any tasks.
+                            Useful for graceful shutdown.
 
         Example invocation:
         ```py

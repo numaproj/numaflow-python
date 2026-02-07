@@ -29,6 +29,7 @@ class SourceAsyncServer(NumaflowServer):
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,
         server_info_file=SOURCE_SERVER_INFO_FILE_PATH,
+        shutdown_callback=None,
     ):
         """
         Create a new grpc Async Source Server instance.
@@ -41,6 +42,10 @@ class SourceAsyncServer(NumaflowServer):
             max_message_size: The max message size in bytes the server can receive and send
             max_threads: The max number of threads to be spawned;
                             defaults to 4 and max capped at 16
+            server_info_file: The path to the server info file
+            shutdown_callback: Callable, executed after loop is stopped, before
+                            cancelling any tasks.
+                            Useful for graceful shutdown.
 
         Example invocation:
         ```py
@@ -138,6 +143,7 @@ class SourceAsyncServer(NumaflowServer):
         self.max_threads = min(max_threads, MAX_NUM_THREADS)
         self.max_message_size = max_message_size
         self.server_info_file = server_info_file
+        self.shutdown_callback = shutdown_callback
 
         self.sourcer_instance = sourcer_instance
 
@@ -153,7 +159,7 @@ class SourceAsyncServer(NumaflowServer):
         Starter function for the Async server class, need a separate caller
         so that all the async coroutines can be started from a single context
         """
-        aiorun.run(self.aexec(), use_uvloop=True)
+        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdown_callback)
 
     async def aexec(self):
         """

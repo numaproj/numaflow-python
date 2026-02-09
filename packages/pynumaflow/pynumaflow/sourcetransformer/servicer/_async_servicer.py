@@ -96,8 +96,10 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
             # send an EOF to result queue to indicate that all tasks have completed
             await result_queue.put(STREAM_EOF)
 
-        except BaseException:
+        except BaseException as e:
             _LOGGER.critical("SourceTransformFnError Error, re-raising the error", exc_info=True)
+            # Surface the error to the consumer; SourceTransformFn will handle and exit
+            await result_queue.put(e)
 
     async def _invoke_transform(
         self, request: transform_pb2.SourceTransformRequest, result_queue: NonBlockingIterator

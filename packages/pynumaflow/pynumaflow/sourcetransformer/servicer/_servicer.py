@@ -113,8 +113,10 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             self.executor.shutdown(wait=True)
             # Indicate to the result queue that no more messages left to process
             result_queue.put(STREAM_EOF)
-        except BaseException:
+        except BaseException as e:
             _LOGGER.critical("SourceTransformFnError, re-raising the error", exc_info=True)
+            # Surface the error to the consumer; SourceTransformFn will handle and exit
+            result_queue.put(e)
 
     def _invoke_transformer(
         self, context, request: transform_pb2.SourceTransformRequest, result_queue: SyncIterator

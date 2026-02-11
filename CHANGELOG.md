@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.12.1 (2026-02-11)
+
+ * [255d20b](https://github.com/numaproj/numaflow-python/commit/255d20bbb73bfb5c67b29b75b5ed0f45366107af) fix: add the error to the global result queue (#315)
+ * [7a26f15](https://github.com/numaproj/numaflow-python/commit/7a26f15e3e27a1a0ee0f82c12e542b5ef1dddabd) feat: support shutdown_callback argument in XXXAsyncServer (#311)
+
+### Contributors
+
+ * Kazuki Yamamoto
+ * Vigith Maurice
+
 ## v0.12.0 (2026-02-03)
 
  * [298a7f1](https://github.com/numaproj/numaflow-python/commit/298a7f1710f350f39442e2587cde681626e2f439) v0.12.0 release (#313)

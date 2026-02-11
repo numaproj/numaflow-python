@@ -92,8 +92,10 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             self.executor.shutdown(wait=True)
             # Indicate to the result queue that no more messages left to process
             result_queue.put(STREAM_EOF)
-        except BaseException:
+        except BaseException as e:
             _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
+            # Surface the error to the consumer; MapFn will handle and exit
+            result_queue.put(e)
 
     def _invoke_map(
         self,

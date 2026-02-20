@@ -9,15 +9,13 @@ from pynumaflow._metadata import UserMetadata
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Offset:
     """
     Args:
         offset: the offset of the datum.
         partition_id: partition_id indicates which partition of the source the datum belongs to.
     """
-
-    __slots__ = ("_offset", "_partition_id")
 
     _offset: bytes
     _partition_id: int
@@ -46,7 +44,7 @@ class Offset:
         return self._partition_id
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -59,8 +57,6 @@ class Message:
         headers: dict of headers for the message (optional)
         user_metadata: metadata for the message (optional)
     """
-
-    __slots__ = ("_payload", "_offset", "_event_time", "_keys", "_headers", "_user_metadata")
 
     _payload: bytes
     _offset: Offset
@@ -114,7 +110,7 @@ class Message:
         return self._user_metadata
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class ReadRequest:
     """
     Class to define the request for reading datum stream from user defined source.
@@ -129,8 +125,6 @@ class ReadRequest:
     read_request = ReadRequest(num_records=10, timeout_in_ms=1000)
     ```
     """
-
-    __slots__ = ("_num_records", "_timeout_in_ms")
 
     _num_records: int
     _timeout_in_ms: int
@@ -158,7 +152,7 @@ class ReadRequest:
         return self._timeout_in_ms
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class AckRequest:
     """
     Class for defining the request for acknowledging datum.
@@ -176,7 +170,6 @@ class AckRequest:
     ```
     """
 
-    __slots__ = ("_offsets",)
     _offsets: list[Offset]
 
     def __init__(self, offsets: list[Offset]):
@@ -217,7 +210,7 @@ class NackRequest:
         return self._offsets
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class PendingResponse:
     """
     PendingResponse is the response for the pending request.
@@ -228,7 +221,6 @@ class PendingResponse:
         count: the number of pending records.
     """
 
-    __slots__ = ("_count",)
     _count: int
 
     def __init__(self, count: int):
@@ -242,7 +234,7 @@ class PendingResponse:
         return self._count
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class PartitionsResponse:
     """
     PartitionsResponse is the response for the partition request.
@@ -253,7 +245,6 @@ class PartitionsResponse:
         count: the number of partitions.
     """
 
-    __slots__ = ("_partitions",)
     _partitions: list[int]
 
     def __init__(self, partitions: list[int]):

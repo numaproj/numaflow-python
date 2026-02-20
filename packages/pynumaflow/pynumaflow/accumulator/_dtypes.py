@@ -22,7 +22,7 @@ class WindowOperation(IntEnum):
     APPEND = (2,)
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -47,8 +47,6 @@ class Datum:
        )
     ```
     """
-
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers", "_id")
 
     _keys: list[str]
     _value: bytes
@@ -132,11 +130,9 @@ class Datum:
         return self._id
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class IntervalWindow:
     """Defines the start and end of the interval window for the event."""
-
-    __slots__ = ("_start", "_end")
 
     _start: datetime
     _end: datetime
@@ -164,14 +160,12 @@ class IntervalWindow:
         return self._end
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class KeyedWindow:
     """
     Defines the window for a accumulator operation which includes the
     interval window along with the slot.
     """
-
-    __slots__ = ("_window", "_slot", "_keys")
 
     _window: IntervalWindow
     _slot: str
@@ -359,7 +353,7 @@ class AccumulatorRequest:
         return self._payload
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -373,8 +367,6 @@ class Message:
         headers: headers for this message (optional)
         id: message id (optional)
     """
-
-    __slots__ = ("_value", "_keys", "_tags", "_watermark", "_event_time", "_headers", "_id")
 
     _value: bytes
     _keys: list[str]

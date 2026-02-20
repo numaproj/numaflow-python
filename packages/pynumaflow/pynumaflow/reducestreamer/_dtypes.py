@@ -22,7 +22,7 @@ class WindowOperation(IntEnum):
     APPEND = (4,)
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -48,8 +48,6 @@ class Datum:
        )
     ```
     """
-
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")
 
     _keys: list[str]
     _value: bytes
@@ -101,11 +99,9 @@ class Datum:
         return self._headers
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class IntervalWindow:
     """Defines the start and end of the interval window for the event."""
-
-    __slots__ = ("_start", "_end")
 
     _start: datetime
     _end: datetime
@@ -125,14 +121,12 @@ class IntervalWindow:
         return self._end
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class ReduceWindow:
     """
     Defines the window for a reduce operation which includes the
     interval window along with the slot.
     """
-
-    __slots__ = ("_window", "_slot")
 
     _window: IntervalWindow
     _slot: str
@@ -162,11 +156,9 @@ class ReduceWindow:
         return self._window
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Metadata:
     """Defines the metadata for the event."""
-
-    __slots__ = ("_interval_window",)
 
     _interval_window: IntervalWindow
 
@@ -254,7 +246,7 @@ class ReduceRequest:
         return self._payload
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -264,8 +256,6 @@ class Message:
         keys: []string keys for vertex (optional)
         tags: []string tags for conditional forwarding (optional)
     """
-
-    __slots__ = ("_value", "_keys", "_tags")
 
     _value: bytes
     _keys: list[str]

@@ -12,7 +12,7 @@ B = TypeVar("B", bound="BatchResponse")
 Bs = TypeVar("Bs", bound="BatchResponses")
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -22,8 +22,6 @@ class Message:
         keys: list of keys for vertex (optional)
         tags: list of tags for conditional forwarding (optional)
     """
-
-    __slots__ = ("_value", "_keys", "_tags")
 
     _value: bytes
     _keys: list[str]
@@ -55,7 +53,7 @@ class Message:
         return self._tags
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -68,8 +66,6 @@ class Datum:
         headers: the headers of the event.
         id: the unique ID for this request
     """
-
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers", "_id")
 
     _keys: list[str]
     _value: bytes

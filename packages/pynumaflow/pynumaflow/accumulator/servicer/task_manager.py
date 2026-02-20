@@ -224,20 +224,21 @@ class TaskManager:
             request_count = 0
             async for request in request_iterator:
                 request_count += 1
-                # check whether the request is an open or append operation
-                if request.operation is int(WindowOperation.OPEN):
-                    # create a new task for the open operation and
-                    # put the request in the task iterator
-                    await self.create_task(request)
-                elif request.operation is int(WindowOperation.APPEND):
-                    # append the task data to the existing task
-                    # if the task does not exist, create a new task
-                    await self.send_datum_to_task(request)
-                elif request.operation is int(WindowOperation.CLOSE):
-                    # close the current task for req
-                    await self.close_task(request)
-                else:
-                    _LOGGER.debug(f"No operation matched for request: {request}", exc_info=True)
+                # check whether the request is an open, append, or close operation
+                match request.operation:
+                    case int(WindowOperation.OPEN):
+                        # create a new task for the open operation and
+                        # put the request in the task iterator
+                        await self.create_task(request)
+                    case int(WindowOperation.APPEND):
+                        # append the task data to the existing task
+                        # if the task does not exist, create a new task
+                        await self.send_datum_to_task(request)
+                    case int(WindowOperation.CLOSE):
+                        # close the current task for req
+                        await self.close_task(request)
+                    case _:
+                        _LOGGER.debug(f"No operation matched for request: {request}", exc_info=True)
 
         # If there is an error in the accumulator operation, log and
         # then send the error to the result queue

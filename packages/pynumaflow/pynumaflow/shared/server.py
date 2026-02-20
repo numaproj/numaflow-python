@@ -99,16 +99,17 @@ def _run_server(
     )
 
     # add the correct servicer to the server based on the UDF type
-    if udf_type == UDFType.Map:
-        map_pb2_grpc.add_MapServicer_to_server(servicer, server)
-    elif udf_type == UDFType.Sink:
-        sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
-    elif udf_type == UDFType.SourceTransformer:
-        transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
-    elif udf_type == UDFType.Source:
-        source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
-    elif udf_type == UDFType.SideInput:
-        sideinput_pb2_grpc.add_SideInputServicer_to_server(servicer, server)
+    match udf_type:
+        case UDFType.Map:
+            map_pb2_grpc.add_MapServicer_to_server(servicer, server)
+        case UDFType.Sink:
+            sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
+        case UDFType.SourceTransformer:
+            transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
+        case UDFType.Source:
+            source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
+        case UDFType.SideInput:
+            sideinput_pb2_grpc.add_SideInputServicer_to_server(servicer, server)
 
     # bind the server to the UDS/TCP socket
     server.add_insecure_port(bind_address)

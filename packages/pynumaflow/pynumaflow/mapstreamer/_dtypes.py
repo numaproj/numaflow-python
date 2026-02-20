@@ -2,8 +2,8 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional
-from collections.abc import AsyncIterable
+from typing import TypeVar
+from collections.abc import AsyncIterable, Callable
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -30,7 +30,7 @@ class Message:
     _tags: list[str]
 
     def __init__(
-        self, value: bytes, keys: Optional[list[str]] = None, tags: Optional[list[str]] = None
+        self, value: bytes, keys: list[str] | None = None, tags: list[str] | None = None
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -141,7 +141,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -203,7 +203,7 @@ class MapStreamer(metaclass=ABCMeta):
 
 
 MapStreamAsyncCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
-MapStreamCallable = Union[MapStreamer, MapStreamAsyncCallable]
+MapStreamCallable = MapStreamer | MapStreamAsyncCallable
 
 
 class MapStreamError(Exception):

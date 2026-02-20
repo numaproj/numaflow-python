@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, AsyncIterator
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from pynumaflow._metadata import UserMetadata
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -74,9 +74,9 @@ class Message:
         payload: bytes,
         offset: Offset,
         event_time: datetime,
-        keys: Optional[list[str]] = None,
-        headers: Optional[dict[str, str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        keys: list[str] | None = None,
+        headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.

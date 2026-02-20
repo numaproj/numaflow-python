@@ -1,7 +1,7 @@
-from typing import Union, NewType
+from typing import NewType
 
 import grpc
 
 NumaflowServicerContext = NewType(
-    "NumaflowServicerContext", Union[grpc.aio.ServicerContext, grpc.ServicerContext]
+    "NumaflowServicerContext", grpc.aio.ServicerContext | grpc.ServicerContext
 )

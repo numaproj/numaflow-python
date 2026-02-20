@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional
+
 from pynumaflow.proto.common import metadata_pb2
 
 """
@@ -48,7 +48,7 @@ class SystemMetadata:
         """
         return list(self._data.get(group, {}).keys())
 
-    def value(self, group: str, key: str) -> Optional[bytes]:
+    def value(self, group: str, key: str) -> bytes | None:
         """
         Returns the value for a given group and key.
         """
@@ -108,7 +108,7 @@ class UserMetadata:
         """
         return len(self._data)
 
-    def value(self, group: str, key: str) -> Optional[bytes]:
+    def value(self, group: str, key: str) -> bytes | None:
         """
         Returns the value for a given group and key.
         If the group or key does not exist, returns None.
@@ -124,7 +124,7 @@ class UserMetadata:
         """
         self._data.setdefault(group, {})[key] = value
 
-    def remove_key(self, group: str, key: str) -> Optional[bytes]:
+    def remove_key(self, group: str, key: str) -> bytes | None:
         """
         Removes the key and its value for a given group and returns the value.
         If this key is the only key in the group, the group will be removed.
@@ -138,7 +138,7 @@ class UserMetadata:
             self._data[group] = group_data
         return value
 
-    def remove_group(self, group: str) -> Optional[dict[str, bytes]]:
+    def remove_group(self, group: str) -> dict[str, bytes] | None:
         """
         Removes the group and all its keys and values and returns the data.
         Returns None if the group does not exist.

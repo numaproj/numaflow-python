@@ -12,8 +12,6 @@ from grpc_status import rpc_status
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
-
 import grpc
 import psutil
 
@@ -57,7 +55,7 @@ def sync_server_start(
     max_threads: int,
     server_info_file: str,
     server_options=None,
-    server_info: Optional[ServerInfo] = None,
+    server_info: ServerInfo | None = None,
     udf_type: str = UDFType.Map,
 ):
     """
@@ -86,8 +84,8 @@ def _run_server(
     threads_per_proc,
     server_options,
     udf_type: str,
-    server_info_file: Optional[str] = None,
-    server_info: Optional[ServerInfo] = None,
+    server_info_file: str | None = None,
+    server_info: ServerInfo | None = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -129,7 +127,7 @@ def start_multiproc_server(
     servicer,
     process_count: int,
     server_info_file: str,
-    server_info: Optional[ServerInfo] = None,
+    server_info: ServerInfo | None = None,
     server_options=None,
     udf_type: str = UDFType.Map,
 ):
@@ -181,7 +179,7 @@ async def start_async_server(
     max_threads: int,
     cleanup_coroutines: list,
     server_info_file: str,
-    server_info: Optional[ServerInfo] = None,
+    server_info: ServerInfo | None = None,
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.

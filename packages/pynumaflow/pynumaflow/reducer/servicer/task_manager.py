@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime, timezone
-from typing import Union
 from collections.abc import AsyncIterable
 
 import grpc
@@ -52,7 +51,7 @@ class TaskManager:
 
     def __init__(
         self,
-        handler: Union[ReduceAsyncCallable, _ReduceBuilderClass],
+        handler: ReduceAsyncCallable | _ReduceBuilderClass,
         context: NumaflowServicerContext,
     ):
         # A dictionary to store the task information

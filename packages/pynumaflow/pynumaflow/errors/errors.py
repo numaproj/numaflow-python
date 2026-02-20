@@ -9,7 +9,6 @@ from pynumaflow._constants import (
     INTERNAL_ERROR_CODE,
 )
 from pynumaflow.errors._dtypes import _RuntimeErrorEntry
-from typing import Union
 
 
 class _PersistErrorOnce:
@@ -32,7 +31,7 @@ _persist_error_once = _PersistErrorOnce()
 
 def persist_critical_error(
     error_code: str, error_message: str, error_details: str
-) -> Union[RuntimeError, None]:
+) -> RuntimeError | None:
     """
     Persists a critical error to a file. This function will only execute once.
     Logs the error if persisting to the file fails.

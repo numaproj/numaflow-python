@@ -1,6 +1,5 @@
 import asyncio
 from collections.abc import AsyncIterable
-from typing import Union
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -54,12 +53,10 @@ class AsyncAccumulatorServicer(accumulator_pb2_grpc.AccumulatorServicer):
 
     def __init__(
         self,
-        handler: Union[AccumulatorAsyncCallable, _AccumulatorBuilderClass],
+        handler: AccumulatorAsyncCallable | _AccumulatorBuilderClass,
     ):
         # The accumulator handler can be a function or a builder class instance.
-        self.__accumulator_handler: Union[
-            AccumulatorAsyncCallable, _AccumulatorBuilderClass
-        ] = handler
+        self.__accumulator_handler: AccumulatorAsyncCallable | _AccumulatorBuilderClass = handler
 
     async def AccumulateFn(
         self,

@@ -1,6 +1,5 @@
 import asyncio
 from collections.abc import AsyncIterator
-from typing import Union
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -101,7 +100,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             async for req in request_iterator:
                 # create an iterator to be provided to the user function where the responses will
                 # be streamed
-                niter: NonBlockingIterator[Union[Message, Exception]] = NonBlockingIterator()
+                niter: NonBlockingIterator[Message | Exception] = NonBlockingIterator()
                 riter = niter.read_iterator()
                 task = asyncio.create_task(self.__invoke_read(req, niter))
                 # Save a reference to the result of this function, to avoid a
@@ -125,7 +124,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
 
     async def __invoke_read(
-        self, req: source_pb2.ReadRequest, niter: NonBlockingIterator[Union[Message, Exception]]
+        self, req: source_pb2.ReadRequest, niter: NonBlockingIterator[Message | Exception]
     ):
         """Invoke the read handler and manage the iterator."""
         try:

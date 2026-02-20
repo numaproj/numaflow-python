@@ -2,7 +2,8 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional
+from typing import TypeVar
+from collections.abc import Callable
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -34,9 +35,9 @@ class Message:
     def __init__(
         self,
         value: bytes,
-        keys: Optional[list[str]] = None,
-        tags: Optional[list[str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
+        user_metadata: UserMetadata | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -162,9 +163,9 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
-        system_metadata: Optional[SystemMetadata] = None,
+        headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
+        system_metadata: SystemMetadata | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -237,11 +238,11 @@ class Mapper(metaclass=ABCMeta):
 
 # MapSyncCallable is a callable which can be used as a handler for the Synchronous Map UDF
 MapSyncHandlerCallable = Callable[[list[str], Datum], Messages]
-MapSyncCallable = Union[Mapper, MapSyncHandlerCallable]
+MapSyncCallable = Mapper | MapSyncHandlerCallable
 
 # MapAsyncCallable is a callable which can be used as a handler for the Asynchronous Map UDF
 MapAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
-MapAsyncCallable = Union[Mapper, MapAsyncHandlerCallable]
+MapAsyncCallable = Mapper | MapAsyncHandlerCallable
 
 
 class MapError(Exception):

@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime, timezone
-from typing import Union
 from collections.abc import AsyncIterable
 
 from pynumaflow.exceptions import UDFError
@@ -52,7 +51,7 @@ class TaskManager:
     It is created whenever a new reduce operation is requested.
     """
 
-    def __init__(self, handler: Union[ReduceStreamAsyncCallable, _ReduceStreamBuilderClass]):
+    def __init__(self, handler: ReduceStreamAsyncCallable | _ReduceStreamBuilderClass):
         # A dictionary to store the task information
         self.tasks = {}
         # Collection for storing strong references to all running tasks.

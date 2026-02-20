@@ -4,8 +4,8 @@ from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar, Callable, Union, Optional
-from collections.abc import AsyncIterable
+from typing import TypeVar
+from collections.abc import AsyncIterable, Callable
 from warnings import warn
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -156,7 +156,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -402,4 +402,4 @@ class _ReduceBuilderClass:
 
 
 # ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
-ReduceCallable = Union[ReduceAsyncCallable, type[Reducer]]
+ReduceCallable = ReduceAsyncCallable | type[Reducer]

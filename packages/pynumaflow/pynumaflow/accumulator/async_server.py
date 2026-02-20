@@ -1,5 +1,4 @@
 import inspect
-from typing import Optional
 
 import aiorun
 import grpc
@@ -30,7 +29,7 @@ from pynumaflow.shared.server import NumaflowServer, check_instance, start_async
 def get_handler(
     accumulator_handler: AccumulatorStreamCallable,
     init_args: tuple = (),
-    init_kwargs: Optional[dict] = None,
+    init_kwargs: dict | None = None,
 ):
     """
     Get the correct handler type based on the arguments passed
@@ -137,7 +136,7 @@ class AccumulatorAsyncServer(NumaflowServer):
         self,
         accumulator_instance: AccumulatorStreamCallable,
         init_args: tuple = (),
-        init_kwargs: Optional[dict] = None,
+        init_kwargs: dict | None = None,
         sock_path=ACCUMULATOR_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,

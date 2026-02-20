@@ -2,8 +2,8 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional
-from collections.abc import Awaitable
+from typing import TypeVar
+from collections.abc import Awaitable, Callable
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -40,7 +40,7 @@ class Message:
         event_time: datetime,
         keys: list[str] = None,
         tags: list[str] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        user_metadata: UserMetadata | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -174,9 +174,9 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
-        system_metadata: Optional[SystemMetadata] = None,
+        headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
+        system_metadata: SystemMetadata | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -251,10 +251,10 @@ class SourceTransformer(metaclass=ABCMeta):
 SourceTransformHandler = Callable[[list[str], Datum], Messages]
 # SourceTransformCallable is the type of the handler function for the
 # Source Transformer UDFunction.
-SourceTransformCallable = Union[SourceTransformHandler, SourceTransformer]
+SourceTransformCallable = SourceTransformHandler | SourceTransformer
 
 
 # SourceTransformAsyncCallable is a callable which can be used as a handler
 # for the Asynchronous Transformer UDF
 SourceTransformHandlerAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
-SourceTransformAsyncCallable = Union[SourceTransformer, SourceTransformHandlerAsyncHandlerCallable]
+SourceTransformAsyncCallable = SourceTransformer | SourceTransformHandlerAsyncHandlerCallable

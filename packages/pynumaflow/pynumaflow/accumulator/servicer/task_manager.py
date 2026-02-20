@@ -1,7 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterable
 from datetime import datetime
-from typing import Union
 
 from google.protobuf import timestamp_pb2
 from pynumaflow._constants import (
@@ -44,7 +43,7 @@ class TaskManager:
     It is created whenever a new accumulator operation is requested.
     """
 
-    def __init__(self, handler: Union[AccumulatorAsyncCallable, _AccumulatorBuilderClass]):
+    def __init__(self, handler: AccumulatorAsyncCallable | _AccumulatorBuilderClass):
         # A dictionary to store the task information
         self.tasks: dict[str, AccumulatorResult] = {}
         # Collection for storing strong references to all running tasks.

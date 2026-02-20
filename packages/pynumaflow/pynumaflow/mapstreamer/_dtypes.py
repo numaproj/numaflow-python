@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 from warnings import warn
 
@@ -200,8 +200,8 @@ class MapStreamer(metaclass=ABCMeta):
         pass
 
 
-MapStreamAsyncCallable = Callable[[list[str], Datum], AsyncIterable[Message]]
-MapStreamCallable = MapStreamer | MapStreamAsyncCallable
+MapStreamAsyncCallable: TypeAlias = Callable[[list[str], Datum], AsyncIterable[Message]]
+MapStreamCallable: TypeAlias = MapStreamer | MapStreamAsyncCallable
 
 
 class MapStreamError(Exception):

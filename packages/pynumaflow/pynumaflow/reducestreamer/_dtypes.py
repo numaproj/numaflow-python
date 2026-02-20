@@ -3,7 +3,7 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -303,7 +303,7 @@ class Message:
         return self._tags
 
 
-ReduceStreamAsyncCallable = Callable[
+ReduceStreamAsyncCallable: TypeAlias = Callable[
     [list[str], AsyncIterable[Datum], NonBlockingIterator, Metadata], None
 ]
 
@@ -359,4 +359,4 @@ class _ReduceStreamBuilderClass:
 
 
 # ReduceStreamCallable is a callable which can be used as a handler for the Reduce UDF.
-ReduceStreamCallable = ReduceStreamAsyncCallable | type[ReduceStreamer]
+ReduceStreamCallable: TypeAlias = ReduceStreamAsyncCallable | type[ReduceStreamer]

@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import Awaitable, Callable
 from warnings import warn
 
@@ -248,13 +248,17 @@ class SourceTransformer(metaclass=ABCMeta):
         pass
 
 
-SourceTransformHandler = Callable[[list[str], Datum], Messages]
+SourceTransformHandler: TypeAlias = Callable[[list[str], Datum], Messages]
 # SourceTransformCallable is the type of the handler function for the
 # Source Transformer UDFunction.
-SourceTransformCallable = SourceTransformHandler | SourceTransformer
+SourceTransformCallable: TypeAlias = SourceTransformHandler | SourceTransformer
 
 
 # SourceTransformAsyncCallable is a callable which can be used as a handler
 # for the Asynchronous Transformer UDF
-SourceTransformHandlerAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
-SourceTransformAsyncCallable = SourceTransformer | SourceTransformHandlerAsyncHandlerCallable
+SourceTransformHandlerAsyncHandlerCallable: TypeAlias = Callable[
+    [list[str], Datum], Awaitable[Messages]
+]
+SourceTransformAsyncCallable: TypeAlias = (
+    SourceTransformer | SourceTransformHandlerAsyncHandlerCallable
+)

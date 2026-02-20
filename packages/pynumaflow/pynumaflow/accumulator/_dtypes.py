@@ -3,7 +3,7 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -498,7 +498,9 @@ class Message:
         )
 
 
-AccumulatorAsyncCallable = Callable[[list[str], AsyncIterable[Datum], NonBlockingIterator], None]
+AccumulatorAsyncCallable: TypeAlias = Callable[
+    [list[str], AsyncIterable[Datum], NonBlockingIterator], None
+]
 
 
 class Accumulator(metaclass=ABCMeta):
@@ -553,4 +555,4 @@ class _AccumulatorBuilderClass:
 
 
 # AccumulatorStreamCallable is a callable which can be used as a handler for the Accumulator UDF.
-AccumulatorStreamCallable = AccumulatorAsyncCallable | type[Accumulator]
+AccumulatorStreamCallable: TypeAlias = AccumulatorAsyncCallable | type[Accumulator]

@@ -4,7 +4,7 @@ from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 from warnings import warn
 
@@ -352,7 +352,9 @@ class ReduceRequest:
         return self._payload
 
 
-ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+ReduceAsyncCallable: TypeAlias = Callable[
+    [list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]
+]
 
 
 class Reducer(metaclass=ABCMeta):
@@ -402,4 +404,4 @@ class _ReduceBuilderClass:
 
 
 # ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
-ReduceCallable = ReduceAsyncCallable | type[Reducer]
+ReduceCallable: TypeAlias = ReduceAsyncCallable | type[Reducer]

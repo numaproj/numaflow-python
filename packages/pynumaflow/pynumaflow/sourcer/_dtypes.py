@@ -1,9 +1,9 @@
 import os
 from abc import ABCMeta, abstractmethod
-from collections.abc import Iterator, AsyncIterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from datetime import datetime
-from collections.abc import Callable
+from typing import TypeAlias
 
 from pynumaflow._metadata import UserMetadata
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -314,10 +314,10 @@ class Sourcer(metaclass=ABCMeta):
 
 # Create default partition id from the environment variable "NUMAFLOW_REPLICA"
 DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", "0"))
-SourceReadCallable = Callable[[ReadRequest], Iterator[Message]]
-AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterator[Message]]
-SourceAckCallable = Callable[[AckRequest], None]
-SourceCallable = Sourcer
+SourceReadCallable: TypeAlias = Callable[[ReadRequest], Iterator[Message]]
+AsyncSourceReadCallable: TypeAlias = Callable[[ReadRequest], AsyncIterator[Message]]
+SourceAckCallable: TypeAlias = Callable[[AckRequest], None]
+SourceCallable: TypeAlias = Sourcer
 
 
 def get_default_partitions() -> list[int]:

@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import Callable
 from warnings import warn
 
@@ -237,12 +237,12 @@ class Mapper(metaclass=ABCMeta):
 
 
 # MapSyncCallable is a callable which can be used as a handler for the Synchronous Map UDF
-MapSyncHandlerCallable = Callable[[list[str], Datum], Messages]
-MapSyncCallable = Mapper | MapSyncHandlerCallable
+MapSyncHandlerCallable: TypeAlias = Callable[[list[str], Datum], Messages]
+MapSyncCallable: TypeAlias = Mapper | MapSyncHandlerCallable
 
 # MapAsyncCallable is a callable which can be used as a handler for the Asynchronous Map UDF
-MapAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
-MapAsyncCallable = Mapper | MapAsyncHandlerCallable
+MapAsyncHandlerCallable: TypeAlias = Callable[[list[str], Datum], Awaitable[Messages]]
+MapAsyncCallable: TypeAlias = Mapper | MapAsyncHandlerCallable
 
 
 class MapError(Exception):

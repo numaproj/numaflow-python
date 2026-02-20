@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 
 from pynumaflow._constants import DROP
@@ -221,8 +221,8 @@ class BatchMapper(metaclass=ABCMeta):
         pass
 
 
-BatchMapAsyncCallable = Callable[[AsyncIterable[Datum]], BatchResponses]
-BatchMapCallable = BatchMapper | BatchMapAsyncCallable
+BatchMapAsyncCallable: TypeAlias = Callable[[AsyncIterable[Datum]], BatchResponses]
+BatchMapCallable: TypeAlias = BatchMapper | BatchMapAsyncCallable
 
 
 class BatchMapError(Exception):

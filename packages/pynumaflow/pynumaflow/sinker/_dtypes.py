@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar
+from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Awaitable, Callable
 from collections.abc import Sequence, Iterator
 from warnings import warn
@@ -319,9 +319,9 @@ class Sinker(metaclass=ABCMeta):
 
 
 # SinkSyncCallable is a callable which can be used as a handler for the Synchronous UDSink.
-SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
-SinkSyncCallable = Sinker | SinkHandlerCallable
+SinkHandlerCallable: TypeAlias = Callable[[Iterator[Datum]], Responses]
+SinkSyncCallable: TypeAlias = Sinker | SinkHandlerCallable
 
 # SinkAsyncCallable is a callable which can be used as a handler for the Asynchronous UDSink.
-AsyncSinkHandlerCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
-SinkAsyncCallable = Sinker | AsyncSinkHandlerCallable
+AsyncSinkHandlerCallable: TypeAlias = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
+SinkAsyncCallable: TypeAlias = Sinker | AsyncSinkHandlerCallable

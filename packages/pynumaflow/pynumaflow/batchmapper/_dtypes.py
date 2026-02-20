@@ -2,8 +2,8 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional
-from collections.abc import AsyncIterable
+from typing import TypeAlias, TypeVar
+from collections.abc import AsyncIterable, Callable
 
 from pynumaflow._constants import DROP
 
@@ -12,7 +12,7 @@ B = TypeVar("B", bound="BatchResponse")
 Bs = TypeVar("Bs", bound="BatchResponses")
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -23,15 +23,11 @@ class Message:
         tags: list of tags for conditional forwarding (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags")
-
     _value: bytes
     _keys: list[str]
     _tags: list[str]
 
-    def __init__(
-        self, value: bytes, keys: Optional[list[str]] = None, tags: Optional[list[str]] = None
-    ):
+    def __init__(self, value: bytes, keys: list[str] | None = None, tags: list[str] | None = None):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -57,7 +53,7 @@ class Message:
         return self._tags
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -70,8 +66,6 @@ class Datum:
         headers: the headers of the event.
         id: the unique ID for this request
     """
-
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers", "_id")
 
     _keys: list[str]
     _value: bytes
@@ -87,7 +81,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         self._id = id
         self._keys = keys or list()
@@ -223,8 +217,8 @@ class BatchMapper(metaclass=ABCMeta):
         pass
 
 
-BatchMapAsyncCallable = Callable[[AsyncIterable[Datum]], BatchResponses]
-BatchMapCallable = Union[BatchMapper, BatchMapAsyncCallable]
+BatchMapAsyncCallable: TypeAlias = Callable[[AsyncIterable[Datum]], BatchResponses]
+BatchMapCallable: TypeAlias = BatchMapper | BatchMapAsyncCallable
 
 
 class BatchMapError(Exception):

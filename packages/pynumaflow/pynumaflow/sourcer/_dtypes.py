@@ -1,23 +1,21 @@
 import os
 from abc import ABCMeta, abstractmethod
-from collections.abc import Iterator, AsyncIterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, Optional
+from typing import TypeAlias
 
 from pynumaflow._metadata import UserMetadata
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Offset:
     """
     Args:
         offset: the offset of the datum.
         partition_id: partition_id indicates which partition of the source the datum belongs to.
     """
-
-    __slots__ = ("_offset", "_partition_id")
 
     _offset: bytes
     _partition_id: int
@@ -46,7 +44,7 @@ class Offset:
         return self._partition_id
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -60,8 +58,6 @@ class Message:
         user_metadata: metadata for the message (optional)
     """
 
-    __slots__ = ("_payload", "_offset", "_event_time", "_keys", "_headers", "_user_metadata")
-
     _payload: bytes
     _offset: Offset
     _event_time: datetime
@@ -74,9 +70,9 @@ class Message:
         payload: bytes,
         offset: Offset,
         event_time: datetime,
-        keys: Optional[list[str]] = None,
-        headers: Optional[dict[str, str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        keys: list[str] | None = None,
+        headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -114,7 +110,7 @@ class Message:
         return self._user_metadata
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class ReadRequest:
     """
     Class to define the request for reading datum stream from user defined source.
@@ -129,8 +125,6 @@ class ReadRequest:
     read_request = ReadRequest(num_records=10, timeout_in_ms=1000)
     ```
     """
-
-    __slots__ = ("_num_records", "_timeout_in_ms")
 
     _num_records: int
     _timeout_in_ms: int
@@ -158,7 +152,7 @@ class ReadRequest:
         return self._timeout_in_ms
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class AckRequest:
     """
     Class for defining the request for acknowledging datum.
@@ -176,7 +170,6 @@ class AckRequest:
     ```
     """
 
-    __slots__ = ("_offsets",)
     _offsets: list[Offset]
 
     def __init__(self, offsets: list[Offset]):
@@ -217,7 +210,7 @@ class NackRequest:
         return self._offsets
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class PendingResponse:
     """
     PendingResponse is the response for the pending request.
@@ -228,7 +221,6 @@ class PendingResponse:
         count: the number of pending records.
     """
 
-    __slots__ = ("_count",)
     _count: int
 
     def __init__(self, count: int):
@@ -242,7 +234,7 @@ class PendingResponse:
         return self._count
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class PartitionsResponse:
     """
     PartitionsResponse is the response for the partition request.
@@ -253,7 +245,6 @@ class PartitionsResponse:
         count: the number of partitions.
     """
 
-    __slots__ = ("_partitions",)
     _partitions: list[int]
 
     def __init__(self, partitions: list[int]):
@@ -314,10 +305,10 @@ class Sourcer(metaclass=ABCMeta):
 
 # Create default partition id from the environment variable "NUMAFLOW_REPLICA"
 DefaultPartitionId = int(os.getenv("NUMAFLOW_REPLICA", "0"))
-SourceReadCallable = Callable[[ReadRequest], Iterator[Message]]
-AsyncSourceReadCallable = Callable[[ReadRequest], AsyncIterator[Message]]
-SourceAckCallable = Callable[[AckRequest], None]
-SourceCallable = Sourcer
+SourceReadCallable: TypeAlias = Callable[[ReadRequest], Iterator[Message]]
+AsyncSourceReadCallable: TypeAlias = Callable[[ReadRequest], AsyncIterator[Message]]
+SourceAckCallable: TypeAlias = Callable[[AckRequest], None]
+SourceCallable: TypeAlias = Sourcer
 
 
 def get_default_partitions() -> list[int]:

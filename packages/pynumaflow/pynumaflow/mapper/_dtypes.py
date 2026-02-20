@@ -2,7 +2,8 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Callable, Union, Optional
+from typing import TypeAlias, TypeVar
+from collections.abc import Callable
 from warnings import warn
 
 from pynumaflow._constants import DROP
@@ -12,7 +13,7 @@ M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -24,8 +25,6 @@ class Message:
         user_metadata: metadata for the message (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags", "_user_metadata")
-
     _value: bytes
     _keys: list[str]
     _tags: list[str]
@@ -34,9 +33,9 @@ class Message:
     def __init__(
         self,
         value: bytes,
-        keys: Optional[list[str]] = None,
-        tags: Optional[list[str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
+        user_metadata: UserMetadata | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -111,7 +110,7 @@ class Messages(Sequence[M]):
         return self._messages
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -138,16 +137,6 @@ class Datum:
     ```
     """
 
-    __slots__ = (
-        "_keys",
-        "_value",
-        "_event_time",
-        "_watermark",
-        "_headers",
-        "_user_metadata",
-        "_system_metadata",
-    )
-
     _keys: list[str]
     _value: bytes
     _event_time: datetime
@@ -162,9 +151,9 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
-        system_metadata: Optional[SystemMetadata] = None,
+        headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
+        system_metadata: SystemMetadata | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -236,12 +225,12 @@ class Mapper(metaclass=ABCMeta):
 
 
 # MapSyncCallable is a callable which can be used as a handler for the Synchronous Map UDF
-MapSyncHandlerCallable = Callable[[list[str], Datum], Messages]
-MapSyncCallable = Union[Mapper, MapSyncHandlerCallable]
+MapSyncHandlerCallable: TypeAlias = Callable[[list[str], Datum], Messages]
+MapSyncCallable: TypeAlias = Mapper | MapSyncHandlerCallable
 
 # MapAsyncCallable is a callable which can be used as a handler for the Asynchronous Map UDF
-MapAsyncHandlerCallable = Callable[[list[str], Datum], Awaitable[Messages]]
-MapAsyncCallable = Union[Mapper, MapAsyncHandlerCallable]
+MapAsyncHandlerCallable: TypeAlias = Callable[[list[str], Datum], Awaitable[Messages]]
+MapAsyncCallable: TypeAlias = Mapper | MapAsyncHandlerCallable
 
 
 class MapError(Exception):

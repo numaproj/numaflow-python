@@ -1,6 +1,5 @@
 import asyncio
 from collections.abc import AsyncIterable
-from typing import Union
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -44,10 +43,10 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
 
     def __init__(
         self,
-        handler: Union[ReduceStreamAsyncCallable, _ReduceStreamBuilderClass],
+        handler: ReduceStreamAsyncCallable | _ReduceStreamBuilderClass,
     ):
         # The Reduce handler can be a function or a builder class instance.
-        self.__reduce_handler: Union[ReduceStreamAsyncCallable, _ReduceStreamBuilderClass] = handler
+        self.__reduce_handler: ReduceStreamAsyncCallable | _ReduceStreamBuilderClass = handler
 
     async def ReduceFn(
         self,

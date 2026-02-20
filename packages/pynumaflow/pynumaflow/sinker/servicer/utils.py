@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker._dtypes import Response, Datum, Responses, Message
@@ -47,8 +45,8 @@ def build_sink_response(rspn: Response) -> sink_pb2.SinkResponse.Result:
 
 
 def build_on_success_message(
-    msg: Optional[Message],
-) -> Optional[sink_pb2.SinkResponse.Result.Message]:
+    msg: Message | None,
+) -> sink_pb2.SinkResponse.Result.Message | None:
     if msg is None:
         return None
 

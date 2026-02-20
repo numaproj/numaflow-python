@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime, timezone
-from typing import Union
 from collections.abc import AsyncIterable
 
 from pynumaflow.exceptions import UDFError
@@ -52,7 +51,7 @@ class TaskManager:
     It is created whenever a new reduce operation is requested.
     """
 
-    def __init__(self, handler: Union[ReduceStreamAsyncCallable, _ReduceStreamBuilderClass]):
+    def __init__(self, handler: ReduceStreamAsyncCallable | _ReduceStreamBuilderClass):
         # A dictionary to store the task information
         self.tasks = {}
         # Collection for storing strong references to all running tasks.
@@ -209,14 +208,15 @@ class TaskManager:
         try:
             async for request in request_iterator:
                 # check whether the request is an open or append operation
-                if request.operation is int(WindowOperation.OPEN):
-                    # create a new task for the open operation and
-                    # put the request in the task iterator
-                    await self.create_task(request)
-                elif request.operation is int(WindowOperation.APPEND):
-                    # append the task data to the existing task
-                    # if the task does not exist, create a new task
-                    await self.send_datum_to_task(request)
+                match request.operation:
+                    case int(WindowOperation.OPEN):
+                        # create a new task for the open operation and
+                        # put the request in the task iterator
+                        await self.create_task(request)
+                    case int(WindowOperation.APPEND):
+                        # append the task data to the existing task
+                        # if the task does not exist, create a new task
+                        await self.send_datum_to_task(request)
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
         except BaseException as e:

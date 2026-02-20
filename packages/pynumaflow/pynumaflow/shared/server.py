@@ -12,8 +12,6 @@ from grpc_status import rpc_status
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
-from typing import Optional
-
 import grpc
 import psutil
 
@@ -57,7 +55,7 @@ def sync_server_start(
     max_threads: int,
     server_info_file: str,
     server_options=None,
-    server_info: Optional[ServerInfo] = None,
+    server_info: ServerInfo | None = None,
     udf_type: str = UDFType.Map,
 ):
     """
@@ -86,8 +84,8 @@ def _run_server(
     threads_per_proc,
     server_options,
     udf_type: str,
-    server_info_file: Optional[str] = None,
-    server_info: Optional[ServerInfo] = None,
+    server_info_file: str | None = None,
+    server_info: ServerInfo | None = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -101,16 +99,17 @@ def _run_server(
     )
 
     # add the correct servicer to the server based on the UDF type
-    if udf_type == UDFType.Map:
-        map_pb2_grpc.add_MapServicer_to_server(servicer, server)
-    elif udf_type == UDFType.Sink:
-        sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
-    elif udf_type == UDFType.SourceTransformer:
-        transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
-    elif udf_type == UDFType.Source:
-        source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
-    elif udf_type == UDFType.SideInput:
-        sideinput_pb2_grpc.add_SideInputServicer_to_server(servicer, server)
+    match udf_type:
+        case UDFType.Map:
+            map_pb2_grpc.add_MapServicer_to_server(servicer, server)
+        case UDFType.Sink:
+            sink_pb2_grpc.add_SinkServicer_to_server(servicer, server)
+        case UDFType.SourceTransformer:
+            transform_pb2_grpc.add_SourceTransformServicer_to_server(servicer, server)
+        case UDFType.Source:
+            source_pb2_grpc.add_SourceServicer_to_server(servicer, server)
+        case UDFType.SideInput:
+            sideinput_pb2_grpc.add_SideInputServicer_to_server(servicer, server)
 
     # bind the server to the UDS/TCP socket
     server.add_insecure_port(bind_address)
@@ -129,7 +128,7 @@ def start_multiproc_server(
     servicer,
     process_count: int,
     server_info_file: str,
-    server_info: Optional[ServerInfo] = None,
+    server_info: ServerInfo | None = None,
     server_options=None,
     udf_type: str = UDFType.Map,
 ):
@@ -181,7 +180,7 @@ async def start_async_server(
     max_threads: int,
     cleanup_coroutines: list,
     server_info_file: str,
-    server_info: Optional[ServerInfo] = None,
+    server_info: ServerInfo | None = None,
 ):
     """
     Starts the Async server instance on the given UNIX socket with given max threads.

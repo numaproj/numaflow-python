@@ -1,8 +1,8 @@
 from abc import abstractmethod, ABCMeta
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeVar, Optional, Callable, Union
-from collections.abc import AsyncIterable, Awaitable
+from typing import TypeAlias, TypeVar
+from collections.abc import AsyncIterable, Awaitable, Callable
 from collections.abc import Sequence, Iterator
 from warnings import warn
 
@@ -23,32 +23,32 @@ class Message:
         user_metadata: user metadata of the on_success message.
     """
 
-    _keys: Optional[list[str]]
+    _keys: list[str] | None
     _value: bytes
-    _user_metadata: Optional[UserMetadata]
+    _user_metadata: UserMetadata | None
 
     __slots__ = ("_keys", "_value", "_user_metadata")
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[list[str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
+        keys: list[str] | None = None,
+        user_metadata: UserMetadata | None = None,
     ):
         self._value = value
         self._keys = keys
         self._user_metadata = user_metadata
 
-    def with_keys(self, keys: Optional[list[str]]):
+    def with_keys(self, keys: list[str] | None):
         self._keys = keys
         return self
 
-    def with_user_metadata(self, user_metadata: Optional[UserMetadata]):
+    def with_user_metadata(self, user_metadata: UserMetadata | None):
         self._user_metadata = user_metadata
         return self
 
     @property
-    def keys(self) -> Optional[list[str]]:
+    def keys(self) -> list[str] | None:
         """Returns the id of the event."""
         return self._keys
 
@@ -58,7 +58,7 @@ class Message:
         return self._value
 
     @property
-    def user_metadata(self) -> Optional[UserMetadata]:
+    def user_metadata(self) -> UserMetadata | None:
         """Returns the id of the event."""
         return self._user_metadata
 
@@ -77,10 +77,10 @@ class Response:
 
     id: str
     success: bool
-    err: Optional[str]
+    err: str | None
     fallback: bool
     on_success: bool
-    on_success_msg: Optional[Message]
+    on_success_msg: Message | None
 
     __slots__ = ("id", "success", "err", "fallback", "on_success", "on_success_msg")
 
@@ -116,7 +116,7 @@ class Response:
     # as_on_success creates a Response with the on_success field set to true.
     # This indicates that the message should be sent to the on_success sink.
     @classmethod
-    def as_on_success(cls, id_: str, on_success: Optional[Message] = None) -> "Response":
+    def as_on_success(cls, id_: str, on_success: Message | None = None) -> "Response":
         return Response(
             id=id_,
             fallback=False,
@@ -225,9 +225,9 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
-        user_metadata: Optional[UserMetadata] = None,
-        system_metadata: Optional[SystemMetadata] = None,
+        headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
+        system_metadata: SystemMetadata | None = None,
     ):
         self._keys = keys
         self._id = sink_msg_id or ""
@@ -319,9 +319,9 @@ class Sinker(metaclass=ABCMeta):
 
 
 # SinkSyncCallable is a callable which can be used as a handler for the Synchronous UDSink.
-SinkHandlerCallable = Callable[[Iterator[Datum]], Responses]
-SinkSyncCallable = Union[Sinker, SinkHandlerCallable]
+SinkHandlerCallable: TypeAlias = Callable[[Iterator[Datum]], Responses]
+SinkSyncCallable: TypeAlias = Sinker | SinkHandlerCallable
 
 # SinkAsyncCallable is a callable which can be used as a handler for the Asynchronous UDSink.
-AsyncSinkHandlerCallable = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
-SinkAsyncCallable = Union[Sinker, AsyncSinkHandlerCallable]
+AsyncSinkHandlerCallable: TypeAlias = Callable[[AsyncIterable[Datum]], Awaitable[Responses]]
+SinkAsyncCallable: TypeAlias = Sinker | AsyncSinkHandlerCallable

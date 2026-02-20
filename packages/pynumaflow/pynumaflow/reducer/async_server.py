@@ -1,5 +1,4 @@
 import inspect
-from typing import Optional
 
 import aiorun
 import grpc
@@ -28,7 +27,7 @@ from pynumaflow.shared.server import NumaflowServer, check_instance, start_async
 
 
 def get_handler(
-    reducer_handler: ReduceCallable, init_args: tuple = (), init_kwargs: Optional[dict] = None
+    reducer_handler: ReduceCallable, init_args: tuple = (), init_kwargs: dict | None = None
 ):
     """
     Get the correct handler type based on the arguments passed
@@ -123,7 +122,7 @@ class ReduceAsyncServer(NumaflowServer):
         self,
         reducer_instance: ReduceCallable,
         init_args: tuple = (),
-        init_kwargs: Optional[dict] = None,
+        init_kwargs: dict | None = None,
         sock_path=REDUCE_SOCK_PATH,
         max_message_size=MAX_MESSAGE_SIZE,
         max_threads=NUM_THREADS_DEFAULT,

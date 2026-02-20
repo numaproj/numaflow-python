@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass
-from typing import TypeVar, Callable, Union
+from typing import TypeAlias, TypeVar
+from collections.abc import Callable
 
 R = TypeVar("R", bound="Response")
 
@@ -66,5 +67,5 @@ class SideInput(metaclass=ABCMeta):
         pass
 
 
-RetrieverHandlerCallable = Callable[[], Response]
-RetrieverCallable = Union[SideInput, RetrieverHandlerCallable]
+RetrieverHandlerCallable: TypeAlias = Callable[[], Response]
+RetrieverCallable: TypeAlias = SideInput | RetrieverHandlerCallable

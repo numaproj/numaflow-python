@@ -1,5 +1,4 @@
 from collections.abc import AsyncIterable
-from typing import Union
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -50,10 +49,10 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
 
     def __init__(
         self,
-        handler: Union[ReduceAsyncCallable, _ReduceBuilderClass],
+        handler: ReduceAsyncCallable | _ReduceBuilderClass,
     ):
         # The Reduce handler can be a function or a builder class instance.
-        self.__reduce_handler: Union[ReduceAsyncCallable, _ReduceBuilderClass] = handler
+        self.__reduce_handler: ReduceAsyncCallable | _ReduceBuilderClass = handler
 
     async def ReduceFn(
         self,
@@ -93,14 +92,15 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
         try:
             async for request in datum_iterator:
                 # check whether the request is an open or append operation
-                if request.operation is int(WindowOperation.OPEN):
-                    # create a new task for the open operation
-                    # and inserts the request data into the task
-                    await task_manager.create_task(request)
-                elif request.operation is int(WindowOperation.APPEND):
-                    # append the task data to the existing task
-                    # if the task does not exist, it will create a new task
-                    await task_manager.append_task(request)
+                match request.operation:
+                    case int(WindowOperation.OPEN):
+                        # create a new task for the open operation
+                        # and inserts the request data into the task
+                        await task_manager.create_task(request)
+                    case int(WindowOperation.APPEND):
+                        # append the task data to the existing task
+                        # if the task does not exist, it will create a new task
+                        await task_manager.append_task(request)
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
             # Send a context abort signal for the rpc, this is required for numa container to get

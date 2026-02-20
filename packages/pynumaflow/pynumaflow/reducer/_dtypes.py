@@ -4,8 +4,8 @@ from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar, Callable, Union, Optional
-from collections.abc import AsyncIterable
+from typing import TypeAlias, TypeVar
+from collections.abc import AsyncIterable, Callable
 from warnings import warn
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -29,7 +29,7 @@ class WindowOperation(IntEnum):
     APPEND = (4,)
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -40,13 +40,11 @@ class Message:
         tags: []string tags for conditional forwarding (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags")
-
     _value: bytes
     _keys: list[str]
     _tags: list[str]
 
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
+    def __init__(self, value: bytes, keys: list[str] | None = None, tags: list[str] | None = None):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -115,7 +113,7 @@ class Messages(Sequence[M]):
         return self._messages
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -142,8 +140,6 @@ class Datum:
     ```
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers")
-
     _keys: list[str]
     _value: bytes
     _event_time: datetime
@@ -156,7 +152,7 @@ class Datum:
         value: bytes,
         event_time: datetime,
         watermark: datetime,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -194,11 +190,9 @@ class Datum:
         return self._headers.copy()
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class IntervalWindow:
     """Defines the start and end of the interval window for the event."""
-
-    __slots__ = ("_start", "_end")
 
     _start: datetime
     _end: datetime
@@ -218,14 +212,12 @@ class IntervalWindow:
         return self._end
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class ReduceWindow:
     """
     Defines the window for a reduce operation which includes the
     interval window along with the slot.
     """
-
-    __slots__ = ("_window", "_slot")
 
     _window: IntervalWindow
     _slot: str
@@ -255,11 +247,9 @@ class ReduceWindow:
         return self._window
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Metadata:
     """Defines the metadata for the event."""
-
-    __slots__ = ("_interval_window",)
 
     _interval_window: IntervalWindow
 
@@ -352,7 +342,9 @@ class ReduceRequest:
         return self._payload
 
 
-ReduceAsyncCallable = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
+ReduceAsyncCallable: TypeAlias = Callable[
+    [list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]
+]
 
 
 class Reducer(metaclass=ABCMeta):
@@ -402,4 +394,4 @@ class _ReduceBuilderClass:
 
 
 # ReduceCallable is a callable which can be used as a handler for the Reduce UDF.
-ReduceCallable = Union[ReduceAsyncCallable, type[Reducer]]
+ReduceCallable: TypeAlias = ReduceAsyncCallable | type[Reducer]

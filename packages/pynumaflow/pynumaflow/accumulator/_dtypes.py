@@ -3,8 +3,8 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeVar, Callable, Union, Optional
-from collections.abc import AsyncIterable
+from typing import TypeAlias, TypeVar
+from collections.abc import AsyncIterable, Callable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
@@ -22,7 +22,7 @@ class WindowOperation(IntEnum):
     APPEND = (2,)
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Datum:
     """
     Class to define the important information for the event.
@@ -48,8 +48,6 @@ class Datum:
     ```
     """
 
-    __slots__ = ("_keys", "_value", "_event_time", "_watermark", "_headers", "_id")
-
     _keys: list[str]
     _value: bytes
     _event_time: datetime
@@ -64,7 +62,7 @@ class Datum:
         event_time: datetime,
         watermark: datetime,
         id_: str,
-        headers: Optional[dict[str, str]] = None,
+        headers: dict[str, str] | None = None,
     ):
         self._keys = keys or list()
         self._value = value or b""
@@ -132,11 +130,9 @@ class Datum:
         return self._id
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class IntervalWindow:
     """Defines the start and end of the interval window for the event."""
-
-    __slots__ = ("_start", "_end")
 
     _start: datetime
     _end: datetime
@@ -164,14 +160,12 @@ class IntervalWindow:
         return self._end
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class KeyedWindow:
     """
     Defines the window for a accumulator operation which includes the
     interval window along with the slot.
     """
-
-    __slots__ = ("_window", "_slot", "_keys")
 
     _window: IntervalWindow
     _slot: str
@@ -359,7 +353,7 @@ class AccumulatorRequest:
         return self._payload
 
 
-@dataclass(init=False)
+@dataclass(init=False, slots=True)
 class Message:
     """
     Basic datatype for data passing to the next vertex/vertices.
@@ -374,8 +368,6 @@ class Message:
         id: message id (optional)
     """
 
-    __slots__ = ("_value", "_keys", "_tags", "_watermark", "_event_time", "_headers", "_id")
-
     _value: bytes
     _keys: list[str]
     _tags: list[str]
@@ -387,12 +379,12 @@ class Message:
     def __init__(
         self,
         value: bytes,
-        keys: list[str] = None,
-        tags: list[str] = None,
-        watermark: datetime = None,
-        event_time: datetime = None,
-        headers: dict[str, str] = None,
-        id: str = None,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
+        watermark: datetime | None = None,
+        event_time: datetime | None = None,
+        headers: dict[str, str] | None = None,
+        id: str | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.
@@ -498,7 +490,9 @@ class Message:
         )
 
 
-AccumulatorAsyncCallable = Callable[[list[str], AsyncIterable[Datum], NonBlockingIterator], None]
+AccumulatorAsyncCallable: TypeAlias = Callable[
+    [list[str], AsyncIterable[Datum], NonBlockingIterator], None
+]
 
 
 class Accumulator(metaclass=ABCMeta):
@@ -553,4 +547,4 @@ class _AccumulatorBuilderClass:
 
 
 # AccumulatorStreamCallable is a callable which can be used as a handler for the Accumulator UDF.
-AccumulatorStreamCallable = Union[AccumulatorAsyncCallable, type[Accumulator]]
+AccumulatorStreamCallable: TypeAlias = AccumulatorAsyncCallable | type[Accumulator]

@@ -38,8 +38,8 @@ class Message:
         self,
         value: bytes,
         event_time: datetime,
-        keys: list[str] = None,
-        tags: list[str] = None,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
         user_metadata: UserMetadata | None = None,
     ):
         """

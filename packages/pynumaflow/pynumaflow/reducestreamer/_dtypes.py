@@ -274,8 +274,8 @@ class Message:
     def __init__(
         self,
         value: bytes,
-        keys: list[str] = None,
-        tags: list[str] = None,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.

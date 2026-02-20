@@ -387,12 +387,12 @@ class Message:
     def __init__(
         self,
         value: bytes,
-        keys: list[str] = None,
-        tags: list[str] = None,
-        watermark: datetime = None,
-        event_time: datetime = None,
-        headers: dict[str, str] = None,
-        id: str = None,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
+        watermark: datetime | None = None,
+        event_time: datetime | None = None,
+        headers: dict[str, str] | None = None,
+        id: str | None = None,
     ):
         """
         Creates a Message object to send value to a vertex.

@@ -46,7 +46,7 @@ class Message:
     _keys: list[str]
     _tags: list[str]
 
-    def __init__(self, value: bytes, keys: list[str] = None, tags: list[str] = None):
+    def __init__(self, value: bytes, keys: list[str] | None = None, tags: list[str] | None = None):
         """
         Creates a Message object to send value to a vertex.
         """

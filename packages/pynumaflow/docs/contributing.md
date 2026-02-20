@@ -6,7 +6,7 @@ Thank you for your interest in contributing to pynumaflow! This guide will help 
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.10 or higher
 - [Poetry](https://python-poetry.org/) for dependency management
 - Git
 

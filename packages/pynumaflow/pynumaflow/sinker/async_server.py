@@ -173,9 +173,14 @@ class SinkAsyncServer(NumaflowServer):
         shutdown_task = asyncio.create_task(_watch_for_shutdown())
         await server.wait_for_termination()
 
+
         # Propagate error so start() can exit with a non-zero code
         self._error = self.servicer._error
 
         shutdown_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await shutdown_task
+
+        _LOGGER.info("Stopping event loop...")
+        asyncio.get_event_loop().stop()
+        _LOGGER.info("Event loop stopped")

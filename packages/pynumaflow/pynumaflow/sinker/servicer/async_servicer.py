@@ -92,7 +92,6 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             _LOGGER.critical(err_msg, exc_info=True)
             update_context_err(context, err, err_msg)
             # Store the error and signal the server to shut down gracefully
-            # instead of killing the process via SIGKILL.
             self._error = err
             if self._shutdown_event:
                 self._shutdown_event.set()

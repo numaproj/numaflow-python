@@ -168,6 +168,7 @@ class SinkAsyncServer(NumaflowServer):
             """Wait for the shutdown event and stop the server with a grace period."""
             await shutdown_event.wait()
             _LOGGER.info("Shutdown signal received, stopping server gracefully...")
+            # Stop accepting new requests and wait for a maximum of 5 seconds for existing requests to complete
             await server.stop(5)
 
         shutdown_task = asyncio.create_task(_watch_for_shutdown())
@@ -181,5 +182,8 @@ class SinkAsyncServer(NumaflowServer):
             await shutdown_task
 
         _LOGGER.info("Stopping event loop...")
+        # We use aiorun to manage the event loop. The aiorun.run() runs forever until loop.stop() is called.
+        # If we don't stop the event loop explicitly here, the python process will not exit.
+        # It reamins stuck for 5 minutes until liveness and readiness probe fails enough times and k8s sends a SIGTERM
         asyncio.get_event_loop().stop()
         _LOGGER.info("Event loop stopped")

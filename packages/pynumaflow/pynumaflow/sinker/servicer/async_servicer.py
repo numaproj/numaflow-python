@@ -93,7 +93,7 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
             update_context_err(context, err, err_msg)
             # Store the error and signal the server to shut down gracefully
             self._error = err
-            if self._shutdown_event:
+            if self._shutdown_event is not None:
                 self._shutdown_event.set()
             return
 

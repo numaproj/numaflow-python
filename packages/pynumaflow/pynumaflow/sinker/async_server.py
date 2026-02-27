@@ -26,6 +26,7 @@ from pynumaflow._constants import (
     ON_SUCCESS_SINK_SOCK_PATH,
     ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH,
     MAX_NUM_THREADS,
+    NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS,
 )
 
 from pynumaflow.shared.server import NumaflowServer
@@ -168,9 +169,9 @@ class SinkAsyncServer(NumaflowServer):
             """Wait for the shutdown event and stop the server with a grace period."""
             await shutdown_event.wait()
             _LOGGER.info("Shutdown signal received, stopping server gracefully...")
-            # Stop accepting new requests and wait for a maximum of 5 seconds
-            # for in-flight requests to complete
-            await server.stop(5)
+            # Stop accepting new requests and wait for a maximum of
+            # NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS seconds for in-flight requests to complete
+            await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
 
         shutdown_task = asyncio.create_task(_watch_for_shutdown())
         await server.wait_for_termination()

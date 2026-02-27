@@ -61,6 +61,11 @@ MAX_NUM_THREADS = 16
 # If NUM_THREADS_DEFAULT env is not set default to 4
 NUM_THREADS_DEFAULT = int(os.getenv("MAX_THREADS", "4"))
 
+# Grace period in seconds for the GRPC server to shutdown
+NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS = int(
+    os.getenv("NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS", "60")
+)
+
 _LOGGER = setup_logging(__name__)
 if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)

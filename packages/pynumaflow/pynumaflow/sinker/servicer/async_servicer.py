@@ -4,7 +4,7 @@ from collections.abc import AsyncIterator
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.sinker._dtypes import Datum, SinkAsyncCallable
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.servicer.utils import (
@@ -30,6 +30,12 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
         self.background_tasks = set()
         self.__sink_handler: SinkAsyncCallable = handler
         self.cleanup_coroutines = []
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     async def SinkFn(
         self,
@@ -82,10 +88,13 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 datum = datum_from_sink_req(d)
                 await req_queue.put(datum)
         except BaseException as err:
-            # if there is an exception, we will mark all the responses as a failure
-            err_msg = f"UDSinkError: {repr(err)}"
+            err_msg = f"UDSinkError, {ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            update_context_err(context, err, err_msg)
+            # Store the error and signal the server to shut down gracefully
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
 
     async def __invoke_sink(

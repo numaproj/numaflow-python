@@ -1,6 +1,7 @@
 import threading
 from collections.abc import Iterator
 
+import grpc
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
@@ -81,6 +82,13 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
             if cur_task:
                 cur_task.join()
+
+        except grpc.RpcError:
+            _LOGGER.warning("gRPC stream closed, shutting down the server.")
+            if req_queue is not None:
+                req_queue.close()
+            self.shutdown_event.set()
+            return
 
         except BaseException as err:
             err_msg = f"UDSinkError, {ERR_UDF_EXCEPTION_STRING}: {repr(err)}"

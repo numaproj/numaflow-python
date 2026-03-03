@@ -263,14 +263,14 @@ def check_instance(instance, callable_type) -> bool:
         return False
 
 
-def get_grpc_status(err: str):
+def get_grpc_status(err: str, detail: str | None = None):
     """
     Create a grpc status object with the error details.
     """
     details = any_pb2.Any()
     details.Pack(
         error_details_pb2.DebugInfo(
-            detail="\n".join(traceback.format_stack()),
+            detail=detail if detail is not None else "\n".join(traceback.format_stack()),
         )
     )
 
@@ -317,7 +317,7 @@ def update_context_err(context: NumaflowServicerContext, e: BaseException, err_m
     _LOGGER.critical(trace)
     _LOGGER.critical(err_msg)
 
-    grpc_status = get_grpc_status(err_msg)
+    grpc_status = get_grpc_status(err_msg, detail=trace)
 
     context.set_code(grpc.StatusCode.INTERNAL)
     context.set_details(err_msg)

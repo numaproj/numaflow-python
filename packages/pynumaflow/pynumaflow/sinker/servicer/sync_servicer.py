@@ -35,6 +35,7 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         Applies a sink function to datum elements.
         """
 
+        req_queue = None
         try:
             # The first message to be received should be a valid handshake
             req = next(request_iterator)
@@ -89,7 +90,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
             # (e.g. gRPC stream broke while the handler was waiting for the next message).
             # This lets it exit gracefully and release any user-held resources
             # before the process shuts down.
-            req_queue.close()
+            if req_queue is not None:
+                req_queue.close()
             self.error = err
             self.shutdown_event.set()
             return

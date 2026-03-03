@@ -25,8 +25,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
     def __init__(self, handler: SinkSyncCallable):
         self.handler: SinkSyncCallable = handler
-        self._shutdown_event: threading.Event = threading.Event()
-        self._error: BaseException | None = None
+        self.shutdown_event: threading.Event = threading.Event()
+        self.error: BaseException | None = None
 
     def SinkFn(
         self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
@@ -85,19 +85,19 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
             err_msg = f"UDSinkError, {ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
             update_context_err(context, err, err_msg)
-            self._error = err
-            self._shutdown_event.set()
+            # Unblock the handler thread if it is waiting on queue.get()
+            # (e.g. gRPC stream broke while the handler was waiting for the next message).
+            # This lets it exit gracefully and release any user-held resources
+            # before the process shuts down.
+            req_queue.close()
+            self.error = err
+            self.shutdown_event.set()
             return
 
     def _invoke_sink(self, request_queue: SyncIterator, context: NumaflowServicerContext):
-        try:
-            # Invoke the handler function with the request queue
-            rspns = self.handler(request_queue.read_iterator())
-            return build_sink_resp_results(rspns)
-        except BaseException as err:
-            err_msg = f"UDSinkError: {repr(err)}"
-            _LOGGER.critical(err_msg, exc_info=True)
-            raise err
+        # Invoke the handler function with the request queue
+        rspns = self.handler(request_queue.read_iterator())
+        return build_sink_resp_results(rspns)
 
     def IsReady(self, request, context: NumaflowServicerContext) -> sink_pb2.ReadyResponse:
         """

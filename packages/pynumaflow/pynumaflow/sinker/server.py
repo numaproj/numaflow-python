@@ -131,9 +131,9 @@ class SinkServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.Sink,
             server_info=serv_info,
-            shutdown_event=self.servicer._shutdown_event,
+            shutdown_event=self.servicer.shutdown_event,
         )
 
-        if self.servicer._error:
-            _LOGGER.critical("Server exiting due to UDF error: %s", self.servicer._error)
+        if self.servicer.error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self.servicer.error)
             sys.exit(1)

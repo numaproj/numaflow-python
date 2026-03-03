@@ -4,7 +4,7 @@ from pynumaflow._constants import STREAM_EOF
 
 
 class SyncIterator:
-    """A Sync Interator backed by a queue"""
+    """A Sync Iterator backed by a queue"""
 
     __slots__ = "_queue"
 
@@ -21,3 +21,7 @@ class SyncIterator:
 
     def put(self, item):
         self._queue.put(item)
+
+    def close(self):
+        """Unblock any thread waiting on read_iterator() by injecting STREAM_EOF."""
+        self._queue.put(STREAM_EOF)

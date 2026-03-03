@@ -315,7 +315,7 @@ def update_context_err(context: NumaflowServicerContext, e: BaseException, err_m
     """
     trace = get_exception_traceback_str(e)
     _LOGGER.critical(trace)
-    _LOGGER.critical(e.__str__())
+    _LOGGER.critical(err_msg)
 
     grpc_status = get_grpc_status(err_msg)
 

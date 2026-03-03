@@ -200,9 +200,8 @@ def test_udsink_err(err_sink_test_server):
         timeout=1,
     )
 
-    method.send_request(test_datums[0])
-    method.send_request(test_datums[1])
-    method.send_request(test_datums[2])
+    for d in test_datums:
+        method.send_request(d)
     method.requests_closed()
 
     responses = []
@@ -382,8 +381,8 @@ def test_shutdown_event_set_on_handler_error():
 
     _, code, _ = method.termination()
     assert code == StatusCode.INTERNAL
-    assert servicer._shutdown_event.is_set()
-    assert servicer._error is not None
+    assert servicer.shutdown_event.is_set()
+    assert servicer.error is not None
 
 
 def test_shutdown_event_set_on_handshake_error():
@@ -414,5 +413,5 @@ def test_shutdown_event_set_on_handshake_error():
     _, code, details = method.termination()
     assert code == StatusCode.INTERNAL
     assert "SinkFn: expected handshake message" in details
-    assert servicer._shutdown_event.is_set()
-    assert servicer._error is not None
+    assert servicer.shutdown_event.is_set()
+    assert servicer.error is not None

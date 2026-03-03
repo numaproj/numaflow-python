@@ -41,7 +41,7 @@ class ThreadWithReturnValue(Thread):
             except BaseException as exc:
                 self._exception = exc
 
-    def join(self, *args):
+    def join(self, timeout=None):
         """
         Wait for the thread to complete and return the result.
 
@@ -50,7 +50,7 @@ class ThreadWithReturnValue(Thread):
         exception, and then returns the stored return value.
 
         Parameters:
-        *args: Variable length argument list to pass to the join() method.
+        timeout: Seconds to wait (None means wait indefinitely).
 
         Returns:
         The return value from the target function.
@@ -58,8 +58,7 @@ class ThreadWithReturnValue(Thread):
         Raises:
         BaseException: If the target function raised during run().
         """
-        # Call the parent class's join() method to wait for the thread to finish
-        Thread.join(self, *args)
+        Thread.join(self, timeout=timeout)
         if self._exception is not None:
             raise self._exception
         # Return the result of the target function

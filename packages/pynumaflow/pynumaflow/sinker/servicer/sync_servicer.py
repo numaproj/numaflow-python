@@ -1,9 +1,10 @@
+import threading
 from collections.abc import Iterator
 
 
-from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.shared.thread_with_return import ThreadWithReturnValue
 from pynumaflow.sinker._dtypes import SinkSyncCallable
@@ -24,6 +25,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
     def __init__(self, handler: SinkSyncCallable):
         self.handler: SinkSyncCallable = handler
+        self._shutdown_event: threading.Event = threading.Event()
+        self._error: BaseException | None = None
 
     def SinkFn(
         self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
@@ -79,10 +82,11 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 cur_task.join()
 
         except BaseException as err:
-            # Handle exceptions
-            err_msg = f"UDSinkError: {repr(err)}"
+            err_msg = f"UDSinkError, {ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
+            update_context_err(context, err, err_msg)
+            self._error = err
+            self._shutdown_event.set()
             return
 
     def _invoke_sink(self, request_queue: SyncIterator, context: NumaflowServicerContext):
@@ -93,7 +97,6 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         except BaseException as err:
             err_msg = f"UDSinkError: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
             raise err
 
     def IsReady(self, request, context: NumaflowServicerContext) -> sink_pb2.ReadyResponse:

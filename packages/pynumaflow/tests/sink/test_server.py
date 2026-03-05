@@ -3,6 +3,7 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 from unittest import mock
 
+import grpc
 import pytest
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
@@ -415,3 +416,43 @@ def test_shutdown_event_set_on_handshake_error():
     assert "SinkFn: expected handshake message" in details
     assert servicer.shutdown_event.is_set()
     assert servicer.error is not None
+
+
+def test_shutdown_event_set_on_stream_close_before_handshake():
+    """grpc.RpcError on the first read (before handshake): shutdown_event set, req_queue is None so close is skipped."""
+    servicer = SyncSinkServicer(handler=udsink_handler)
+
+    def _cancelled_iter():
+        raise grpc.RpcError()
+        yield  # make it a generator
+
+    responses = list(servicer.SinkFn(_cancelled_iter(), mock.MagicMock()))
+
+    assert responses == []
+    assert servicer.shutdown_event.is_set()
+    assert servicer.error is None
+
+
+def test_shutdown_event_set_on_stream_close_mid_batch():
+    """grpc.RpcError mid-batch: req_queue is closed (unblocking the handler thread) and shutdown_event is set."""
+    servicer = SyncSinkServicer(handler=udsink_handler)
+    event_time_timestamp, watermark_timestamp = _make_timestamps()
+
+    def _cancelled_iter():
+        yield sink_pb2.SinkRequest(handshake=sink_pb2.Handshake(sot=True))
+        yield sink_pb2.SinkRequest(
+            request=sink_pb2.SinkRequest.Request(
+                id="test_id_0",
+                value=mock_message(),
+                event_time=event_time_timestamp,
+                watermark=watermark_timestamp,
+                metadata=METADATA,
+            )
+        )
+        raise grpc.RpcError()
+
+    responses = list(servicer.SinkFn(_cancelled_iter(), mock.MagicMock()))
+
+    assert responses[0].handshake.sot
+    assert servicer.shutdown_event.is_set()
+    assert servicer.error is None

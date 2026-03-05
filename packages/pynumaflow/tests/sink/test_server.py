@@ -419,7 +419,8 @@ def test_shutdown_event_set_on_handshake_error():
 
 
 def test_shutdown_event_set_on_stream_close_before_handshake():
-    """grpc.RpcError on the first read (before handshake): shutdown_event set, req_queue is None so close is skipped."""
+    """grpc.RpcError on the first read (before handshake): shutdown_event set,
+    req_queue is None so close is skipped."""
     servicer = SyncSinkServicer(handler=udsink_handler)
 
     def _cancelled_iter():
@@ -434,7 +435,8 @@ def test_shutdown_event_set_on_stream_close_before_handshake():
 
 
 def test_shutdown_event_set_on_stream_close_mid_batch():
-    """grpc.RpcError mid-batch: req_queue is closed (unblocking the handler thread) and shutdown_event is set."""
+    """grpc.RpcError mid-batch: req_queue is closed (unblocking the handler thread)
+    and shutdown_event is set."""
     servicer = SyncSinkServicer(handler=udsink_handler)
     event_time_timestamp, watermark_timestamp = _make_timestamps()
 

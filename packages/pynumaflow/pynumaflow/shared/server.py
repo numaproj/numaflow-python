@@ -4,6 +4,7 @@ import io
 import multiprocessing
 import os
 import socket
+import threading
 import traceback
 
 from google.protobuf import any_pb2
@@ -18,6 +19,7 @@ import psutil
 from pynumaflow._constants import (
     _LOGGER,
     MULTIPROC_MAP_SOCK_ADDR,
+    NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS,
     UDFType,
 )
 from pynumaflow.exceptions import SocketError
@@ -57,6 +59,7 @@ def sync_server_start(
     server_options=None,
     server_info: ServerInfo | None = None,
     udf_type: str = UDFType.Map,
+    shutdown_event: threading.Event | None = None,
 ):
     """
     Utility function to start a sync grpc server instance.
@@ -75,6 +78,7 @@ def sync_server_start(
         udf_type=udf_type,
         server_info_file=server_info_file,
         server_info=server_info,
+        shutdown_event=shutdown_event,
     )
 
 
@@ -86,10 +90,15 @@ def _run_server(
     udf_type: str,
     server_info_file: str | None = None,
     server_info: ServerInfo | None = None,
+    shutdown_event: threading.Event | None = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
     with given max threads. Wait for the server to terminate.
+
+    If *shutdown_event* is provided, a background daemon thread will wait
+    on it and then call ``server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)``
+    for a cooperative graceful shutdown (no process kill).
     """
     server = grpc.server(
         ThreadPoolExecutor(
@@ -115,9 +124,20 @@ def _run_server(
     server.add_insecure_port(bind_address)
     # start the gRPC server
     server.start()
+
     # Add the server information to the server info file if provided
     if server_info and server_info_file:
         info_server_write(server_info=server_info, info_file=server_info_file)
+
+    if shutdown_event is not None:
+
+        def _watch_for_shutdown():
+            shutdown_event.wait()
+            _LOGGER.info("Shutdown signal received, stopping server gracefully...")
+            server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
+
+        watcher = threading.Thread(target=_watch_for_shutdown, daemon=True)
+        watcher.start()
 
     _LOGGER.info("GRPC Server listening on: %s %d", bind_address, os.getpid())
     server.wait_for_termination()
@@ -243,14 +263,14 @@ def check_instance(instance, callable_type) -> bool:
         return False
 
 
-def get_grpc_status(err: str):
+def get_grpc_status(err: str, detail: str | None = None):
     """
     Create a grpc status object with the error details.
     """
     details = any_pb2.Any()
     details.Pack(
         error_details_pb2.DebugInfo(
-            detail="\n".join(traceback.format_stack()),
+            detail=detail if detail is not None else "\n".join(traceback.format_stack()),
         )
     )
 
@@ -295,9 +315,9 @@ def update_context_err(context: NumaflowServicerContext, e: BaseException, err_m
     """
     trace = get_exception_traceback_str(e)
     _LOGGER.critical(trace)
-    _LOGGER.critical(e.__str__())
+    _LOGGER.critical(err_msg)
 
-    grpc_status = get_grpc_status(err_msg)
+    grpc_status = get_grpc_status(err_msg, detail=trace)
 
     context.set_code(grpc.StatusCode.INTERNAL)
     context.set_details(err_msg)

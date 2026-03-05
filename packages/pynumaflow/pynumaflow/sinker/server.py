@@ -1,4 +1,5 @@
 import os
+import sys
 
 from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
@@ -120,6 +121,7 @@ class SinkServer(NumaflowServer):
         )
         serv_info = ServerInfo.get_default_server_info()
         serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sinker]
+
         # Start the server
         sync_server_start(
             servicer=self.servicer,
@@ -129,4 +131,9 @@ class SinkServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.Sink,
             server_info=serv_info,
+            shutdown_event=self.servicer.shutdown_event,
         )
+
+        if self.servicer.error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self.servicer.error)
+            sys.exit(1)

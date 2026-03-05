@@ -1,9 +1,11 @@
+import threading
 from collections.abc import Iterator
 
+import grpc
 
-from pynumaflow._constants import _LOGGER, STREAM_EOF
+from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.shared.thread_with_return import ThreadWithReturnValue
 from pynumaflow.sinker._dtypes import SinkSyncCallable
@@ -24,6 +26,8 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
 
     def __init__(self, handler: SinkSyncCallable):
         self.handler: SinkSyncCallable = handler
+        self.shutdown_event: threading.Event = threading.Event()
+        self.error: BaseException | None = None
 
     def SinkFn(
         self, request_iterator: Iterator[sink_pb2.SinkRequest], context: NumaflowServicerContext
@@ -32,6 +36,7 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
         Applies a sink function to datum elements.
         """
 
+        req_queue = None
         try:
             # The first message to be received should be a valid handshake
             req = next(request_iterator)
@@ -78,23 +83,31 @@ class SyncSinkServicer(sink_pb2_grpc.SinkServicer):
             if cur_task:
                 cur_task.join()
 
+        except grpc.RpcError:
+            _LOGGER.warning("gRPC stream closed, shutting down the server.")
+            if req_queue is not None:
+                req_queue.close()
+            self.shutdown_event.set()
+            return
+
         except BaseException as err:
-            # Handle exceptions
-            err_msg = f"UDSinkError: {repr(err)}"
+            err_msg = f"UDSinkError, {ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
+            update_context_err(context, err, err_msg)
+            # Unblock the handler thread if it is waiting on queue.get()
+            # (e.g. gRPC stream broke while the handler was waiting for the next message).
+            # This lets it exit gracefully and release any user-held resources
+            # before the process shuts down.
+            if req_queue is not None:
+                req_queue.close()
+            self.error = err
+            self.shutdown_event.set()
             return
 
     def _invoke_sink(self, request_queue: SyncIterator, context: NumaflowServicerContext):
-        try:
-            # Invoke the handler function with the request queue
-            rspns = self.handler(request_queue.read_iterator())
-            return build_sink_resp_results(rspns)
-        except BaseException as err:
-            err_msg = f"UDSinkError: {repr(err)}"
-            _LOGGER.critical(err_msg, exc_info=True)
-            exit_on_error(context, err_msg)
-            raise err
+        # Invoke the handler function with the request queue
+        rspns = self.handler(request_queue.read_iterator())
+        return build_sink_resp_results(rspns)
 
     def IsReady(self, request, context: NumaflowServicerContext) -> sink_pb2.ReadyResponse:
         """

@@ -1,3 +1,5 @@
+import sys
+
 from pynumaflow.info.types import (
     ServerInfo,
     MAP_MODE_KEY,
@@ -112,4 +114,9 @@ class MapServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.Map,
             server_info=serv_info,
+            shutdown_event=self.servicer.shutdown_event,
         )
+
+        if self.servicer.error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self.servicer.error)
+            sys.exit(1)

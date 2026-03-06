@@ -62,7 +62,6 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
                 # if error handler accordingly
                 if isinstance(res, BaseException):
                     err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}"
-                    _LOGGER.critical(err_msg, exc_info=True)
                     update_context_err(context, res, err_msg)
                     # Unblock the reader thread if it is waiting on queue.put()
                     result_queue.close()
@@ -132,6 +131,11 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
         result_queue: SyncIterator,
     ):
         try:
+            # Skip processing if a shutdown is already in progress
+            # (e.g. a prior invocation raised an exception)
+            if self.shutdown_event.is_set():
+                return
+
             (user_metadata, system_metadata) = _user_and_system_metadata_from_proto(
                 request.request.metadata
             )

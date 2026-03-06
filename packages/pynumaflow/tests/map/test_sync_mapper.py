@@ -1,3 +1,6 @@
+import threading
+from unittest.mock import MagicMock
+
 import grpc
 import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -5,6 +8,7 @@ from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.mapper import MapServer
+from pynumaflow.mapper._servicer._sync_servicer import SyncMapServicer
 from pynumaflow.proto.mapper import map_pb2
 from tests.map.utils import map_handler, err_map_handler, ExampleMap, get_test_datums
 
@@ -121,3 +125,36 @@ class TestSyncMapper:
         # defaults to 4
         server = MapServer(mapper_instance=map_handler)
         assert server.max_threads == 4
+
+    def test_rpc_error_before_handshake(self):
+        """RpcError on the very first read triggers the except grpc.RpcError in MapFn."""
+
+        def failing_iterator():
+            raise grpc.RpcError()
+            yield  # make it a generator
+
+        servicer = SyncMapServicer(handler=map_handler)
+        context = MagicMock()
+
+        responses = list(servicer.MapFn(failing_iterator(), context))
+
+        assert responses == []
+        assert servicer.shutdown_event.is_set()
+
+    def test_rpc_error_mid_stream(self):
+        """RpcError while reading requests triggers the except grpc.RpcError
+        in _process_requests."""
+
+        def interrupted_iterator():
+            yield map_pb2.MapRequest(handshake=map_pb2.Handshake(sot=True))
+            raise grpc.RpcError()
+
+        servicer = SyncMapServicer(handler=map_handler)
+        context = MagicMock()
+
+        responses = list(servicer.MapFn(interrupted_iterator(), context))
+
+        # Should get the handshake response and then stop cleanly
+        assert len(responses) == 1
+        assert responses[0].handshake.sot
+        assert servicer.shutdown_event.is_set()

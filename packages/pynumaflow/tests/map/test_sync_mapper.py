@@ -1,4 +1,3 @@
-import threading
 from unittest.mock import MagicMock
 
 import grpc

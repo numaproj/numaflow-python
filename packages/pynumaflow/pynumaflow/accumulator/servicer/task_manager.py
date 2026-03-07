@@ -104,8 +104,9 @@ class TaskManager:
         3. Wait for all the results from the task to be written to the global result  queue
         4. Remove the task from the tracker
         """
-        d = req.payload
-        keys = d.keys
+        # Use keyed_window.keys for task lookup since payload.keys may be empty
+        # (e.g., CLOSE operations don't carry data, so payload.keys is not populated).
+        keys = req.keyed_window.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -127,7 +128,9 @@ class TaskManager:
         it creates a new task or appends the request to the existing task.
         """
         d = req.payload
-        keys = d.keys
+        # Use keyed_window.keys for task lookup — the authoritative key identity
+        # for the window, consistent across all operation types (OPEN, APPEND, CLOSE).
+        keys = req.keyed_window.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -178,7 +181,8 @@ class TaskManager:
         If the task does not exist, create it.
         """
         d = req.payload
-        keys = d.keys
+        # Use keyed_window.keys for task lookup to match the key used in create_task/close_task.
+        keys = req.keyed_window.keys
         unified_key = build_unique_key_name(keys)
         result = self.tasks.get(unified_key, None)
         if not result:

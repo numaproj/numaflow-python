@@ -30,9 +30,11 @@ LOGGER = setup_logging(__name__)
 def request_generator(count, request, resetkey: bool = False, send_close: bool = False):
     for i in range(count):
         if resetkey:
-            # Clear previous keys and add new ones
+            # Update keys on both payload and keyedWindow to match real platform behavior
             del request.payload.keys[:]
             request.payload.keys.extend([f"key-{i}"])
+            del request.operation.keyedWindow.keys[:]
+            request.operation.keyedWindow.keys.extend([f"key-{i}"])
 
         # Set operation based on index - first is OPEN, rest are APPEND
         if i == 0:
@@ -52,9 +54,11 @@ def request_generator(count, request, resetkey: bool = False, send_close: bool =
 def request_generator_append_only(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
-            # Clear previous keys and add new ones
+            # Update keys on both payload and keyedWindow to match real platform behavior
             del request.payload.keys[:]
             request.payload.keys.extend([f"key-{i}"])
+            del request.operation.keyedWindow.keys[:]
+            request.operation.keyedWindow.keys.extend([f"key-{i}"])
 
         # Set operation to APPEND for all requests
         request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
@@ -64,9 +68,11 @@ def request_generator_append_only(count, request, resetkey: bool = False):
 def request_generator_mixed(count, request, resetkey: bool = False):
     for i in range(count):
         if resetkey:
-            # Clear previous keys and add new ones
+            # Update keys on both payload and keyedWindow to match real platform behavior
             del request.payload.keys[:]
             request.payload.keys.extend([f"key-{i}"])
+            del request.operation.keyedWindow.keys[:]
+            request.operation.keyedWindow.keys.extend([f"key-{i}"])
 
         if i % 2 == 0:
             # Set operation to APPEND for even requests
@@ -107,7 +113,12 @@ def start_request() -> accumulator_pb2.AccumulatorRequest:
 
 def start_request_without_open() -> accumulator_pb2.AccumulatorRequest:
     event_time_timestamp, watermark_timestamp = get_time_args()
-
+    window = accumulator_pb2.KeyedWindow(
+        start=mock_interval_window_start(),
+        end=mock_interval_window_end(),
+        slot="slot-0",
+        keys=["test_key"],
+    )
     payload = accumulator_pb2.Payload(
         keys=["test_key"],
         value=mock_message(),
@@ -115,9 +126,13 @@ def start_request_without_open() -> accumulator_pb2.AccumulatorRequest:
         watermark=watermark_timestamp,
         id="test_id",
     )
-
+    operation = accumulator_pb2.AccumulatorRequest.WindowOperation(
+        event=accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND,
+        keyedWindow=window,
+    )
     request = accumulator_pb2.AccumulatorRequest(
         payload=payload,
+        operation=operation,
     )
     return request
 

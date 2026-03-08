@@ -13,7 +13,8 @@ from pynumaflow.accumulator._dtypes import (
     Datum,
     _AccumulatorBuilderClass,
     AccumulatorAsyncCallable,
-    WindowOperation, AccumulatorRequest,
+    WindowOperation,
+    AccumulatorRequest,
 )
 from pynumaflow.proto.accumulator import accumulator_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -219,9 +220,7 @@ class TaskManager:
             # Put the exception in the result queue
             await self.global_result_queue.put(err)
 
-    async def process_input_stream(
-        self, request_iterator: AsyncIterable[AccumulatorRequest]
-    ):
+    async def process_input_stream(self, request_iterator: AsyncIterable[AccumulatorRequest]):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
         try:

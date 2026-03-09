@@ -3,6 +3,7 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
+from unittest.mock import MagicMock
 import grpc
 from grpc.aio._server import Server
 
@@ -16,6 +17,7 @@ from pynumaflow.reducestreamer import (
     Metadata,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.reducestreamer.servicer.async_servicer import AsyncReduceStreamServicer
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
@@ -215,6 +217,66 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
 
     def __stub(self):
         return reduce_pb2_grpc.ReduceStub(_channel)
+
+
+async def _emit_one_handler(keys, datums, output, md):
+    """Handler that emits one message eagerly, then blocks reading remaining datums."""
+    await output.put(Message(b"result", keys=keys))
+    async for _ in datums:
+        pass
+
+
+def test_cancelled_error_in_consumer_loop():
+    """athrow(CancelledError) at the yield point exercises the except CancelledError branch."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def _run():
+        async def requests():
+            yield request
+            await asyncio.sleep(999)
+
+        gen = servicer.ReduceFn(requests(), MagicMock())
+        # Drive the pipeline until the handler's message is yielded.
+        await gen.__anext__()
+        # Simulate task cancellation (e.g. SIGTERM) at the yield point.
+        try:
+            await gen.athrow(asyncio.CancelledError())
+        except StopAsyncIteration:
+            pass
+
+    asyncio.run(_run())
+    assert shutdown_event.is_set()
+    assert servicer._error is None
+
+
+def test_base_exception_in_consumer_loop():
+    """athrow(ValueError) at the yield point exercises the except BaseException branch."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def _run():
+        async def requests():
+            yield request
+            await asyncio.sleep(999)
+
+        ctx = MagicMock()
+        gen = servicer.ReduceFn(requests(), ctx)
+        await gen.__anext__()
+        try:
+            await gen.athrow(ValueError("boom"))
+        except StopAsyncIteration:
+            pass
+        return ctx
+
+    ctx = asyncio.run(_run())
+    assert shutdown_event.is_set()
+    assert isinstance(servicer._error, ValueError)
+    ctx.set_code.assert_called_once_with(grpc.StatusCode.INTERNAL)
 
 
 if __name__ == "__main__":

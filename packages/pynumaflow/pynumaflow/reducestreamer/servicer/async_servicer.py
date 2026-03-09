@@ -111,12 +111,16 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
                 # back to the client
                 else:
                     yield msg
-        except (asyncio.CancelledError, GeneratorExit):
-            # The current function is an async generator since we yield messages.
-            # When each window is closed by numa, the `.aclose()` method will be called on this async generator
-            # This results in GeneratorExit exception raised at the point where generator is suspended (yield)
-            # If we don't explicitly catch it, the code block that catches BaseException will categorize it as a
-            # critical error and cause program exit.
+        except GeneratorExit:
+            # ReduceFn is an async generator (it yields messages). When Numaflow closes a
+            # window, gRPC calls .aclose() on this generator, throwing GeneratorExit at
+            # the yield point. This is normal stream lifecycle — return cleanly.
+            return
+        except asyncio.CancelledError:
+            # SIGTERM: aiorun cancelled all tasks. Signal the server to stop so
+            # Server.__del__ doesn't try to schedule on a closed event loop.
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
         except BaseException as e:
             err_msg = f"ReduceStreamError, {ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
@@ -129,8 +133,9 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
         # Wait for the process_input_stream task to finish for a clean exit
         try:
             await producer
-        except (asyncio.CancelledError, GeneratorExit):
-            _LOGGER.info("ReduceStream producer cancelled, returning cleanly")
+        except asyncio.CancelledError:
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
         except BaseException as e:
             err_msg = f"ReduceStreamError, {ERR_UDF_EXCEPTION_STRING}: {repr(e)}"

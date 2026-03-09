@@ -1,8 +1,12 @@
+import asyncio
+import contextlib
 import inspect
+import sys
 
 import aiorun
 import grpc
 
+from pynumaflow.info.server import write as info_server_write
 from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.proto.reducer import reduce_pb2_grpc
 
@@ -15,6 +19,7 @@ from pynumaflow._constants import (
     REDUCE_STREAM_SOCK_PATH,
     REDUCE_STREAM_SERVER_INFO_FILE_PATH,
     MAX_NUM_THREADS,
+    NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS,
 )
 
 from pynumaflow.reducestreamer._dtypes import (
@@ -23,7 +28,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceStreamer,
 )
 
-from pynumaflow.shared.server import NumaflowServer, check_instance, start_async_server
+from pynumaflow.shared.server import NumaflowServer, check_instance
 
 
 def get_handler(
@@ -156,6 +161,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         ]
         # Get the servicer instance for the async server
         self.servicer = AsyncReduceStreamServicer(self.reduce_stream_handler)
+        self._error: BaseException | None = None
 
     def start(self):
         """
@@ -166,6 +172,9 @@ class ReduceStreamAsyncServer(NumaflowServer):
             "Starting Async Reduce Stream Server",
         )
         aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdown_callback)
+        if self._error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self._error)
+            sys.exit(1)
 
     async def aexec(self):
         """
@@ -178,15 +187,43 @@ class ReduceStreamAsyncServer(NumaflowServer):
         # Create a new async server instance and add the servicer to it
         server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
+
+        # The asyncio.Event must be created here (inside aexec) rather than in __init__,
+        # because it must be bound to the running event loop that aiorun creates.
+        shutdown_event = asyncio.Event()
+        self.servicer.set_shutdown_event(shutdown_event)
+
         reduce_pb2_grpc.add_ReduceServicer_to_server(self.servicer, server)
 
         serv_info = ServerInfo.get_default_server_info()
         serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Reducestreamer]
-        await start_async_server(
-            server_async=server,
-            sock_path=self.sock_path,
-            max_threads=self.max_threads,
-            cleanup_coroutines=list(),
-            server_info_file=self.server_info_file,
-            server_info=serv_info,
+
+        await server.start()
+        info_server_write(server_info=serv_info, info_file=self.server_info_file)
+
+        _LOGGER.info(
+            "Async GRPC Reduce Stream Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
         )
+        _LOGGER.info("Debug build")  # FIXME: remove this
+
+        async def _watch_for_shutdown():
+            """Wait for the shutdown event and stop the server with a grace period."""
+            await shutdown_event.wait()
+            _LOGGER.info("Shutdown signal received, stopping server gracefully...")
+            await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
+
+        shutdown_task = asyncio.create_task(_watch_for_shutdown())
+        await server.wait_for_termination()
+
+        # Propagate error so start() can exit with a non-zero code
+        self._error = self.servicer._error
+
+        shutdown_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await shutdown_task
+
+        _LOGGER.info("Stopping event loop...")
+        asyncio.get_event_loop().stop()
+        _LOGGER.info("Event loop stopped")

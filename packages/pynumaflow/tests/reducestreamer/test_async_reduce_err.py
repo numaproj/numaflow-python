@@ -18,6 +18,7 @@ from pynumaflow.reducestreamer import (
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducestreamer.servicer.async_servicer import AsyncReduceStreamServicer
+from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
@@ -276,6 +277,72 @@ def test_base_exception_in_consumer_loop():
     ctx = asyncio.run(_run())
     assert shutdown_event.is_set()
     assert isinstance(servicer._error, ValueError)
+    ctx.set_code.assert_called_once_with(grpc.StatusCode.INTERNAL)
+
+
+_original_process_input_stream = TaskManager.process_input_stream
+
+
+def test_cancelled_error_awaiting_producer():
+    """CancelledError from the producer task after it finishes its real work."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def raise_after_real_work(self, request_iterator):
+        await _original_process_input_stream(self, request_iterator)
+        raise asyncio.CancelledError()
+
+    TaskManager.process_input_stream = raise_after_real_work
+    try:
+
+        async def _run():
+            async def requests():
+                yield request
+
+            gen = servicer.ReduceFn(requests(), MagicMock())
+            async for _ in gen:
+                pass
+
+        asyncio.run(_run())
+    finally:
+        TaskManager.process_input_stream = _original_process_input_stream
+
+    assert shutdown_event.is_set()
+    assert servicer._error is None
+
+
+def test_base_exception_awaiting_producer():
+    """BaseException from the producer task after it finishes its real work."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def raise_after_real_work(self, request_iterator):
+        await _original_process_input_stream(self, request_iterator)
+        raise RuntimeError("producer boom")
+
+    TaskManager.process_input_stream = raise_after_real_work
+    try:
+
+        async def _run():
+            async def requests():
+                yield request
+
+            ctx = MagicMock()
+            gen = servicer.ReduceFn(requests(), ctx)
+            async for _ in gen:
+                pass
+            return ctx
+
+        ctx = asyncio.run(_run())
+    finally:
+        TaskManager.process_input_stream = _original_process_input_stream
+
+    assert shutdown_event.is_set()
+    assert isinstance(servicer._error, RuntimeError)
     ctx.set_code.assert_called_once_with(grpc.StatusCode.INTERNAL)
 
 

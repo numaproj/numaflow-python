@@ -206,7 +206,6 @@ class ReduceStreamAsyncServer(NumaflowServer):
             self.sock_path,
             self.max_threads,
         )
-        _LOGGER.info("Debug build")  # FIXME: remove this
 
         async def _watch_for_shutdown():
             """Wait for the shutdown event and stop the server with a grace period."""

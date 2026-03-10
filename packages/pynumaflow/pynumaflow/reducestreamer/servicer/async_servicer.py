@@ -3,7 +3,7 @@ from collections.abc import AsyncIterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
-from pynumaflow._constants import ERR_UDF_EXCEPTION_STRING
+from pynumaflow._constants import ERR_UDF_EXCEPTION_STRING, _LOGGER
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducestreamer._dtypes import (
     Datum,
@@ -12,7 +12,7 @@ from pynumaflow.reducestreamer._dtypes import (
     ReduceRequest,
 )
 from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -47,6 +47,12 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
     ):
         # The Reduce handler can be a function or a builder class instance.
         self.__reduce_handler: ReduceStreamAsyncCallable | _ReduceStreamBuilderClass = handler
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     async def ReduceFn(
         self,
@@ -94,20 +100,50 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
+                    err_msg = f"ReduceStreamError, {ERR_UDF_EXCEPTION_STRING}: {repr(msg)}"
+                    _LOGGER.critical(err_msg, exc_info=True)
+                    update_context_err(context, msg, err_msg)
+                    self._error = msg
+                    if self._shutdown_event is not None:
+                        self._shutdown_event.set()
                     return
                 # Send window EOF response or Window result response
                 # back to the client
                 else:
                     yield msg
+        except GeneratorExit:
+            # ReduceFn is an async generator (it yields messages). When Numaflow closes a
+            # window, gRPC calls .aclose() on this generator, throwing GeneratorExit at
+            # the yield point. This is normal stream lifecycle — return cleanly.
+            return
+        except asyncio.CancelledError:
+            # SIGTERM: aiorun cancelled all tasks. Signal the server to stop so
+            # Server.__del__ doesn't try to schedule on a closed event loop.
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
         except BaseException as e:
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"ReduceStreamError, {ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            update_context_err(context, e, err_msg)
+            self._error = e
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
         # Wait for the process_input_stream task to finish for a clean exit
         try:
             await producer
+        except asyncio.CancelledError:
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
         except BaseException as e:
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"ReduceStreamError, {ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            update_context_err(context, e, err_msg)
+            self._error = e
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
 
     async def IsReady(

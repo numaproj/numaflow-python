@@ -3,8 +3,7 @@ import logging
 import threading
 import unittest
 from collections.abc import AsyncIterable
-from unittest.mock import patch
-
+from unittest.mock import MagicMock
 import grpc
 from grpc.aio._server import Server
 
@@ -18,13 +17,14 @@ from pynumaflow.reducestreamer import (
     Metadata,
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
+from pynumaflow.reducestreamer.servicer.async_servicer import AsyncReduceStreamServicer
+from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
     mock_interval_window_end,
     get_time_args,
-    mock_terminate_on_stop,
 )
 
 LOGGER = setup_logging(__name__)
@@ -128,7 +128,6 @@ def NewAsyncReduceStreamer():
     return udfs
 
 
-@patch("psutil.Process.kill", mock_terminate_on_stop)
 async def start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
@@ -141,8 +140,6 @@ async def start_server(udfs):
     await server.wait_for_termination()
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
 class TestAsyncReduceStreamerErr(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -172,9 +169,6 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
         except BaseException as e:
             LOGGER.error(e)
 
-    # TODO: Check why terminating even after mocking
-    # We are mocking the terminate function from the psutil to not exit the program during testing
-    @patch("psutil.Process.kill", mock_terminate_on_stop)
     def test_reduce(self) -> None:
         stub = self.__stub()
         request, metadata = start_request(multiple_window=False)
@@ -191,8 +185,6 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
             return
         self.fail("Expected an exception.")
 
-    # TODO: Check why terminating even after mocking
-    @patch("psutil.Process.kill", mock_terminate_on_stop)
     def test_reduce_window_len(self) -> None:
         stub = self.__stub()
         request, metadata = start_request(multiple_window=True)
@@ -226,6 +218,132 @@ class TestAsyncReduceStreamerErr(unittest.TestCase):
 
     def __stub(self):
         return reduce_pb2_grpc.ReduceStub(_channel)
+
+
+async def _emit_one_handler(keys, datums, output, md):
+    """Handler that emits one message eagerly, then blocks reading remaining datums."""
+    await output.put(Message(b"result", keys=keys))
+    async for _ in datums:
+        pass
+
+
+def test_cancelled_error_in_consumer_loop():
+    """athrow(CancelledError) at the yield point exercises the except CancelledError branch."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def _run():
+        async def requests():
+            yield request
+            await asyncio.sleep(999)
+
+        gen = servicer.ReduceFn(requests(), MagicMock())
+        # Drive the pipeline until the handler's message is yielded.
+        await gen.__anext__()
+        # Simulate task cancellation (e.g. SIGTERM) at the yield point.
+        try:
+            await gen.athrow(asyncio.CancelledError())
+        except StopAsyncIteration:
+            pass
+
+    asyncio.run(_run())
+    assert shutdown_event.is_set()
+    assert servicer._error is None
+
+
+def test_base_exception_in_consumer_loop():
+    """athrow(ValueError) at the yield point exercises the except BaseException branch."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def _run():
+        async def requests():
+            yield request
+            await asyncio.sleep(999)
+
+        ctx = MagicMock()
+        gen = servicer.ReduceFn(requests(), ctx)
+        await gen.__anext__()
+        try:
+            await gen.athrow(ValueError("boom"))
+        except StopAsyncIteration:
+            pass
+        return ctx
+
+    ctx = asyncio.run(_run())
+    assert shutdown_event.is_set()
+    assert isinstance(servicer._error, ValueError)
+    ctx.set_code.assert_called_once_with(grpc.StatusCode.INTERNAL)
+
+
+_original_process_input_stream = TaskManager.process_input_stream
+
+
+def test_cancelled_error_awaiting_producer():
+    """CancelledError from the producer task after it finishes its real work."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def raise_after_real_work(self, request_iterator):
+        await _original_process_input_stream(self, request_iterator)
+        raise asyncio.CancelledError()
+
+    TaskManager.process_input_stream = raise_after_real_work
+    try:
+
+        async def _run():
+            async def requests():
+                yield request
+
+            gen = servicer.ReduceFn(requests(), MagicMock())
+            async for _ in gen:
+                pass
+
+        asyncio.run(_run())
+    finally:
+        TaskManager.process_input_stream = _original_process_input_stream
+
+    assert shutdown_event.is_set()
+    assert servicer._error is None
+
+
+def test_base_exception_awaiting_producer():
+    """BaseException from the producer task after it finishes its real work."""
+    servicer = AsyncReduceStreamServicer(_emit_one_handler)
+    shutdown_event = asyncio.Event()
+    servicer.set_shutdown_event(shutdown_event)
+    request, _ = start_request(multiple_window=False)
+
+    async def raise_after_real_work(self, request_iterator):
+        await _original_process_input_stream(self, request_iterator)
+        raise RuntimeError("producer boom")
+
+    TaskManager.process_input_stream = raise_after_real_work
+    try:
+
+        async def _run():
+            async def requests():
+                yield request
+
+            ctx = MagicMock()
+            gen = servicer.ReduceFn(requests(), ctx)
+            async for _ in gen:
+                pass
+            return ctx
+
+        ctx = asyncio.run(_run())
+    finally:
+        TaskManager.process_input_stream = _original_process_input_stream
+
+    assert shutdown_event.is_set()
+    assert isinstance(servicer._error, RuntimeError)
+    ctx.set_code.assert_called_once_with(grpc.StatusCode.INTERNAL)
 
 
 if __name__ == "__main__":

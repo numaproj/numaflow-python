@@ -17,9 +17,9 @@ class WindowOperation(IntEnum):
     Enumerate the type of Window operation received.
     """
 
-    OPEN = (0,)
-    CLOSE = (1,)
-    APPEND = (2,)
+    OPEN = 0
+    CLOSE = 1
+    APPEND = 2
 
 
 @dataclass(init=False, slots=True)

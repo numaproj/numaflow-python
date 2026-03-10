@@ -195,6 +195,9 @@ class TaskManager:
             new_instance = self.__reduce_handler.create()
         try:
             _ = await new_instance(keys, request_iterator, output, md)
+        except asyncio.CancelledError:
+            _LOGGER.info("ReduceStream __invoke_reduce cancelled, returning cleanly")
+            return
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
         except BaseException as err:
@@ -217,6 +220,9 @@ class TaskManager:
                         # append the task data to the existing task
                         # if the task does not exist, create a new task
                         await self.send_datum_to_task(request)
+        except asyncio.CancelledError:
+            _LOGGER.info("ReduceStream process_input_stream cancelled, returning cleanly")
+            return
         # If there is an error in the reduce operation, log and
         # then send the error to the result queue
         except BaseException as e:
@@ -261,6 +267,9 @@ class TaskManager:
 
             # Once all tasks are completed, senf EOF the global result queue
             await self.global_result_queue.put(STREAM_EOF)
+        except asyncio.CancelledError:
+            _LOGGER.info("ReduceStream post-processing cancelled, returning cleanly")
+            return
         except BaseException as e:
             err_msg = f"Reduce Streaming Error: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)

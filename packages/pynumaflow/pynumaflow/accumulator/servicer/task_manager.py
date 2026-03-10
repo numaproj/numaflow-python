@@ -14,6 +14,7 @@ from pynumaflow.accumulator._dtypes import (
     _AccumulatorBuilderClass,
     AccumulatorAsyncCallable,
     WindowOperation,
+    AccumulatorRequest,
 )
 from pynumaflow.proto.accumulator import accumulator_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -93,7 +94,7 @@ class TaskManager:
         for unified_key in task_keys:
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
 
-    async def close_task(self, req):
+    async def close_task(self, req: AccumulatorRequest):
         """
         Closes a running accumulator task for a given key.
         Based on the request we compute the unique key, and then
@@ -104,8 +105,9 @@ class TaskManager:
         3. Wait for all the results from the task to be written to the global result  queue
         4. Remove the task from the tracker
         """
-        d = req.payload
-        keys = d.keys
+        # Use keyed_window.keys for task lookup since payload.keys may be empty
+        # (e.g., CLOSE operations don't carry data, so payload.keys is not populated).
+        keys = req.keyed_window.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -120,14 +122,16 @@ class TaskManager:
             # Put the exception in the result queue
             await self.global_result_queue.put(err)
 
-    async def create_task(self, req):
+    async def create_task(self, req: AccumulatorRequest):
         """
         Creates a new accumulator task for the given request.
         Based on the request we compute a unique key, and then
         it creates a new task or appends the request to the existing task.
         """
         d = req.payload
-        keys = d.keys
+        # Use keyed_window.keys for task lookup — the authoritative key identity
+        # for the window, consistent across all operation types (OPEN, APPEND, CLOSE).
+        keys = req.keyed_window.keys
         unified_key = build_unique_key_name(keys)
         curr_task = self.tasks.get(unified_key, None)
 
@@ -138,7 +142,7 @@ class TaskManager:
             # Create a new result queue for the current task
             # We create a new result queue for each task, so that
             # the results of the accumulator operation can be sent to the
-            # the global result queue, which in turn sends the results
+            # global result queue, which in turn sends the results
             # to the client.
             res_queue = NonBlockingIterator()
 
@@ -172,13 +176,14 @@ class TaskManager:
         # Put the request in the iterator
         await curr_task.iterator.put(d)
 
-    async def send_datum_to_task(self, req):
+    async def send_datum_to_task(self, req: AccumulatorRequest):
         """
         Appends the request to the existing window reduce task.
         If the task does not exist, create it.
         """
         d = req.payload
-        keys = d.keys
+        # Use keyed_window.keys for task lookup to match the key used in create_task/close_task.
+        keys = req.keyed_window.keys
         unified_key = build_unique_key_name(keys)
         result = self.tasks.get(unified_key, None)
         if not result:
@@ -215,9 +220,7 @@ class TaskManager:
             # Put the exception in the result queue
             await self.global_result_queue.put(err)
 
-    async def process_input_stream(
-        self, request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest]
-    ):
+    async def process_input_stream(self, request_iterator: AsyncIterable[AccumulatorRequest]):
         # Start iterating through the request iterator and create tasks
         # based on the operation type received.
         try:
@@ -226,15 +229,15 @@ class TaskManager:
                 request_count += 1
                 # check whether the request is an open, append, or close operation
                 match request.operation:
-                    case int(WindowOperation.OPEN):
+                    case WindowOperation.OPEN:
                         # create a new task for the open operation and
                         # put the request in the task iterator
                         await self.create_task(request)
-                    case int(WindowOperation.APPEND):
+                    case WindowOperation.APPEND:
                         # append the task data to the existing task
                         # if the task does not exist, create a new task
                         await self.send_datum_to_task(request)
-                    case int(WindowOperation.CLOSE):
+                    case WindowOperation.CLOSE:
                         # close the current task for req
                         await self.close_task(request)
                     case _:

@@ -6,6 +6,7 @@ from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 
 from pynumaflow._constants import DROP
+from pynumaflow._validate import _validate_message_fields
 
 M = TypeVar("M", bound="Message")
 B = TypeVar("B", bound="BatchResponse")
@@ -31,6 +32,7 @@ class Message:
         """
         Creates a Message object to send value to a vertex.
         """
+        _validate_message_fields(value, keys, tags)
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""

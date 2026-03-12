@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TypeAlias
 
 from pynumaflow._metadata import UserMetadata
+from pynumaflow._validate import _validate_message_fields
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 
@@ -77,6 +78,7 @@ class Message:
         """
         Creates a Message object to send value to a vertex.
         """
+        _validate_message_fields(payload, keys, None)
         self._payload = payload
         self._offset = offset
         self._event_time = event_time

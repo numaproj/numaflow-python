@@ -7,6 +7,7 @@ from collections.abc import Sequence, Iterator
 from warnings import warn
 
 from pynumaflow._metadata import SystemMetadata, UserMetadata
+from pynumaflow._validate import _validate_message_fields
 
 R = TypeVar("R", bound="Response")
 Rs = TypeVar("Rs", bound="Responses")
@@ -35,6 +36,7 @@ class Message:
         keys: list[str] | None = None,
         user_metadata: UserMetadata | None = None,
     ):
+        _validate_message_fields(value, keys, None)
         self._value = value
         self._keys = keys
         self._user_metadata = user_metadata

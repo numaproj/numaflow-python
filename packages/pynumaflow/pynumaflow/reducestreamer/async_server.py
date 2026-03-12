@@ -171,7 +171,12 @@ class ReduceStreamAsyncServer(NumaflowServer):
         _LOGGER.info(
             "Starting Async Reduce Stream Server",
         )
-        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdown_callback)
+        def _shutdown_handler(loop):
+            _LOGGER.info("Received graceful shutdown signal, shutting down ReduceStream server")
+            if self.shutdown_callback:
+                self.shutdown_callback(loop)
+
+        aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=_shutdown_handler)
         if self._error:
             _LOGGER.critical("Server exiting due to UDF error: %s", self._error)
             sys.exit(1)

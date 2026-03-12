@@ -294,7 +294,6 @@ class TestAsyncReduceStreamer(unittest.TestCase):
         server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
         self.assertEqual(server.max_threads, 4)
 
-
     def test_start_shutdown_handler_without_callback(self):
         """Test that _shutdown_handler logs and works when no shutdown_callback is set."""
         from unittest.mock import patch, MagicMock

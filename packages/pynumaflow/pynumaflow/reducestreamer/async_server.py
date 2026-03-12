@@ -171,6 +171,7 @@ class ReduceStreamAsyncServer(NumaflowServer):
         _LOGGER.info(
             "Starting Async Reduce Stream Server",
         )
+
         def _shutdown_handler(loop):
             _LOGGER.info("Received graceful shutdown signal, shutting down ReduceStream server")
             if self.shutdown_callback:

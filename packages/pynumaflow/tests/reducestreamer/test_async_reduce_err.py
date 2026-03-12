@@ -346,6 +346,95 @@ def test_base_exception_awaiting_producer():
     ctx.set_code.assert_called_once_with(grpc.StatusCode.INTERNAL)
 
 
+async def _blocking_handler(keys, datums, output, md):
+    """Handler that blocks forever reading datums (never finishes on its own)."""
+    async for _ in datums:
+        pass
+    await output.put(Message(b"done", keys=keys))
+
+
+def test_cancel_and_await_remaining_tasks_on_post_processing_error():
+    """
+    When a BaseException occurs during post-processing (after the input stream
+    is exhausted), the TaskManager should cancel and await all remaining task
+    futures to suppress 'never retrieved' warnings.
+    """
+    from unittest.mock import patch
+
+    tm = TaskManager(_blocking_handler)
+
+    request, _ = start_request(multiple_window=False)
+    # Use OPEN so create_task is called
+    request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+
+    async def _run():
+        async def requests():
+            yield request
+
+        # Patch stream_send_eof to raise after the task is created but before
+        # it completes, so the task futures are still running when the except
+        # block executes.
+        with patch.object(tm, "stream_send_eof", side_effect=RuntimeError("send_eof boom")):
+            await tm.process_input_stream(requests())
+
+        # After process_input_stream returns, verify the error was placed in
+        # the global result queue.
+        reader = tm.global_result_queue.read_iterator()
+        first_item = await reader.__anext__()
+        assert isinstance(first_item, RuntimeError)
+        assert "send_eof boom" in str(first_item)
+
+        # Verify all task futures completed (cancelled or finished).
+        for task in tm.get_tasks():
+            assert task.future.done(), "task.future should be done after cleanup"
+            assert task.consumer_future.done(), "task.consumer_future should be done after cleanup"
+
+    asyncio.run(_run())
+
+
+def test_cancel_and_await_with_already_done_futures():
+    """
+    When post-processing fails but some futures are already done,
+    the cleanup code should handle them gracefully (skip cancellation).
+    """
+    from unittest.mock import patch
+
+    async def _fast_handler(keys, datums, output, md):
+        """Handler that finishes immediately without reading datums."""
+        await output.put(Message(b"fast", keys=keys))
+
+    tm = TaskManager(_fast_handler)
+    request, _ = start_request(multiple_window=False)
+    request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+
+    async def _run():
+        async def requests():
+            yield request
+
+        # Let the real stream_send_eof run (which sends EOF to the handler),
+        # then patch get_unique_windows to raise after all tasks complete.
+        original_send_eof = tm.stream_send_eof
+
+        async def send_eof_then_wait_and_raise():
+            await original_send_eof()
+            # Wait for the task futures to finish
+            for task in tm.get_tasks():
+                await task.future
+                await task.result_queue.put("__STREAM_EOF__")
+                await task.consumer_future
+            raise RuntimeError("late post-processing error")
+
+        with patch.object(tm, "stream_send_eof", side_effect=send_eof_then_wait_and_raise):
+            await tm.process_input_stream(requests())
+
+        # Verify cleanup completed without issues
+        for task in tm.get_tasks():
+            assert task.future.done()
+            assert task.consumer_future.done()
+
+    asyncio.run(_run())
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()

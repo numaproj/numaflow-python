@@ -295,6 +295,70 @@ class TestAsyncReduceStreamer(unittest.TestCase):
         self.assertEqual(server.max_threads, 4)
 
 
+    def test_start_shutdown_handler_without_callback(self):
+        """Test that _shutdown_handler logs and works when no shutdown_callback is set."""
+        from unittest.mock import patch, MagicMock
+
+        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
+        self.assertIsNone(server.shutdown_callback)
+
+        def close_coro(coro, **kwargs):
+            coro.close()
+
+        with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun:
+            mock_aiorun.run.side_effect = close_coro
+            server.start()
+
+            # Extract the shutdown_callback passed to aiorun.run
+            call_kwargs = mock_aiorun.run.call_args[1]
+            shutdown_handler = call_kwargs["shutdown_callback"]
+
+            # Invoke the handler — should not raise even without a callback
+            mock_loop = MagicMock()
+            shutdown_handler(mock_loop)
+
+    def test_start_shutdown_handler_with_callback(self):
+        """Test that _shutdown_handler invokes the user-provided shutdown_callback."""
+        from unittest.mock import patch, MagicMock
+
+        user_callback = MagicMock()
+        server = ReduceStreamAsyncServer(
+            reduce_stream_instance=ExampleClass, shutdown_callback=user_callback
+        )
+
+        def close_coro(coro, **kwargs):
+            coro.close()
+
+        with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun:
+            mock_aiorun.run.side_effect = close_coro
+            server.start()
+
+            shutdown_handler = mock_aiorun.run.call_args[1]["shutdown_callback"]
+            mock_loop = MagicMock()
+            shutdown_handler(mock_loop)
+
+            user_callback.assert_called_once_with(mock_loop)
+
+    def test_start_exits_on_error(self):
+        """Test that start() calls sys.exit(1) when servicer reports an error."""
+        from unittest.mock import patch
+
+        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
+
+        def fake_aiorun_run(coro, **kwargs):
+            # Simulate aiorun completing after a UDF error was recorded
+            coro.close()  # prevent "coroutine never awaited" warning
+            server._error = RuntimeError("UDF failure")
+
+        with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun, patch(
+            "pynumaflow.reducestreamer.async_server.sys"
+        ) as mock_sys:
+            mock_aiorun.run.side_effect = fake_aiorun_run
+            server.start()
+
+            mock_sys.exit.assert_called_once_with(1)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()

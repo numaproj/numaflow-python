@@ -353,29 +353,53 @@ async def _blocking_handler(keys, datums, output, md):
     await output.put(Message(b"done", keys=keys))
 
 
+def _make_reduce_request(operation_event):
+    """Create a ReduceRequest DTO (not raw protobuf) matching what datum_generator produces."""
+    from pynumaflow.reducestreamer._dtypes import ReduceRequest as ReduceRequestDTO
+
+    event_time_timestamp, watermark_timestamp = get_time_args()
+    window = reduce_pb2.Window(
+        start=mock_interval_window_start(),
+        end=mock_interval_window_end(),
+        slot="slot-0",
+    )
+    payload = Datum(
+        keys=["test_key"],
+        value=mock_message(),
+        event_time=event_time_timestamp.ToDatetime(),
+        watermark=watermark_timestamp.ToDatetime(),
+    )
+    return ReduceRequestDTO(
+        operation=operation_event,
+        windows=[window],
+        payload=payload,
+    )
+
+
 def test_cancel_and_await_remaining_tasks_on_post_processing_error():
     """
     When a BaseException occurs during post-processing (after the input stream
     is exhausted), the TaskManager should cancel and await all remaining task
-    futures to suppress 'never retrieved' warnings.
+    futures that are still running.
     """
     from unittest.mock import patch
+    from pynumaflow.reducestreamer._dtypes import WindowOperation
 
     tm = TaskManager(_blocking_handler)
-
-    request, _ = start_request(multiple_window=False)
-    # Use OPEN so create_task is called
-    request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+    req = _make_reduce_request(int(WindowOperation.OPEN))
 
     async def _run():
         async def requests():
-            yield request
+            yield req
 
         # Patch stream_send_eof to raise after the task is created but before
         # it completes, so the task futures are still running when the except
         # block executes.
         with patch.object(tm, "stream_send_eof", side_effect=RuntimeError("send_eof boom")):
             await tm.process_input_stream(requests())
+
+        # Verify tasks were actually created
+        assert len(tm.get_tasks()) > 0, "tasks should have been created"
 
         # After process_input_stream returns, verify the error was placed in
         # the global result queue.
@@ -395,37 +419,40 @@ def test_cancel_and_await_remaining_tasks_on_post_processing_error():
 def test_cancel_and_await_with_already_done_futures():
     """
     When post-processing fails but some futures are already done,
-    the cleanup code should handle them gracefully (skip cancellation).
+    the cleanup code should skip cancellation for those (fut.done() is True).
     """
     from unittest.mock import patch
+    from pynumaflow.reducestreamer._dtypes import WindowOperation
+    from pynumaflow._constants import STREAM_EOF
 
     async def _fast_handler(keys, datums, output, md):
         """Handler that finishes immediately without reading datums."""
         await output.put(Message(b"fast", keys=keys))
 
     tm = TaskManager(_fast_handler)
-    request, _ = start_request(multiple_window=False)
-    request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+    req = _make_reduce_request(int(WindowOperation.OPEN))
 
     async def _run():
         async def requests():
-            yield request
+            yield req
 
-        # Let the real stream_send_eof run (which sends EOF to the handler),
-        # then patch get_unique_windows to raise after all tasks complete.
         original_send_eof = tm.stream_send_eof
 
         async def send_eof_then_wait_and_raise():
+            # Let the real stream_send_eof run (sends EOF to handler input)
             await original_send_eof()
-            # Wait for the task futures to finish
+            # Wait for all task futures to complete so they are .done()
             for task in tm.get_tasks():
                 await task.future
-                await task.result_queue.put("__STREAM_EOF__")
+                await task.result_queue.put(STREAM_EOF)
                 await task.consumer_future
             raise RuntimeError("late post-processing error")
 
         with patch.object(tm, "stream_send_eof", side_effect=send_eof_then_wait_and_raise):
             await tm.process_input_stream(requests())
+
+        # Verify tasks were actually created
+        assert len(tm.get_tasks()) > 0, "tasks should have been created"
 
         # Verify cleanup completed without issues
         for task in tm.get_tasks():

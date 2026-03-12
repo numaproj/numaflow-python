@@ -275,6 +275,18 @@ class TaskManager:
             _LOGGER.critical(err_msg, exc_info=True)
             await self.global_result_queue.put(e)
 
+            # Cancel and await remaining tasks to suppress "never retrieved" warnings
+            for task in self.get_tasks():
+                for fut in (task.future, task.consumer_future):
+                    if fut and not fut.done():
+                        fut.cancel()
+                for fut in (task.future, task.consumer_future):
+                    if fut:
+                        try:
+                            await fut
+                        except (asyncio.CancelledError, BaseException):
+                            pass
+
     async def write_to_global_queue(
         self, input_queue: NonBlockingIterator, output_queue: NonBlockingIterator, window
     ):
@@ -284,10 +296,19 @@ class TaskManager:
         to the global result queue
         """
         reader = input_queue.read_iterator()
-        async for msg in reader:
-            res = reduce_pb2.ReduceResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
-            out = reduce_pb2.ReduceResponse(result=res, window=window)
-            await output_queue.put(out)
+        try:
+            async for msg in reader:
+                res = reduce_pb2.ReduceResponse.Result(
+                    keys=msg.keys, value=msg.value, tags=msg.tags
+                )
+                out = reduce_pb2.ReduceResponse(result=res, window=window)
+                await output_queue.put(out)
+        except Exception as e:
+            # Using Exception (not BaseException) so that asyncio.CancelledError
+            # (a BaseException subclass in Python 3.9+) propagates normally
+            # when the task is cancelled during shutdown.
+            _LOGGER.critical("Error serializing reduce result: %s", e, exc_info=True)
+            await output_queue.put(e)
 
     def clean_background(self, task):
         """

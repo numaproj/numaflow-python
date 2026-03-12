@@ -101,7 +101,7 @@ class AsyncReduceStreamServicer(reduce_pb2_grpc.ReduceServicer):
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
                     err_msg = f"ReduceStreamError, {ERR_UDF_EXCEPTION_STRING}: {repr(msg)}"
-                    _LOGGER.critical(err_msg, exc_info=True)
+                    _LOGGER.critical(err_msg, exc_info=msg)
                     update_context_err(context, msg, err_msg)
                     self._error = msg
                     if self._shutdown_event is not None:

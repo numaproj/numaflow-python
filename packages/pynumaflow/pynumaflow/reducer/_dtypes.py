@@ -10,6 +10,7 @@ from warnings import warn
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
+from pynumaflow._validate import _validate_message_fields
 
 M = TypeVar("M", bound="Message")
 Ms = TypeVar("Ms", bound="Messages")
@@ -48,6 +49,7 @@ class Message:
         """
         Creates a Message object to send value to a vertex.
         """
+        _validate_message_fields(value, keys, tags)
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""

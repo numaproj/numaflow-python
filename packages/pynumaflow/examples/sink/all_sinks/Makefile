@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/sink/all_sinks/Dockerfile
 
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock
 
 .PHONY: image-push
 image-push: update

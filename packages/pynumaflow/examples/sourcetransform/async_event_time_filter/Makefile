@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/sourcetransform/async_event_time_filter/Dockerfile
 
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock
 
 .PHONY: image-push
 image-push: update
@@ -19,4 +19,4 @@ image: update
 	cd ../../../ && docker build \
 	-f ${DOCKER_FILE_PATH} \
 	-t ${IMAGE_REGISTRY} .
-	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}:${TAG}; fi
+	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}; fi

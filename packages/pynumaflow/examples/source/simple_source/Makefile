@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/source/simple_source/Dockerfile
 
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock
 
 .PHONY: image-push
 image-push: update

@@ -1,54 +1,33 @@
 ####################################################################################################
-# Stage 1: Base Builder - installs core dependencies using poetry
+# Stage 1: Builder - installs all dependencies using uv
 ####################################################################################################
-FROM python:3.10-slim-bullseye AS base-builder
+FROM ghcr.io/astral-sh/uv:python3.13-trixie AS builder
 
 ENV PYSETUP_PATH="/opt/pysetup"
 WORKDIR $PYSETUP_PATH
 
-# Copy only core dependency files first for better caching
-COPY pyproject.toml poetry.lock README.md ./
+COPY pyproject.toml uv.lock README.md ./
 COPY pynumaflow/ ./pynumaflow/
-RUN apt-get update && apt-get install --no-install-recommends -y \
-        curl wget build-essential git \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && pip install poetry \
-    && poetry install --no-root --no-interaction
 
-####################################################################################################
-# Stage 2: UDF Builder - adds UDF code and installs UDF-specific deps
-####################################################################################################
-FROM base-builder AS udf-builder
-
-ENV EXAMPLE_PATH="/opt/pysetup/examples/sink/all_sinks"
-ENV POETRY_VIRTUALENVS_IN_PROJECT=true
+ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/sink/all_sinks"
+COPY examples/sink/all_sinks/ $EXAMPLE_PATH/
 
 WORKDIR $EXAMPLE_PATH
-COPY examples/sink/all_sinks/ ./
-RUN poetry install --no-root --no-interaction
+RUN uv sync --no-dev --frozen
 
 ####################################################################################################
-# Stage 3: UDF Runtime - clean container with only needed stuff
+# Stage 2: Runtime - clean image with only installed packages
 ####################################################################################################
-FROM python:3.10-slim-bullseye AS udf
+FROM ghcr.io/astral-sh/uv:python3.13-trixie AS udf
 
 ENV PYSETUP_PATH="/opt/pysetup"
 ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/sink/all_sinks"
-ENV VENV_PATH="$EXAMPLE_PATH/.venv"
-ENV PATH="$VENV_PATH/bin:$PATH"
-
-RUN apt-get update && apt-get install --no-install-recommends -y wget \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && wget -O /dumb-init https://github.com/Yelp/dumb-init/releases/download/v1.2.5/dumb-init_1.2.5_x86_64 \
-    && chmod +x /dumb-init
-
-WORKDIR $PYSETUP_PATH
-COPY --from=udf-builder $VENV_PATH $VENV_PATH
-COPY --from=udf-builder $EXAMPLE_PATH $EXAMPLE_PATH
 
 WORKDIR $EXAMPLE_PATH
+COPY --from=builder $EXAMPLE_PATH/.venv $EXAMPLE_PATH/.venv
+COPY --from=builder $EXAMPLE_PATH/ $EXAMPLE_PATH/
 
-ENTRYPOINT ["/dumb-init", "--"]
-CMD ["python", "$EXAMPLE_PATH/example.py"]
+ENTRYPOINT []
+CMD ["uv", "run", "python", "example.py"]
 
 EXPOSE 5000

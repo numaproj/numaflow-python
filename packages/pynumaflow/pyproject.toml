@@ -1,14 +1,17 @@
-[tool.poetry]
+[project]
 name = "pynumaflow"
 version = "0.12.1"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
-authors = ["NumaFlow Developers"]
+authors = [
+    { name = "NumaFlow Developers" },
+]
+maintainers = [
+    { name = "Avik Basu", email = "avikbasu93@gmail.com" },
+    { name = "Vigith Maurice", email = "vigith@gmail.com" },
+]
 readme = "README.md"
 license = "Apache-2.0"
-maintainers = [
-    "Avik Basu <avikbasu93@gmail.com>",
-    "Vigith Maurice <vigith@gmail.com>",
-]
+requires-python = ">=3.10,<3.15"
 classifiers = [
     "Topic :: Software Development :: Libraries",
     "License :: OSI Approved :: Apache Software License",
@@ -17,49 +20,46 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: 3.14"
+    "Programming Language :: Python :: 3.14",
 ]
-repository = "https://github.com/numaproj/numaflow-python"
+dependencies = [
+    "grpcio>=1.48.1",
+    "grpcio-tools>=1.48.1",
+    "google-api-core>=2.11.0",
+    "grpcio-status>=1.48.1",
+    "protobuf>=6.31.1,<7.0",
+    "aiorun>=2025.1.1",
+    "uvloop>=0.21.0",
+    "psutil>=6.0.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10, <3.15"
-grpcio = "^1.48.1"
-grpcio-tools = "^1.48.1"
-google-api-core = "^2.11.0"
-grpcio-status = "^1.48.1"
-protobuf = ">=6.31.1,<7.0"
-aiorun = "^2025.1.1"
-uvloop = ">=0.21.0"
-psutil = "^6.0.0"
+[project.urls]
+Repository = "https://github.com/numaproj/numaflow-python"
 
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.2.1"
-pytest-cov = "^3.0"
-black = "^23.1"
-grpcio-testing = "^1.48.1"
-ruff = "^0.0.264"
-pre-commit = "^3.3.1"
-types-protobuf = "^6.32.1.20250918"
-mypy = "^1.18.2"
-grpc-stubs = "^1.53.0.6"
-types-psutil = "^7.0.0.20251001"
-
-[tool.poetry.group.docs]
-optional = true
-
-[tool.poetry.group.docs.dependencies]
-mkdocs = "^1.6"
-mkdocs-material = {version = "^9.5", extras = ["imaging"]}
-mkdocs-exclude = "^1.0"
-mkdocstrings = {version = "^0.27", extras = ["python"]}
-mike = "^2.1"
+[dependency-groups]
+dev = [
+    "pytest>=7.2.1",
+    "pytest-cov>=3.0",
+    "black>=23.1",
+    "grpcio-testing>=1.48.1",
+    "ruff>=0.0.264",
+    "pre-commit>=3.3.1",
+    "types-protobuf>=6.32.1.20250918",
+    "mypy>=1.18.2",
+    "grpc-stubs>=1.53.0.6",
+    "types-psutil>=7.0.0.20251001",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material[imaging]>=9.5",
+    "mkdocs-exclude>=1.0",
+    "mkdocstrings[python]>=0.27",
+    "mike>=2.1",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.black]
 line-length = 100
@@ -95,4 +95,3 @@ extend-exclude = [
     "*.pyi"
 ]
 select = ["E", "F", "UP"]
-

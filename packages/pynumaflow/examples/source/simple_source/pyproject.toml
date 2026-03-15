@@ -1,15 +1,15 @@
-[tool.poetry]
+[project]
 name = "simple-source"
 version = "0.2.4"
 description = ""
-authors = ["Numaflow developers"]
+requires-python = ">=3.13"
+dependencies = [
+    "pynumaflow",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.13"
-pynumaflow = { path = "../../../"}
-
-[tool.poetry.dev-dependencies]
+[tool.uv.sources]
+pynumaflow = { path = "../../../" }
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

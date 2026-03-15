@@ -18,7 +18,7 @@ pip install pynumaflow
 
 ### Build locally
 
-This project uses [Poetry](https://python-poetry.org/) for dependency management and packaging.
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and packaging.
 To build the package locally, run the following command from the root of the project.
 
 ```bash

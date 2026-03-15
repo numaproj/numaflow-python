@@ -5,14 +5,14 @@ DOCKER_FILE_PATH = examples/map/multiproc_map/Dockerfile
 
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock
 
 .PHONY: image-push
 image-push: update
 	cd ../../../ && docker buildx build \
 	-f ${DOCKER_FILE_PATH} \
 	-t ${IMAGE_REGISTRY} \
-	 --platform linux/amd64,linux/arm64 . --push
+	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
 image: update

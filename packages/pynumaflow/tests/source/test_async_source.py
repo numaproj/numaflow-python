@@ -142,7 +142,7 @@ class TestAsyncSourcer(unittest.TestCase):
                 )
 
                 print(r.result)
-                (user_metadata, sys_metadata) = _user_and_system_metadata_from_proto(
+                user_metadata, sys_metadata = _user_and_system_metadata_from_proto(
                     r.result.metadata
                 )
                 print(user_metadata)

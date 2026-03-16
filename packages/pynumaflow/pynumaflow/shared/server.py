@@ -1,6 +1,7 @@
 import contextlib
 import io
 import multiprocessing
+import multiprocessing.synchronize
 import os
 import socket
 import threading
@@ -88,7 +89,7 @@ def _run_server(
     udf_type: str,
     server_info_file: str | None = None,
     server_info: ServerInfo | None = None,
-    shutdown_event: threading.Event | multiprocessing.Event | None = None,
+    shutdown_event: threading.Event | None = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -149,7 +150,7 @@ def start_multiproc_server(
     server_info: ServerInfo | None = None,
     server_options=None,
     udf_type: str = UDFType.Map,
-    shutdown_event: multiprocessing.Event | None = None,
+    shutdown_event: multiprocessing.synchronize.Event | None = None,
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the

@@ -297,5 +297,3 @@ def get_exception_traceback_str(exc) -> str:
     file = io.StringIO()
     traceback.print_exception(exc, value=exc, tb=exc.__traceback__, file=file)
     return file.getvalue().rstrip()
-
-

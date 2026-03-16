@@ -13,7 +13,6 @@ import grpc
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
 
-from pynumaflow.mapper import Datum, Messages, Message
 from pynumaflow.mapper._servicer._sync_servicer import SyncMapServicer
 from pynumaflow.proto.mapper import map_pb2
 from tests.map.utils import map_handler, err_map_handler, get_test_datums

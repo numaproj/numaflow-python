@@ -242,9 +242,7 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             self._error = err
             if self._shutdown_event is not None:
                 self._shutdown_event.set()
-            return source_pb2.PendingResponse(
-                result=source_pb2.PendingResponse.Result(count=0)
-            )
+            return source_pb2.PendingResponse(result=source_pb2.PendingResponse.Result(count=0))
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
 

@@ -7,7 +7,7 @@ Thank you for your interest in contributing to pynumaflow! This guide will help 
 ### Prerequisites
 
 - Python 3.10 or higher
-- [Poetry](https://python-poetry.org/) for dependency management
+- [uv](https://docs.astral.sh/uv/) for dependency management
 - Git
 
 ### Clone and Install
@@ -68,13 +68,13 @@ make test
 ### Run Specific Tests
 
 ```bash
-poetry run pytest tests/test_mapper.py -v
+uv run pytest tests/test_mapper.py -v
 ```
 
 ### Test Coverage
 
 ```bash
-poetry run pytest tests/ --cov=pynumaflow --cov-report=html
+uv run pytest tests/ --cov=pynumaflow --cov-report=html
 ```
 
 ## Project Structure
@@ -156,8 +156,8 @@ make proto
 ### Local Preview
 
 ```bash
-# Install docs dependencies
-poetry install --with docs
+# Install all dependencies (including docs)
+make setup
 
 # Serve locally
 make docs-serve

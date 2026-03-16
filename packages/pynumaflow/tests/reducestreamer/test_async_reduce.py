@@ -349,9 +349,10 @@ class TestAsyncReduceStreamer(unittest.TestCase):
             coro.close()  # prevent "coroutine never awaited" warning
             server._error = RuntimeError("UDF failure")
 
-        with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun, patch(
-            "pynumaflow.reducestreamer.async_server.sys"
-        ) as mock_sys:
+        with (
+            patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun,
+            patch("pynumaflow.reducestreamer.async_server.sys") as mock_sys,
+        ):
             mock_aiorun.run.side_effect = fake_aiorun_run
             server.start()
 

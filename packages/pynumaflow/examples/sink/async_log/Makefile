@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/sink/async_log/Dockerfile
 
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock --check || uv lock
 
 .PHONY: image-push
 image-push: update

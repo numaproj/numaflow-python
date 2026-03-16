@@ -1,17 +1,20 @@
-[tool.poetry]
+[project]
 name = "map-forward-message"
 version = "0.2.4"
 description = ""
-authors = ["Numaflow developers"]
+requires-python = ">=3.13"
+dependencies = [
+    "pynumaflow",
+    "watchfiles>=0.20.0",
+    "watchdog>=0.8.2",
+]
 
-[tool.poetry.dependencies]
-python = "~3.10"
-pynumaflow = { path = "../../../../"}
-watchfiles = "~0.20.0"
-watchdog = "~0.8.2"
+[tool.uv.sources]
+pynumaflow = { path = "../../../../" }
 
-[tool.poetry.dev-dependencies]
+[tool.hatch.build.targets.wheel]
+packages = []
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -7,33 +7,29 @@ clean:
 	@find . -type f -name "*.py[co]" -exec rm -rf {} +
 
 format: clean
-	poetry run black --exclude=pynumaflow/proto/ pynumaflow/ tests/ examples/
+	uv run black --exclude=pynumaflow/proto/ pynumaflow/ tests/ examples/
 
 
 lint: format
-	poetry run ruff check --fix .
+	uv run ruff check --fix .
 
 
 test:
-	poetry run pytest tests/ -rA
-
-
-requirements:
-	poetry export -f requirements.txt --output requirements.txt --without-hashes
+	uv run pytest tests/ -rA
 
 
 setup:
-	poetry install --with dev --no-root
+	uv sync --all-groups
 
 proto:
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/common/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sinker=pynumaflow/proto/sinker -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sinker/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/mapper=pynumaflow/proto/mapper -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/mapper/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/reducer=pynumaflow/proto/reducer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/reducer/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcetransformer=pynumaflow/proto/sourcetransformer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcetransformer/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sideinput=pynumaflow/proto/sideinput -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sideinput/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcer=pynumaflow/proto/sourcer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcer/*.proto
-	poetry run python3 -m grpc_tools.protoc -Ipynumaflow/proto/accumulator=pynumaflow/proto/accumulator -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/accumulator/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/common/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sinker=pynumaflow/proto/sinker -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sinker/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/mapper=pynumaflow/proto/mapper -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/mapper/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/reducer=pynumaflow/proto/reducer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/reducer/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcetransformer=pynumaflow/proto/sourcetransformer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcetransformer/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sideinput=pynumaflow/proto/sideinput -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sideinput/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/sourcer=pynumaflow/proto/sourcer -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/sourcer/*.proto
+	uv run python3 -m grpc_tools.protoc -Ipynumaflow/proto/accumulator=pynumaflow/proto/accumulator -Ipynumaflow/proto/common=pynumaflow/proto/common --pyi_out=. --python_out=. --grpc_python_out=.  pynumaflow/proto/accumulator/*.proto
 
 
 # ============================================================================
@@ -45,31 +41,28 @@ proto:
 docs: docs-serve  ## Alias for docs-serve
 
 docs-serve:  ## Serve documentation locally with hot-reload (http://localhost:8000)
-	poetry run mkdocs serve
+	uv run mkdocs serve
 
 docs-build:  ## Build documentation locally
-	poetry run mkdocs build
+	uv run mkdocs build
 
 docs-deploy-dev:  ## Deploy dev docs to docs-site branch
-	poetry run mike deploy -b docs-site dev --push
+	uv run mike deploy -b docs-site dev --push
 
 docs-deploy-version:  ## Deploy versioned docs (usage: make docs-deploy-version VERSION=0.11)
 ifndef VERSION
 	$(error VERSION is required. Usage: make docs-deploy-version VERSION=0.11)
 endif
-	poetry run mike deploy -b docs-site $(VERSION) latest --update-aliases --push
+	uv run mike deploy -b docs-site $(VERSION) latest --update-aliases --push
 
 docs-list:  ## List all deployed documentation versions
-	poetry run mike list -b docs-site
+	uv run mike list -b docs-site
 
 docs-set-default:  ## Set the default documentation version to 'latest'
-	poetry run mike set-default -b docs-site latest --push
+	uv run mike set-default -b docs-site latest --push
 
 docs-delete:  ## Delete a documentation version (usage: make docs-delete VERSION=0.10)
 ifndef VERSION
 	$(error VERSION is required. Usage: make docs-delete VERSION=0.10)
 endif
-	poetry run mike delete -b docs-site $(VERSION) --push
-
-docs-setup:  ## Install documentation dependencies
-	poetry install --with docs --no-root
+	uv run mike delete -b docs-site $(VERSION) --push

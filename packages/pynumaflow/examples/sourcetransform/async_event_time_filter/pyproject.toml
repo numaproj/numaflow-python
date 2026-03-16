@@ -1,15 +1,18 @@
-[tool.poetry]
+[project]
 name = "async-mapt-event-time-filter"
 version = "0.2.4"
 description = ""
-authors = ["Numaflow developers"]
-readme = "README.md"
-packages = [{include = "mapt_event_time_filter"}]
+requires-python = ">=3.13"
+dependencies = [
+    "pynumaflow",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10, <3.12"
-pynumaflow = { path = "../../../"}
+[tool.uv.sources]
+pynumaflow = { path = "../../../" }
+
+[tool.hatch.build.targets.wheel]
+packages = []
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"

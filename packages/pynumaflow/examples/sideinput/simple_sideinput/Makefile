@@ -3,10 +3,9 @@ PUSH ?= false
 IMAGE_REGISTRY = quay.io/numaio/numaflow-python/sideinput-example:${TAG}
 DOCKER_FILE_PATH = examples/sideinput/simple_sideinput/Dockerfile
 
-
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock --check || uv lock
 
 .PHONY: image-push
 image-push: update

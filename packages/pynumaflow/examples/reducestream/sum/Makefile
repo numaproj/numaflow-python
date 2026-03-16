@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/reducestream/sum/Dockerfile
 
 .PHONY: update
 update:
-	poetry update -vv
+	uv lock --check || uv lock
 
 .PHONY: image-push
 image-push: update

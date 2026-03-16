@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/sideinput/simple_sideinput/udf/Dockerfile
 
 .PHONY: update
 update:
-	uv lock
+	uv lock --check || uv lock
 
 .PHONY: image-push
 image-push: update

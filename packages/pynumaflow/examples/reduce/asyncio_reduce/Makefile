@@ -4,7 +4,7 @@ IMAGE_REGISTRY = "quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}"
 
 .PHONY: update
 update:
-	uv lock
+	uv lock --check || uv lock
 
 .PHONY: image-push
 image-push: update

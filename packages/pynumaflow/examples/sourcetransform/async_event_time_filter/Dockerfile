@@ -13,7 +13,7 @@ ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/sourcetransform/async_event_time_filter
 COPY examples/sourcetransform/async_event_time_filter/ $EXAMPLE_PATH/
 
 WORKDIR $EXAMPLE_PATH
-RUN uv sync --no-dev --frozen
+RUN uv sync --no-dev --no-install-project --frozen
 
 ####################################################################################################
 # Stage 2: Runtime - clean image with only installed packages

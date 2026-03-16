@@ -5,7 +5,7 @@ DOCKER_FILE_PATH = examples/map/even_odd/Dockerfile
 
 .PHONY: update
 update:
-	uv lock
+	uv lock --check || uv lock
 
 .PHONY: image-push
 image-push: update

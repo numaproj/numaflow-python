@@ -13,7 +13,7 @@ ENV EXAMPLE_PATH="$PYSETUP_PATH/examples/batchmap/flatmap"
 COPY examples/batchmap/flatmap/ $EXAMPLE_PATH/
 
 WORKDIR $EXAMPLE_PATH
-RUN uv sync --no-dev --frozen
+RUN uv sync --no-dev --no-install-project --frozen
 
 ####################################################################################################
 # Stage 2: Runtime - clean image with only installed packages

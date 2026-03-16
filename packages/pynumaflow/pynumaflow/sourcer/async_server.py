@@ -1,6 +1,11 @@
+import asyncio
+import contextlib
+import sys
+
 import aiorun
 import grpc
 
+from pynumaflow.info.server import write as info_server_write
 from pynumaflow.info.types import ServerInfo, ContainerType, MINIMUM_NUMAFLOW_VERSION
 from pynumaflow.sourcer.servicer.async_servicer import AsyncSourceServicer
 
@@ -10,10 +15,12 @@ from pynumaflow._constants import (
     NUM_THREADS_DEFAULT,
     SOURCE_SERVER_INFO_FILE_PATH,
     MAX_NUM_THREADS,
+    _LOGGER,
+    NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS,
 )
 from pynumaflow.proto.sourcer import source_pb2_grpc
 
-from pynumaflow.shared.server import NumaflowServer, start_async_server
+from pynumaflow.shared.server import NumaflowServer
 from pynumaflow.sourcer._dtypes import SourceCallable
 
 
@@ -153,6 +160,7 @@ class SourceAsyncServer(NumaflowServer):
         ]
 
         self.servicer = AsyncSourceServicer(source_handler=sourcer_instance)
+        self._error: BaseException | None = None
 
     def start(self):
         """
@@ -160,6 +168,9 @@ class SourceAsyncServer(NumaflowServer):
         so that all the async coroutines can be started from a single context
         """
         aiorun.run(self.aexec(), use_uvloop=True, shutdown_callback=self.shutdown_callback)
+        if self._error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self._error)
+            sys.exit(1)
 
     async def aexec(self):
         """
@@ -168,20 +179,52 @@ class SourceAsyncServer(NumaflowServer):
         # As the server is async, we need to create a new server instance in the
         # same thread as the event loop so that all the async calls are made in the
         # same context
-        # Create a new async server instance and add the servicer to it
         server = grpc.aio.server(options=self._server_options)
         server.add_insecure_port(self.sock_path)
-        source_servicer = self.servicer
-        source_pb2_grpc.add_SourceServicer_to_server(source_servicer, server)
+
+        # The asyncio.Event must be created here (inside aexec) rather than in __init__,
+        # because it must be bound to the running event loop that aiorun creates.
+        # At __init__ time no event loop exists yet.
+        shutdown_event = asyncio.Event()
+        self.servicer.set_shutdown_event(shutdown_event)
+
+        source_pb2_grpc.add_SourceServicer_to_server(self.servicer, server)
 
         serv_info = ServerInfo.get_default_server_info()
         serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[ContainerType.Sourcer]
-        # Start the async server
-        await start_async_server(
-            server_async=server,
-            sock_path=self.sock_path,
-            max_threads=self.max_threads,
-            cleanup_coroutines=list(),
-            server_info_file=self.server_info_file,
-            server_info=serv_info,
+
+        await server.start()
+        info_server_write(server_info=serv_info, info_file=self.server_info_file)
+
+        _LOGGER.info(
+            "Async GRPC Server listening on: %s with max threads: %s",
+            self.sock_path,
+            self.max_threads,
         )
+
+        async def _watch_for_shutdown():
+            """Wait for the shutdown event and stop the server with a grace period."""
+            await shutdown_event.wait()
+            _LOGGER.info("Shutdown signal received, stopping server gracefully...")
+            # Stop accepting new requests and wait for a maximum of
+            # NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS seconds for in-flight requests to complete
+            await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
+
+        shutdown_task = asyncio.create_task(_watch_for_shutdown())
+        await server.wait_for_termination()
+
+        # Propagate error so start() can exit with a non-zero code
+        self._error = self.servicer._error
+
+        shutdown_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await shutdown_task
+
+        _LOGGER.info("Stopping event loop...")
+        # We use aiorun to manage the event loop. The aiorun.run() runs
+        # forever until loop.stop() is called. If we don't stop the
+        # event loop explicitly here, the python process will not exit.
+        # It reamins stuck for 5 minutes until liveness and readiness probe
+        # fails enough times and k8s sends a SIGTERM
+        asyncio.get_event_loop().stop()
+        _LOGGER.info("Event loop stopped")

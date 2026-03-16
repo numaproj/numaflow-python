@@ -5,7 +5,7 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.sourcer import ReadRequest, Offset, NackRequest, AckRequest, SourceCallable
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
@@ -71,6 +71,12 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         self.source_handler = source_handler
         self.__initialize_handlers()
         self.cleanup_coroutines = []
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     def __initialize_handlers(self):
         """Initialize handler methods from the provided source handler."""
@@ -110,7 +116,12 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
 
                 async for resp in riter:
                     if isinstance(resp, BaseException):
-                        await handle_async_error(context, resp, ERR_UDF_EXCEPTION_STRING)
+                        err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(resp)}"
+                        _LOGGER.critical(err_msg, exc_info=True)
+                        update_context_err(context, resp, err_msg)
+                        self._error = resp
+                        if self._shutdown_event is not None:
+                            self._shutdown_event.set()
                         return
 
                     yield _create_read_response(resp)
@@ -121,7 +132,12 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
                 yield _create_eot_response()
         except BaseException as err:
             _LOGGER.critical("User-Defined Source ReadFn error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
 
     async def __invoke_read(
         self, req: source_pb2.ReadRequest, niter: NonBlockingIterator[Message | Exception]
@@ -169,7 +185,12 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
                 yield _create_ack_response()
         except BaseException as err:
             _LOGGER.critical("User-Defined Source AckFn error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
 
     async def NackFn(
         self,
@@ -186,7 +207,12 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             await self.__source_nack_handler(NackRequest(offsets=offsets))
         except BaseException as err:
             _LOGGER.critical("User-Defined Source NackFn error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
         return source_pb2.NackResponse(
             result=source_pb2.NackResponse.Result(success=_empty_pb2.Empty())
         )
@@ -211,8 +237,14 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             count = await self.__source_pending_handler()
         except BaseException as err:
             _LOGGER.critical("PendingFn Error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
-            raise
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return source_pb2.PendingResponse(
+                result=source_pb2.PendingResponse.Result(count=0)
+            )
         resp = source_pb2.PendingResponse.Result(count=count.count)
         return source_pb2.PendingResponse(result=resp)
 
@@ -226,8 +258,14 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             partitions = await self.__source_partitions_handler()
         except BaseException as err:
             _LOGGER.critical("PartitionsFn Error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
-            raise
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return source_pb2.PartitionsResponse(
+                result=source_pb2.PartitionsResponse.Result(partitions=[])
+            )
         resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
         return source_pb2.PartitionsResponse(result=resp)
 

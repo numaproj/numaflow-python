@@ -2,10 +2,11 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Iterable
 
+import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.sourcetransformer import Datum
 from pynumaflow.sourcetransformer._dtypes import SourceTransformCallable
@@ -46,6 +47,10 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         self.multiproc = multiproc
         # create a thread pool for executing UDF code
         self.executor = ThreadPoolExecutor(max_workers=NUM_THREADS_DEFAULT)
+        # Graceful shutdown: when set, a watcher thread in _run_server() calls
+        # server.stop() instead of hard-killing the process via psutil.
+        self.shutdown_event: threading.Event = threading.Event()
+        self.error: BaseException | None = None
 
     def SourceTransformFn(
         self,
@@ -56,6 +61,8 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
         Applies a function to each datum element.
         The pascal case function name comes from the generated transform_pb2_grpc.py file.
         """
+        # Initialize before try so it's accessible in except blocks
+        result_queue = None
         try:
             # The first message to be received should be a valid handshake
             req = next(request_iterator)
@@ -78,10 +85,18 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             for res in result_queue.read_iterator():
                 # if error handler accordingly
                 if isinstance(res, BaseException):
-                    # Terminate the current server process due to exception
-                    exit_on_error(
-                        context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}", parent=self.multiproc
-                    )
+                    if isinstance(res, grpc.RpcError):
+                        # Client disconnected mid-stream — the reader thread
+                        # surfaced the error via the queue. Not a UDF fault.
+                        _LOGGER.warning("gRPC stream closed, shutting down the server.")
+                        result_queue.close()
+                        self.shutdown_event.set()
+                        return
+                    err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}"
+                    update_context_err(context, res, err_msg)
+                    result_queue.close()
+                    self.error = res
+                    self.shutdown_event.set()
                     return
                 # return the result
                 yield res
@@ -90,12 +105,21 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
             reader_thread.join()
             self.executor.shutdown(cancel_futures=True)
 
+        except grpc.RpcError:
+            _LOGGER.warning("gRPC stream closed, shutting down the server.")
+            if result_queue is not None:
+                result_queue.close()
+            self.shutdown_event.set()
+            return
+
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            # Terminate the current server process due to exception
-            exit_on_error(
-                context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}", parent=self.multiproc
-            )
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            if result_queue is not None:
+                result_queue.close()
+            self.error = err
+            self.shutdown_event.set()
             return
 
     def _process_requests(

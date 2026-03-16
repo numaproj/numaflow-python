@@ -8,7 +8,7 @@ from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapstreamer import Datum
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable, MapStreamError
 from pynumaflow.proto.mapper import map_pb2_grpc, map_pb2
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -22,6 +22,12 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
     def __init__(self, handler: MapStreamCallable):
         self.__map_stream_handler: MapStreamCallable = handler
         self._background_tasks: set[asyncio.Task] = set()
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     async def MapFn(
         self,
@@ -51,7 +57,12 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
             # Consume results as they arrive and stream them to the client
             async for msg in global_result_queue.read_iterator():
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
+                    err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(msg)}"
+                    _LOGGER.critical(err_msg, exc_info=True)
+                    update_context_err(context, msg, err_msg)
+                    self._error = msg
+                    if self._shutdown_event is not None:
+                        self._shutdown_event.set()
                     return
                 else:
                     # msg is a map_pb2.MapResponse, already formed
@@ -61,8 +72,12 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
             await producer
 
         except BaseException as e:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            update_context_err(context, e, err_msg)
+            self._error = e
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
 
     async def _process_inputs(
@@ -124,7 +139,7 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
         except BaseException as err:
             _LOGGER.critical("MapFn handler error", exc_info=True)
             # Surface handler error to the main producer;
-            # it will call handle_async_error and end the RPC
+            # it will set the shutdown event and end the RPC
             await result_queue.put(err)
 
     async def IsReady(

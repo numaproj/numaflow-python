@@ -8,7 +8,7 @@ from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow.proto.sourcetransformer import transform_pb2, transform_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.sourcetransformer import Datum
 from pynumaflow.sourcetransformer._dtypes import SourceTransformAsyncCallable
 from pynumaflow.types import NumaflowServicerContext
@@ -28,6 +28,12 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
     ):
         self.background_tasks = set()
         self.__transform_handler: SourceTransformAsyncCallable = handler
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     async def SourceTransformFn(
         self,
@@ -61,7 +67,12 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
             async for msg in consumer:
                 # If the message is an exception, we raise the exception
                 if isinstance(msg, BaseException):
-                    await handle_async_error(context, msg, ERR_UDF_EXCEPTION_STRING)
+                    err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(msg)}"
+                    _LOGGER.critical(err_msg, exc_info=True)
+                    update_context_err(context, msg, err_msg)
+                    self._error = msg
+                    if self._shutdown_event is not None:
+                        self._shutdown_event.set()
                     return
                 # Send window response back to the client
                 else:
@@ -69,8 +80,12 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
             # wait for the producer task to complete
             await producer
         except BaseException as e:
-            _LOGGER.critical("SourceTransformFnError, re-raising the error", exc_info=True)
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            update_context_err(context, e, err_msg)
+            self._error = e
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
 
     async def _process_inputs(

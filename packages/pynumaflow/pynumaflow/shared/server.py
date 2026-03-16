@@ -1,4 +1,3 @@
-import asyncio
 import contextlib
 import io
 import multiprocessing
@@ -14,7 +13,6 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 import grpc
-import psutil
 
 from pynumaflow._constants import (
     _LOGGER,
@@ -90,7 +88,7 @@ def _run_server(
     udf_type: str,
     server_info_file: str | None = None,
     server_info: ServerInfo | None = None,
-    shutdown_event: threading.Event | None = None,
+    shutdown_event: threading.Event | multiprocessing.Event | None = None,
 ) -> None:
     """
     Starts the Synchronous server instance on the given UNIX socket
@@ -151,6 +149,7 @@ def start_multiproc_server(
     server_info: ServerInfo | None = None,
     server_options=None,
     udf_type: str = UDFType.Map,
+    shutdown_event: multiprocessing.Event | None = None,
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
@@ -179,6 +178,7 @@ def start_multiproc_server(
         worker = multiprocessing.Process(
             target=_run_server,
             args=(servicer, bind_address, max_threads, server_options, udf_type),
+            kwargs={"shutdown_event": shutdown_event} if shutdown_event else {},
         )
         worker.start()
         workers.append(worker)
@@ -278,37 +278,6 @@ def get_grpc_status(err: str, detail: str | None = None):
     return rpc_status.to_status(status)
 
 
-def exit_on_error(
-    context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
-):
-    """
-    Exit the current/parent process on an error.
-
-    Args:
-        context (NumaflowServicerContext): The gRPC context.
-        err (str): The error message.
-        parent (bool, optional): Whether this is the parent process.
-            Defaults to False.
-        update_context(bool, optional) : Is there a need to update
-            the context with the error codes
-    """
-    if update_context:
-        # Create a status object with the error details
-        grpc_status = get_grpc_status(err)
-
-        context.set_code(grpc.StatusCode.INTERNAL)
-        context.set_details(err)
-        context.set_trailing_metadata(grpc_status.trailing_metadata)
-
-    p = psutil.Process(os.getpid())
-    # If the parent flag is true, we exit from the parent process
-    # Use this for Multiproc right now to exit from the parent fork
-    if parent:
-        p = psutil.Process(os.getppid())
-    _LOGGER.info("Killing process: Got exception %s", err)
-    p.kill()
-
-
 def update_context_err(context: NumaflowServicerContext, e: BaseException, err_msg: str):
     """
     Update the context with the error and log the exception.
@@ -330,15 +299,3 @@ def get_exception_traceback_str(exc) -> str:
     return file.getvalue().rstrip()
 
 
-async def handle_async_error(
-    context: NumaflowServicerContext, exception: BaseException, exception_type: str
-):
-    """
-    Handle exceptions for async servers by updating the context and exiting.
-    """
-    err_msg = f"{exception_type}: {repr(exception)}"
-    update_context_err(context, exception, err_msg)
-    await asyncio.gather(
-        context.abort(grpc.StatusCode.INTERNAL, details=err_msg), return_exceptions=True
-    )
-    exit_on_error(err=err_msg, parent=False, context=context, update_context=False)

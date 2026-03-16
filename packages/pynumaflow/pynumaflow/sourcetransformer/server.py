@@ -1,3 +1,5 @@
+import sys
+
 from pynumaflow.info.types import ContainerType, MINIMUM_NUMAFLOW_VERSION, ServerInfo
 from pynumaflow._constants import (
     MAX_MESSAGE_SIZE,
@@ -128,4 +130,8 @@ class SourceTransformServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.SourceTransformer,
             server_info=serv_info,
+            shutdown_event=self.servicer.shutdown_event,
         )
+        if self.servicer.error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self.servicer.error)
+            sys.exit(1)

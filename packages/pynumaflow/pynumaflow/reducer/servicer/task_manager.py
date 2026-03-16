@@ -2,8 +2,6 @@ import asyncio
 from datetime import datetime, timezone
 from collections.abc import AsyncIterable
 
-import grpc
-
 from pynumaflow.exceptions import UDFError
 from pynumaflow.proto.reducer import reduce_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
@@ -21,7 +19,7 @@ from pynumaflow.reducer._dtypes import (
     ReduceAsyncCallable,
     ReduceWindow,
 )
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -169,14 +167,9 @@ class TaskManager:
             msgs = await new_instance(keys, request_iterator, md)
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            # Send a context abort signal for the rpc, this is required for numa container to get
-            # the correct grpc error
-            await asyncio.gather(
-                self.context.abort(grpc.StatusCode.UNKNOWN, details=repr(err)),
-                return_exceptions=True,
-            )
-            exit_on_error(err=repr(err), parent=False, context=self.context, update_context=False)
-            return
+            err_msg = f"ReduceError: {repr(err)}"
+            update_context_err(self.context, err, err_msg)
+            raise
 
         datum_responses = []
         for msg in msgs:

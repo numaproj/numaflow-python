@@ -7,7 +7,7 @@ from pynumaflow.batchmapper import Datum
 from pynumaflow.batchmapper._dtypes import BatchMapCallable, BatchMapError
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 
@@ -26,6 +26,12 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
     ):
         self.background_tasks = set()
         self.__batch_map_handler: BatchMapCallable = handler
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     async def MapFn(
         self,
@@ -97,8 +103,12 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
                 await req_queue.put(datum)
 
         except BaseException as err:
-            _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            await handle_async_error(context, err, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            update_context_err(context, err, err_msg)
+            self._error = err
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
             return
 
     async def IsReady(

@@ -27,7 +27,12 @@ WORKDIR $EXAMPLE_PATH
 COPY --from=builder $EXAMPLE_PATH/.venv $EXAMPLE_PATH/.venv
 COPY --from=builder $EXAMPLE_PATH/ $EXAMPLE_PATH/
 
-ENTRYPOINT []
-CMD ["uv", "run", "python", "example.py"]
+# NOTE: We cannot use "uv run python example.py" here because uv run reads the
+# example's pyproject.toml, finds the pynumaflow path source (path = "../../../"),
+# and tries to resolve it. In the runtime stage, the parent pynumaflow source tree
+# is not present (by design, to keep the image small), so uv run fails.
+# Instead, we activate the pre-built .venv via PATH and run python directly.
+ENV PATH="$EXAMPLE_PATH/.venv/bin:$PATH"
+CMD ["python", "example.py"]
 
 EXPOSE 5000

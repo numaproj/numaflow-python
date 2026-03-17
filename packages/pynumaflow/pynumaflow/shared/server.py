@@ -3,6 +3,7 @@ import io
 import multiprocessing
 import multiprocessing.synchronize
 import os
+import signal
 import socket
 import threading
 import traceback
@@ -190,6 +191,17 @@ def start_multiproc_server(
     # Add the MULTIPROC metadata using the number of servers to use
     server_info.metadata[MULTIPROC_KEY] = str(process_count)
     info_server_write(server_info=server_info, info_file=server_info_file)
+
+    # Register a SIGTERM handler so that kubectl delete triggers graceful
+    # shutdown of all child workers via the shared multiprocessing.Event,
+    # instead of the default abrupt kill.
+    if shutdown_event is not None:
+
+        def _sigterm_handler(signum, frame):
+            _LOGGER.info("SIGTERM received, signalling workers to shut down...")
+            shutdown_event.set()
+
+        signal.signal(signal.SIGTERM, _sigterm_handler)
 
     for worker in workers:
         worker.join()

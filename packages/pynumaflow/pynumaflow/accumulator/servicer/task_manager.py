@@ -213,6 +213,9 @@ class TaskManager:
             _ = await new_instance(request_iterator, output)
             # send EOF to the output stream
             await output.put(STREAM_EOF)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            return
         # If there is an error in the accumulator operation, log and
         # then send the error to the result queue
         except BaseException as err:
@@ -243,6 +246,9 @@ class TaskManager:
                     case _:
                         _LOGGER.debug(f"No operation matched for request: {request}", exc_info=True)
 
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            return
         # If there is an error in the accumulator operation, log and
         # then send the error to the result queue
         except BaseException as e:
@@ -274,6 +280,9 @@ class TaskManager:
 
             # Now send STREAM_EOF to terminate the global result queue iterator
             await self.global_result_queue.put(STREAM_EOF)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            return
         except BaseException as e:
             err_msg = f"Accumulator Streaming Error: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)

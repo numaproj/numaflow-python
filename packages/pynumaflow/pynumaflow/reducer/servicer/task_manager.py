@@ -165,6 +165,9 @@ class TaskManager:
             new_instance = self.__reduce_handler.create()
         try:
             msgs = await new_instance(keys, request_iterator, md)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            raise
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
             err_msg = f"ReduceError: {repr(err)}"

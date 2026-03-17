@@ -106,7 +106,7 @@ class MapMultiprocServer(NumaflowServer):
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
-        self.servicer = SyncMapServicer(handler=mapper_instance, multiproc=True)
+        self.servicer = SyncMapServicer(handler=mapper_instance)
 
         # Shared event across all worker processes for coordinated shutdown.
         # When any worker's servicer sets this event, all workers' watcher

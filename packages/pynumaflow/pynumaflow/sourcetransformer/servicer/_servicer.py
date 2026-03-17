@@ -41,10 +41,8 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(self, handler: SourceTransformCallable, multiproc: bool = False):
+    def __init__(self, handler: SourceTransformCallable):
         self.__transform_handler: SourceTransformCallable = handler
-        # This indicates whether the grpc server attached is multiproc or not
-        self.multiproc = multiproc
         # create a thread pool for executing UDF code
         self.executor = ThreadPoolExecutor(max_workers=NUM_THREADS_DEFAULT)
         # Graceful shutdown: when set, a watcher thread in _run_server() calls

@@ -173,7 +173,14 @@ class SourceTransformAsyncServer(NumaflowServer):
             await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
 
         shutdown_task = asyncio.create_task(_watch_for_shutdown())
-        await server.wait_for_termination()
+        try:
+            await server.wait_for_termination()
+        except asyncio.CancelledError:
+            # SIGTERM received — aiorun cancels all tasks. We must stop
+            # the gRPC server explicitly so its __del__ doesn't try to
+            # schedule a coroutine on the already-closed event loop.
+            _LOGGER.info("Received cancellation, stopping server gracefully...")
+            await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
 
         # Propagate error so start() can exit with a non-zero code
         self._error = self.servicer._error

@@ -187,7 +187,9 @@ def start_multiproc_server(
 
     if server_info is None:
         server_info = ServerInfo.get_default_server_info()
-    server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
+    # Merge env metadata into existing metadata (preserving caller-set keys
+    # like MAP_MODE_KEY) rather than overwriting the entire dict.
+    server_info.metadata.update(get_metadata_env(envs=METADATA_ENVS))
     # Add the MULTIPROC metadata using the number of servers to use
     server_info.metadata[MULTIPROC_KEY] = str(process_count)
     info_server_write(server_info=server_info, info_file=server_info_file)

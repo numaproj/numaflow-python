@@ -12,7 +12,6 @@ from unittest import mock
 
 from pynumaflow.sinker.servicer.async_servicer import AsyncSinkServicer
 from pynumaflow.sinker import Datum, Responses, Response
-from pynumaflow.proto.sinker import sink_pb2
 from tests.sink.test_async_sink import request_generator
 
 
@@ -48,7 +47,7 @@ def test_shutdown_on_cancelled_error():
             yield  # make it an async generator
 
         ctx = mock.MagicMock()
-        responses = await _collect(servicer.SinkFn(_cancelled_iter(), ctx))
+        await _collect(servicer.SinkFn(_cancelled_iter(), ctx))
 
         assert shutdown_event.is_set()
         assert servicer._error is None
@@ -66,7 +65,9 @@ def test_shutdown_on_handler_error():
         servicer.set_shutdown_event(shutdown_event)
 
         # Build an async request iterator with handshake + data + EOT
-        sync_datums = list(request_generator(count=2, req_type="success", session=1, handshake=True))
+        sync_datums = list(
+            request_generator(count=2, req_type="success", session=1, handshake=True)
+        )
 
         async def _request_iter():
             for d in sync_datums:

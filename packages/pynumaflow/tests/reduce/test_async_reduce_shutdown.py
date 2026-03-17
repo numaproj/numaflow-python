@@ -22,12 +22,11 @@ from pynumaflow.reducer._dtypes import (
     Metadata,
     Reducer,
 )
-from pynumaflow.proto.reducer import reduce_pb2
-
 
 # ---------------------------------------------------------------------------
 # Minimal handler — never raises on its own.
 # ---------------------------------------------------------------------------
+
 
 class _StubReducer(Reducer):
     async def handler(
@@ -41,6 +40,7 @@ class _StubReducer(Reducer):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 async def _collect(async_gen):
     """Drain an async generator and return the collected items."""
@@ -56,6 +56,7 @@ async def _collect(async_gen):
 # We feed the servicer a request iterator that raises CancelledError.
 # This exercises the first except block in ReduceFn.
 # ---------------------------------------------------------------------------
+
 
 def test_shutdown_on_cancelled_error():
     """CancelledError during request iteration should set shutdown_event
@@ -87,6 +88,7 @@ def test_shutdown_on_cancelled_error():
 # We feed a request iterator that raises RuntimeError.
 # This exercises the BaseException except block in the first try.
 # ---------------------------------------------------------------------------
+
 
 def test_shutdown_on_handler_error():
     """A real exception during request iteration should set shutdown_event

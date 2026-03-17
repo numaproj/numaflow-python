@@ -11,7 +11,6 @@ from unittest import mock
 
 from pynumaflow.batchmapper.servicer.async_servicer import AsyncBatchMapServicer
 from pynumaflow.batchmapper import BatchResponses
-from pynumaflow.proto.mapper import map_pb2
 from tests.batchmap.utils import request_generator
 
 
@@ -46,7 +45,7 @@ def test_shutdown_on_cancelled_error():
             yield  # make it an async generator
 
         ctx = mock.MagicMock()
-        responses = await _collect(servicer.MapFn(_cancelled_iter(), ctx))
+        await _collect(servicer.MapFn(_cancelled_iter(), ctx))
 
         assert shutdown_event.is_set()
         assert servicer._error is None

@@ -22,11 +22,11 @@ from pynumaflow.sourcer._dtypes import (
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.proto.sourcer import source_pb2
 
-
 # ---------------------------------------------------------------------------
 # Minimal handler that never raises on its own — individual tests will
 # override specific methods or inject CancelledError via the request stream.
 # ---------------------------------------------------------------------------
+
 
 class _StubSource(Sourcer):
     async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
@@ -49,6 +49,7 @@ class _StubSource(Sourcer):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def _collect(async_gen):
     """Drain an async generator and return the collected items."""
     results = []
@@ -61,6 +62,7 @@ async def _collect(async_gen):
 # ReadFn — streaming RPC.  CancelledError raised from the request iterator
 # after the handshake has been sent.
 # ---------------------------------------------------------------------------
+
 
 def test_shutdown_on_read_cancelled_error():
     """CancelledError during ReadFn request iteration should set
@@ -90,6 +92,7 @@ def test_shutdown_on_read_cancelled_error():
 # AckFn — streaming RPC.  Same pattern as ReadFn.
 # ---------------------------------------------------------------------------
 
+
 def test_shutdown_on_ack_cancelled_error():
     """CancelledError during AckFn request iteration should set
     shutdown_event but NOT store an error."""
@@ -116,6 +119,7 @@ def test_shutdown_on_ack_cancelled_error():
 # NackFn — unary RPC.  We make the handler raise CancelledError.
 # ---------------------------------------------------------------------------
 
+
 def test_shutdown_on_nack_cancelled_error():
     """CancelledError during NackFn handler should set
     shutdown_event but NOT store an error."""
@@ -134,9 +138,7 @@ def test_shutdown_on_nack_cancelled_error():
 
         # Build a valid NackRequest proto with at least one offset.
         offset = source_pb2.Offset(offset=b"test", partition_id=0)
-        request = source_pb2.NackRequest(
-            request=source_pb2.NackRequest.Request(offsets=[offset])
-        )
+        request = source_pb2.NackRequest(request=source_pb2.NackRequest.Request(offsets=[offset]))
         ctx = mock.MagicMock()
         # NackFn is a coroutine (not an async generator), so we await it.
         await servicer.NackFn(request, ctx)
@@ -150,6 +152,7 @@ def test_shutdown_on_nack_cancelled_error():
 # ---------------------------------------------------------------------------
 # PendingFn — unary RPC.  Handler raises CancelledError.
 # ---------------------------------------------------------------------------
+
 
 def test_shutdown_on_pending_cancelled_error():
     """CancelledError during PendingFn handler should set
@@ -179,6 +182,7 @@ def test_shutdown_on_pending_cancelled_error():
 # ---------------------------------------------------------------------------
 # PartitionsFn — unary RPC.  Handler raises CancelledError.
 # ---------------------------------------------------------------------------
+
 
 def test_shutdown_on_partitions_cancelled_error():
     """CancelledError during PartitionsFn handler should set

@@ -13,7 +13,6 @@ from unittest import mock
 from pynumaflow.mapstreamer.servicer.async_servicer import AsyncMapStreamServicer
 from pynumaflow.mapstreamer._dtypes import Message
 from pynumaflow.mapstreamer import Datum
-from pynumaflow.proto.mapper import map_pb2
 from tests.mapstream.utils import request_generator
 
 
@@ -47,7 +46,7 @@ def test_shutdown_on_cancelled_error():
             yield  # make it an async generator
 
         ctx = mock.MagicMock()
-        responses = await _collect(servicer.MapFn(_cancelled_iter(), ctx))
+        await _collect(servicer.MapFn(_cancelled_iter(), ctx))
 
         assert shutdown_event.is_set()
         assert servicer._error is None

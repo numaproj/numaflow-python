@@ -13,7 +13,6 @@ import asyncio
 from unittest import mock
 
 from pynumaflow.accumulator.servicer.async_servicer import AsyncAccumulatorServicer
-from pynumaflow.shared.asynciter import NonBlockingIterator
 
 
 async def noop_handler(datums, output):
@@ -180,9 +179,7 @@ def test_shutdown_event_on_result_queue_exception_message():
         async def _exception_in_queue():
             yield RuntimeError("handler error from task manager")
 
-        mock_task_manager.global_result_queue.read_iterator.return_value = (
-            _exception_in_queue()
-        )
+        mock_task_manager.global_result_queue.read_iterator.return_value = _exception_in_queue()
         mock_task_manager.process_input_stream = mock.AsyncMock()
 
         with mock.patch(

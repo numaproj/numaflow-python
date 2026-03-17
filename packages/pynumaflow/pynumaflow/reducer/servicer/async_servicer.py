@@ -108,6 +108,13 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                         # append the task data to the existing task
                         # if the task does not exist, it will create a new task
                         await task_manager.append_task(request)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
@@ -143,6 +150,13 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             for window in current_window.values():
                 # yield the EOF response once the task is completed for a keyed window
                 yield reduce_pb2.ReduceResponse(window=window, EOF=True)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"

@@ -87,6 +87,13 @@ class AsyncSinkServicer(sink_pb2_grpc.SinkServicer):
                 # if we have a valid message, we will add it to the request queue for processing.
                 datum = datum_from_sink_req(d)
                 await req_queue.put(datum)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as err:
             err_msg = f"UDSinkError, {ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
             _LOGGER.critical(err_msg, exc_info=True)

@@ -71,6 +71,13 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
             # Ensure producer has finished (covers graceful shutdown)
             await producer
 
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as e:
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
             _LOGGER.critical(err_msg, exc_info=True)

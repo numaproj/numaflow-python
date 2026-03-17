@@ -130,6 +130,13 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
                 await task
                 # send an eot to signal all messages have been processed.
                 yield _create_eot_response()
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as err:
             _LOGGER.critical("User-Defined Source ReadFn error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
@@ -183,6 +190,13 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
                 ]
                 await self.__source_ack_handler(AckRequest(offsets=offsets))
                 yield _create_ack_response()
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as err:
             _LOGGER.critical("User-Defined Source AckFn error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
@@ -205,6 +219,13 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
                 Offset(offset.offset, offset.partition_id) for offset in request.request.offsets
             ]
             await self.__source_nack_handler(NackRequest(offsets=offsets))
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as err:
             _LOGGER.critical("User-Defined Source NackFn error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
@@ -235,6 +256,13 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         """
         try:
             count = await self.__source_pending_handler()
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return source_pb2.PendingResponse(result=source_pb2.PendingResponse.Result(count=0))
+
         except BaseException as err:
             _LOGGER.critical("PendingFn Error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
@@ -254,6 +282,15 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         """
         try:
             partitions = await self.__source_partitions_handler()
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return source_pb2.PartitionsResponse(
+                result=source_pb2.PartitionsResponse.Result(partitions=[])
+            )
+
         except BaseException as err:
             _LOGGER.critical("PartitionsFn Error", exc_info=True)
             err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"

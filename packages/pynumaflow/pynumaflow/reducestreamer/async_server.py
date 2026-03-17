@@ -237,5 +237,5 @@ class ReduceStreamAsyncServer(NumaflowServer):
             await shutdown_task
 
         _LOGGER.info("Stopping event loop...")
-        asyncio.get_event_loop().stop()
+        asyncio.get_running_loop().stop()
         _LOGGER.info("Event loop stopped")

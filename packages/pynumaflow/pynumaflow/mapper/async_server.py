@@ -172,5 +172,5 @@ class MapAsyncServer(NumaflowServer):
         # event loop explicitly here, the python process will not exit.
         # It reamins stuck for 5 minutes until liveness and readiness probe
         # fails enough times and k8s sends a SIGTERM
-        asyncio.get_event_loop().stop()
+        asyncio.get_running_loop().stop()
         _LOGGER.info("Event loop stopped")

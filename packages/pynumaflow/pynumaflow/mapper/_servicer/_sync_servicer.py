@@ -118,6 +118,11 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             self.executor.shutdown(wait=True)
             # Indicate to the result queue that no more messages left to process
             result_queue.put(STREAM_EOF)
+        except grpc.RpcError as e:
+            # Client disconnected — expected during pod shutdown.
+            # Surface to the consumer which will trigger graceful shutdown.
+            _LOGGER.warning("gRPC stream closed in reader thread")
+            result_queue.put(e)
         except BaseException as e:
             _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
             # Surface the error to the consumer; MapFn will handle and exit

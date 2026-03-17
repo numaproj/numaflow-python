@@ -206,6 +206,10 @@ def start_multiproc_server(
     for worker in workers:
         worker.join()
 
+    # Return True if any worker exited with a non-zero code (i.e. a real error,
+    # not a clean SIGTERM shutdown).
+    return any(w.exitcode != 0 for w in workers)
+
 
 async def start_async_server(
     server_async: grpc.aio.Server,

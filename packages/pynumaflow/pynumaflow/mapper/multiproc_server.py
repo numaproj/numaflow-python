@@ -130,7 +130,7 @@ class MapMultiprocServer(NumaflowServer):
         server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 
         # Start the multiproc server
-        start_multiproc_server(
+        has_error = start_multiproc_server(
             max_threads=self.max_threads,
             servicer=self.servicer,
             process_count=self._process_count,
@@ -141,6 +141,6 @@ class MapMultiprocServer(NumaflowServer):
             shutdown_event=self._shutdown_event,
         )
 
-        if self._shutdown_event.is_set():
+        if has_error:
             _LOGGER.critical("Server exiting due to worker error")
             sys.exit(1)

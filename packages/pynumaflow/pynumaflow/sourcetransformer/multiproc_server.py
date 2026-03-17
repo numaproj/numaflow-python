@@ -149,7 +149,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[
             ContainerType.Sourcetransformer
         ]
-        start_multiproc_server(
+        has_error = start_multiproc_server(
             max_threads=self.max_threads,
             servicer=self.servicer,
             process_count=self._process_count,
@@ -160,6 +160,6 @@ class SourceTransformMultiProcServer(NumaflowServer):
             shutdown_event=self._shutdown_event,
         )
 
-        if self._shutdown_event.is_set():
+        if has_error:
             _LOGGER.critical("Server exiting due to worker error")
             sys.exit(1)

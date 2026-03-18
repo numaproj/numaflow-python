@@ -11,7 +11,9 @@ logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_handler(datums: collections.abc.AsyncIterator[sinker.Datum]) -> sinker.Responses:
+async def async_handler(
+    datums: collections.abc.AsyncIterator[sinker.Datum],
+) -> sinker.Responses:
     """
     Simple log sink that logs each message and returns success responses.
     Also demonstrates reading metadata (read-only for sink).
@@ -40,7 +42,11 @@ async def async_handler(datums: collections.abc.AsyncIterator[sinker.Datum]) -> 
     return responses
 
 
-async def start(f: Callable[[collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]]):
+async def start(
+    f: Callable[
+        [collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]
+    ],
+):
     sock_file = "/tmp/var/run/numaflow/sink.sock"
     server_info_file = "/tmp/var/run/numaflow/sinker-server-info"
     server = sinker.SinkAsyncServer(sock_file, server_info_file)
@@ -66,4 +72,3 @@ async def start(f: Callable[[collections.abc.AsyncIterator[sinker.Datum]], Await
 
 if __name__ == "__main__":
     asyncio.run(start(async_handler))
-

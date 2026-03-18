@@ -17,12 +17,6 @@ if os.getenv("PYTHONDEBUG"):
 
 
 class StreamSorter(Accumulator):
-    """
-    StreamSorter accumulates and sorts incoming data based on event time.
-    It maintains a sorted buffer of data and periodically flushes the buffer
-    to the output iterator.
-    """
-
     def __init__(self):
         _LOGGER.info("StreamSorter initialized")
         self.latest_wm = datetime.fromtimestamp(-1)
@@ -33,10 +27,6 @@ class StreamSorter(Accumulator):
         datums: AsyncIterable[Datum],
         output: NonBlockingIterator,
     ):
-        """
-        Handler function for incoming data. It sorts the data based on event time
-        and periodically flushes the sorted buffer to the output iterator.
-        """
         _LOGGER.info("StreamSorter handler started")
         async for datum in datums:
             _LOGGER.info(
@@ -57,9 +47,7 @@ class StreamSorter(Accumulator):
         await self.flush_buffer(output, flush_all=True)
 
     def insert_sorted(self, datum: Datum):
-        """
-        Binary insert to keep sorted buffer in order.
-        """
+        # Binary insert to keep sorted buffer in order
         left, right = 0, len(self.sorted_buffer)
         while left < right:
             mid = (left + right) // 2
@@ -70,11 +58,6 @@ class StreamSorter(Accumulator):
         self.sorted_buffer.insert(left, datum)
 
     async def flush_buffer(self, output: NonBlockingIterator, flush_all: bool = False):
-        """
-        Flushes the sorted buffer to the output iterator.
-        If flush_all is True, the entire buffer is flushed.
-        Otherwise, only the data above the latest watermark is flushed.
-        """
         if flush_all:
             _LOGGER.info("Flushing entire sortedBuffer")
         else:

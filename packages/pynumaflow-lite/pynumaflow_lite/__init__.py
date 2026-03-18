@@ -139,8 +139,19 @@ if sideinputer is not None:
         pass
 
 # Public API
-__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "reducestreamer", "accumulator",
-           "sinker", "sourcer", "sourcetransformer", "sideinputer"]
+__all__ = [
+    "mapper",
+    "batchmapper",
+    "mapstreamer",
+    "reducer",
+    "session_reducer",
+    "reducestreamer",
+    "accumulator",
+    "sinker",
+    "sourcer",
+    "sourcetransformer",
+    "sideinputer",
+]
 
 __doc__ = pynumaflow_lite.__doc__
 if hasattr(pynumaflow_lite, "__all__"):

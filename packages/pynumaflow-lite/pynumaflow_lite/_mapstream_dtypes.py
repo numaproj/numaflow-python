@@ -19,4 +19,3 @@ class MapStreamer(metaclass=ABCMeta):
         It should be an async generator yielding Message objects.
         """
         pass
-

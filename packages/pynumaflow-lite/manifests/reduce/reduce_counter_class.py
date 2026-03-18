@@ -10,7 +10,10 @@ class ReduceCounter(reducer.Reducer):
         self.counter = initial
 
     async def handler(
-        self, keys: list[str], datums: AsyncIterable[reducer.Datum], md: reducer.Metadata
+        self,
+        keys: list[str],
+        datums: AsyncIterable[reducer.Datum],
+        md: reducer.Metadata,
     ) -> reducer.Messages:
         iw = md.interval_window
         self.counter = 0
@@ -57,4 +60,3 @@ async def start(creator: type[reducer.Reducer], init_args: tuple):
 
 if __name__ == "__main__":
     asyncio.run(start(ReduceCounter, (0,)))
-

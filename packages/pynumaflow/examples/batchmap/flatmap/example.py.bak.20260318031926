@@ -20,30 +20,16 @@ class Flatmap(BatchMapper):
         self,
         datums: AsyncIterable[Datum],
     ) -> BatchResponses:
-        """
-        Handler function for the flatmap operation.
-
-        Args:
-            datums: An asynchronous iterable of Datum objects.
-
-        Returns:
-            A BatchResponses object containing the results of the flatmap operation.
-        """
         batch_responses = BatchResponses()
         async for datum in datums:
-            # Extract the value from the Datum object
             val = datum.value
-            # Ignore event_time and watermark for now
             _ = datum.event_time
             _ = datum.watermark
-            # Split the value into a list of strings
             strs = val.decode("utf-8").split(",")
             batch_response = BatchResponse.from_id(datum.id)
             if len(strs) == 0:
-                # If the list is empty, append a drop message
                 batch_response.append(Message.to_drop())
             else:
-                # Otherwise, append a message for each string in the list
                 for s in strs:
                     batch_response.append(Message(str.encode(s)))
             batch_responses.append(batch_response)

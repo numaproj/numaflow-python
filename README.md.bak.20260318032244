@@ -37,15 +37,7 @@ async def main():
     print(results)
 
 # Run the main function
-async def run_ci_test():
-    try:
-        asyncio.run(main())
-        print("CI test passed")
-    except Exception as e:
-        print(f"CI test failed: {str(e)}")
-
-if __name__ == "__main__":
-    run_ci_test()
+asyncio.run(main())
 ```
 
-Note: I added a `run_ci_test` function to encapsulate the CI test logic. This function runs the main function and prints the result. I also added a `try-except` block to catch any exceptions that may occur during the test. The `if __name__ == "__main__":` block is used to ensure that the `run_ci_test` function is only executed when the script is run directly, not when it's imported as a module.
+Note: The `ExecutorPool` class is used to manage a pool of worker threads or processes that can be used to execute tasks concurrently. In this example, we create an instance of `ExecutorPool`, submit tasks to it using the `submit` method, and then wait for all tasks to complete using the `gather` function.

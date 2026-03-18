@@ -1,9 +1,13 @@
+import multiprocessing
+import sys
+
 from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.sourcetransformer.servicer._servicer import SourceTransformServicer
 
 from pynumaflow.shared.server import start_multiproc_server
 
 from pynumaflow._constants import (
+    _LOGGER,
     MAX_MESSAGE_SIZE,
     SOURCE_TRANSFORMER_SOCK_PATH,
     NUM_THREADS_DEFAULT,
@@ -127,7 +131,12 @@ class SourceTransformMultiProcServer(NumaflowServer):
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
-        self.servicer = SourceTransformServicer(handler=source_transform_instance, multiproc=True)
+        self.servicer = SourceTransformServicer(handler=source_transform_instance)
+
+        # Shared event across all worker processes for coordinated shutdown.
+        # When any worker's servicer sets this event, all workers' watcher
+        # threads trigger server.stop() for a graceful coordinated exit.
+        self._shutdown_event = multiprocessing.Event()
 
     def start(self):
         """
@@ -140,7 +149,7 @@ class SourceTransformMultiProcServer(NumaflowServer):
         serv_info.minimum_numaflow_version = MINIMUM_NUMAFLOW_VERSION[
             ContainerType.Sourcetransformer
         ]
-        start_multiproc_server(
+        has_error = start_multiproc_server(
             max_threads=self.max_threads,
             servicer=self.servicer,
             process_count=self._process_count,
@@ -148,4 +157,9 @@ class SourceTransformMultiProcServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.SourceTransformer,
             server_info=serv_info,
+            shutdown_event=self._shutdown_event,
         )
+
+        if has_error:
+            _LOGGER.critical("Server exiting due to worker error")
+            sys.exit(1)

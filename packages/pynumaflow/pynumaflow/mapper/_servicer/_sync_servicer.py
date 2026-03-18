@@ -2,8 +2,9 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from collections.abc import Iterator
 
+import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
-from pynumaflow.shared.server import exit_on_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
 
 from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER, ERR_UDF_EXCEPTION_STRING
@@ -20,12 +21,14 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
     Provides the functionality for the required rpc methods.
     """
 
-    def __init__(self, handler: MapSyncCallable, multiproc: bool = False):
+    def __init__(self, handler: MapSyncCallable):
         self.__map_handler: MapSyncCallable = handler
-        # This indicates whether the grpc server attached is multiproc or not
-        self.multiproc = multiproc
         # create a thread pool for executing UDF code
         self.executor = ThreadPoolExecutor(max_workers=NUM_THREADS_DEFAULT)
+        # Graceful shutdown: when set, a watcher thread in _run_server() calls
+        # server.stop() instead of hard-killing the process via psutil.
+        self.shutdown_event: threading.Event = threading.Event()
+        self.error: BaseException | None = None
 
     def MapFn(
         self,
@@ -36,6 +39,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
         Applies a function to each datum element.
         The pascal case function name comes from the proto map_pb2_grpc.py file.
         """
+        result_queue = None
         try:
             # The first message to be received should be a valid handshake
             req = next(request_iterator)
@@ -57,10 +61,19 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             for res in result_queue.read_iterator():
                 # if error handler accordingly
                 if isinstance(res, BaseException):
-                    # Terminate the current server process due to exception
-                    exit_on_error(
-                        context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}", parent=self.multiproc
-                    )
+                    if isinstance(res, grpc.RpcError):
+                        # Client disconnected mid-stream — the reader thread
+                        # surfaced the error via the queue. Not a UDF fault.
+                        _LOGGER.warning("gRPC stream closed, shutting down the server.")
+                        result_queue.close()
+                        self.shutdown_event.set()
+                        return
+                    err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(res)}"
+                    update_context_err(context, res, err_msg)
+                    # Unblock the reader thread if it is waiting on queue.put()
+                    result_queue.close()
+                    self.error = res
+                    self.shutdown_event.set()
                     return
                 # return the result
                 yield res
@@ -69,12 +82,23 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             reader_thread.join()
             self.executor.shutdown(cancel_futures=True)
 
+        except grpc.RpcError:
+            # Client disconnected — not a UDF error, but we still need to
+            # shut down the server so the process can exit cleanly.
+            _LOGGER.warning("gRPC stream closed, shutting down the server.")
+            if result_queue is not None:
+                result_queue.close()
+            self.shutdown_event.set()
+            return
+
         except BaseException as err:
             _LOGGER.critical("UDFError, re-raising the error", exc_info=True)
-            # Terminate the current server process due to exception
-            exit_on_error(
-                context, f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}", parent=self.multiproc
-            )
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(err)}"
+            update_context_err(context, err, err_msg)
+            if result_queue is not None:
+                result_queue.close()
+            self.error = err
+            self.shutdown_event.set()
             return
 
     def _process_requests(
@@ -92,6 +116,11 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
             self.executor.shutdown(wait=True)
             # Indicate to the result queue that no more messages left to process
             result_queue.put(STREAM_EOF)
+        except grpc.RpcError as e:
+            # Client disconnected — expected during pod shutdown.
+            # Surface to the consumer which will trigger graceful shutdown.
+            _LOGGER.warning("gRPC stream closed in reader thread")
+            result_queue.put(e)
         except BaseException as e:
             _LOGGER.critical("MapFn Error, re-raising the error", exc_info=True)
             # Surface the error to the consumer; MapFn will handle and exit

@@ -1,3 +1,5 @@
+import sys
+
 from pynumaflow.info.types import ServerInfo, MINIMUM_NUMAFLOW_VERSION, ContainerType
 from pynumaflow.shared import NumaflowServer
 from pynumaflow.shared.server import sync_server_start
@@ -99,4 +101,8 @@ class SideInputServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.SideInput,
             server_info=serv_info,
+            shutdown_event=self.servicer.shutdown_event,
         )
+        if self.servicer.error:
+            _LOGGER.critical("Server exiting due to UDF error: %s", self.servicer.error)
+            sys.exit(1)

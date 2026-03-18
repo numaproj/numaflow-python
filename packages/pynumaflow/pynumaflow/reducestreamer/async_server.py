@@ -220,7 +220,17 @@ class ReduceStreamAsyncServer(NumaflowServer):
             await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
 
         shutdown_task = asyncio.create_task(_watch_for_shutdown())
-        await server.wait_for_termination()
+        try:
+            await server.wait_for_termination()
+        except asyncio.CancelledError:
+            # SIGTERM received — aiorun cancels all tasks. Unlike the UDF-error
+            # path (where _watch_for_shutdown calls server.stop()), this path
+            # must stop the gRPC server explicitly. Without this, the server
+            # object is never stopped and when it is garbage-collected, its
+            # __del__ tries to schedule a cleanup coroutine on an event loop
+            # that is already closed, causing errors/warnings.
+            _LOGGER.info("Received cancellation, stopping server gracefully...")
+            await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
 
         # Propagate error so start() can exit with a non-zero code
         self._error = self.servicer._error
@@ -230,5 +240,5 @@ class ReduceStreamAsyncServer(NumaflowServer):
             await shutdown_task
 
         _LOGGER.info("Stopping event loop...")
-        asyncio.get_event_loop().stop()
+        asyncio.get_running_loop().stop()
         _LOGGER.info("Event loop stopped")

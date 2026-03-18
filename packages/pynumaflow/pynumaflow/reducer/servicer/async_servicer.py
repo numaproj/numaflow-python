@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterable
 
 from google.protobuf import empty_pb2 as _empty_pb2
@@ -12,7 +13,7 @@ from pynumaflow.reducer._dtypes import (
     WindowOperation,
 )
 from pynumaflow.reducer.servicer.task_manager import TaskManager
-from pynumaflow.shared.server import handle_async_error
+from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 
 
@@ -53,6 +54,12 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
     ):
         # The Reduce handler can be a function or a builder class instance.
         self.__reduce_handler: ReduceAsyncCallable | _ReduceBuilderClass = handler
+        self._shutdown_event: asyncio.Event | None = None
+        self._error: BaseException | None = None
+
+    def set_shutdown_event(self, event: asyncio.Event):
+        """Wire up the shutdown event created by the server's aexec() coroutine."""
+        self._shutdown_event = event
 
     async def ReduceFn(
         self,
@@ -101,11 +108,22 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
                         # append the task data to the existing task
                         # if the task does not exist, it will create a new task
                         await task_manager.append_task(request)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
-            # Send a context abort signal for the rpc, this is required for numa container to get
-            # the correct grpc error
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
+            _LOGGER.critical(err_msg, exc_info=True)
+            update_context_err(context, e, err_msg)
+            self._error = e
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
 
         # send EOF to all the tasks once the request iterator is exhausted
         # This will signal the tasks to stop reading the data on their
@@ -132,11 +150,20 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
             for window in current_window.values():
                 # yield the EOF response once the task is completed for a keyed window
                 yield reduce_pb2.ReduceResponse(window=window, EOF=True)
+        except asyncio.CancelledError:
+            # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
+            _LOGGER.info("Server shutting down, cancelling RPC.")
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
+
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
-            # Send a context abort signal for the rpc, this is required for numa container to get
-            # the correct grpc error
-            await handle_async_error(context, e, ERR_UDF_EXCEPTION_STRING)
+            update_context_err(context, e, f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}")
+            self._error = e
+            if self._shutdown_event is not None:
+                self._shutdown_event.set()
+            return
 
     async def IsReady(
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext

@@ -1,4 +1,8 @@
+import multiprocessing
+import sys
+
 from pynumaflow._constants import (
+    _LOGGER,
     NUM_THREADS_DEFAULT,
     MAX_MESSAGE_SIZE,
     MAP_SOCK_PATH,
@@ -102,7 +106,12 @@ class MapMultiprocServer(NumaflowServer):
         # Setting the max value to 2 * CPU count
         # Used for multiproc server
         self._process_count = min(server_count, 2 * _PROCESS_COUNT)
-        self.servicer = SyncMapServicer(handler=mapper_instance, multiproc=True)
+        self.servicer = SyncMapServicer(handler=mapper_instance)
+
+        # Shared event across all worker processes for coordinated shutdown.
+        # When any worker's servicer sets this event, all workers' watcher
+        # threads trigger server.stop() for a graceful coordinated exit.
+        self._shutdown_event = multiprocessing.Event()
 
     def start(self) -> None:
         """
@@ -121,7 +130,7 @@ class MapMultiprocServer(NumaflowServer):
         server_info.metadata[MAP_MODE_KEY] = MapMode.UnaryMap
 
         # Start the multiproc server
-        start_multiproc_server(
+        has_error = start_multiproc_server(
             max_threads=self.max_threads,
             servicer=self.servicer,
             process_count=self._process_count,
@@ -129,4 +138,9 @@ class MapMultiprocServer(NumaflowServer):
             server_options=self._server_options,
             udf_type=UDFType.Map,
             server_info=server_info,
+            shutdown_event=self._shutdown_event,
         )
+
+        if has_error:
+            _LOGGER.critical("Server exiting due to worker error")
+            sys.exit(1)

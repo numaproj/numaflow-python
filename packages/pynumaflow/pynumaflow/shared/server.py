@@ -1,8 +1,9 @@
-import asyncio
 import contextlib
 import io
 import multiprocessing
+import multiprocessing.synchronize
 import os
+import signal
 import socket
 import threading
 import traceback
@@ -14,7 +15,6 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor
 import grpc
-import psutil
 
 from pynumaflow._constants import (
     _LOGGER,
@@ -151,6 +151,7 @@ def start_multiproc_server(
     server_info: ServerInfo | None = None,
     server_options=None,
     udf_type: str = UDFType.Map,
+    shutdown_event: multiprocessing.synchronize.Event | None = None,
 ):
     """
     Start N grpc servers in different processes where N = The number of CPUs or the
@@ -179,19 +180,37 @@ def start_multiproc_server(
         worker = multiprocessing.Process(
             target=_run_server,
             args=(servicer, bind_address, max_threads, server_options, udf_type),
+            kwargs={"shutdown_event": shutdown_event} if shutdown_event else {},
         )
         worker.start()
         workers.append(worker)
 
     if server_info is None:
         server_info = ServerInfo.get_default_server_info()
-    server_info.metadata = get_metadata_env(envs=METADATA_ENVS)
+    # Merge env metadata into existing metadata (preserving caller-set keys
+    # like MAP_MODE_KEY) rather than overwriting the entire dict.
+    server_info.metadata.update(get_metadata_env(envs=METADATA_ENVS))
     # Add the MULTIPROC metadata using the number of servers to use
     server_info.metadata[MULTIPROC_KEY] = str(process_count)
     info_server_write(server_info=server_info, info_file=server_info_file)
 
+    # Register a SIGTERM handler so that kubectl delete triggers graceful
+    # shutdown of all child workers via the shared multiprocessing.Event,
+    # instead of the default abrupt kill.
+    if shutdown_event is not None:
+
+        def _sigterm_handler(signum, frame):
+            _LOGGER.info("SIGTERM received, signalling workers to shut down...")
+            shutdown_event.set()
+
+        signal.signal(signal.SIGTERM, _sigterm_handler)
+
     for worker in workers:
         worker.join()
+
+    # Return True if any worker exited with a non-zero code (i.e. a real error,
+    # not a clean SIGTERM shutdown).
+    return any(w.exitcode != 0 for w in workers)
 
 
 async def start_async_server(
@@ -278,37 +297,6 @@ def get_grpc_status(err: str, detail: str | None = None):
     return rpc_status.to_status(status)
 
 
-def exit_on_error(
-    context: NumaflowServicerContext, err: str, parent: bool = False, update_context=True
-):
-    """
-    Exit the current/parent process on an error.
-
-    Args:
-        context (NumaflowServicerContext): The gRPC context.
-        err (str): The error message.
-        parent (bool, optional): Whether this is the parent process.
-            Defaults to False.
-        update_context(bool, optional) : Is there a need to update
-            the context with the error codes
-    """
-    if update_context:
-        # Create a status object with the error details
-        grpc_status = get_grpc_status(err)
-
-        context.set_code(grpc.StatusCode.INTERNAL)
-        context.set_details(err)
-        context.set_trailing_metadata(grpc_status.trailing_metadata)
-
-    p = psutil.Process(os.getpid())
-    # If the parent flag is true, we exit from the parent process
-    # Use this for Multiproc right now to exit from the parent fork
-    if parent:
-        p = psutil.Process(os.getppid())
-    _LOGGER.info("Killing process: Got exception %s", err)
-    p.kill()
-
-
 def update_context_err(context: NumaflowServicerContext, e: BaseException, err_msg: str):
     """
     Update the context with the error and log the exception.
@@ -328,17 +316,3 @@ def get_exception_traceback_str(exc) -> str:
     file = io.StringIO()
     traceback.print_exception(exc, value=exc, tb=exc.__traceback__, file=file)
     return file.getvalue().rstrip()
-
-
-async def handle_async_error(
-    context: NumaflowServicerContext, exception: BaseException, exception_type: str
-):
-    """
-    Handle exceptions for async servers by updating the context and exiting.
-    """
-    err_msg = f"{exception_type}: {repr(exception)}"
-    update_context_err(context, exception, err_msg)
-    await asyncio.gather(
-        context.abort(grpc.StatusCode.INTERNAL, details=err_msg), return_exceptions=True
-    )
-    exit_on_error(err=err_msg, parent=False, context=context, update_context=False)

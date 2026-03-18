@@ -159,9 +159,7 @@ class AsyncReduceServicer(reduce_pb2_grpc.ReduceServicer):
 
         except BaseException as e:
             _LOGGER.critical("Reduce Error", exc_info=True)
-            err_msg = f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}"
-            _LOGGER.critical(err_msg, exc_info=True)
-            update_context_err(context, e, err_msg)
+            update_context_err(context, e, f"{ERR_UDF_EXCEPTION_STRING}: {repr(e)}")
             self._error = e
             if self._shutdown_event is not None:
                 self._shutdown_event.set()

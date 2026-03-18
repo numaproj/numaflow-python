@@ -214,9 +214,12 @@ class SourceAsyncServer(NumaflowServer):
         try:
             await server.wait_for_termination()
         except asyncio.CancelledError:
-            # SIGTERM received — aiorun cancels all tasks. We must stop
-            # the gRPC server explicitly so its __del__ doesn't try to
-            # schedule a coroutine on the already-closed event loop.
+            # SIGTERM received — aiorun cancels all tasks. Unlike the UDF-error
+            # path (where _watch_for_shutdown calls server.stop()), this path
+            # must stop the gRPC server explicitly. Without this, the server
+            # object is never stopped and when it is garbage-collected, its
+            # __del__ tries to schedule a cleanup coroutine on an event loop
+            # that is already closed, causing errors/warnings.
             _LOGGER.info("Received cancellation, stopping server gracefully...")
             await server.stop(NUMAFLOW_GRPC_SHUTDOWN_GRACE_PERIOD_SECONDS)
 

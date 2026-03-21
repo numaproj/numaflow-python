@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import threading
 from collections.abc import AsyncIterable
 from unittest.mock import MagicMock
 
@@ -20,6 +19,7 @@ from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.reducestreamer.servicer.async_servicer import AsyncReduceStreamServicer
 from pynumaflow.reducestreamer.servicer.task_manager import TaskManager
 from pynumaflow.shared.asynciter import NonBlockingIterator
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
@@ -72,11 +72,6 @@ def start_request(multiple_window: False) -> (Datum, tuple):
         (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )
     return request, metadata
-
-
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
 
 
 class ExampleClass(ReduceStreamer):
@@ -133,36 +128,17 @@ async def _start_server(udfs):
     server.add_insecure_port(SOCK_PATH)
     logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    return server
+    return server, SOCK_PATH
 
 
 @pytest.fixture(scope="module")
 def async_reduce_stream_err_server():
     """Module-scoped fixture: starts an async gRPC reduce stream error server."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-    thread.start()
-
+    loop = create_async_loop()
     udfs = NewAsyncReduceStreamer()
-    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
-    future.result(timeout=10)
-
-    # Wait for the server to be ready
-    while True:
-        try:
-            with grpc.insecure_channel(SOCK_PATH) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
-
+    server = start_async_server(loop, _start_server(udfs))
     yield loop
-
-    loop.stop()
-    LOGGER.info("stopped the event loop")
+    teardown_async_server(loop, server)
 
 
 @pytest.fixture()

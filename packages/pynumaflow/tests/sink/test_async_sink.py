@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import threading
 from collections.abc import AsyncIterable
 
 import grpc
@@ -24,6 +22,7 @@ from pynumaflow.sinker import (
 from pynumaflow.sinker import Responses, Response, Message, UserMetadata
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.async_server import SinkAsyncServer
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.sink.test_server import (
     mock_message,
     mock_err_message,
@@ -105,11 +104,6 @@ def request_generator(count, req_type="success", session=1, handshake=True):
         yield sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True))
 
 
-def _startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 async def _start_server():
     server = grpc.aio.server()
     server_instance = SinkAsyncServer(sinker_instance=udsink_handler)
@@ -118,34 +112,19 @@ async def _start_server():
     server.add_insecure_port(SOCK_PATH)
     logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    return server
+    return server, SOCK_PATH
 
 
 @pytest.fixture(scope="module")
 def async_sink_server():
     """Module-scoped fixture: starts an async gRPC sink server in a background thread."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=_startup_callable, args=(loop,), daemon=True)
-    thread.start()
+    loop = create_async_loop()
 
-    future = asyncio.run_coroutine_threadsafe(_start_server(), loop=loop)
-    future.result(timeout=10)
-
-    while True:
-        try:
-            with grpc.insecure_channel(SOCK_PATH) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
+    server = start_async_server(loop, _start_server())
 
     yield loop
 
-    loop.stop()
-    LOGGER.info("stopped the event loop")
+    teardown_async_server(loop, server)
 
 
 @pytest.fixture()

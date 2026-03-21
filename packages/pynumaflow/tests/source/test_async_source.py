@@ -1,7 +1,5 @@
-import asyncio
 from collections.abc import Iterator
 import logging
-import threading
 
 import grpc
 import pytest
@@ -13,6 +11,7 @@ from pynumaflow.proto.sourcer import source_pb2_grpc, source_pb2
 from pynumaflow.sourcer import (
     SourceAsyncServer,
 )
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.source.utils import (
     read_req_source_fn,
     ack_req_source_fn,
@@ -29,11 +28,6 @@ LOGGER = setup_logging(__name__)
 server_port = "unix:///tmp/async_source.sock"
 
 
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 def NewAsyncSourcer():
     class_instance = AsyncSource()
     server = SourceAsyncServer(sourcer_instance=class_instance)
@@ -48,7 +42,7 @@ async def start_server(udfs):
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     await server.start()
-    await server.wait_for_termination()
+    return server, listen_addr
 
 
 def request_generator(count, request, req_type, send_handshake: bool = True):
@@ -66,28 +60,14 @@ def request_generator(count, request, req_type, send_handshake: bool = True):
 @pytest.fixture(scope="module")
 def async_source_server():
     """Module-scoped fixture: starts an async gRPC source server in a background thread."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-    thread.start()
+    loop = create_async_loop()
 
     udfs = NewAsyncSourcer()
-    asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-
-    while True:
-        try:
-            with grpc.insecure_channel(server_port) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
+    server = start_async_server(loop, start_server(udfs))
 
     yield loop
 
-    loop.stop()
-    LOGGER.info("stopped the event loop")
+    teardown_async_server(loop, server)
 
 
 def test_read_source(async_source_server) -> None:

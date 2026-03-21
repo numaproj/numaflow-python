@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import threading
 from collections.abc import AsyncIterable
 
 import grpc
@@ -15,6 +13,7 @@ from pynumaflow.accumulator import (
 )
 from pynumaflow.proto.accumulator import accumulator_pb2, accumulator_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.testing_utils import (
     mock_message,
     get_time_args,
@@ -59,11 +58,6 @@ def start_request() -> accumulator_pb2.AccumulatorRequest:
     return request
 
 
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 class ExampleErrorClass(Accumulator):
     def __init__(self, counter):
         self.counter = counter
@@ -101,36 +95,17 @@ async def _start_server(udfs):
     server.add_insecure_port(SOCK_PATH)
     logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    return server
+    return server, SOCK_PATH
 
 
 @pytest.fixture(scope="module")
 def async_accumulator_err_server():
     """Module-scoped fixture: starts an async gRPC accumulator error server."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-    thread.start()
-
+    loop = create_async_loop()
     udfs = NewAsyncAccumulatorError()
-    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
-    future.result(timeout=10)
-
-    # Wait for the server to be ready
-    while True:
-        try:
-            with grpc.insecure_channel(SOCK_PATH) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
-
+    server = start_async_server(loop, _start_server(udfs))
     yield loop
-
-    loop.stop()
-    LOGGER.info("stopped the event loop")
+    teardown_async_server(loop, server)
 
 
 @pytest.fixture()

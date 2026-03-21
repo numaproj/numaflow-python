@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import threading
 
 import grpc
 import pytest
@@ -10,6 +8,7 @@ from pynumaflow.batchmapper import BatchResponses
 from pynumaflow.batchmapper import BatchMapAsyncServer
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.batchmap.utils import request_generator
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 
 pytestmark = pytest.mark.integration
 
@@ -29,11 +28,6 @@ async def err_handler(datums) -> BatchResponses:
 listen_addr = "unix:///tmp/async_batch_map_err.sock"
 
 
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 async def start_server():
     server = grpc.aio.server()
     server_instance = BatchMapAsyncServer(err_handler)
@@ -42,33 +36,16 @@ async def start_server():
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
     await server.start()
-    await server.wait_for_termination()
+    return server, listen_addr
 
 
 @pytest.fixture(scope="module")
 def async_batch_map_err_server():
     """Module-scoped fixture: starts an async gRPC batch map error server in a background thread."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-    thread.start()
-
-    asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
-
-    while True:
-        try:
-            with grpc.insecure_channel(listen_addr) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
-
+    loop = create_async_loop()
+    server = start_async_server(loop, start_server())
     yield loop
-
-    loop.stop()
-    LOGGER.info("stopped the event loop")
+    teardown_async_server(loop, server)
 
 
 @pytest.fixture()

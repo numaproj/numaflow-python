@@ -1,6 +1,4 @@
-import asyncio
 import logging
-import threading
 
 import grpc
 import pytest
@@ -13,6 +11,7 @@ from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2_grpc
 from pynumaflow.sourcetransformer import Datum, Messages, Message, SourceTransformer
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.sourcetransform.utils import get_test_datums
 from tests.testing_utils import (
     mock_new_event_time,
@@ -48,11 +47,6 @@ def request_generator(req):
     yield from req
 
 
-def _startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
 async def _start_server(udfs):
     _server_options = [
         ("grpc.max_send_message_length", MAX_MESSAGE_SIZE),
@@ -63,37 +57,19 @@ async def _start_server(udfs):
     server.add_insecure_port(SOCK_PATH)
     logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    return server
+    return server, SOCK_PATH
 
 
 @pytest.fixture(scope="module")
 def async_st_server():
     """Module-scoped fixture: starts an async gRPC source transform server."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=_startup_callable, args=(loop,), daemon=True)
-    thread.start()
-
+    loop = create_async_loop()
     handle = SimpleAsyncSourceTrn()
     server_obj = SourceTransformAsyncServer(source_transform_instance=handle)
     udfs = server_obj.servicer
-    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
-    future.result(timeout=10)
-
-    while True:
-        try:
-            with grpc.insecure_channel(SOCK_PATH) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
-
+    server = start_async_server(loop, _start_server(udfs))
     yield loop
-
-    loop.stop()
-    LOGGER.info("stopped the event loop")
+    teardown_async_server(loop, server)
 
 
 @pytest.fixture()
@@ -285,37 +261,19 @@ async def _start_metadata_server(udfs):
     server.add_insecure_port(METADATA_SOCK_PATH)
     logging.info("Starting metadata server on %s", METADATA_SOCK_PATH)
     await server.start()
-    return server
+    return server, METADATA_SOCK_PATH
 
 
 @pytest.fixture(scope="module")
 def async_st_metadata_server():
     """Module-scoped fixture: starts an async gRPC metadata source transform server."""
-    loop = asyncio.new_event_loop()
-    thread = threading.Thread(target=_startup_callable, args=(loop,), daemon=True)
-    thread.start()
-
+    loop = create_async_loop()
     handle = MetadataAsyncSourceTransformer()
     server_obj = SourceTransformAsyncServer(source_transform_instance=handle)
     udfs = server_obj.servicer
-    future = asyncio.run_coroutine_threadsafe(_start_metadata_server(udfs), loop=loop)
-    future.result(timeout=10)
-
-    while True:
-        try:
-            with grpc.insecure_channel(METADATA_SOCK_PATH) as channel:
-                f = grpc.channel_ready_future(channel)
-                f.result(timeout=10)
-                if f.done():
-                    break
-        except grpc.FutureTimeoutError as e:
-            LOGGER.error("error trying to connect to grpc server")
-            LOGGER.error(e)
-
+    server = start_async_server(loop, _start_metadata_server(udfs))
     yield loop
-
-    loop.stop()
-    LOGGER.info("stopped the metadata event loop")
+    teardown_async_server(loop, server)
 
 
 @pytest.fixture()

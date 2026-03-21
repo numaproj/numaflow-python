@@ -108,15 +108,17 @@ def test_invalid_input():
         SideInputServer()
 
 
-def test_max_threads():
-    # max cap at 16
-    server = SideInputServer(retrieve_side_input_handler, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = SideInputServer(retrieve_side_input_handler, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = SideInputServer(retrieve_side_input_handler)
-    assert server.max_threads == 4
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"side_input_instance": retrieve_side_input_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SideInputServer(**kwargs)
+    assert server.max_threads == expected

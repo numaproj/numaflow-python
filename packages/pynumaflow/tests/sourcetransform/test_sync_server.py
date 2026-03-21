@@ -51,16 +51,23 @@ def test_init_with_args():
     assert server.max_message_size == 1024 * 1024 * 5
 
 
-def test_udf_mapt_err():
+@pytest.mark.parametrize(
+    "handshake,expected_msg",
+    [
+        (True, "Something is fishy"),
+        (False, "SourceTransformFn: expected handshake message"),
+    ],
+)
+def test_udf_mapt_error(handshake, expected_msg):
     test_server = _make_transform_server(err_transform_handler)
-    test_datums = get_test_datums()
+    test_datums = get_test_datums(handshake=handshake)
     method = _invoke_transform_fn(test_server)
 
     send_test_requests(method, test_datums)
     drain_responses(method)
 
     metadata, code, details = method.termination()
-    assert "Something is fishy" in details
+    assert expected_msg in details
     assert code == StatusCode.INTERNAL
 
 
@@ -77,19 +84,6 @@ def test_is_ready(transform_test_server):
     response, metadata, code, details = method.termination()
     assert response == transform_pb2.ReadyResponse(ready=True)
     assert code == StatusCode.OK
-
-
-def test_udf_mapt_err_handshake():
-    test_server = _make_transform_server(err_transform_handler)
-    test_datums = get_test_datums(handshake=False)
-    method = _invoke_transform_fn(test_server)
-
-    send_test_requests(method, test_datums)
-    drain_responses(method)
-
-    metadata, code, details = method.termination()
-    assert "SourceTransformFn: expected handshake message" in details
-    assert code == StatusCode.INTERNAL
 
 
 def test_mapt_assign_new_event_time(transform_test_server):
@@ -129,18 +123,20 @@ def test_invalid_input():
         SourceTransformServer()
 
 
-def test_max_threads():
-    # max cap at 16
-    server = SourceTransformServer(source_transform_instance=transform_handler, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = SourceTransformServer(source_transform_instance=transform_handler, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = SourceTransformServer(source_transform_instance=transform_handler)
-    assert server.max_threads == 4
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"source_transform_instance": transform_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SourceTransformServer(**kwargs)
+    assert server.max_threads == expected
 
 
 # ---------------------------------------------------------------------------

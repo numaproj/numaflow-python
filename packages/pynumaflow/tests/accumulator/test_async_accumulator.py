@@ -409,26 +409,22 @@ def test_error_init():
         AccumulatorAsyncServer(accumulator_instance=ExampleBadClass)
 
 
-def test_max_threads():
-    # max cap at 16
-    server = AccumulatorAsyncServer(accumulator_instance=ExampleClass, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = AccumulatorAsyncServer(accumulator_instance=ExampleClass, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = AccumulatorAsyncServer(accumulator_instance=ExampleClass)
-    assert server.max_threads == 4
-
-    # zero threads
-    server = AccumulatorAsyncServer(ExampleClass, max_threads=0)
-    assert server.max_threads == 0
-
-    # negative threads
-    server = AccumulatorAsyncServer(ExampleClass, max_threads=-5)
-    assert server.max_threads == -5
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+        (0, 0),  # zero threads
+        (-5, -5),  # negative threads
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"accumulator_instance": ExampleClass}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = AccumulatorAsyncServer(**kwargs)
+    assert server.max_threads == expected
 
 
 def test_server_info_file_path_handling():

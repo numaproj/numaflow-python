@@ -27,51 +27,41 @@ def _invoke_map_fn(test_server, timeout=1):
     )
 
 
-def test_multiproc_init():
-    my_server = MapMultiprocServer(mapper_instance=map_handler, server_count=3)
-    assert my_server._process_count == 3
+@pytest.mark.parametrize(
+    "server_count,expected",
+    [
+        (3, 3),  # explicit count
+        (None, os.cpu_count()),  # default to cpu count
+        (100, os.cpu_count() * 2),  # max cap at 2 * cpu count
+    ],
+)
+def test_process_count(server_count, expected):
+    kwargs = {"mapper_instance": map_handler}
+    if server_count is not None:
+        kwargs["server_count"] = server_count
+    server = MapMultiprocServer(**kwargs)
+    assert server._process_count == expected
 
 
-def test_multiproc_process_count():
-    default_val = os.cpu_count()
-    my_server = MapMultiprocServer(mapper_instance=map_handler)
-    assert my_server._process_count == default_val
-
-
-def test_max_process_count():
-    """Max process count is capped at 2 * os.cpu_count, irrespective of what the user
-    provides as input"""
-    default_val = os.cpu_count()
-    server = MapMultiprocServer(mapper_instance=map_handler, server_count=100)
-    assert server._process_count == default_val * 2
-
-
-def test_udf_map_err_handshake():
+@pytest.mark.parametrize(
+    "handshake,expected_msg",
+    [
+        (False, "MapFn: expected handshake as the first message"),
+        (True, "Something is fishy!"),
+    ],
+)
+def test_udf_map_error(handshake, expected_msg):
     my_server = MapMultiprocServer(mapper_instance=err_map_handler)
     services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
     test_server = server_from_dictionary(services, strict_real_time())
 
-    test_datums = get_test_datums(handshake=False)
+    test_datums = get_test_datums(handshake=handshake)
     method = _invoke_map_fn(test_server)
     send_test_requests(method, test_datums)
     drain_responses(method)
 
     metadata, code, details = method.termination()
-    assert "MapFn: expected handshake as the first message" in details
-    assert code == StatusCode.INTERNAL
-
-
-def test_udf_map_err():
-    my_server = MapMultiprocServer(mapper_instance=err_map_handler)
-    services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
-    test_server = server_from_dictionary(services, strict_real_time())
-    test_datums = get_test_datums(handshake=True)
-    method = _invoke_map_fn(test_server)
-    send_test_requests(method, test_datums)
-    drain_responses(method)
-
-    metadata, code, details = method.termination()
-    assert "Something is fishy!" in details
+    assert expected_msg in details
     assert code == StatusCode.INTERNAL
 
 

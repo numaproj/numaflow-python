@@ -206,15 +206,17 @@ def test_invalid_input():
         MapAsyncServer()
 
 
-def test_max_threads():
-    # max cap at 16
-    server = MapAsyncServer(mapper_instance=async_map_handler, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = MapAsyncServer(mapper_instance=async_map_handler, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = MapAsyncServer(mapper_instance=async_map_handler)
-    assert server.max_threads == 4
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"mapper_instance": async_map_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = MapAsyncServer(**kwargs)
+    assert server.max_threads == expected

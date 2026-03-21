@@ -212,16 +212,18 @@ def test_partitions(async_source_server) -> None:
         assert response.result.partitions == mock_partitions()
 
 
-def test_max_threads():
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
     class_instance = AsyncSource()
-    # max cap at 16
-    server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = SourceAsyncServer(sourcer_instance=class_instance)
-    assert server.max_threads == 4
+    kwargs = {"sourcer_instance": class_instance}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SourceAsyncServer(**kwargs)
+    assert server.max_threads == expected

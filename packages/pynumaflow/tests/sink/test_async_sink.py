@@ -352,15 +352,17 @@ def test_start_on_success_sink():
     assert server.server_info_file == ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH
 
 
-def test_max_threads():
-    # max cap at 16
-    server = SinkAsyncServer(sinker_instance=udsink_handler, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = SinkAsyncServer(sinker_instance=udsink_handler, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = SinkAsyncServer(sinker_instance=udsink_handler)
-    assert server.max_threads == 4
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"sinker_instance": udsink_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SinkAsyncServer(**kwargs)
+    assert server.max_threads == expected

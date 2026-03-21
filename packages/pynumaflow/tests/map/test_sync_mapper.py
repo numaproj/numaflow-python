@@ -36,33 +36,25 @@ def test_init_with_args():
     assert my_servicer.max_message_size == 1024 * 1024 * 5
 
 
-def test_udf_map_err_handshake():
+@pytest.mark.parametrize(
+    "handshake,expected_msg",
+    [
+        (False, "MapFn: expected handshake as the first message"),
+        (True, "Something is fishy!"),
+    ],
+)
+def test_udf_map_error(handshake, expected_msg):
     my_server = MapServer(mapper_instance=err_map_handler)
     services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
     test_server = server_from_dictionary(services, strict_real_time())
 
-    test_datums = get_test_datums(handshake=False)
+    test_datums = get_test_datums(handshake=handshake)
     method = _invoke_map_fn(test_server)
     send_test_requests(method, test_datums)
     drain_responses(method)
 
     metadata, code, details = method.termination()
-    assert "MapFn: expected handshake as the first message" in details
-    assert code == StatusCode.INTERNAL
-
-
-def test_udf_map_error_response():
-    my_server = MapServer(mapper_instance=err_map_handler)
-    services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
-    test_server = server_from_dictionary(services, strict_real_time())
-
-    test_datums = get_test_datums(handshake=True)
-    method = _invoke_map_fn(test_server)
-    send_test_requests(method, test_datums)
-    drain_responses(method)
-
-    metadata, code, details = method.termination()
-    assert "Something is fishy!" in details
+    assert expected_msg in details
     assert code == StatusCode.INTERNAL
 
 
@@ -110,15 +102,17 @@ def test_invalid_input():
         MapServer()
 
 
-def test_max_threads():
-    # max cap at 16
-    server = MapServer(mapper_instance=map_handler, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = MapServer(mapper_instance=map_handler, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = MapServer(mapper_instance=map_handler)
-    assert server.max_threads == 4
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"mapper_instance": map_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = MapServer(**kwargs)
+    assert server.max_threads == expected

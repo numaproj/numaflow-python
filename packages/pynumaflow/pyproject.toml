@@ -84,6 +84,15 @@ exclude = '''
 )/
 '''
 
+[tool.pytest]
+strict = true
+collect_imported_tests = false
+console_output_style = "times"
+log_cli = true
+log_cli_level = "DEBUG"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
 [tool.ruff]
 line-length = 100
 src = ["pynumaflow", "tests", "examples"]
@@ -94,4 +103,6 @@ extend-exclude = [
     "*_pb2*.py",
     "*.pyi"
 ]
+
+[tool.ruff.lint]
 select = ["E", "F", "UP"]

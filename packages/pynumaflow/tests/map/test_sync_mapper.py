@@ -9,6 +9,7 @@ from grpc_testing import server_from_dictionary, strict_real_time
 from pynumaflow.mapper import MapServer
 from pynumaflow.proto.mapper import map_pb2
 from tests.map.utils import map_handler, err_map_handler, ExampleMap, get_test_datums
+from tests.conftest import collect_responses, drain_responses, send_test_requests
 from tests.testing_utils import (
     mock_terminate_on_stop,
 )
@@ -44,18 +45,8 @@ class TestSyncMapper(unittest.TestCase):
             invocation_metadata={},
             timeout=1,
         )
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
-
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
+        send_test_requests(method, test_datums)
+        drain_responses(method)
 
         metadata, code, details = method.termination()
         self.assertTrue("MapFn: expected handshake as the first message" in details)
@@ -72,18 +63,8 @@ class TestSyncMapper(unittest.TestCase):
             invocation_metadata={},
             timeout=1,
         )
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
-
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
+        send_test_requests(method, test_datums)
+        drain_responses(method)
 
         metadata, code, details = method.termination()
         self.assertTrue("Something is fishy!" in details)
@@ -111,18 +92,8 @@ class TestSyncMapper(unittest.TestCase):
             invocation_metadata={},
             timeout=1,
         )
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
-
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
+        send_test_requests(method, test_datums)
+        responses = collect_responses(method)
 
         metadata, code, details = method.termination()
         # 1 handshake + 3 data responses

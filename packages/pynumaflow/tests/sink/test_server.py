@@ -22,6 +22,7 @@ from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker import Responses, Datum, Response, SinkServer, Message, UserMetadata
 from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
+from tests.conftest import collect_responses, drain_responses, send_test_requests
 
 
 def mockenv(**envvars):
@@ -201,18 +202,8 @@ def test_udsink_err(err_sink_test_server):
         timeout=1,
     )
 
-    for d in test_datums:
-        method.send_request(d)
-    method.requests_closed()
-
-    responses = []
-    while True:
-        try:
-            resp = method.take_response()
-            responses.append(resp)
-        except ValueError as err:
-            if "No more responses!" in str(err):
-                break
+    send_test_requests(method, test_datums)
+    drain_responses(method)
 
     metadata, code, details = method.termination()
     assert code == StatusCode.INTERNAL
@@ -267,18 +258,8 @@ def test_forward_message(sink_test_server):
         invocation_metadata={},
         timeout=1,
     )
-    for x in test_datums:
-        method.send_request(x)
-    method.requests_closed()
-
-    responses = []
-    while True:
-        try:
-            resp = method.take_response()
-            responses.append(resp)
-        except ValueError as err:
-            if "No more responses!" in str(err):
-                break
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
 
     # 1 handshake +  1 data messages + 1 EOT
     assert len(responses) == 3
@@ -370,15 +351,8 @@ def test_shutdown_event_set_on_handler_error():
         timeout=2,
     )
 
-    for d in test_datums:
-        method.send_request(d)
-    method.requests_closed()
-
-    while True:
-        try:
-            method.take_response()
-        except ValueError:
-            break
+    send_test_requests(method, test_datums)
+    drain_responses(method)
 
     _, code, _ = method.termination()
     assert code == StatusCode.INTERNAL

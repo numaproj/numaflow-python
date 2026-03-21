@@ -1,11 +1,11 @@
 import asyncio
 import logging
 import threading
-import unittest
 from collections.abc import AsyncIterable
 from unittest.mock import MagicMock
+
 import grpc
-from grpc.aio._server import Server
+import pytest
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
@@ -28,6 +28,8 @@ from tests.testing_utils import (
 )
 
 LOGGER = setup_logging(__name__)
+
+SOCK_PATH = "unix:///tmp/reduce_stream_err.sock"
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -68,11 +70,6 @@ def start_request(multiple_window: False) -> (Datum, tuple):
         (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )
     return request, metadata
-
-
-_s: Server = None
-_channel = grpc.insecure_channel("unix:///tmp/reduce_stream_err.sock")
-_loop = None
 
 
 def startup_callable(loop):
@@ -128,96 +125,94 @@ def NewAsyncReduceStreamer():
     return udfs
 
 
-async def start_server(udfs):
+async def _start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/reduce_stream_err.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
+    server.add_insecure_port(SOCK_PATH)
+    logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server
 
 
-class TestAsyncReduceStreamerErr(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = NewAsyncReduceStreamer()
-        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/reduce_stream_err.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_reduce_stream_err_server():
+    """Module-scoped fixture: starts an async gRPC reduce stream error server."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    udfs = NewAsyncReduceStreamer()
+    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
+    future.result(timeout=10)
+
+    # Wait for the server to be ready
+    while True:
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except BaseException as e:
+            with grpc.insecure_channel(SOCK_PATH) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    def test_reduce(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request(multiple_window=False)
-        generator_response = None
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request),
-            )
-            counter = 0
-            for _ in generator_response:
-                counter += 1
-        except BaseException as err:
-            self.assertTrue("Got a runtime error from reduce handler." in err.__str__())
-            return
-        self.fail("Expected an exception.")
+    yield loop
 
-    def test_reduce_window_len(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request(multiple_window=True)
-        generator_response = None
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
-            counter = 0
-            for _ in generator_response:
-                counter += 1
-        except Exception as err:
-            self.assertTrue(
-                "reduce append operation error: invalid number of windows" in err.__str__()
-            )
-            return
-        try:
-            request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
-            counter = 0
-            for _ in generator_response:
-                counter += 1
-        except Exception as err:
-            self.assertTrue(
-                "reduce create operation error: invalid number of windows" in err.__str__()
-            )
-            return
-        self.fail("Expected an exception.")
+    loop.stop()
+    LOGGER.info("stopped the event loop")
 
-    def __stub(self):
-        return reduce_pb2_grpc.ReduceStub(_channel)
+
+@pytest.fixture()
+def reduce_stream_err_stub(async_reduce_stream_err_server):
+    """Returns a ReduceStub connected to the running async error server."""
+    return reduce_pb2_grpc.ReduceStub(grpc.insecure_channel(SOCK_PATH))
+
+
+def test_reduce(reduce_stream_err_stub) -> None:
+    request, metadata = start_request(multiple_window=False)
+    generator_response = None
+    try:
+        generator_response = reduce_stream_err_stub.ReduceFn(
+            request_iterator=request_generator(count=10, request=request),
+        )
+        counter = 0
+        for _ in generator_response:
+            counter += 1
+    except BaseException as err:
+        assert "Got a runtime error from reduce handler." in str(err)
+        return
+    pytest.fail("Expected an exception.")
+
+
+def test_reduce_window_len(reduce_stream_err_stub) -> None:
+    request, metadata = start_request(multiple_window=True)
+    generator_response = None
+    try:
+        generator_response = reduce_stream_err_stub.ReduceFn(
+            request_iterator=request_generator(count=10, request=request)
+        )
+        counter = 0
+        for _ in generator_response:
+            counter += 1
+    except Exception as err:
+        assert "reduce append operation error: invalid number of windows" in str(err)
+        return
+    try:
+        request.operation.event = reduce_pb2.ReduceRequest.WindowOperation.Event.OPEN
+        generator_response = reduce_stream_err_stub.ReduceFn(
+            request_iterator=request_generator(count=10, request=request)
+        )
+        counter = 0
+        for _ in generator_response:
+            counter += 1
+    except Exception as err:
+        assert "reduce create operation error: invalid number of windows" in str(err)
+        return
+    pytest.fail("Expected an exception.")
+
+
+# --- Standalone test functions (not part of the TestCase) ---
 
 
 async def _emit_one_handler(keys, datums, output, md):
@@ -460,8 +455,3 @@ def test_cancel_and_await_with_already_done_futures():
             assert task.consumer_future.done()
 
     asyncio.run(_run())
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()

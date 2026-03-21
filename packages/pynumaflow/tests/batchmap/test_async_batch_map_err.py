@@ -1,19 +1,15 @@
 import asyncio
 import logging
 import threading
-import unittest
-from unittest.mock import patch
 
 import grpc
-
-from grpc.aio._server import Server
+import pytest
 
 from pynumaflow import setup_logging
 from pynumaflow.batchmapper import BatchResponses
 from pynumaflow.batchmapper import BatchMapAsyncServer
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.batchmap.utils import request_generator
-from tests.testing_utils import mock_terminate_on_stop
 
 LOGGER = setup_logging(__name__)
 
@@ -30,18 +26,12 @@ async def err_handler(datums) -> BatchResponses:
 
 listen_addr = "unix:///tmp/async_batch_map_err.sock"
 
-_s: Server = None
-_channel = grpc.insecure_channel(listen_addr)
-_loop = None
-
 
 def startup_callable(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
 async def start_server():
     server = grpc.aio.server()
     server_instance = BatchMapAsyncServer(err_handler)
@@ -49,82 +39,74 @@ async def start_server():
     map_pb2_grpc.add_MapServicer_to_server(udfs, server)
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
     await server.start()
     await server.wait_for_termination()
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestAsyncServerErrorScenario(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel(listen_addr) as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_batch_map_err_server():
+    """Module-scoped fixture: starts an async gRPC batch map error server in a background thread."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
+
+    while True:
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
+            with grpc.insecure_channel(listen_addr) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    def test_batch_map_error(self) -> None:
-        global raise_error
-        raise_error = True
-        stub = self.__stub()
-        try:
-            generator_response = stub.MapFn(
-                request_iterator=request_generator(count=10, handshake=True, session=1)
-            )
-            counter = 0
-            for _ in generator_response:
-                counter += 1
-        except Exception as err:
-            self.assertTrue("Got a runtime error from batch map handler." in err.__str__())
-            return
-        self.fail("Expected an exception.")
+    yield loop
 
-    def test_batch_map_error_no_handshake(self) -> None:
-        global raise_error
-        raise_error = True
-        stub = self.__stub()
-        try:
-            generator_response = stub.MapFn(
-                request_iterator=request_generator(count=10, handshake=False, session=1)
-            )
-            counter = 0
-            for _ in generator_response:
-                counter += 1
-        except Exception as err:
-            self.assertTrue("BatchMapFn: expected handshake as the first message" in err.__str__())
-            return
-        self.fail("Expected an exception.")
-
-    def __stub(self):
-        return map_pb2_grpc.MapStub(_channel)
-
-    def test_invalid_input(self):
-        with self.assertRaises(TypeError):
-            BatchMapAsyncServer()
+    loop.stop()
+    LOGGER.info("stopped the event loop")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+@pytest.fixture()
+def batch_map_err_stub(async_batch_map_err_server):
+    """Returns a MapStub connected to the running async batch map error server."""
+    return map_pb2_grpc.MapStub(grpc.insecure_channel(listen_addr))
+
+
+def test_batch_map_error(batch_map_err_stub) -> None:
+    global raise_error
+    raise_error = True
+    try:
+        generator_response = batch_map_err_stub.MapFn(
+            request_iterator=request_generator(count=10, handshake=True, session=1)
+        )
+        counter = 0
+        for _ in generator_response:
+            counter += 1
+    except Exception as err:
+        assert "Got a runtime error from batch map handler." in str(err)
+        return
+    pytest.fail("Expected an exception.")
+
+
+def test_batch_map_error_no_handshake(batch_map_err_stub) -> None:
+    global raise_error
+    raise_error = True
+    try:
+        generator_response = batch_map_err_stub.MapFn(
+            request_iterator=request_generator(count=10, handshake=False, session=1)
+        )
+        counter = 0
+        for _ in generator_response:
+            counter += 1
+    except Exception as err:
+        assert "BatchMapFn: expected handshake as the first message" in str(err)
+        return
+    pytest.fail("Expected an exception.")
+
+
+def test_invalid_input():
+    with pytest.raises(TypeError):
+        BatchMapAsyncServer()

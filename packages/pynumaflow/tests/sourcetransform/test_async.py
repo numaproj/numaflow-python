@@ -1,13 +1,11 @@
 import asyncio
 import logging
 import threading
-import unittest
-from unittest.mock import patch
-from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio._server import Server
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import MAX_MESSAGE_SIZE
@@ -17,7 +15,6 @@ from pynumaflow.sourcetransformer import Datum, Messages, Message, SourceTransfo
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
 from tests.sourcetransform.utils import get_test_datums
 from tests.testing_utils import (
-    mock_terminate_on_stop,
     mock_new_event_time,
 )
 
@@ -25,6 +22,9 @@ LOGGER = setup_logging(__name__)
 
 # if set to true, transform handler will raise a `ValueError` exception.
 raise_error_from_st = False
+
+SOCK_PATH = "unix:///tmp/async_st.sock"
+METADATA_SOCK_PATH = "unix:///tmp/async_st_metadata.sock"
 
 
 class SimpleAsyncSourceTrn(SourceTransformer):
@@ -46,110 +46,63 @@ def request_generator(req):
     yield from req
 
 
-_s: Server = None
-_channel = grpc.insecure_channel("unix:///tmp/async_st.sock")
-_loop = None
-
-
-def startup_callable(loop):
+def _startup_callable(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
 
-def new_async_st():
-    handle = SimpleAsyncSourceTrn()
-    server = SourceTransformAsyncServer(source_transform_instance=handle)
-    udfs = server.servicer
-    return udfs
-
-
-async def start_server(udfs):
+async def _start_server(udfs):
     _server_options = [
         ("grpc.max_send_message_length", MAX_MESSAGE_SIZE),
         ("grpc.max_receive_message_length", MAX_MESSAGE_SIZE),
     ]
     server = grpc.aio.server(options=_server_options)
     transform_pb2_grpc.add_SourceTransformServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/async_st.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
+    server.add_insecure_port(SOCK_PATH)
+    logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestAsyncTransformer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = new_async_st()
-        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/async_st.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_st_server():
+    """Module-scoped fixture: starts an async gRPC source transform server."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=_startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    handle = SimpleAsyncSourceTrn()
+    server_obj = SourceTransformAsyncServer(source_transform_instance=handle)
+    udfs = server_obj.servicer
+    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
+    future.result(timeout=10)
+
+    while True:
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
+            with grpc.insecure_channel(SOCK_PATH) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    def test_run_server(self) -> None:
-        with grpc.insecure_channel("unix:///tmp/async_st.sock") as channel:
-            stub = transform_pb2_grpc.SourceTransformStub(channel)
-            request = get_test_datums()
-            generator_response = None
-            try:
-                generator_response = stub.SourceTransformFn(
-                    request_iterator=request_generator(request)
-                )
-            except grpc.RpcError as e:
-                logging.error(e)
+    yield loop
 
-            responses = []
-            # capture the output from the ReadFn generator and assert.
-            for r in generator_response:
-                responses.append(r)
+    loop.stop()
+    LOGGER.info("stopped the event loop")
 
-            # 1 handshake + 3 data responses
-            self.assertEqual(4, len(responses))
 
-            self.assertTrue(responses[0].handshake.sot)
+@pytest.fixture()
+def st_stub(async_st_server):
+    """Returns a SourceTransformStub connected to the running async server."""
+    return transform_pb2_grpc.SourceTransformStub(grpc.insecure_channel(SOCK_PATH))
 
-            idx = 1
-            while idx < len(responses):
-                _id = "test-id-" + str(idx)
-                self.assertEqual(_id, responses[idx].id)
-                self.assertEqual(
-                    bytes(
-                        "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                        encoding="utf-8",
-                    ),
-                    responses[idx].results[0].value,
-                )
-                self.assertEqual(1, len(responses[idx].results))
-                idx += 1
 
-            LOGGER.info("Successfully validated the server")
-
-    def test_async_source_transformer(self) -> None:
-        stub = transform_pb2_grpc.SourceTransformStub(_channel)
+def test_run_server(async_st_server):
+    with grpc.insecure_channel(SOCK_PATH) as channel:
+        stub = transform_pb2_grpc.SourceTransformStub(channel)
         request = get_test_datums()
         generator_response = None
         try:
@@ -163,109 +116,137 @@ class TestAsyncTransformer(unittest.TestCase):
             responses.append(r)
 
         # 1 handshake + 3 data responses
-        self.assertEqual(4, len(responses))
+        assert len(responses) == 4
 
-        self.assertTrue(responses[0].handshake.sot)
+        assert responses[0].handshake.sot
 
         idx = 1
         while idx < len(responses):
             _id = "test-id-" + str(idx)
-            self.assertEqual(_id, responses[idx].id)
-            self.assertEqual(
-                bytes(
-                    "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                    encoding="utf-8",
-                ),
-                responses[idx].results[0].value,
+            assert responses[idx].id == _id
+            assert responses[idx].results[0].value == bytes(
+                "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
+                encoding="utf-8",
             )
-            self.assertEqual(1, len(responses[idx].results))
+            assert len(responses[idx].results) == 1
             idx += 1
 
-        # Verify new event time gets assigned.
-        updated_event_time_timestamp = _timestamp_pb2.Timestamp()
-        updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
-        self.assertEqual(
-            updated_event_time_timestamp,
-            responses[1].results[0].event_time,
+        LOGGER.info("Successfully validated the server")
+
+
+def test_async_source_transformer(st_stub):
+    request = get_test_datums()
+    generator_response = None
+    try:
+        generator_response = st_stub.SourceTransformFn(request_iterator=request_generator(request))
+    except grpc.RpcError as e:
+        logging.error(e)
+
+    responses = []
+    # capture the output from the ReadFn generator and assert.
+    for r in generator_response:
+        responses.append(r)
+
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+
+    assert responses[0].handshake.sot
+
+    idx = 1
+    while idx < len(responses):
+        _id = "test-id-" + str(idx)
+        assert responses[idx].id == _id
+        assert responses[idx].results[0].value == bytes(
+            "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
+            encoding="utf-8",
         )
-        # self.assertEqual(code, grpc.StatusCode.OK)
+        assert len(responses[idx].results) == 1
+        idx += 1
 
-    def test_async_source_transformer_grpc_error_no_handshake(self) -> None:
-        stub = transform_pb2_grpc.SourceTransformStub(_channel)
-        request = get_test_datums(handshake=False)
-        grpc_exception = None
+    # Verify new event time gets assigned.
+    updated_event_time_timestamp = _timestamp_pb2.Timestamp()
+    updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
+    assert responses[1].results[0].event_time == updated_event_time_timestamp
 
-        responses = []
+
+def test_async_source_transformer_grpc_error_no_handshake(st_stub):
+    request = get_test_datums(handshake=False)
+    grpc_exception = None
+
+    responses = []
+    try:
+        generator_response = st_stub.SourceTransformFn(request_iterator=request_generator(request))
+        # capture the output from the ReadFn generator and assert.
+        for r in generator_response:
+            responses.append(r)
+    except grpc.RpcError as e:
+        logging.error(e)
+        grpc_exception = e
+        assert "SourceTransformFn: expected handshake message" in str(e)
+
+    assert len(responses) == 0
+    assert grpc_exception is not None
+
+
+def test_async_source_transformer_grpc_error(st_stub):
+    request = get_test_datums()
+    grpc_exception = None
+
+    responses = []
+    try:
+        global raise_error_from_st
+        raise_error_from_st = True
+        generator_response = st_stub.SourceTransformFn(request_iterator=request_generator(request))
+        # capture the output from the ReadFn generator and assert.
+        for r in generator_response:
+            responses.append(r)
+    except grpc.RpcError as e:
+        logging.error(e)
+        grpc_exception = e
+        assert e.code() == grpc.StatusCode.INTERNAL
+        assert "Exception thrown from transform" in str(e)
+    finally:
+        raise_error_from_st = False
+    # 1 handshake
+    assert len(responses) == 1
+    assert grpc_exception is not None
+
+
+def test_is_ready(async_st_server):
+    with grpc.insecure_channel(SOCK_PATH) as channel:
+        stub = transform_pb2_grpc.SourceTransformStub(channel)
+
+        request = _empty_pb2.Empty()
+        response = None
         try:
-            generator_response = stub.SourceTransformFn(request_iterator=request_generator(request))
-            # capture the output from the ReadFn generator and assert.
-            for r in generator_response:
-                responses.append(r)
+            response = stub.IsReady(request=request)
         except grpc.RpcError as e:
             logging.error(e)
-            grpc_exception = e
-            self.assertTrue("SourceTransformFn: expected handshake message" in e.__str__())
 
-        self.assertEqual(0, len(responses))
-        self.assertIsNotNone(grpc_exception)
+        assert response.ready
 
-    def test_async_source_transformer_grpc_error(self) -> None:
-        stub = transform_pb2_grpc.SourceTransformStub(_channel)
-        request = get_test_datums()
-        grpc_exception = None
 
-        responses = []
-        try:
-            global raise_error_from_st
-            raise_error_from_st = True
-            generator_response = stub.SourceTransformFn(request_iterator=request_generator(request))
-            # capture the output from the ReadFn generator and assert.
-            for r in generator_response:
-                responses.append(r)
-        except grpc.RpcError as e:
-            logging.error(e)
-            grpc_exception = e
-            self.assertEqual(grpc.StatusCode.INTERNAL, e.code())
-            self.assertTrue("Exception thrown from transform" in e.__str__())
-        finally:
-            raise_error_from_st = False
-        # 1 handshake
-        self.assertEqual(1, len(responses))
-        self.assertIsNotNone(grpc_exception)
+def test_invalid_input():
+    with pytest.raises(TypeError):
+        SourceTransformAsyncServer()
 
-    def test_is_ready(self) -> None:
-        with grpc.insecure_channel("unix:///tmp/async_st.sock") as channel:
-            stub = transform_pb2_grpc.SourceTransformStub(channel)
 
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.IsReady(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
+def test_max_threads():
+    handle = SimpleAsyncSourceTrn()
+    # max cap at 16
+    server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=32)
+    assert server.max_threads == 16
 
-            self.assertTrue(response.ready)
+    # use argument provided
+    server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=5)
+    assert server.max_threads == 5
 
-    def test_invalid_input(self):
-        with self.assertRaises(TypeError):
-            SourceTransformAsyncServer()
+    # defaults to 4
+    server = SourceTransformAsyncServer(source_transform_instance=handle)
+    assert server.max_threads == 4
 
-    def __stub(self):
-        return transform_pb2_grpc.SourceTransformStub(_channel)
 
-    def test_max_threads(self):
-        handle = SimpleAsyncSourceTrn()
-        # max cap at 16
-        server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = SourceTransformAsyncServer(source_transform_instance=handle, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = SourceTransformAsyncServer(source_transform_instance=handle)
-        self.assertEqual(server.max_threads, 4)
+# --- Metadata test class ---
 
 
 class MetadataAsyncSourceTransformer(SourceTransformer):
@@ -290,100 +271,82 @@ class MetadataAsyncSourceTransformer(SourceTransformer):
         return messages
 
 
-_metadata_s: Server = None
-_metadata_channel = grpc.insecure_channel("unix:///tmp/async_st_metadata.sock")
-_metadata_loop = None
-
-
-def metadata_startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
-def new_metadata_async_st():
-    handle = MetadataAsyncSourceTransformer()
-    server = SourceTransformAsyncServer(source_transform_instance=handle)
-    return server.servicer
-
-
-async def start_metadata_server(udfs):
+async def _start_metadata_server(udfs):
     _server_options = [
         ("grpc.max_send_message_length", MAX_MESSAGE_SIZE),
         ("grpc.max_receive_message_length", MAX_MESSAGE_SIZE),
     ]
     server = grpc.aio.server(options=_server_options)
     transform_pb2_grpc.add_SourceTransformServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/async_st_metadata.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting metadata server on %s", listen_addr)
-    global _metadata_s
-    _metadata_s = server
+    server.add_insecure_port(METADATA_SOCK_PATH)
+    logging.info("Starting metadata server on %s", METADATA_SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server
 
 
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestAsyncTransformerMetadata(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _metadata_loop
-        loop = asyncio.new_event_loop()
-        _metadata_loop = loop
-        _thread = threading.Thread(target=metadata_startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = new_metadata_async_st()
-        asyncio.run_coroutine_threadsafe(start_metadata_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/async_st_metadata.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_st_metadata_server():
+    """Module-scoped fixture: starts an async gRPC metadata source transform server."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=_startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    handle = MetadataAsyncSourceTransformer()
+    server_obj = SourceTransformAsyncServer(source_transform_instance=handle)
+    udfs = server_obj.servicer
+    future = asyncio.run_coroutine_threadsafe(_start_metadata_server(udfs), loop=loop)
+    future.result(timeout=10)
+
+    while True:
         try:
-            _metadata_loop.stop()
-            LOGGER.info("stopped the metadata event loop")
-        except Exception as e:
+            with grpc.insecure_channel(METADATA_SOCK_PATH) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    def test_source_transformer_with_metadata(self) -> None:
-        stub = transform_pb2_grpc.SourceTransformStub(_metadata_channel)
-        request = get_test_datums(with_metadata=True)
-        generator_response = None
-        try:
-            generator_response = stub.SourceTransformFn(request_iterator=request_generator(request))
-        except grpc.RpcError as e:
-            logging.error(e)
-            raise
+    yield loop
 
-        responses = []
-        for r in generator_response:
-            responses.append(r)
-
-        # 1 handshake + 3 data responses
-        self.assertEqual(4, len(responses))
-        self.assertTrue(responses[0].handshake.sot)
-
-        # Verify metadata is passed through correctly
-        for idx, resp in enumerate(responses[1:], 1):
-            _id = "test-id-" + str(idx)
-            self.assertEqual(_id, resp.id)
-            self.assertEqual(1, len(resp.results))
-            # Verify user metadata is returned
-            self.assertEqual(
-                resp.results[0].metadata.user_metadata["custom_info"],
-                metadata_pb2.KeyValueGroup(key_value={"version": f"{idx}.0.0".encode()}),
-            )
-            # System metadata should be empty in responses (user cannot set it)
-            self.assertEqual(resp.results[0].metadata.sys_metadata, {})
+    loop.stop()
+    LOGGER.info("stopped the metadata event loop")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+@pytest.fixture()
+def metadata_stub(async_st_metadata_server):
+    """Returns a SourceTransformStub connected to the metadata server."""
+    return transform_pb2_grpc.SourceTransformStub(grpc.insecure_channel(METADATA_SOCK_PATH))
+
+
+def test_source_transformer_with_metadata(metadata_stub):
+    request = get_test_datums(with_metadata=True)
+    generator_response = None
+    try:
+        generator_response = metadata_stub.SourceTransformFn(
+            request_iterator=request_generator(request)
+        )
+    except grpc.RpcError as e:
+        logging.error(e)
+        raise
+
+    responses = []
+    for r in generator_response:
+        responses.append(r)
+
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    # Verify metadata is passed through correctly
+    for idx, resp in enumerate(responses[1:], 1):
+        _id = "test-id-" + str(idx)
+        assert resp.id == _id
+        assert len(resp.results) == 1
+        # Verify user metadata is returned
+        assert resp.results[0].metadata.user_metadata["custom_info"] == metadata_pb2.KeyValueGroup(
+            key_value={"version": f"{idx}.0.0".encode()}
+        )
+        # System metadata should be empty in responses (user cannot set it)
+        assert resp.results[0].metadata.sys_metadata == {}

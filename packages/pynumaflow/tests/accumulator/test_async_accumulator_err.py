@@ -1,12 +1,10 @@
 import asyncio
 import logging
 import threading
-import unittest
 from collections.abc import AsyncIterable
-from unittest.mock import patch
 
 import grpc
-from grpc.aio._server import Server
+import pytest
 
 from pynumaflow import setup_logging
 from pynumaflow.accumulator import (
@@ -20,10 +18,11 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from tests.testing_utils import (
     mock_message,
     get_time_args,
-    mock_terminate_on_stop,
 )
 
 LOGGER = setup_logging(__name__)
+
+SOCK_PATH = "unix:///tmp/accumulator_err.sock"
 
 
 def request_generator(count, request):
@@ -56,11 +55,6 @@ def start_request() -> accumulator_pb2.AccumulatorRequest:
         operation=operation,
     )
     return request
-
-
-_s: Server = None
-_channel = grpc.insecure_channel("unix:///tmp/accumulator_err.sock")
-_loop = None
 
 
 def startup_callable(loop):
@@ -99,77 +93,68 @@ def NewAsyncAccumulatorError():
     return udfs
 
 
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-async def start_server(udfs):
+async def _start_server(udfs):
     server = grpc.aio.server()
     accumulator_pb2_grpc.add_AccumulatorServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/accumulator_err.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
+    server.add_insecure_port(SOCK_PATH)
+    logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server
 
 
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestAsyncAccumulatorError(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = NewAsyncAccumulatorError()
-        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/accumulator_err.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_accumulator_err_server():
+    """Module-scoped fixture: starts an async gRPC accumulator error server."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    udfs = NewAsyncAccumulatorError()
+    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
+    future.result(timeout=10)
+
+    # Wait for the server to be ready
+    while True:
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
+            with grpc.insecure_channel(SOCK_PATH) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    @patch("psutil.Process.kill", mock_terminate_on_stop)
-    def test_accumulate_partial_success(self) -> None:
-        """Test that the first datum is processed before error occurs"""
-        stub = self.__stub()
-        request = start_request()
+    yield loop
 
-        try:
-            generator_response = stub.AccumulateFn(
-                request_iterator=request_generator(count=5, request=request)
-            )
-
-            # Try to consume the generator
-            counter = 0
-            for response in generator_response:
-                self.assertIsInstance(response, accumulator_pb2.AccumulatorResponse)
-                self.assertTrue(response.payload.value.startswith(b"counter:"))
-                counter += 1
-
-            self.assertEqual(counter, 1, "Expected only one successful response before error")
-        except BaseException as err:
-            self.assertTrue("Simulated error in accumulator handler" in str(err))
-            return
-        self.fail("Expected an exception.")
-
-    def __stub(self):
-        return accumulator_pb2_grpc.AccumulatorStub(_channel)
+    loop.stop()
+    LOGGER.info("stopped the event loop")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+@pytest.fixture()
+def accumulator_err_stub(async_accumulator_err_server):
+    """Returns an AccumulatorStub connected to the running async error server."""
+    return accumulator_pb2_grpc.AccumulatorStub(grpc.insecure_channel(SOCK_PATH))
+
+
+def test_accumulate_partial_success(accumulator_err_stub) -> None:
+    """Test that the first datum is processed before error occurs"""
+    request = start_request()
+
+    try:
+        generator_response = accumulator_err_stub.AccumulateFn(
+            request_iterator=request_generator(count=5, request=request)
+        )
+
+        # Try to consume the generator
+        counter = 0
+        for response in generator_response:
+            assert isinstance(response, accumulator_pb2.AccumulatorResponse)
+            assert response.payload.value.startswith(b"counter:")
+            counter += 1
+
+        assert counter == 1, "Expected only one successful response before error"
+    except BaseException as err:
+        assert "Simulated error in accumulator handler" in str(err)
+        return
+    pytest.fail("Expected an exception.")

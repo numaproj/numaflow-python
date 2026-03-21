@@ -2,11 +2,10 @@ import asyncio
 from collections.abc import Iterator
 import logging
 import threading
-import unittest
 
 import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
@@ -27,10 +26,6 @@ LOGGER = setup_logging(__name__)
 
 server_port = "unix:///tmp/async_source.sock"
 
-_s: Server = None
-_channel = grpc.insecure_channel(server_port)
-_loop = None
-
 
 def startup_callable(loop):
     asyncio.set_event_loop(loop)
@@ -50,8 +45,6 @@ async def start_server(udfs):
     listen_addr = "unix:///tmp/async_source.sock"
     server.add_insecure_port(listen_addr)
     logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
     await server.start()
     await server.wait_for_termination()
 
@@ -68,184 +61,167 @@ def request_generator(count, request, req_type, send_handshake: bool = True):
             yield source_pb2.AckRequest(request=request)
 
 
-class TestAsyncSourcer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = NewAsyncSourcer()
-        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel(server_port) as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_source_server():
+    """Module-scoped fixture: starts an async gRPC source server in a background thread."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    udfs = NewAsyncSourcer()
+    asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
+
+    while True:
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
+            with grpc.insecure_channel(server_port) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    def test_read_source(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
-            stub = source_pb2_grpc.SourceStub(channel)
+    yield loop
 
-            request = read_req_source_fn()
-            try:
-                generator_response: Iterator[source_pb2.ReadResponse] = stub.ReadFn(
-                    request_iterator=request_generator(1, request, "read")
-                )
-            except grpc.RpcError as e:
-                logging.error(e)
-                raise
-
-            counter = 0
-            first = True
-            # capture the output from the ReadFn generator and assert.
-            for r in generator_response:
-                counter += 1
-                if first:
-                    self.assertEqual(True, r.handshake.sot)
-                    first = False
-                    continue
-
-                if r.status.eot:
-                    last = True
-                    continue
-
-                self.assertEqual(
-                    bytes("payload:test_mock_message", encoding="utf-8"),
-                    r.result.payload,
-                )
-                self.assertEqual(
-                    ["test_key"],
-                    r.result.keys,
-                )
-                self.assertEqual(
-                    mock_offset().offset,
-                    r.result.offset.offset,
-                )
-                self.assertEqual(
-                    mock_offset().partition_id,
-                    r.result.offset.partition_id,
-                )
-
-                print(r.result)
-                user_metadata, sys_metadata = _user_and_system_metadata_from_proto(
-                    r.result.metadata
-                )
-                print(user_metadata)
-
-                self.assertCountEqual(user_metadata.groups(), ["custom_info", "test_info"])
-                self.assertCountEqual(
-                    user_metadata.keys("custom_info"), ["custom_key", "custom_key2"]
-                )
-                self.assertIsNone(user_metadata.value("custom_info", "test_key"))
-                self.assertEqual(user_metadata.value("custom_info", "custom_key"), b"custom_value")
-                self.assertEqual(user_metadata.value("test_info", "test_key"), b"test_value")
-
-            self.assertFalse(first)
-            self.assertTrue(last)
-
-            # Assert that the generator was called 12
-            # (10 data messages + handshake + eot) times in the stream
-            self.assertEqual(12, counter)
-
-    def test_is_ready(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
-            stub = source_pb2_grpc.SourceStub(channel)
-
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.IsReady(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
-
-            self.assertTrue(response.ready)
-
-    def test_ack(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
-            stub = source_pb2_grpc.SourceStub(channel)
-            request = ack_req_source_fn()
-            try:
-                response = stub.AckFn(request_iterator=request_generator(1, request, "ack"))
-            except grpc.RpcError as e:
-                print(e)
-
-            count = 0
-            first = True
-            for r in response:
-                count += 1
-                if first:
-                    self.assertEqual(True, r.handshake.sot)
-                    first = False
-                    continue
-                self.assertTrue(r.result.success)
-
-            self.assertEqual(count, 2)
-            self.assertFalse(first)
-
-    def test_nack(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
-            stub = source_pb2_grpc.SourceStub(channel)
-            request = nack_req_source_fn()
-            response = stub.NackFn(request=request)
-            self.assertTrue(response.result.success)
-
-    def test_pending(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
-            stub = source_pb2_grpc.SourceStub(channel)
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.PendingFn(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
-
-            self.assertEqual(response.result.count, 10)
-
-    def test_partitions(self) -> None:
-        with grpc.insecure_channel(server_port) as channel:
-            stub = source_pb2_grpc.SourceStub(channel)
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.PartitionsFn(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
-
-            self.assertEqual(response.result.partitions, mock_partitions())
-
-    def __stub(self):
-        return source_pb2_grpc.SourceStub(_channel)
-
-    def test_max_threads(self):
-        class_instance = AsyncSource()
-        # max cap at 16
-        server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = SourceAsyncServer(sourcer_instance=class_instance)
-        self.assertEqual(server.max_threads, 4)
+    loop.stop()
+    LOGGER.info("stopped the event loop")
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+def test_read_source(async_source_server) -> None:
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+
+        request = read_req_source_fn()
+        try:
+            generator_response: Iterator[source_pb2.ReadResponse] = stub.ReadFn(
+                request_iterator=request_generator(1, request, "read")
+            )
+        except grpc.RpcError as e:
+            logging.error(e)
+            raise
+
+        counter = 0
+        first = True
+        last = False
+        # capture the output from the ReadFn generator and assert.
+        for r in generator_response:
+            counter += 1
+            if first:
+                assert r.handshake.sot is True
+                first = False
+                continue
+
+            if r.status.eot:
+                last = True
+                continue
+
+            assert bytes("payload:test_mock_message", encoding="utf-8") == r.result.payload
+            assert ["test_key"] == r.result.keys
+            assert mock_offset().offset == r.result.offset.offset
+            assert mock_offset().partition_id == r.result.offset.partition_id
+
+            print(r.result)
+            user_metadata, sys_metadata = _user_and_system_metadata_from_proto(r.result.metadata)
+            print(user_metadata)
+
+            assert sorted(user_metadata.groups()) == sorted(["custom_info", "test_info"])
+            assert sorted(user_metadata.keys("custom_info")) == sorted(
+                ["custom_key", "custom_key2"]
+            )
+            assert user_metadata.value("custom_info", "test_key") is None
+            assert user_metadata.value("custom_info", "custom_key") == b"custom_value"
+            assert user_metadata.value("test_info", "test_key") == b"test_value"
+
+        assert not first
+        assert last
+
+        # Assert that the generator was called 12
+        # (10 data messages + handshake + eot) times in the stream
+        assert 12 == counter
+
+
+def test_is_ready(async_source_server) -> None:
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+
+        request = _empty_pb2.Empty()
+        response = None
+        try:
+            response = stub.IsReady(request=request)
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        assert response.ready
+
+
+def test_ack(async_source_server) -> None:
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+        request = ack_req_source_fn()
+        try:
+            response = stub.AckFn(request_iterator=request_generator(1, request, "ack"))
+        except grpc.RpcError as e:
+            print(e)
+
+        count = 0
+        first = True
+        for r in response:
+            count += 1
+            if first:
+                assert r.handshake.sot is True
+                first = False
+                continue
+            assert r.result.success
+
+        assert count == 2
+        assert not first
+
+
+def test_nack(async_source_server) -> None:
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+        request = nack_req_source_fn()
+        response = stub.NackFn(request=request)
+        assert response.result.success
+
+
+def test_pending(async_source_server) -> None:
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+        request = _empty_pb2.Empty()
+        response = None
+        try:
+            response = stub.PendingFn(request=request)
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        assert response.result.count == 10
+
+
+def test_partitions(async_source_server) -> None:
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+        request = _empty_pb2.Empty()
+        response = None
+        try:
+            response = stub.PartitionsFn(request=request)
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        assert response.result.partitions == mock_partitions()
+
+
+def test_max_threads():
+    class_instance = AsyncSource()
+    # max cap at 16
+    server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=32)
+    assert server.max_threads == 16
+
+    # use argument provided
+    server = SourceAsyncServer(sourcer_instance=class_instance, max_threads=5)
+    assert server.max_threads == 5
+
+    # defaults to 4
+    server = SourceAsyncServer(sourcer_instance=class_instance)
+    assert server.max_threads == 4

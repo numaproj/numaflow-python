@@ -1,12 +1,11 @@
 import asyncio
 import logging
 import threading
-import unittest
 from collections.abc import AsyncIterable
 
 import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio._server import Server
 
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
@@ -27,6 +26,8 @@ from tests.testing_utils import (
 
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
+
+SOCK_PATH = "unix:///tmp/reduce.sock"
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -61,11 +62,6 @@ def start_request() -> (Datum, tuple):
         (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )
     return request, metadata
-
-
-_s: Server = None
-_channel = grpc.insecure_channel("unix:///tmp/reduce.sock")
-_loop = None
 
 
 def startup_callable(loop):
@@ -104,166 +100,163 @@ def NewAsyncReducer():
     return udfs
 
 
-async def start_server(udfs):
+async def _start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/reduce.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
+    server.add_insecure_port(SOCK_PATH)
+    logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server
 
 
-class TestAsyncReducer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = NewAsyncReducer()
-        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_reduce_server():
+    """Module-scoped fixture: starts an async gRPC reduce server in a background thread."""
+    loop = asyncio.new_event_loop()
+    thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
+    thread.start()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    udfs = NewAsyncReducer()
+    future = asyncio.run_coroutine_threadsafe(_start_server(udfs), loop=loop)
+    future.result(timeout=10)
+
+    # Wait for the server to be ready
+    while True:
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
+            with grpc.insecure_channel(SOCK_PATH) as channel:
+                f = grpc.channel_ready_future(channel)
+                f.result(timeout=10)
+                if f.done():
+                    break
+        except grpc.FutureTimeoutError as e:
+            LOGGER.error("error trying to connect to grpc server")
             LOGGER.error(e)
 
-    def test_reduce(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request()
-        generator_response = None
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request)
+    yield loop
+
+    loop.stop()
+    LOGGER.info("stopped the event loop")
+
+
+@pytest.fixture()
+def reduce_stub(async_reduce_server):
+    """Returns a ReduceStub connected to the running async server."""
+    return reduce_pb2_grpc.ReduceStub(grpc.insecure_channel(SOCK_PATH))
+
+
+def test_reduce(reduce_stub) -> None:
+    request, metadata = start_request()
+    generator_response = None
+    try:
+        generator_response = reduce_stub.ReduceFn(
+            request_iterator=request_generator(count=10, request=request)
+        )
+    except grpc.RpcError as e:
+        logging.error(e)
+
+    # capture the output from the ReduceFn generator and assert.
+    count = 0
+    eof_count = 0
+    for r in generator_response:
+        if r.result.value:
+            count += 1
+            assert (
+                bytes(
+                    "counter:10",
+                    encoding="utf-8",
+                )
+                == r.result.value
             )
+            assert r.EOF is False
+        else:
+            assert r.EOF is True
+            eof_count += 1
+        assert r.window.start.ToSeconds() == 1662998400
+        assert r.window.end.ToSeconds() == 1662998460
+    # since there is only one key, the output count is 1
+    assert 1 == count
+    assert 1 == eof_count
+
+
+def test_reduce_with_multiple_keys(reduce_stub) -> None:
+    request, metadata = start_request()
+    generator_response = None
+    try:
+        generator_response = reduce_stub.ReduceFn(
+            request_iterator=request_generator(count=100, request=request, resetkey=True),
+        )
+    except grpc.RpcError as e:
+        print(e)
+
+    count = 0
+    eof_count = 0
+
+    # capture the output from the ReduceFn generator and assert.
+    for r in generator_response:
+        # Check for responses with
+        if r.result.value:
+            count += 1
+            assert (
+                bytes(
+                    "counter:1",
+                    encoding="utf-8",
+                )
+                == r.result.value
+            )
+            assert r.EOF is False
+        else:
+            eof_count += 1
+            assert r.EOF is True
+        assert r.window.start.ToSeconds() == 1662998400
+        assert r.window.end.ToSeconds() == 1662998460
+    assert 100 == count
+    assert 1 == eof_count
+
+
+def test_is_ready(async_reduce_server) -> None:
+    with grpc.insecure_channel(SOCK_PATH) as channel:
+        stub = reduce_pb2_grpc.ReduceStub(channel)
+
+        request = _empty_pb2.Empty()
+        response = None
+        try:
+            response = stub.IsReady(request=request)
         except grpc.RpcError as e:
             logging.error(e)
 
-        # capture the output from the ReduceFn generator and assert.
-        count = 0
-        eof_count = 0
-        for r in generator_response:
-            if r.result.value:
-                count += 1
-                self.assertEqual(
-                    bytes(
-                        "counter:10",
-                        encoding="utf-8",
-                    ),
-                    r.result.value,
-                )
-                self.assertEqual(r.EOF, False)
-            else:
-                self.assertEqual(r.EOF, True)
-                eof_count += 1
-            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
-            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
-        # since there is only one key, the output count is 1
-        self.assertEqual(1, count)
-        self.assertEqual(1, eof_count)
-
-    def test_reduce_with_multiple_keys(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request()
-        generator_response = None
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=100, request=request, resetkey=True),
-            )
-        except grpc.RpcError as e:
-            print(e)
-
-        count = 0
-        eof_count = 0
-
-        # capture the output from the ReduceFn generator and assert.
-        for r in generator_response:
-            # Check for responses with
-            if r.result.value:
-                count += 1
-                self.assertEqual(
-                    bytes(
-                        "counter:1",
-                        encoding="utf-8",
-                    ),
-                    r.result.value,
-                )
-                self.assertEqual(r.EOF, False)
-            else:
-                eof_count += 1
-                self.assertEqual(r.EOF, True)
-            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
-            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
-        self.assertEqual(100, count)
-        self.assertEqual(1, eof_count)
-
-    def test_is_ready(self) -> None:
-        with grpc.insecure_channel("unix:///tmp/reduce.sock") as channel:
-            stub = reduce_pb2_grpc.ReduceStub(channel)
-
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.IsReady(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
-
-            self.assertTrue(response.ready)
-
-    def __stub(self):
-        return reduce_pb2_grpc.ReduceStub(_channel)
-
-    def test_error_init(self):
-        # Check that reducer_instance in required
-        with self.assertRaises(TypeError):
-            ReduceAsyncServer()
-        # Check that the init_args and init_kwargs are passed
-        # only with a Reducer class
-        with self.assertRaises(TypeError):
-            ReduceAsyncServer(reduce_handler_func, init_args=(0, 1))
-        # Check that an instance is not passed instead of the class
-        # signature
-        with self.assertRaises(TypeError):
-            ReduceAsyncServer(ExampleClass(0))
-
-        # Check that an invalid class is passed
-        class ExampleBadClass:
-            pass
-
-        with self.assertRaises(TypeError):
-            ReduceAsyncServer(reducer_instance=ExampleBadClass)
-
-    def test_max_threads(self):
-        # max cap at 16
-        server = ReduceAsyncServer(reducer_instance=ExampleClass, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = ReduceAsyncServer(reducer_instance=ExampleClass, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = ReduceAsyncServer(reducer_instance=ExampleClass)
-        self.assertEqual(server.max_threads, 4)
+        assert response.ready
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+def test_error_init():
+    # Check that reducer_instance in required
+    with pytest.raises(TypeError):
+        ReduceAsyncServer()
+    # Check that the init_args and init_kwargs are passed
+    # only with a Reducer class
+    with pytest.raises(TypeError):
+        ReduceAsyncServer(reduce_handler_func, init_args=(0, 1))
+    # Check that an instance is not passed instead of the class
+    # signature
+    with pytest.raises(TypeError):
+        ReduceAsyncServer(ExampleClass(0))
+
+    # Check that an invalid class is passed
+    class ExampleBadClass:
+        pass
+
+    with pytest.raises(TypeError):
+        ReduceAsyncServer(reducer_instance=ExampleBadClass)
+
+
+def test_max_threads():
+    # max cap at 16
+    server = ReduceAsyncServer(reducer_instance=ExampleClass, max_threads=32)
+    assert server.max_threads == 16
+
+    # use argument provided
+    server = ReduceAsyncServer(reducer_instance=ExampleClass, max_threads=5)
+    assert server.max_threads == 5
+
+    # defaults to 4
+    server = ReduceAsyncServer(reducer_instance=ExampleClass)
+    assert server.max_threads == 4

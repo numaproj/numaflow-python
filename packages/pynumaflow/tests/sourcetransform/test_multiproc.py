@@ -1,8 +1,6 @@
 import os
-import unittest
-from unittest.mock import patch
 
-import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
@@ -12,172 +10,145 @@ from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiProcServer
 from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
 from tests.conftest import collect_responses, drain_responses, send_test_requests
-from tests.testing_utils import (
-    mock_new_event_time,
-    mock_terminate_on_stop,
-)
+from tests.testing_utils import mock_new_event_time
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestMultiProcMethods(unittest.TestCase):
-    def setUp(self) -> None:
-        server = SourceTransformMultiProcServer(source_transform_instance=transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
+def _make_multiproc_server(handler):
+    server = SourceTransformMultiProcServer(source_transform_instance=handler)
+    services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: server.servicer}
+    return server_from_dictionary(services, strict_real_time())
 
-    def test_multiproc_init(self) -> None:
-        server = SourceTransformMultiProcServer(
-            source_transform_instance=transform_handler, server_count=3
+
+def _invoke_transform_fn(test_server, timeout=1):
+    """Helper to invoke the SourceTransformFn stream method."""
+    return test_server.invoke_stream_stream(
+        method_descriptor=(
+            transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
+                "SourceTransformFn"
+            ]
+        ),
+        invocation_metadata={},
+        timeout=timeout,
+    )
+
+
+@pytest.fixture()
+def multiproc_test_server():
+    return _make_multiproc_server(transform_handler)
+
+
+def test_multiproc_init():
+    server = SourceTransformMultiProcServer(
+        source_transform_instance=transform_handler, server_count=3
+    )
+    assert server._process_count == 3
+
+
+def test_multiproc_process_count():
+    default_value = os.cpu_count()
+    server = SourceTransformMultiProcServer(source_transform_instance=transform_handler)
+    assert server._process_count == default_value
+
+
+def test_max_process_count():
+    default_value = os.cpu_count()
+    server = SourceTransformMultiProcServer(
+        source_transform_instance=transform_handler, server_count=50
+    )
+    assert server._process_count == 2 * default_value
+
+
+def test_udf_mapt_err_handshake():
+    test_server = _make_multiproc_server(err_transform_handler)
+    test_datums = get_test_datums(handshake=False)
+    method = _invoke_transform_fn(test_server)
+
+    send_test_requests(method, test_datums)
+    drain_responses(method)
+
+    metadata, code, details = method.termination()
+    assert "SourceTransformFn: expected handshake message" in details
+    assert code == StatusCode.INTERNAL
+
+
+def test_udf_mapt_err():
+    test_server = _make_multiproc_server(err_transform_handler)
+    test_datums = get_test_datums()
+    method = _invoke_transform_fn(test_server)
+
+    send_test_requests(method, test_datums)
+    drain_responses(method)
+
+    metadata, code, details = method.termination()
+    assert "Something is fishy" in details
+    assert code == StatusCode.INTERNAL
+
+
+def test_is_ready(multiproc_test_server):
+    method = multiproc_test_server.invoke_unary_unary(
+        method_descriptor=(
+            transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name["IsReady"]
+        ),
+        invocation_metadata={},
+        request=_empty_pb2.Empty(),
+        timeout=1,
+    )
+
+    response, metadata, code, details = method.termination()
+    assert response == transform_pb2.ReadyResponse(ready=True)
+    assert code == StatusCode.OK
+
+
+def test_mapt_assign_new_event_time(multiproc_test_server):
+    test_datums = get_test_datums()
+    method = _invoke_transform_fn(multiproc_test_server)
+
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    result_ids = {f"test-id-{id}" for id in range(1, 4)}
+    idx = 1
+    while idx < len(responses):
+        result_ids.remove(responses[idx].id)
+        assert responses[idx].results[0].value == bytes(
+            "payload:test_mock_message event_time:2022-09-12 16:00:00 ",
+            encoding="utf-8",
         )
-        self.assertEqual(server._process_count, 3)
+        assert len(responses[idx].results) == 1
+        idx += 1
+    assert len(result_ids) == 0
 
-    def test_multiproc_process_count(self) -> None:
-        default_value = os.cpu_count()
-        server = SourceTransformMultiProcServer(source_transform_instance=transform_handler)
-        self.assertEqual(server._process_count, default_value)
-
-    def test_max_process_count(self) -> None:
-        default_value = os.cpu_count()
-        server = SourceTransformMultiProcServer(
-            source_transform_instance=transform_handler, server_count=50
-        )
-        self.assertEqual(server._process_count, 2 * default_value)
-
-    def test_udf_mapt_err_handshake(self):
-        server = SourceTransformMultiProcServer(source_transform_instance=err_transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
-
-        test_datums = get_test_datums(handshake=False)
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
-        )
-
-        send_test_requests(method, test_datums)
-        drain_responses(method)
-
-        metadata, code, details = method.termination()
-        self.assertTrue("SourceTransformFn: expected handshake message" in details)
-        self.assertEqual(grpc.StatusCode.INTERNAL, code)
-
-    def test_udf_mapt_err(self):
-        server = SourceTransformMultiProcServer(source_transform_instance=err_transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
-
-        test_datums = get_test_datums()
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
-        )
-
-        send_test_requests(method, test_datums)
-        drain_responses(method)
-
-        metadata, code, details = method.termination()
-        self.assertTrue("Something is fishy" in details)
-        self.assertEqual(grpc.StatusCode.INTERNAL, code)
-
-    def test_is_ready(self):
-        method = self.test_server.invoke_unary_unary(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "IsReady"
-                ]
-            ),
-            invocation_metadata={},
-            request=_empty_pb2.Empty(),
-            timeout=1,
-        )
-
-        response, metadata, code, details = method.termination()
-        expected = transform_pb2.ReadyResponse(ready=True)
-        self.assertEqual(expected, response)
-        self.assertEqual(code, StatusCode.OK)
-
-    def test_mapt_assign_new_event_time(self):
-        test_datums = get_test_datums()
-
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
-        )
-
-        send_test_requests(method, test_datums)
-        responses = collect_responses(method)
-
-        metadata, code, details = method.termination()
-
-        # 1 handshake + 3 data responses
-        self.assertEqual(4, len(responses))
-
-        self.assertTrue(responses[0].handshake.sot)
-
-        result_ids = {f"test-id-{id}" for id in range(1, 4)}
-        idx = 1
-        while idx < len(responses):
-            result_ids.remove(responses[idx].id)
-            self.assertEqual(
-                bytes(
-                    "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                    encoding="utf-8",
-                ),
-                responses[idx].results[0].value,
-            )
-            self.assertEqual(1, len(responses[idx].results))
-            idx += 1
-        self.assertEqual(len(result_ids), 0)
-
-        # Verify new event time gets assigned.
-        updated_event_time_timestamp = _timestamp_pb2.Timestamp()
-        updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
-        self.assertEqual(
-            updated_event_time_timestamp,
-            responses[1].results[0].event_time,
-        )
-        self.assertEqual(code, StatusCode.OK)
-
-    def test_invalid_input(self):
-        with self.assertRaises(TypeError):
-            SourceTransformMultiProcServer()
-
-    def test_max_threads(self):
-        # max cap at 16
-        server = SourceTransformMultiProcServer(
-            source_transform_instance=transform_handler, max_threads=32
-        )
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = SourceTransformMultiProcServer(
-            source_transform_instance=transform_handler, max_threads=5
-        )
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = SourceTransformMultiProcServer(source_transform_instance=transform_handler)
-        self.assertEqual(server.max_threads, 4)
+    # Verify new event time gets assigned.
+    updated_event_time_timestamp = _timestamp_pb2.Timestamp()
+    updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
+    assert responses[1].results[0].event_time == updated_event_time_timestamp
+    assert code == StatusCode.OK
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_invalid_input():
+    with pytest.raises(TypeError):
+        SourceTransformMultiProcServer()
+
+
+def test_max_threads():
+    # max cap at 16
+    server = SourceTransformMultiProcServer(
+        source_transform_instance=transform_handler, max_threads=32
+    )
+    assert server.max_threads == 16
+
+    # use argument provided
+    server = SourceTransformMultiProcServer(
+        source_transform_instance=transform_handler, max_threads=5
+    )
+    assert server.max_threads == 5
+
+    # defaults to 4
+    server = SourceTransformMultiProcServer(source_transform_instance=transform_handler)
+    assert server.max_threads == 4

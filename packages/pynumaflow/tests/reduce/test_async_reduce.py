@@ -24,6 +24,8 @@ from tests.testing_utils import (
     get_time_args,
 )
 
+pytestmark = pytest.mark.integration
+
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 

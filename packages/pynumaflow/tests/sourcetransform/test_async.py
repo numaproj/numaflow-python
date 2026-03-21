@@ -18,6 +18,8 @@ from tests.testing_utils import (
     mock_new_event_time,
 )
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 # if set to true, transform handler will raise a `ValueError` exception.

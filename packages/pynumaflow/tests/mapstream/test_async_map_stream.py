@@ -15,7 +15,10 @@ from pynumaflow.mapstreamer import (
 )
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.mapstream.utils import request_generator
+
 import pytest
+
+pytestmark = pytest.mark.integration
 
 LOGGER = setup_logging(__name__)
 

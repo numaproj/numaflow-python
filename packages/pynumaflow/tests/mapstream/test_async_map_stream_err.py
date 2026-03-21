@@ -11,6 +11,8 @@ from pynumaflow.mapstreamer import Message, Datum, MapStreamAsyncServer
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.mapstream.utils import request_generator
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 SOCK_PATH = "unix:///tmp/async_map_stream_err.sock"

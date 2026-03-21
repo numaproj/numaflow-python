@@ -11,6 +11,8 @@ from pynumaflow.batchmapper import BatchMapAsyncServer
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.batchmap.utils import request_generator
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 raise_error = False

@@ -23,6 +23,8 @@ from tests.testing_utils import (
     get_time_args,
 )
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 SOCK_PATH = "unix:///tmp/accumulator.sock"

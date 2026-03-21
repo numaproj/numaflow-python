@@ -92,6 +92,9 @@ log_cli = true
 log_cli_level = "DEBUG"
 log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+markers = [
+    "integration: tests that start real gRPC servers on Unix sockets (slower)",
+]
 
 [tool.ruff]
 line-length = 100

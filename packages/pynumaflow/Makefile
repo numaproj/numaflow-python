@@ -17,6 +17,12 @@ lint: format
 test:
 	uv run pytest tests/ -rA
 
+test-unit:
+	uv run pytest tests/ -m "not integration" -rA
+
+test-integration:
+	uv run pytest tests/ -m integration -rA
+
 
 setup:
 	uv sync --all-groups

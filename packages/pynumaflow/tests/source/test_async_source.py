@@ -22,6 +22,8 @@ from tests.source.utils import (
     nack_req_source_fn,
 )
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 server_port = "unix:///tmp/async_source.sock"

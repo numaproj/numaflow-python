@@ -19,6 +19,8 @@ from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from tests.map.utils import get_test_datums
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 # if set to true, map handler will raise a `ValueError` exception.

@@ -19,6 +19,8 @@ from pynumaflow.batchmapper import (
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.batchmap.utils import request_generator
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
 
 listen_addr = "unix:///tmp/batch_map.sock"

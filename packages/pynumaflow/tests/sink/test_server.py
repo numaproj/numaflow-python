@@ -22,6 +22,7 @@ from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker import Responses, Datum, Response, SinkServer, Message, UserMetadata
 from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
+from tests.conftest import collect_responses, drain_responses, send_test_requests
 
 
 def mockenv(**envvars):
@@ -201,18 +202,8 @@ def test_udsink_err(err_sink_test_server):
         timeout=1,
     )
 
-    for d in test_datums:
-        method.send_request(d)
-    method.requests_closed()
-
-    responses = []
-    while True:
-        try:
-            resp = method.take_response()
-            responses.append(resp)
-        except ValueError as err:
-            if "No more responses!" in str(err):
-                break
+    send_test_requests(method, test_datums)
+    drain_responses(method)
 
     metadata, code, details = method.termination()
     assert code == StatusCode.INTERNAL
@@ -267,18 +258,8 @@ def test_forward_message(sink_test_server):
         invocation_metadata={},
         timeout=1,
     )
-    for x in test_datums:
-        method.send_request(x)
-    method.requests_closed()
-
-    responses = []
-    while True:
-        try:
-            resp = method.take_response()
-            responses.append(resp)
-        except ValueError as err:
-            if "No more responses!" in str(err):
-                break
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
 
     # 1 handshake +  1 data messages + 1 EOT
     assert len(responses) == 3
@@ -323,18 +304,20 @@ def test_start_on_success_sink():
     assert server.server_info_file == ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH
 
 
-def test_max_threads():
-    # max cap at 16
-    server = SinkServer(sinker_instance=udsink_handler, max_threads=32)
-    assert server.max_threads == 16
-
-    # use argument provided
-    server = SinkServer(sinker_instance=udsink_handler, max_threads=5)
-    assert server.max_threads == 5
-
-    # defaults to 4
-    server = SinkServer(sinker_instance=udsink_handler)
-    assert server.max_threads == 4
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"sinker_instance": udsink_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SinkServer(**kwargs)
+    assert server.max_threads == expected
 
 
 # ---------------------------------------------------------------------------
@@ -370,15 +353,8 @@ def test_shutdown_event_set_on_handler_error():
         timeout=2,
     )
 
-    for d in test_datums:
-        method.send_request(d)
-    method.requests_closed()
-
-    while True:
-        try:
-            method.take_response()
-        except ValueError:
-            break
+    send_test_requests(method, test_datums)
+    drain_responses(method)
 
     _, code, _ = method.termination()
     assert code == StatusCode.INTERNAL

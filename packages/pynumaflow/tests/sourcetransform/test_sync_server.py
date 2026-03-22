@@ -1,7 +1,4 @@
-import unittest
-from unittest.mock import patch
-
-import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from grpc import StatusCode
@@ -11,189 +8,140 @@ from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2
 from pynumaflow.sourcetransformer import SourceTransformServer, Datum, Messages, Message
 from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
-from tests.testing_utils import (
-    mock_terminate_on_stop,
-    mock_new_event_time,
+from tests.conftest import collect_responses, drain_responses, send_test_requests
+from tests.testing_utils import mock_new_event_time
+
+
+def _make_transform_server(handler):
+    server = SourceTransformServer(source_transform_instance=handler)
+    services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: server.servicer}
+    return server_from_dictionary(services, strict_real_time())
+
+
+def _invoke_transform_fn(test_server, timeout=1):
+    """Helper to invoke the SourceTransformFn stream method."""
+    return test_server.invoke_stream_stream(
+        method_descriptor=(
+            transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
+                "SourceTransformFn"
+            ]
+        ),
+        invocation_metadata={},
+        timeout=timeout,
+    )
+
+
+@pytest.fixture()
+def transform_test_server():
+    return _make_transform_server(transform_handler)
+
+
+# ---------------------------------------------------------------------------
+# TestServer tests
+# ---------------------------------------------------------------------------
+
+
+def test_init_with_args():
+    server = SourceTransformServer(
+        source_transform_instance=transform_handler,
+        sock_path="/tmp/test.sock",
+        max_message_size=1024 * 1024 * 5,
+    )
+    assert server.sock_path == "unix:///tmp/test.sock"
+    assert server.max_message_size == 1024 * 1024 * 5
+
+
+@pytest.mark.parametrize(
+    "handshake,expected_msg",
+    [
+        (True, "Something is fishy"),
+        (False, "SourceTransformFn: expected handshake message"),
+    ],
 )
+def test_udf_mapt_error(handshake, expected_msg):
+    test_server = _make_transform_server(err_transform_handler)
+    test_datums = get_test_datums(handshake=handshake)
+    method = _invoke_transform_fn(test_server)
+
+    send_test_requests(method, test_datums)
+    drain_responses(method)
+
+    metadata, code, details = method.termination()
+    assert expected_msg in details
+    assert code == StatusCode.INTERNAL
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestServer(unittest.TestCase):
-    def setUp(self) -> None:
-        server = SourceTransformServer(source_transform_instance=transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
+def test_is_ready(transform_test_server):
+    method = transform_test_server.invoke_unary_unary(
+        method_descriptor=(
+            transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name["IsReady"]
+        ),
+        invocation_metadata={},
+        request=_empty_pb2.Empty(),
+        timeout=1,
+    )
 
-    def test_init_with_args(self) -> None:
-        server = SourceTransformServer(
-            source_transform_instance=transform_handler,
-            sock_path="/tmp/test.sock",
-            max_message_size=1024 * 1024 * 5,
+    response, metadata, code, details = method.termination()
+    assert response == transform_pb2.ReadyResponse(ready=True)
+    assert code == StatusCode.OK
+
+
+def test_mapt_assign_new_event_time(transform_test_server):
+    test_datums = get_test_datums()
+    method = _invoke_transform_fn(transform_test_server)
+
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    result_ids = {f"test-id-{id}" for id in range(1, 4)}
+    idx = 1
+    while idx < len(responses):
+        result_ids.remove(responses[idx].id)
+        assert responses[idx].results[0].value == bytes(
+            "payload:test_mock_message event_time:2022-09-12 16:00:00 ",
+            encoding="utf-8",
         )
-        self.assertEqual(server.sock_path, "unix:///tmp/test.sock")
-        self.assertEqual(server.max_message_size, 1024 * 1024 * 5)
+        assert len(responses[idx].results) == 1
+        idx += 1
+    assert len(result_ids) == 0
 
-    def test_udf_mapt_err(self):
-        server = SourceTransformServer(source_transform_instance=err_transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
+    # Verify new event time gets assigned.
+    updated_event_time_timestamp = _timestamp_pb2.Timestamp()
+    updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
+    assert responses[1].results[0].event_time == updated_event_time_timestamp
+    assert code == StatusCode.OK
 
-        test_datums = get_test_datums()
 
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
-        )
+def test_invalid_input():
+    with pytest.raises(TypeError):
+        SourceTransformServer()
 
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
 
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"source_transform_instance": transform_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SourceTransformServer(**kwargs)
+    assert server.max_threads == expected
 
-        metadata, code, details = method.termination()
-        self.assertTrue("Something is fishy" in details)
-        self.assertEqual(grpc.StatusCode.INTERNAL, code)
 
-    def test_is_ready(self):
-        method = self.test_server.invoke_unary_unary(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "IsReady"
-                ]
-            ),
-            invocation_metadata={},
-            request=_empty_pb2.Empty(),
-            timeout=1,
-        )
-
-        response, metadata, code, details = method.termination()
-        expected = transform_pb2.ReadyResponse(ready=True)
-        self.assertEqual(expected, response)
-        self.assertEqual(code, StatusCode.OK)
-
-    def test_udf_mapt_err_handshake(self):
-        server = SourceTransformServer(source_transform_instance=err_transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
-
-        test_datums = get_test_datums(handshake=False)
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
-        )
-
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
-
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
-
-        metadata, code, details = method.termination()
-        self.assertTrue("SourceTransformFn: expected handshake message" in details)
-        self.assertEqual(grpc.StatusCode.INTERNAL, code)
-
-    def test_mapt_assign_new_event_time(self):
-        test_datums = get_test_datums()
-
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
-        )
-
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
-
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
-
-        metadata, code, details = method.termination()
-
-        # 1 handshake + 3 data responses
-        self.assertEqual(4, len(responses))
-
-        self.assertTrue(responses[0].handshake.sot)
-
-        result_ids = {f"test-id-{id}" for id in range(1, 4)}
-        idx = 1
-        while idx < len(responses):
-            result_ids.remove(responses[idx].id)
-            self.assertEqual(
-                bytes(
-                    "payload:test_mock_message " "event_time:2022-09-12 16:00:00 ",
-                    encoding="utf-8",
-                ),
-                responses[idx].results[0].value,
-            )
-            self.assertEqual(1, len(responses[idx].results))
-            idx += 1
-        self.assertEqual(len(result_ids), 0)
-
-        # Verify new event time gets assigned.
-        updated_event_time_timestamp = _timestamp_pb2.Timestamp()
-        updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
-        self.assertEqual(
-            updated_event_time_timestamp,
-            responses[1].results[0].event_time,
-        )
-        self.assertEqual(code, StatusCode.OK)
-
-    def test_invalid_input(self):
-        with self.assertRaises(TypeError):
-            SourceTransformServer()
-
-    def test_max_threads(self):
-        # max cap at 16
-        server = SourceTransformServer(source_transform_instance=transform_handler, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = SourceTransformServer(source_transform_instance=transform_handler, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = SourceTransformServer(source_transform_instance=transform_handler)
-        self.assertEqual(server.max_threads, 4)
+# ---------------------------------------------------------------------------
+# Metadata tests
+# ---------------------------------------------------------------------------
 
 
 def metadata_transform_handler(keys: list[str], datum: Datum) -> Messages:
@@ -214,63 +162,36 @@ def metadata_transform_handler(keys: list[str], datum: Datum) -> Messages:
     return messages
 
 
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestServerMetadata(unittest.TestCase):
-    def setUp(self) -> None:
-        server = SourceTransformServer(source_transform_instance=metadata_transform_handler)
-        my_servicer = server.servicer
-        services = {transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
+@pytest.fixture()
+def metadata_test_server():
+    return _make_transform_server(metadata_transform_handler)
 
-    def test_source_transform_with_metadata(self):
-        test_datums = get_test_datums(with_metadata=True)
 
-        method = self.test_server.invoke_stream_stream(
-            method_descriptor=(
-                transform_pb2.DESCRIPTOR.services_by_name["SourceTransform"].methods_by_name[
-                    "SourceTransformFn"
-                ]
-            ),
-            invocation_metadata={},
-            timeout=1,
+def test_source_transform_with_metadata(metadata_test_server):
+    test_datums = get_test_datums(with_metadata=True)
+    method = _invoke_transform_fn(metadata_test_server)
+
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    # Verify metadata is passed through correctly
+    result_metadata = {}
+    for resp in responses[1:]:
+        result_metadata[resp.id] = resp.results[0].metadata
+
+    for idx in range(1, 4):
+        _id = f"test-id-{idx}"
+        assert _id in result_metadata
+        assert result_metadata[_id].user_metadata["custom_info"] == metadata_pb2.KeyValueGroup(
+            key_value={"version": f"{idx}.0.0".encode()}
         )
+        # System metadata should be empty in responses
+        assert result_metadata[_id].sys_metadata == {}
 
-        for x in test_datums:
-            method.send_request(x)
-        method.requests_closed()
-
-        responses = []
-        while True:
-            try:
-                resp = method.take_response()
-                responses.append(resp)
-            except ValueError as err:
-                if "No more responses!" in err.__str__():
-                    break
-
-        metadata, code, details = method.termination()
-
-        # 1 handshake + 3 data responses
-        self.assertEqual(4, len(responses))
-        self.assertTrue(responses[0].handshake.sot)
-
-        # Verify metadata is passed through correctly
-        result_metadata = {}
-        for resp in responses[1:]:
-            result_metadata[resp.id] = resp.results[0].metadata
-
-        for idx in range(1, 4):
-            _id = f"test-id-{idx}"
-            self.assertIn(_id, result_metadata)
-            self.assertEqual(
-                result_metadata[_id].user_metadata["custom_info"],
-                metadata_pb2.KeyValueGroup(key_value={"version": f"{idx}.0.0".encode()}),
-            )
-            # System metadata should be empty in responses
-            self.assertEqual(result_metadata[_id].sys_metadata, {})
-
-        self.assertEqual(code, StatusCode.OK)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    assert code == StatusCode.OK

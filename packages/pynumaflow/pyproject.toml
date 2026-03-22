@@ -38,7 +38,7 @@ Repository = "https://github.com/numaproj/numaflow-python"
 
 [dependency-groups]
 dev = [
-    "pytest>=7.2.1",
+    "pytest>=9.0.2",
     "pytest-cov>=3.0",
     "black>=23.1",
     "grpcio-testing>=1.48.1",
@@ -84,6 +84,16 @@ exclude = '''
 )/
 '''
 
+[tool.pytest]
+strict = true
+collect_imported_tests = false
+console_output_style = "times"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+markers = [
+    "integration: tests that start real gRPC servers on Unix sockets (slower)",
+]
+
 [tool.ruff]
 line-length = 100
 src = ["pynumaflow", "tests", "examples"]
@@ -94,4 +104,6 @@ extend-exclude = [
     "*_pb2*.py",
     "*.pyi"
 ]
+
+[tool.ruff.lint]
 select = ["E", "F", "UP"]

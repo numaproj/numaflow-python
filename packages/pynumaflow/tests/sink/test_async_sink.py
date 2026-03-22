@@ -1,12 +1,9 @@
-import asyncio
 import logging
-import threading
-import unittest
 from collections.abc import AsyncIterable
 
 import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import (
@@ -25,6 +22,7 @@ from pynumaflow.sinker import (
 from pynumaflow.sinker import Responses, Response, Message, UserMetadata
 from pynumaflow.proto.sinker import sink_pb2_grpc, sink_pb2
 from pynumaflow.sinker.async_server import SinkAsyncServer
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.sink.test_server import (
     mock_message,
     mock_err_message,
@@ -33,7 +31,11 @@ from tests.sink.test_server import (
 )
 from tests.testing_utils import get_time_args
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
+
+SOCK_PATH = "unix:///tmp/async_sink.sock"
 
 
 async def udsink_handler(datums: AsyncIterable[Datum]) -> Responses:
@@ -102,275 +104,246 @@ def request_generator(count, req_type="success", session=1, handshake=True):
         yield sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True))
 
 
-_s: Server = None
-_channel = grpc.insecure_channel("unix:///tmp/async_sink.sock")
-_loop = None
-
-
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-
-async def start_server():
+async def _start_server():
     server = grpc.aio.server()
     server_instance = SinkAsyncServer(sinker_instance=udsink_handler)
     uds = server_instance.servicer
     sink_pb2_grpc.add_SinkServicer_to_server(uds, server)
-    listen_addr = "unix:///tmp/async_sink.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
+    server.add_insecure_port(SOCK_PATH)
+    logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server, SOCK_PATH
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-class TestAsyncSink(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        asyncio.run_coroutine_threadsafe(start_server(), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/async_sink.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_sink_server():
+    """Module-scoped fixture: starts an async gRPC sink server in a background thread."""
+    loop = create_async_loop()
 
-    @classmethod
-    def tearDownClass(cls) -> None:
+    server = start_async_server(loop, _start_server())
+
+    yield loop
+
+    teardown_async_server(loop, server)
+
+
+@pytest.fixture()
+def sink_stub(async_sink_server):
+    """Returns a SinkStub connected to the running async server."""
+    return sink_pb2_grpc.SinkStub(grpc.insecure_channel(SOCK_PATH))
+
+
+def test_run_server(async_sink_server):
+    with grpc.insecure_channel(SOCK_PATH) as channel:
+        stub = sink_pb2_grpc.SinkStub(channel)
+
+        request = _empty_pb2.Empty()
+        response = None
         try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
-            LOGGER.error(e)
-
-    #
-    def test_run_server(self) -> None:
-        with grpc.insecure_channel("unix:///tmp/async_sink.sock") as channel:
-            stub = sink_pb2_grpc.SinkStub(channel)
-
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.IsReady(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
-
-            self.assertTrue(response.ready)
-
-    def test_sink(self) -> None:
-        stub = self.__stub()
-        generator_response = None
-        grpc_exception = None
-        try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, req_type="success", session=1)
-            )
-            handshake = next(generator_response)
-            # assert that handshake response is received.
-            self.assertTrue(handshake.handshake.sot)
-
-            data_resp = []
-            for r in generator_response:
-                data_resp.append(r)
-
-            # 1 sink data response + 1 EOT response
-            self.assertEqual(2, len(data_resp))
-
-            idx = 0
-            # capture the output from the SinkFn generator and assert.
-            for resp in data_resp[0].results:
-                self.assertEqual(resp.id, str(idx))
-                self.assertEqual(resp.status, sink_pb2.Status.SUCCESS)
-                idx += 1
-            # EOT Response
-            self.assertEqual(data_resp[1].status.eot, True)
-
-        except grpc.RpcError as e:
-            logging.error(e)
-            grpc_exception = e
-
-        self.assertIsNone(grpc_exception)
-
-    def test_sink_err(self) -> None:
-        stub = self.__stub()
-        grpc_exception = None
-        try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, req_type="err")
-            )
-            for _ in generator_response:
-                pass
-        except BaseException as e:
-            self.assertTrue(
-                f"{ERR_UDF_EXCEPTION_STRING}: ValueError('test_mock_err_message')" in e.__str__()
-            )
-            return
-        except grpc.RpcError as e:
-            grpc_exception = e
-            self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
-            print(e.details())
-
-        self.assertIsNotNone(grpc_exception)
-
-    def test_sink_err_handshake(self) -> None:
-        stub = self.__stub()
-        grpc_exception = None
-        try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, req_type="success", handshake=False)
-            )
-            for _ in generator_response:
-                pass
-        except BaseException as e:
-            self.assertTrue("ReadFn: expected handshake message" in e.__str__())
-            return
-        except grpc.RpcError as e:
-            grpc_exception = e
-            self.assertEqual(grpc.StatusCode.UNKNOWN, e.code())
-            print(e.details())
-
-        self.assertIsNotNone(grpc_exception)
-
-    def test_sink_fallback(self) -> None:
-        stub = self.__stub()
-        try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, req_type="fallback", session=1)
-            )
-            handshake = next(generator_response)
-            # assert that handshake response is received.
-            self.assertTrue(handshake.handshake.sot)
-
-            data_resp = []
-            for r in generator_response:
-                data_resp.append(r)
-
-            # 1 sink data response + 1 EOT response
-            self.assertEqual(2, len(data_resp))
-
-            idx = 0
-            # capture the output from the SinkFn generator and assert.
-            for resp in data_resp[0].results:
-                self.assertEqual(resp.id, str(idx))
-                self.assertEqual(resp.status, sink_pb2.Status.FALLBACK)
-                idx += 1
-            # EOT Response
-            self.assertEqual(data_resp[1].status.eot, True)
-
+            response = stub.IsReady(request=request)
         except grpc.RpcError as e:
             logging.error(e)
 
-    def test_sink_on_success1(self) -> None:
-        stub = self.__stub()
-        grpc_exception = None
-        try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, req_type="on_success1", session=1)
-            )
-            handshake = next(generator_response)
-            # assert that handshake response is received.
-            self.assertTrue(handshake.handshake.sot)
-
-            data_resp = []
-            for r in generator_response:
-                data_resp.append(r)
-
-            # 1 sink data response + 1 EOT response
-            self.assertEqual(2, len(data_resp))
-
-            idx = 0
-            # capture the output from the SinkFn generator and assert.
-            for resp in data_resp[0].results:
-                self.assertEqual(resp.id, str(idx))
-                self.assertEqual(resp.status, sink_pb2.Status.ON_SUCCESS)
-                idx += 1
-            # EOT Response
-            self.assertEqual(data_resp[1].status.eot, True)
-
-        except grpc.RpcError as e:
-            logging.error(e)
-            grpc_exception = e
-
-        self.assertIsNone(grpc_exception)
-
-    def test_sink_on_success2(self) -> None:
-        stub = self.__stub()
-        grpc_exception = None
-        try:
-            generator_response = stub.SinkFn(
-                request_iterator=request_generator(count=10, req_type="on_success2", session=1)
-            )
-            handshake = next(generator_response)
-            # assert that handshake response is received.
-            self.assertTrue(handshake.handshake.sot)
-
-            data_resp = []
-            for r in generator_response:
-                data_resp.append(r)
-
-            # 1 sink data response + 1 EOT response
-            self.assertEqual(2, len(data_resp))
-
-            idx = 0
-            # capture the output from the SinkFn generator and assert.
-            for resp in data_resp[0].results:
-                self.assertEqual(resp.id, str(idx))
-                self.assertEqual(resp.status, sink_pb2.Status.ON_SUCCESS)
-                idx += 1
-            # EOT Response
-            self.assertEqual(data_resp[1].status.eot, True)
-
-        except grpc.RpcError as e:
-            logging.error(e)
-            grpc_exception = e
-
-        self.assertIsNone(grpc_exception)
-
-    def __stub(self):
-        return sink_pb2_grpc.SinkStub(_channel)
-
-    def test_invalid_server_type(self) -> None:
-        with self.assertRaises(TypeError):
-            SinkAsyncServer()
-
-    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_FALLBACK_SINK)
-    def test_start_fallback_sink(self):
-        server = SinkAsyncServer(sinker_instance=udsink_handler)
-        self.assertEqual(server.sock_path, f"unix://{FALLBACK_SINK_SOCK_PATH}")
-        self.assertEqual(server.server_info_file, FALLBACK_SINK_SERVER_INFO_FILE_PATH)
-
-    @mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_ON_SUCCESS_SINK)
-    def test_start_on_success_sink(self):
-        server = SinkAsyncServer(sinker_instance=udsink_handler)
-        self.assertEqual(server.sock_path, f"unix://{ON_SUCCESS_SINK_SOCK_PATH}")
-        self.assertEqual(server.server_info_file, ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH)
-
-    def test_max_threads(self):
-        # max cap at 16
-        server = SinkAsyncServer(sinker_instance=udsink_handler, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = SinkAsyncServer(sinker_instance=udsink_handler, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = SinkAsyncServer(sinker_instance=udsink_handler)
-        self.assertEqual(server.max_threads, 4)
+        assert response.ready
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+def test_sink(sink_stub):
+    generator_response = None
+    grpc_exception = None
+    try:
+        generator_response = sink_stub.SinkFn(
+            request_iterator=request_generator(count=10, req_type="success", session=1)
+        )
+        handshake = next(generator_response)
+        # assert that handshake response is received.
+        assert handshake.handshake.sot
+
+        data_resp = []
+        for r in generator_response:
+            data_resp.append(r)
+
+        # 1 sink data response + 1 EOT response
+        assert len(data_resp) == 2
+
+        idx = 0
+        # capture the output from the SinkFn generator and assert.
+        for resp in data_resp[0].results:
+            assert resp.id == str(idx)
+            assert resp.status == sink_pb2.Status.SUCCESS
+            idx += 1
+        # EOT Response
+        assert data_resp[1].status.eot is True
+
+    except grpc.RpcError as e:
+        logging.error(e)
+        grpc_exception = e
+
+    assert grpc_exception is None
+
+
+def test_sink_err(sink_stub):
+    grpc_exception = None
+    try:
+        generator_response = sink_stub.SinkFn(
+            request_iterator=request_generator(count=10, req_type="err")
+        )
+        for _ in generator_response:
+            pass
+    except BaseException as e:
+        assert f"{ERR_UDF_EXCEPTION_STRING}: ValueError('test_mock_err_message')" in str(e)
+        return
+    except grpc.RpcError as e:
+        grpc_exception = e
+        assert e.code() == grpc.StatusCode.UNKNOWN
+        print(e.details())
+
+    assert grpc_exception is not None
+
+
+def test_sink_err_handshake(sink_stub):
+    grpc_exception = None
+    try:
+        generator_response = sink_stub.SinkFn(
+            request_iterator=request_generator(count=10, req_type="success", handshake=False)
+        )
+        for _ in generator_response:
+            pass
+    except BaseException as e:
+        assert "ReadFn: expected handshake message" in str(e)
+        return
+    except grpc.RpcError as e:
+        grpc_exception = e
+        assert e.code() == grpc.StatusCode.UNKNOWN
+        print(e.details())
+
+    assert grpc_exception is not None
+
+
+def test_sink_fallback(sink_stub):
+    try:
+        generator_response = sink_stub.SinkFn(
+            request_iterator=request_generator(count=10, req_type="fallback", session=1)
+        )
+        handshake = next(generator_response)
+        # assert that handshake response is received.
+        assert handshake.handshake.sot
+
+        data_resp = []
+        for r in generator_response:
+            data_resp.append(r)
+
+        # 1 sink data response + 1 EOT response
+        assert len(data_resp) == 2
+
+        idx = 0
+        # capture the output from the SinkFn generator and assert.
+        for resp in data_resp[0].results:
+            assert resp.id == str(idx)
+            assert resp.status == sink_pb2.Status.FALLBACK
+            idx += 1
+        # EOT Response
+        assert data_resp[1].status.eot is True
+
+    except grpc.RpcError as e:
+        logging.error(e)
+
+
+def test_sink_on_success1(sink_stub):
+    grpc_exception = None
+    try:
+        generator_response = sink_stub.SinkFn(
+            request_iterator=request_generator(count=10, req_type="on_success1", session=1)
+        )
+        handshake = next(generator_response)
+        # assert that handshake response is received.
+        assert handshake.handshake.sot
+
+        data_resp = []
+        for r in generator_response:
+            data_resp.append(r)
+
+        # 1 sink data response + 1 EOT response
+        assert len(data_resp) == 2
+
+        idx = 0
+        # capture the output from the SinkFn generator and assert.
+        for resp in data_resp[0].results:
+            assert resp.id == str(idx)
+            assert resp.status == sink_pb2.Status.ON_SUCCESS
+            idx += 1
+        # EOT Response
+        assert data_resp[1].status.eot is True
+
+    except grpc.RpcError as e:
+        logging.error(e)
+        grpc_exception = e
+
+    assert grpc_exception is None
+
+
+def test_sink_on_success2(sink_stub):
+    grpc_exception = None
+    try:
+        generator_response = sink_stub.SinkFn(
+            request_iterator=request_generator(count=10, req_type="on_success2", session=1)
+        )
+        handshake = next(generator_response)
+        # assert that handshake response is received.
+        assert handshake.handshake.sot
+
+        data_resp = []
+        for r in generator_response:
+            data_resp.append(r)
+
+        # 1 sink data response + 1 EOT response
+        assert len(data_resp) == 2
+
+        idx = 0
+        # capture the output from the SinkFn generator and assert.
+        for resp in data_resp[0].results:
+            assert resp.id == str(idx)
+            assert resp.status == sink_pb2.Status.ON_SUCCESS
+            idx += 1
+        # EOT Response
+        assert data_resp[1].status.eot is True
+
+    except grpc.RpcError as e:
+        logging.error(e)
+        grpc_exception = e
+
+    assert grpc_exception is None
+
+
+def test_invalid_server_type():
+    with pytest.raises(TypeError):
+        SinkAsyncServer()
+
+
+@mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_FALLBACK_SINK)
+def test_start_fallback_sink():
+    server = SinkAsyncServer(sinker_instance=udsink_handler)
+    assert server.sock_path == f"unix://{FALLBACK_SINK_SOCK_PATH}"
+    assert server.server_info_file == FALLBACK_SINK_SERVER_INFO_FILE_PATH
+
+
+@mockenv(NUMAFLOW_UD_CONTAINER_TYPE=UD_CONTAINER_ON_SUCCESS_SINK)
+def test_start_on_success_sink():
+    server = SinkAsyncServer(sinker_instance=udsink_handler)
+    assert server.sock_path == f"unix://{ON_SUCCESS_SINK_SOCK_PATH}"
+    assert server.server_info_file == ON_SUCCESS_SINK_SERVER_INFO_FILE_PATH
+
+
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"sinker_instance": udsink_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SinkAsyncServer(**kwargs)
+    assert server.max_threads == expected

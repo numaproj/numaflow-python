@@ -1,12 +1,9 @@
-import asyncio
 import logging
-import threading
-import unittest
 from collections.abc import AsyncIterable
 
 import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
-from grpc.aio._server import Server
 
 from pynumaflow import setup_logging
 from pynumaflow._constants import WIN_START_TIME, WIN_END_TIME
@@ -19,6 +16,7 @@ from pynumaflow.reducestreamer import (
 )
 from pynumaflow.proto.reducer import reduce_pb2, reduce_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
+from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 from tests.testing_utils import (
     mock_message,
     mock_interval_window_start,
@@ -26,7 +24,11 @@ from tests.testing_utils import (
     get_time_args,
 )
 
+pytestmark = pytest.mark.integration
+
 LOGGER = setup_logging(__name__)
+
+SOCK_PATH = "unix:///tmp/reduce_stream.sock"
 
 
 def request_generator(count, request, resetkey: bool = False):
@@ -66,16 +68,6 @@ def start_request() -> (Datum, tuple):
         (WIN_END_TIME, f"{mock_interval_window_end()}"),
     )
     return request, metadata
-
-
-_s: Server = None
-_channel = grpc.insecure_channel("unix:///tmp/reduce_stream.sock")
-_loop = None
-
-
-def startup_callable(loop):
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
 
 
 class ExampleClass(ReduceStreamer):
@@ -124,241 +116,224 @@ def NewAsyncReduceStreamer():
     return udfs
 
 
-async def start_server(udfs):
+async def _start_server(udfs):
     server = grpc.aio.server()
     reduce_pb2_grpc.add_ReduceServicer_to_server(udfs, server)
-    listen_addr = "unix:///tmp/reduce_stream.sock"
-    server.add_insecure_port(listen_addr)
-    logging.info("Starting server on %s", listen_addr)
-    global _s
-    _s = server
+    server.add_insecure_port(SOCK_PATH)
+    logging.info("Starting server on %s", SOCK_PATH)
     await server.start()
-    await server.wait_for_termination()
+    return server, SOCK_PATH
 
 
-class TestAsyncReduceStreamer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        global _loop
-        loop = asyncio.new_event_loop()
-        _loop = loop
-        _thread = threading.Thread(target=startup_callable, args=(loop,), daemon=True)
-        _thread.start()
-        udfs = NewAsyncReduceStreamer()
-        asyncio.run_coroutine_threadsafe(start_server(udfs), loop=loop)
-        while True:
-            try:
-                with grpc.insecure_channel("unix:///tmp/reduce_stream.sock") as channel:
-                    f = grpc.channel_ready_future(channel)
-                    f.result(timeout=10)
-                    if f.done():
-                        break
-            except grpc.FutureTimeoutError as e:
-                LOGGER.error("error trying to connect to grpc server")
-                LOGGER.error(e)
+@pytest.fixture(scope="module")
+def async_reduce_stream_server():
+    """Module-scoped fixture: starts an async gRPC reduce stream server in a background thread."""
+    loop = create_async_loop()
+    udfs = NewAsyncReduceStreamer()
+    server = start_async_server(loop, _start_server(udfs))
+    yield loop
+    teardown_async_server(loop, server)
 
-    @classmethod
-    def tearDownClass(cls) -> None:
-        try:
-            _loop.stop()
-            LOGGER.info("stopped the event loop")
-        except Exception as e:
-            LOGGER.error(e)
 
-    def test_reduce(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request()
-        generator_response = None
+@pytest.fixture()
+def reduce_stream_stub(async_reduce_stream_server):
+    """Returns a ReduceStub connected to the running async reduce stream server."""
+    return reduce_pb2_grpc.ReduceStub(grpc.insecure_channel(SOCK_PATH))
 
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=10, request=request)
-            )
-        except grpc.RpcError as e:
-            logging.error(e)
 
-        # capture the output from the ReduceFn generator and assert.
-        count = 0
-        eof_count = 0
-        for r in generator_response:
-            if r.result.value:
-                count += 1
-                if count <= 3:
-                    self.assertEqual(
-                        bytes(
-                            "counter:3",
-                            encoding="utf-8",
-                        ),
-                        r.result.value,
+def test_reduce(reduce_stream_stub) -> None:
+    request, metadata = start_request()
+    generator_response = None
+
+    try:
+        generator_response = reduce_stream_stub.ReduceFn(
+            request_iterator=request_generator(count=10, request=request)
+        )
+    except grpc.RpcError as e:
+        logging.error(e)
+
+    # capture the output from the ReduceFn generator and assert.
+    count = 0
+    eof_count = 0
+    for r in generator_response:
+        if r.result.value:
+            count += 1
+            if count <= 3:
+                assert (
+                    bytes(
+                        "counter:3",
+                        encoding="utf-8",
                     )
-                else:
-                    self.assertEqual(
-                        bytes(
-                            "counter:1",
-                            encoding="utf-8",
-                        ),
-                        r.result.value,
-                    )
-                self.assertEqual(r.EOF, False)
+                    == r.result.value
+                )
             else:
-                self.assertEqual(r.EOF, True)
-                eof_count += 1
-            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
-            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
-        # in our example we should be return 3 messages early with counter:3
-        # and last message with counter:1
-        self.assertEqual(4, count)
-        self.assertEqual(1, eof_count)
-
-    def test_reduce_with_multiple_keys(self) -> None:
-        stub = self.__stub()
-        request, metadata = start_request()
-        generator_response = None
-        try:
-            generator_response = stub.ReduceFn(
-                request_iterator=request_generator(count=100, request=request, resetkey=True),
-            )
-        except grpc.RpcError as e:
-            print(e)
-
-        count = 0
-        eof_count = 0
-
-        # capture the output from the ReduceFn generator and assert.
-        for r in generator_response:
-            # Check for responses with
-            if r.result.value:
-                count += 1
-                self.assertEqual(
+                assert (
                     bytes(
                         "counter:1",
                         encoding="utf-8",
-                    ),
-                    r.result.value,
+                    )
+                    == r.result.value
                 )
-                self.assertEqual(r.EOF, False)
-            else:
-                eof_count += 1
-                self.assertEqual(r.EOF, True)
-            self.assertEqual(r.window.start.ToSeconds(), 1662998400)
-            self.assertEqual(r.window.end.ToSeconds(), 1662998460)
-        self.assertEqual(100, count)
-        self.assertEqual(1, eof_count)
+            assert r.EOF is False
+        else:
+            assert r.EOF is True
+            eof_count += 1
+        assert r.window.start.ToSeconds() == 1662998400
+        assert r.window.end.ToSeconds() == 1662998460
+    # in our example we should be return 3 messages early with counter:3
+    # and last message with counter:1
+    assert 4 == count
+    assert 1 == eof_count
 
-    def test_is_ready(self) -> None:
-        with grpc.insecure_channel("unix:///tmp/reduce_stream.sock") as channel:
-            stub = reduce_pb2_grpc.ReduceStub(channel)
 
-            request = _empty_pb2.Empty()
-            response = None
-            try:
-                response = stub.IsReady(request=request)
-            except grpc.RpcError as e:
-                logging.error(e)
-
-            self.assertTrue(response.ready)
-
-    def __stub(self):
-        return reduce_pb2_grpc.ReduceStub(_channel)
-
-    def test_error_init(self):
-        # Check that reducer_instance in required
-        with self.assertRaises(TypeError):
-            ReduceStreamAsyncServer()
-        # Check that the init_args and init_kwargs are passed
-        # only with a Reducer class
-        with self.assertRaises(TypeError):
-            ReduceStreamAsyncServer(reduce_handler_func, init_args=(0, 1))
-        # Check that an instance is not passed instead of the class
-        # signature
-        with self.assertRaises(TypeError):
-            ReduceStreamAsyncServer(ExampleClass(0))
-
-        # Check that an invalid class is passed
-        class ExampleBadClass:
-            pass
-
-        with self.assertRaises(TypeError):
-            ReduceStreamAsyncServer(reduce_stream_instance=ExampleBadClass)
-
-    def test_max_threads(self):
-        # max cap at 16
-        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
-        self.assertEqual(server.max_threads, 4)
-
-    def test_start_shutdown_handler_without_callback(self):
-        """Test that _shutdown_handler logs and works when no shutdown_callback is set."""
-        from unittest.mock import patch, MagicMock
-
-        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
-        self.assertIsNone(server.shutdown_callback)
-
-        def close_coro(coro, **kwargs):
-            coro.close()
-
-        with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun:
-            mock_aiorun.run.side_effect = close_coro
-            server.start()
-
-            # Extract the shutdown_callback passed to aiorun.run
-            call_kwargs = mock_aiorun.run.call_args[1]
-            shutdown_handler = call_kwargs["shutdown_callback"]
-
-            # Invoke the handler — should not raise even without a callback
-            mock_loop = MagicMock()
-            shutdown_handler(mock_loop)
-
-    def test_start_shutdown_handler_with_callback(self):
-        """Test that _shutdown_handler invokes the user-provided shutdown_callback."""
-        from unittest.mock import patch, MagicMock
-
-        user_callback = MagicMock()
-        server = ReduceStreamAsyncServer(
-            reduce_stream_instance=ExampleClass, shutdown_callback=user_callback
+def test_reduce_with_multiple_keys(reduce_stream_stub) -> None:
+    request, metadata = start_request()
+    generator_response = None
+    try:
+        generator_response = reduce_stream_stub.ReduceFn(
+            request_iterator=request_generator(count=100, request=request, resetkey=True),
         )
+    except grpc.RpcError as e:
+        print(e)
 
-        def close_coro(coro, **kwargs):
-            coro.close()
+    count = 0
+    eof_count = 0
 
-        with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun:
-            mock_aiorun.run.side_effect = close_coro
-            server.start()
-
-            shutdown_handler = mock_aiorun.run.call_args[1]["shutdown_callback"]
-            mock_loop = MagicMock()
-            shutdown_handler(mock_loop)
-
-            user_callback.assert_called_once_with(mock_loop)
-
-    def test_start_exits_on_error(self):
-        """Test that start() calls sys.exit(1) when servicer reports an error."""
-        from unittest.mock import patch
-
-        server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
-
-        def fake_aiorun_run(coro, **kwargs):
-            # Simulate aiorun completing after a UDF error was recorded
-            coro.close()  # prevent "coroutine never awaited" warning
-            server._error = RuntimeError("UDF failure")
-
-        with (
-            patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun,
-            patch("pynumaflow.reducestreamer.async_server.sys") as mock_sys,
-        ):
-            mock_aiorun.run.side_effect = fake_aiorun_run
-            server.start()
-
-            mock_sys.exit.assert_called_once_with(1)
+    # capture the output from the ReduceFn generator and assert.
+    for r in generator_response:
+        # Check for responses with
+        if r.result.value:
+            count += 1
+            assert (
+                bytes(
+                    "counter:1",
+                    encoding="utf-8",
+                )
+                == r.result.value
+            )
+            assert r.EOF is False
+        else:
+            eof_count += 1
+            assert r.EOF is True
+        assert r.window.start.ToSeconds() == 1662998400
+        assert r.window.end.ToSeconds() == 1662998460
+    assert 100 == count
+    assert 1 == eof_count
 
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    unittest.main()
+def test_is_ready(async_reduce_stream_server) -> None:
+    with grpc.insecure_channel(SOCK_PATH) as channel:
+        stub = reduce_pb2_grpc.ReduceStub(channel)
+
+        request = _empty_pb2.Empty()
+        response = None
+        try:
+            response = stub.IsReady(request=request)
+        except grpc.RpcError as e:
+            logging.error(e)
+
+        assert response.ready
+
+
+def test_error_init():
+    # Check that reducer_instance in required
+    with pytest.raises(TypeError):
+        ReduceStreamAsyncServer()
+    # Check that the init_args and init_kwargs are passed
+    # only with a Reducer class
+    with pytest.raises(TypeError):
+        ReduceStreamAsyncServer(reduce_handler_func, init_args=(0, 1))
+    # Check that an instance is not passed instead of the class
+    # signature
+    with pytest.raises(TypeError):
+        ReduceStreamAsyncServer(ExampleClass(0))
+
+    # Check that an invalid class is passed
+    class ExampleBadClass:
+        pass
+
+    with pytest.raises(TypeError):
+        ReduceStreamAsyncServer(reduce_stream_instance=ExampleBadClass)
+
+
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"reduce_stream_instance": ExampleClass}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = ReduceStreamAsyncServer(**kwargs)
+    assert server.max_threads == expected
+
+
+def test_start_shutdown_handler_without_callback():
+    """Test that _shutdown_handler logs and works when no shutdown_callback is set."""
+    from unittest.mock import patch, MagicMock
+
+    server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
+    assert server.shutdown_callback is None
+
+    def close_coro(coro, **kwargs):
+        coro.close()
+
+    with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun:
+        mock_aiorun.run.side_effect = close_coro
+        server.start()
+
+        # Extract the shutdown_callback passed to aiorun.run
+        call_kwargs = mock_aiorun.run.call_args[1]
+        shutdown_handler = call_kwargs["shutdown_callback"]
+
+        # Invoke the handler — should not raise even without a callback
+        mock_loop = MagicMock()
+        shutdown_handler(mock_loop)
+
+
+def test_start_shutdown_handler_with_callback():
+    """Test that _shutdown_handler invokes the user-provided shutdown_callback."""
+    from unittest.mock import patch, MagicMock
+
+    user_callback = MagicMock()
+    server = ReduceStreamAsyncServer(
+        reduce_stream_instance=ExampleClass, shutdown_callback=user_callback
+    )
+
+    def close_coro(coro, **kwargs):
+        coro.close()
+
+    with patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun:
+        mock_aiorun.run.side_effect = close_coro
+        server.start()
+
+        shutdown_handler = mock_aiorun.run.call_args[1]["shutdown_callback"]
+        mock_loop = MagicMock()
+        shutdown_handler(mock_loop)
+
+        user_callback.assert_called_once_with(mock_loop)
+
+
+def test_start_exits_on_error():
+    """Test that start() calls sys.exit(1) when servicer reports an error."""
+    from unittest.mock import patch
+
+    server = ReduceStreamAsyncServer(reduce_stream_instance=ExampleClass)
+
+    def fake_aiorun_run(coro, **kwargs):
+        # Simulate aiorun completing after a UDF error was recorded
+        coro.close()  # prevent "coroutine never awaited" warning
+        server._error = RuntimeError("UDF failure")
+
+    with (
+        patch("pynumaflow.reducestreamer.async_server.aiorun") as mock_aiorun,
+        patch("pynumaflow.reducestreamer.async_server.sys") as mock_sys,
+    ):
+        mock_aiorun.run.side_effect = fake_aiorun_run
+        server.start()
+
+        mock_sys.exit.assert_called_once_with(1)

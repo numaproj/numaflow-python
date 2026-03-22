@@ -1,14 +1,10 @@
-import unittest
-from unittest.mock import patch
-
-import grpc
+import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
 from grpc import StatusCode
 from grpc_testing import server_from_dictionary, strict_real_time
-from pynumaflow.proto.sideinput import sideinput_pb2
 
+from pynumaflow.proto.sideinput import sideinput_pb2
 from pynumaflow.sideinput import Response, SideInputServer
-from tests.testing_utils import mock_terminate_on_stop
 
 
 def retrieve_side_input_handler() -> Response:
@@ -29,135 +25,100 @@ def mock_message():
     return msg
 
 
-# We are mocking the terminate function from the psutil to not exit the program during testing
-@patch("psutil.Process.kill", mock_terminate_on_stop)
-class TestServer(unittest.TestCase):
-    """
-    Test the SideInput grpc server
-    """
-
-    def setUp(self) -> None:
-        server = SideInputServer(retrieve_side_input_handler)
-        my_service = server.servicer
-        services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
-        self.test_server = server_from_dictionary(services, strict_real_time())
-
-    def test_init_with_args(self) -> None:
-        """
-        Test the initialization of the SideInput class,
-        """
-        my_servicer = SideInputServer(
-            side_input_instance=retrieve_side_input_handler,
-            sock_path="/tmp/test_side_input.sock",
-            max_message_size=1024 * 1024 * 5,
-        )
-        self.assertEqual(my_servicer.sock_path, "unix:///tmp/test_side_input.sock")
-        self.assertEqual(my_servicer.max_message_size, 1024 * 1024 * 5)
-
-    def test_side_input_err(self):
-        """
-        Test the error case for the RetrieveSideInput method,
-        """
-        server = SideInputServer(err_retrieve_handler)
-        my_service = server.servicer
-        services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_service}
-        self.test_server = server_from_dictionary(services, strict_real_time())
-
-        method = self.test_server.invoke_unary_unary(
-            method_descriptor=(
-                sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name[
-                    "RetrieveSideInput"
-                ]
-            ),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=_empty_pb2.Empty(),
-            timeout=1,
-        )
-        response, metadata, code, details = method.termination()
-        self.assertEqual(grpc.StatusCode.INTERNAL, code)
-
-    def test_is_ready(self):
-        method = self.test_server.invoke_unary_unary(
-            method_descriptor=(
-                sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name["IsReady"]
-            ),
-            invocation_metadata={},
-            request=_empty_pb2.Empty(),
-            timeout=1,
-        )
-
-        response, metadata, code, details = method.termination()
-        expected = sideinput_pb2.ReadyResponse(ready=True)
-        self.assertEqual(expected, response)
-        self.assertEqual(code, StatusCode.OK)
-
-    def test_side_input_message(self):
-        """
-        Test the broadcast_message method,
-        where we expect the no_broadcast flag to be False and
-        the message value to be the mock_message.
-        """
-        method = self.test_server.invoke_unary_unary(
-            method_descriptor=(
-                sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name[
-                    "RetrieveSideInput"
-                ]
-            ),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=_empty_pb2.Empty(),
-            timeout=1,
-        )
-        response, metadata, code, details = method.termination()
-        self.assertEqual(mock_message(), response.value)
-        self.assertEqual(code, StatusCode.OK)
-
-    def test_side_input_no_broadcast(self):
-        """
-        Test the no_broadcast_message method,
-        where we expect the no_broadcast flag to be True.
-        """
-        server = SideInputServer(side_input_instance=retrieve_no_broadcast_handler)
-        my_servicer = server.servicer
-        services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: my_servicer}
-        self.test_server = server_from_dictionary(services, strict_real_time())
-
-        method = self.test_server.invoke_unary_unary(
-            method_descriptor=(
-                sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name[
-                    "RetrieveSideInput"
-                ]
-            ),
-            invocation_metadata={
-                ("this_metadata_will_be_skipped", "test_ignore"),
-            },
-            request=_empty_pb2.Empty(),
-            timeout=1,
-        )
-        response, metadata, code, details = method.termination()
-        self.assertEqual(code, StatusCode.OK)
-        self.assertEqual(response.no_broadcast, True)
-
-    def test_invalid_input(self):
-        with self.assertRaises(TypeError):
-            SideInputServer()
-
-    def test_max_threads(self):
-        # max cap at 16
-        server = SideInputServer(retrieve_side_input_handler, max_threads=32)
-        self.assertEqual(server.max_threads, 16)
-
-        # use argument provided
-        server = SideInputServer(retrieve_side_input_handler, max_threads=5)
-        self.assertEqual(server.max_threads, 5)
-
-        # defaults to 4
-        server = SideInputServer(retrieve_side_input_handler)
-        self.assertEqual(server.max_threads, 4)
+@pytest.fixture()
+def sideinput_test_server():
+    server = SideInputServer(retrieve_side_input_handler)
+    services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: server.servicer}
+    return server_from_dictionary(services, strict_real_time())
 
 
-if __name__ == "__main__":
-    unittest.main()
+def _invoke_retrieve(test_server, metadata_set=None):
+    """Helper to invoke RetrieveSideInput unary method."""
+    if metadata_set is None:
+        metadata_set = {("this_metadata_will_be_skipped", "test_ignore")}
+    return test_server.invoke_unary_unary(
+        method_descriptor=(
+            sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name[
+                "RetrieveSideInput"
+            ]
+        ),
+        invocation_metadata=metadata_set,
+        request=_empty_pb2.Empty(),
+        timeout=1,
+    )
+
+
+def test_init_with_args():
+    my_servicer = SideInputServer(
+        side_input_instance=retrieve_side_input_handler,
+        sock_path="/tmp/test_side_input.sock",
+        max_message_size=1024 * 1024 * 5,
+    )
+    assert my_servicer.sock_path == "unix:///tmp/test_side_input.sock"
+    assert my_servicer.max_message_size == 1024 * 1024 * 5
+
+
+def test_side_input_err():
+    server = SideInputServer(err_retrieve_handler)
+    services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: server.servicer}
+    test_server = server_from_dictionary(services, strict_real_time())
+
+    method = _invoke_retrieve(test_server)
+    response, metadata, code, details = method.termination()
+    assert code == StatusCode.INTERNAL
+
+
+def test_is_ready(sideinput_test_server):
+    method = sideinput_test_server.invoke_unary_unary(
+        method_descriptor=(
+            sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"].methods_by_name["IsReady"]
+        ),
+        invocation_metadata={},
+        request=_empty_pb2.Empty(),
+        timeout=1,
+    )
+
+    response, metadata, code, details = method.termination()
+    assert response == sideinput_pb2.ReadyResponse(ready=True)
+    assert code == StatusCode.OK
+
+
+def test_side_input_message(sideinput_test_server):
+    """Broadcast message: no_broadcast flag is False and value is mock_message."""
+    method = _invoke_retrieve(sideinput_test_server)
+    response, metadata, code, details = method.termination()
+    assert response.value == mock_message()
+    assert code == StatusCode.OK
+
+
+def test_side_input_no_broadcast():
+    """No-broadcast message: no_broadcast flag is True."""
+    server = SideInputServer(side_input_instance=retrieve_no_broadcast_handler)
+    services = {sideinput_pb2.DESCRIPTOR.services_by_name["SideInput"]: server.servicer}
+    test_server = server_from_dictionary(services, strict_real_time())
+
+    method = _invoke_retrieve(test_server)
+    response, metadata, code, details = method.termination()
+    assert code == StatusCode.OK
+    assert response.no_broadcast is True
+
+
+def test_invalid_input():
+    with pytest.raises(TypeError):
+        SideInputServer()
+
+
+@pytest.mark.parametrize(
+    "max_threads_arg,expected",
+    [
+        (32, 16),  # max cap at 16
+        (5, 5),  # use argument provided
+        (None, 4),  # defaults to 4
+    ],
+)
+def test_max_threads(max_threads_arg, expected):
+    kwargs = {"side_input_instance": retrieve_side_input_handler}
+    if max_threads_arg is not None:
+        kwargs["max_threads"] = max_threads_arg
+    server = SideInputServer(**kwargs)
+    assert server.max_threads == expected

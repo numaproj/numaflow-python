@@ -1554,7 +1554,7 @@ dev = [
     { name = "grpcio-testing", specifier = ">=1.48.1" },
     { name = "mypy", specifier = ">=1.18.2" },
     { name = "pre-commit", specifier = ">=3.3.1" },
-    { name = "pytest", specifier = ">=7.2.1" },
+    { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov", specifier = ">=3.0" },
     { name = "ruff", specifier = ">=0.0.264" },
     { name = "types-protobuf", specifier = ">=6.32.1.20250918" },

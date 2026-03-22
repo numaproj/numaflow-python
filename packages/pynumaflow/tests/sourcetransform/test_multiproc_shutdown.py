@@ -15,6 +15,7 @@ from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiProcServer
 from pynumaflow.proto.sourcetransformer import transform_pb2
+from tests.conftest import drain_responses, send_test_requests
 from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
 
 
@@ -38,15 +39,8 @@ def test_shutdown_event_set_on_handler_error():
         timeout=2,
     )
 
-    for d in test_datums:
-        method.send_request(d)
-    method.requests_closed()
-
-    while True:
-        try:
-            method.take_response()
-        except ValueError:
-            break
+    send_test_requests(method, test_datums)
+    drain_responses(method)
 
     _, code, _ = method.termination()
     assert code == StatusCode.INTERNAL
@@ -74,15 +68,8 @@ def test_shutdown_event_set_on_handshake_error():
         timeout=1,
     )
 
-    for d in test_datums:
-        method.send_request(d)
-    method.requests_closed()
-
-    while True:
-        try:
-            method.take_response()
-        except ValueError:
-            break
+    send_test_requests(method, test_datums)
+    drain_responses(method)
 
     _, code, details = method.termination()
     assert code == StatusCode.INTERNAL

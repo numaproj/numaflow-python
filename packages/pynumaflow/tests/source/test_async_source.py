@@ -196,7 +196,10 @@ def test_partitions(async_source_server) -> None:
 
 
 def test_partitions_default_total_partitions_is_none(async_source_server) -> None:
-    """Verify total_partitions is not set when the source doesn't override total_partitions_handler."""
+    """
+    Verify total_partitions is not set when the source doesn't override
+    total_partitions_handler.
+    """
     with grpc.insecure_channel(server_port) as channel:
         stub = source_pb2_grpc.SourceStub(channel)
         request = _empty_pb2.Empty()
@@ -240,7 +243,9 @@ def async_source_server_with_total_partitions():
 
 
 def test_partitions_with_total_partitions(async_source_server_with_total_partitions) -> None:
-    """Verify total_partitions flows through gRPC when the source implements total_partitions_handler."""
+    """
+    Verify total_partitions flows through gRPC when the source implements total_partitions_handler.
+    """
     with grpc.insecure_channel(server_port_tp) as channel:
         stub = source_pb2_grpc.SourceStub(channel)
         request = _empty_pb2.Empty()

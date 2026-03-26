@@ -1,4 +1,5 @@
 import os
+import warnings
 from abc import ABCMeta, abstractmethod
 from collections.abc import AsyncIterator, Callable, Iterator
 from dataclasses import dataclass
@@ -240,24 +241,31 @@ class PendingResponse:
 class PartitionsResponse:
     """
     PartitionsResponse is the response for the partition request.
-    It indicates the number of partitions at the user defined source.
-    A negative count indicates that the partition information is not available.
+    It indicates the active partitions at the user defined source.
 
     Args:
-        count: the number of partitions.
+        partitions: the list of active partitions.
+        total_partitions: the total number of partitions in the source (optional).
     """
 
     _partitions: list[int]
+    _total_partitions: int | None
 
-    def __init__(self, partitions: list[int]):
+    def __init__(self, partitions: list[int], total_partitions: int | None = None):
         if not isinstance(partitions, list):
             raise TypeError(f"Wrong data type: {type(partitions)} for Partition.partitions")
         self._partitions = partitions
+        self._total_partitions = total_partitions
 
     @property
     def partitions(self) -> list[int]:
-        """Returns the list of partitions"""
+        """Returns the list of active partitions"""
         return self._partitions
+
+    @property
+    def total_partitions(self) -> int | None:
+        """Returns the total number of partitions, or None if not available"""
+        return self._total_partitions
 
 
 class Sourcer(metaclass=ABCMeta):
@@ -297,12 +305,36 @@ class Sourcer(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     async def partitions_handler(self) -> PartitionsResponse:
         """
-        The simple source always returns zero to indicate there is no pending record.
+        .. deprecated::
+            Use :meth:`active_partitions_handler` instead.
+
+        Returns the active partitions associated with the source.
         """
-        pass
+        warnings.warn(
+            "partitions_handler is deprecated, use active_partitions_handler instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return PartitionsResponse(partitions=get_default_partitions())
+
+    async def active_partitions_handler(self) -> PartitionsResponse:
+        """
+        Returns the active partitions associated with the source, used by the platform
+        to determine the partitions to which the watermark should be published.
+        Falls back to partitions_handler() if not overridden.
+        """
+        return await self.partitions_handler()
+
+    async def total_partitions_handler(self) -> int | None:
+        """
+        Returns the total number of partitions in the source.
+        Used by the platform for watermark progression to know when all
+        processors have reported in.
+        Returns None by default, indicating the source does not report total partitions.
+        """
+        return None
 
 
 # Create default partition id from the environment variable "NUMAFLOW_REPLICA"

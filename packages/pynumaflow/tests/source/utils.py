@@ -56,6 +56,40 @@ class AsyncSource(Sourcer):
         return PartitionsResponse(partitions=mock_partitions())
 
 
+class AsyncSourceWithTotalPartitions(Sourcer):
+    """A test source that implements active_partitions_handler and total_partitions_handler."""
+
+    async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
+        payload = b"payload:test_mock_message"
+        keys = ["test_key"]
+        offset = mock_offset()
+        event_time = mock_event_time()
+        for i in range(10):
+            await output.put(
+                Message(
+                    payload=payload,
+                    keys=keys,
+                    offset=offset,
+                    event_time=event_time,
+                )
+            )
+
+    async def ack_handler(self, ack_request: AckRequest):
+        return
+
+    async def nack_handler(self, nack_request: NackRequest):
+        return
+
+    async def pending_handler(self) -> PendingResponse:
+        return PendingResponse(count=10)
+
+    async def active_partitions_handler(self) -> PartitionsResponse:
+        return PartitionsResponse(partitions=mock_partitions())
+
+    async def total_partitions_handler(self) -> int | None:
+        return 10
+
+
 class SyncSource(Sourcer):
     def read_handler(self, datum: ReadRequest) -> Iterable[Message]:
         payload = b"payload:test_mock_message"

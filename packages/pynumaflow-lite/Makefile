@@ -42,3 +42,17 @@ test-rust:
 
 clean:
 	cargo clean
+
+fmt:
+	cargo fmt --all
+
+.PHONY: lint
+lint: test-fmt clippy
+
+.PHONY: test-fmt
+test-fmt:
+	cargo fmt --all --check
+
+.PHONY: clippy
+clippy:
+	cargo clippy --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception

@@ -29,10 +29,7 @@ impl sideinput::SideInputer for PySideInputRunner {
 
         let result = fut.await.unwrap();
 
-        let response = Python::attach(|py| {
-            let response: Response = result.extract(py).unwrap();
-            response
-        });
+        let response: Response = Python::attach(|py| result.extract(py).unwrap());
 
         if response.broadcast {
             Some(response.value)

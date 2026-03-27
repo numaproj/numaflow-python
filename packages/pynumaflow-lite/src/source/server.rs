@@ -25,11 +25,9 @@ impl numaflow::source::Sourcer for PySourceRunner {
             let py_handler = self.py_handler.clone();
 
             // Call read_handler(request) -> AsyncIterator[Message]
-            let result = py_handler
+            py_handler
                 .call_method1(py, "read_handler", (read_request,))
-                .expect("failed to call read_handler");
-
-            result
+                .expect("failed to call read_handler")
         });
 
         // Create a stream from the Python AsyncIterator

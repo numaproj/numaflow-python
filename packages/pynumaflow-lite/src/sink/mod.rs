@@ -383,6 +383,7 @@ pub struct Datum {
 }
 
 impl Datum {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         keys: Vec<String>,
         value: Vec<u8>,

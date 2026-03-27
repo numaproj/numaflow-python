@@ -107,21 +107,19 @@ impl reduce::Reducer for PyReduceRunner {
         // Ensure forwarder completes
         let _ = forwarder.await;
 
-        let messages = Python::attach(|py| {
+        Python::attach(|py| {
             // Expect Messages; also allow a single Message for convenience
             if let Ok(msgs) = result.extract::<PyMessages>(py) {
                 msgs.messages
                     .into_iter()
-                    .map(|m| reduce::Message::from(m))
+                    .map(reduce::Message::from)
                     .collect::<Vec<reduce::Message>>()
             } else if let Ok(single) = result.extract::<PyMessage>(py) {
                 vec![single.into()]
             } else {
                 vec![]
             }
-        });
-
-        messages
+        })
     }
 }
 
@@ -144,20 +142,18 @@ pub(super) async fn start(
         let obj = py_creator.bind(py);
         // Check if it's a function or coroutine function using inspect module
         let inspect = py.import("inspect").ok()?;
-        if let Ok(is_func) = inspect.call_method1("isfunction", (obj,)) {
-            if let Ok(result) = is_func.extract::<bool>() {
-                if result {
-                    return Some(true);
-                }
-            }
+        if let Ok(is_func) = inspect.call_method1("isfunction", (obj,))
+            && let Ok(result) = is_func.extract::<bool>()
+            && result
+        {
+            return Some(true);
         }
         // Also check for coroutine function
-        if let Ok(is_coro) = inspect.call_method1("iscoroutinefunction", (obj,)) {
-            if let Ok(result) = is_coro.extract::<bool>() {
-                if result {
-                    return Some(true);
-                }
-            }
+        if let Ok(is_coro) = inspect.call_method1("iscoroutinefunction", (obj,))
+            && let Ok(result) = is_coro.extract::<bool>()
+            && result
+        {
+            return Some(true);
         }
         Some(false)
     })
@@ -194,7 +190,7 @@ pub(super) async fn start(
     // if not finished, abort it
     if !sig_handle.is_finished() {
         println!("Aborting signal handler");
-        let _ = sig_handle.abort();
+        sig_handle.abort();
     }
 
     result

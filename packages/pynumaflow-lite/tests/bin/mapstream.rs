@@ -75,7 +75,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         assert!(maybe.is_some());
         let resp = maybe.unwrap();
         // Each MapResponse carries results; we take the first
-        if let Some(first) = resp.results.get(0) {
+        if let Some(first) = resp.results.first() {
             got.push(first.value.clone());
         }
     }

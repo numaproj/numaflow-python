@@ -245,27 +245,19 @@ class PartitionsResponse:
 
     Args:
         partitions: the list of active partitions.
-        total_partitions: the total number of partitions in the source (optional).
     """
 
     _partitions: list[int]
-    _total_partitions: int | None
 
     def __init__(self, partitions: list[int], total_partitions: int | None = None):
         if not isinstance(partitions, list):
             raise TypeError(f"Wrong data type: {type(partitions)} for Partition.partitions")
         self._partitions = partitions
-        self._total_partitions = total_partitions
 
     @property
     def partitions(self) -> list[int]:
         """Returns the list of active partitions"""
         return self._partitions
-
-    @property
-    def total_partitions(self) -> int | None:
-        """Returns the total number of partitions, or None if not available"""
-        return self._total_partitions
 
 
 class Sourcer(metaclass=ABCMeta):

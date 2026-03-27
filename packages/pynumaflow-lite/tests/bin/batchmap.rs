@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // We'll take the first result's value.
         let value = r
             .results
-            .get(0)
+            .first()
             .map(|res| res.value.clone())
             .unwrap_or_default();
         let id = r.id.clone();

@@ -40,10 +40,10 @@ async def main():
 
     # Set up signal handling for graceful shutdown
     loop = asyncio.get_running_loop()
-    
+
     def handle_signal():
         server.stop()
-    
+
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, handle_signal)
 
@@ -53,4 +53,3 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-

@@ -8,7 +8,9 @@ from pynumaflow_lite.mapstreamer import Message
 
 
 class SimpleStreamCat(mapstreamer.MapStreamer):
-    async def handler(self, keys: list[str], datum: mapstreamer.Datum) -> AsyncIterator[Message]:
+    async def handler(
+        self, keys: list[str], datum: mapstreamer.Datum
+    ) -> AsyncIterator[Message]:
         parts = datum.value.decode("utf-8").split(",")
         if not parts:
             yield Message.to_drop()
@@ -52,4 +54,3 @@ async def start(f: Callable[[list[str], mapstreamer.Datum], AsyncIterator[Messag
 if __name__ == "__main__":
     async_handler = SimpleStreamCat()
     asyncio.run(start(async_handler))
-

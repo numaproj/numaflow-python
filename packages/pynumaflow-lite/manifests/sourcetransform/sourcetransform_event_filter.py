@@ -13,14 +13,14 @@ january_first_2023 = datetime(2023, 1, 1, tzinfo=timezone.utc)
 class EventFilter(sourcetransformer.SourceTransformer):
     """
     A source transformer that filters and routes messages based on event time.
-    
+
     - Messages before 2022 are dropped
     - Messages within 2022 are tagged with "within_year_2022"
     - Messages after 2022 are tagged with "after_year_2022"
     """
-    
+
     async def handler(
-            self, keys: list[str], datum: sourcetransformer.Datum
+        self, keys: list[str], datum: sourcetransformer.Datum
     ) -> sourcetransformer.Messages:
         val = datum.value
         event_time = datum.event_time
@@ -30,23 +30,27 @@ class EventFilter(sourcetransformer.SourceTransformer):
             print(f"Got event time: {event_time}, it is before 2022, so dropping")
             messages.append(sourcetransformer.Message.message_to_drop(event_time))
         elif event_time < january_first_2023:
-            print(f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022")
+            print(
+                f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022"
+            )
             messages.append(
                 sourcetransformer.Message(
                     value=val,
                     event_time=january_first_2022,
                     keys=keys,
-                    tags=["within_year_2022"]
+                    tags=["within_year_2022"],
                 )
             )
         else:
-            print(f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022")
+            print(
+                f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022"
+            )
             messages.append(
                 sourcetransformer.Message(
                     value=val,
                     event_time=january_first_2023,
                     keys=keys,
-                    tags=["after_year_2022"]
+                    tags=["after_year_2022"],
                 )
             )
 
@@ -61,7 +65,9 @@ except AttributeError:
     pass
 
 
-async def start(f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages]):
+async def start(
+    f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages],
+):
     server = sourcetransformer.SourceTransformAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run
@@ -92,4 +98,3 @@ async def start(f: Callable[[list[str], sourcetransformer.Datum], sourcetransfor
 if __name__ == "__main__":
     async_handler = EventFilter()
     asyncio.run(start(async_handler))
-

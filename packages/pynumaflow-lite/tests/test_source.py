@@ -20,4 +20,3 @@ def test_python_source_server_and_rust_client(script: str, tmp_path: Path):
         server_info_path=SERVER_INFO,
         rust_bin_name="test_source",
     )
-

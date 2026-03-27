@@ -2,20 +2,14 @@ from pynumaflow.mapper import Messages, Message, Datum, MapServer
 
 
 def my_handler(keys: list[str], datum: Datum) -> Messages:
-    """
-    Map function that takes in a number and outputs it to the "even" or "odd" key
-    depending on whether it is even or odd.
-    """
     val = datum.value
     output_keys = keys
     output_tags = []
-    _ = datum.event_time  # Ignore event time for this example
-    _ = datum.watermark  # Ignore watermark for this example
-
-    # Convert value to an integer
+    _ = datum.event_time
+    _ = datum.watermark
+    messages = Messages()
     num = int.from_bytes(val, "little")
 
-    # Determine output key and tag based on the number
     if num % 2 == 0:
         output_keys = ["even"]
         output_tags = ["even-tag"]
@@ -23,8 +17,6 @@ def my_handler(keys: list[str], datum: Datum) -> Messages:
         output_keys = ["odd"]
         output_tags = ["odd-tag"]
 
-    # Create a message with the determined output key and tag
-    messages = Messages()
     messages.append(Message(val, keys=output_keys, tags=output_tags))
     return messages
 

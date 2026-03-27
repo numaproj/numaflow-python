@@ -30,4 +30,3 @@ class SideInput(metaclass=ABCMeta):
                      or Response.no_broadcast_message() to skip broadcasting.
         """
         pass
-

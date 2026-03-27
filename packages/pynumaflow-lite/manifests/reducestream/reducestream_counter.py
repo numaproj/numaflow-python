@@ -7,6 +7,7 @@ as data arrives, rather than waiting until all data is received.
 The counter increments for each datum and emits a message every 10 items,
 plus a final message at the end.
 """
+
 import asyncio
 import signal
 from collections.abc import AsyncIterable, AsyncIterator
@@ -17,12 +18,12 @@ from pynumaflow_lite import reducestreamer
 class ReduceCounter(reducestreamer.ReduceStreamer):
     """
     A reduce streaming counter that emits intermediate results.
-    
+
     This demonstrates the key difference from regular Reducer:
     - Regular Reducer: waits for all data, then returns Messages
     - ReduceStreamer: yields Message objects incrementally as an async iterator
     """
-    
+
     def __init__(self, initial: int = 0) -> None:
         self.counter = initial
 
@@ -34,21 +35,21 @@ class ReduceCounter(reducestreamer.ReduceStreamer):
     ) -> AsyncIterator[reducestreamer.Message]:
         """
         Process datums and yield messages incrementally.
-        
+
         Args:
             keys: List of keys for this window
             datums: Async iterable of incoming data
             md: Metadata containing window information
-            
+
         Yields:
             Message objects to send to the next vertex
         """
         iw = md.interval_window
         print(f"Handler started for keys={keys}, window=[{iw.start}, {iw.end}]")
-        
+
         async for _ in datums:
             self.counter += 1
-            
+
             # Emit intermediate result every 10 items
             if self.counter % 10 == 0:
                 msg = (
@@ -59,7 +60,7 @@ class ReduceCounter(reducestreamer.ReduceStreamer):
                 print(f"Yielding intermediate result: counter={self.counter}")
                 # Early release of data - this is the key feature of reduce streaming!
                 yield reducestreamer.Message(msg, keys=keys)
-        
+
         # Emit final result
         msg = (
             f"counter:{self.counter} (FINAL) "
@@ -105,4 +106,3 @@ async def start(creator: type, init_args: tuple):
 
 if __name__ == "__main__":
     asyncio.run(start(ReduceCounter, (0,)))
-

@@ -18,4 +18,3 @@ class Sinker(metaclass=ABCMeta):
         Process the stream of datums and return responses.
         """
         pass
-

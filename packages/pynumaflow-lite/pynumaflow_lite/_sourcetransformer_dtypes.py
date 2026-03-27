@@ -6,7 +6,7 @@ class SourceTransformer(metaclass=ABCMeta):
     """
     Provides an interface to write a SourceTransformer
     which will be exposed over a gRPC server.
-    
+
     A SourceTransformer is used for transforming and assigning event time
     to input messages from a source.
     """
@@ -22,14 +22,13 @@ class SourceTransformer(metaclass=ABCMeta):
     async def handler(self, keys: list[str], datum: Datum) -> Messages:
         """
         Implement this handler function which implements the SourceTransformer interface.
-        
+
         Args:
             keys: The keys associated with the message.
             datum: The input datum containing value, event_time, watermark, and headers.
-            
+
         Returns:
             Messages: A collection of transformed messages with potentially modified
                      event times and tags for conditional forwarding.
         """
         pass
-

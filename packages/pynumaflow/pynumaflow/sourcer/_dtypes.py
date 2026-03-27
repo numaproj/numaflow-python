@@ -249,7 +249,7 @@ class PartitionsResponse:
 
     _partitions: list[int]
 
-    def __init__(self, partitions: list[int], total_partitions: int | None = None):
+    def __init__(self, partitions: list[int]):
         if not isinstance(partitions, list):
             raise TypeError(f"Wrong data type: {type(partitions)} for Partition.partitions")
         self._partitions = partitions

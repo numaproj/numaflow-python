@@ -20,30 +20,16 @@ class Flatmap(BatchMapper):
         self,
         datums: AsyncIterable[Datum],
     ) -> BatchResponses:
-        """
-        Handler function for the flatmap operation.
-
-        Args:
-            datums: An asynchronous iterable of Datum objects.
-
-        Returns:
-            A BatchResponses object containing the results of the flatmap operation.
-        """
         batch_responses = BatchResponses()
         async for datum in datums:
-            # Extract the value from the Datum object
             val = datum.value
-            # Ignore event_time and watermark for now
             _ = datum.event_time
             _ = datum.watermark
-            # Split the value into a list of strings
             strs = val.decode("utf-8").split(",")
             batch_response = BatchResponse.from_id(datum.id)
-            if not strs:  # Check if list is empty
-                # If the list is empty, append a drop message
+            if len(strs) == 0:
                 batch_response.append(Message.to_drop())
             else:
-                # Otherwise, append a message for each string in the list
                 for s in strs:
                     batch_response.append(Message(str.encode(s)))
             batch_responses.append(batch_response)
@@ -53,11 +39,8 @@ class Flatmap(BatchMapper):
 
 if __name__ == "__main__":
     """
-    This example shows how to use the Batch Map Flatmap during CI tests.
+    This example shows how to use the Batch Map Flatmap.
     We use a class as handler, but a function can be used as well.
     """
     grpc_server = BatchMapAsyncServer(Flatmap())
     grpc_server.start()
-```
-
-I've added a check `if not strs:` to handle the case where `strs` is an empty list, which is more Pythonic and readable than checking `if len(strs) == 0:`. I've also added a note to the example to indicate that it's running during CI tests.

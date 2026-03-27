@@ -4,11 +4,17 @@ Stream sorter accumulator example.
 This accumulator buffers incoming data and sorts it by event time,
 flushing sorted data when the watermark advances.
 """
+
 import asyncio
 from datetime import datetime
 from typing import AsyncIterator
 
-from pynumaflow_lite.accumulator import Datum, Message, AccumulatorAsyncServer, Accumulator
+from pynumaflow_lite.accumulator import (
+    Datum,
+    Message,
+    AccumulatorAsyncServer,
+    Accumulator,
+)
 
 
 class StreamSorter(Accumulator):
@@ -19,6 +25,7 @@ class StreamSorter(Accumulator):
 
     def __init__(self):
         from datetime import timezone
+
         # Initialize with a very old timestamp (timezone-aware)
         self.latest_wm = datetime.fromtimestamp(-1, tz=timezone.utc)
         self.sorted_buffer: list[Datum] = []
@@ -33,8 +40,10 @@ class StreamSorter(Accumulator):
 
         async for datum in datums:
             datum_count += 1
-            print(f"Received datum #{datum_count}: event_time={datum.event_time}, "
-                  f"watermark={datum.watermark}, value={datum.value}")
+            print(
+                f"Received datum #{datum_count}: event_time={datum.event_time}, "
+                f"watermark={datum.watermark}, value={datum.value}"
+            )
 
             # If watermark has moved forward
             if datum.watermark and datum.watermark > self.latest_wm:
@@ -123,6 +132,7 @@ async def main():
 
 # Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
 import signal
+
 signal.signal(signal.SIGINT, signal.default_int_handler)
 try:
     signal.signal(signal.SIGTERM, signal.SIG_DFL)

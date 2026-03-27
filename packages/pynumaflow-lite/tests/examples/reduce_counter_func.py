@@ -7,7 +7,7 @@ from pynumaflow_lite import reducer
 
 
 async def reduce_handler(
-        keys: list[str], datums: AsyncIterable[reducer.Datum], md: reducer.Metadata
+    keys: list[str], datums: AsyncIterable[reducer.Datum], md: reducer.Metadata
 ) -> reducer.Messages:
     interval_window = md.interval_window
     counter = 0
@@ -31,7 +31,10 @@ except AttributeError:
 
 
 async def start(
-    handler: Callable[[list[str], AsyncIterable[reducer.Datum], reducer.Metadata], Awaitable[reducer.Messages]]
+    handler: Callable[
+        [list[str], AsyncIterable[reducer.Datum], reducer.Metadata],
+        Awaitable[reducer.Messages],
+    ],
 ):
     sock_file = "/tmp/var/run/numaflow/reduce.sock"
     server_info_file = "/tmp/var/run/numaflow/reducer-server-info"

@@ -6,6 +6,7 @@ The mode is controlled by the MAPPER environment variable:
 - If MAPPER is set to "true", runs as a Mapper that reads side input files
 - Otherwise, runs as a SideInput retriever that broadcasts values
 """
+
 import asyncio
 import os
 import signal
@@ -142,4 +143,3 @@ if __name__ == "__main__":
     else:
         print("Starting as SideInput retriever...")
         asyncio.run(start_sideinput())
-

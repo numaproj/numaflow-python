@@ -22,7 +22,7 @@ class EventFilter(sourcetransformer.SourceTransformer):
     """
 
     async def handler(
-            self, keys: list[str], datum: sourcetransformer.Datum
+        self, keys: list[str], datum: sourcetransformer.Datum
     ) -> sourcetransformer.Messages:
         val = datum.value
         event_time = datum.event_time
@@ -46,13 +46,17 @@ class EventFilter(sourcetransformer.SourceTransformer):
             print(f"Got event time: {event_time}, it is before 2022, so dropping")
             messages.append(sourcetransformer.Message.message_to_drop(event_time))
         elif event_time < january_first_2023:
-            print(f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022")
+            print(
+                f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022"
+            )
 
             # Create user metadata for the outgoing message
             user_metadata = sourcetransformer.UserMetadata()
             user_metadata.create_group("filter_info")
             user_metadata.add_kv("filter_info", "filter_result", b"within_year_2022")
-            user_metadata.add_kv("filter_info", "original_event_time", str(event_time).encode())
+            user_metadata.add_kv(
+                "filter_info", "original_event_time", str(event_time).encode()
+            )
 
             messages.append(
                 sourcetransformer.Message(
@@ -60,17 +64,21 @@ class EventFilter(sourcetransformer.SourceTransformer):
                     event_time=january_first_2022,
                     keys=keys,
                     tags=["within_year_2022"],
-                    user_metadata=user_metadata
+                    user_metadata=user_metadata,
                 )
             )
         else:
-            print(f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022")
+            print(
+                f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022"
+            )
 
             # Create user metadata for the outgoing message
             user_metadata = sourcetransformer.UserMetadata()
             user_metadata.create_group("filter_info")
             user_metadata.add_kv("filter_info", "filter_result", b"after_year_2022")
-            user_metadata.add_kv("filter_info", "original_event_time", str(event_time).encode())
+            user_metadata.add_kv(
+                "filter_info", "original_event_time", str(event_time).encode()
+            )
 
             messages.append(
                 sourcetransformer.Message(
@@ -78,7 +86,7 @@ class EventFilter(sourcetransformer.SourceTransformer):
                     event_time=january_first_2023,
                     keys=keys,
                     tags=["after_year_2022"],
-                    user_metadata=user_metadata
+                    user_metadata=user_metadata,
                 )
             )
 
@@ -93,7 +101,9 @@ except AttributeError:
     pass
 
 
-async def start(f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages]):
+async def start(
+    f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages],
+):
     sock_file = "/tmp/var/run/numaflow/sourcetransform.sock"
     server_info_file = "/tmp/var/run/numaflow/sourcetransformer-server-info"
     server = sourcetransformer.SourceTransformAsyncServer(sock_file, server_info_file)
@@ -126,4 +136,3 @@ async def start(f: Callable[[list[str], sourcetransformer.Datum], sourcetransfor
 if __name__ == "__main__":
     async_handler = EventFilter()
     asyncio.run(start(async_handler))
-

@@ -118,23 +118,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut message_count = 0;
     let mut found_eof = false;
 
-    loop {
-        if let Some(r) = resp.message().await? {
-            if let Some(res) = r.result {
-                assert!(!res.value.is_empty());
-                message_count += 1;
-                println!(
-                    "Received message {}: {:?}",
-                    message_count,
-                    String::from_utf8_lossy(&res.value)
-                );
-            }
-            if r.eof {
-                found_eof = true;
-                println!("Received EOF");
-                break;
-            }
-        } else {
+    while let Some(r) = resp.message().await? {
+        if let Some(res) = r.result {
+            assert!(!res.value.is_empty());
+            message_count += 1;
+            println!(
+                "Received message {}: {:?}",
+                message_count,
+                String::from_utf8_lossy(&res.value)
+            );
+        }
+        if r.eof {
+            found_eof = true;
+            println!("Received EOF");
             break;
         }
     }

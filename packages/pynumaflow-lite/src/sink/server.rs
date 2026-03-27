@@ -43,10 +43,7 @@ impl sink::Sinker for PySinkRunner {
         // Ensure forwarder completes
         let _ = forwarder.await;
 
-        let responses = Python::attach(|py| {
-            let x: crate::sink::Responses = result.extract(py).unwrap();
-            x
-        });
+        let responses: crate::sink::Responses = Python::attach(|py| result.extract(py).unwrap());
 
         responses
             .responses

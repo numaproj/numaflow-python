@@ -11,6 +11,8 @@ use pyo3::{PyClass, exceptions::PyStopAsyncIteration, prelude::*};
 use tokio::sync::Mutex as AsyncMutex;
 use tokio::sync::mpsc;
 
+type PyFuture = Pin<Box<dyn Future<Output = PyResult<Py<PyAny>>> + Send + 'static>>;
+
 /// Stream over a Python AsyncIterator, yielding `M` as soon as each value is produced.
 /// `M` must be extractable from the Python object.
 ///
@@ -24,7 +26,7 @@ pub struct PyAsyncIterStream<M> {
     event_loop: Arc<Py<PyAny>>,
     // In-flight future for the next item (converted from Python awaitable).
     #[pin]
-    next_fut: Option<Pin<Box<dyn Future<Output = PyResult<Py<PyAny>>> + Send + 'static>>>,
+    next_fut: Option<PyFuture>,
     // Phantom: we yield M
     _marker: std::marker::PhantomData<M>,
 }

@@ -52,7 +52,7 @@ class AsyncSource(Sourcer):
     async def pending_handler(self) -> PendingResponse:
         return PendingResponse(count=10)
 
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         return PartitionsResponse(partitions=mock_partitions())
 
 
@@ -160,7 +160,7 @@ class AsyncSourceError(Sourcer):
     async def pending_handler(self) -> PendingResponse:
         raise RuntimeError("Got a runtime error from pending handler.")
 
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         raise RuntimeError("Got a runtime error from partition handler.")
 
 
@@ -177,5 +177,5 @@ class SyncSourceError(Sourcer):
     def pending_handler(self) -> PendingResponse:
         raise RuntimeError("Got a runtime error from pending handler.")
 
-    def partitions_handler(self) -> PartitionsResponse:
+    def active_partitions_handler(self) -> PartitionsResponse:
         raise RuntimeError("Got a runtime error from partition handler.")

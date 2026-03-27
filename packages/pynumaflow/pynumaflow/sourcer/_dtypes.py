@@ -297,31 +297,18 @@ class Sourcer(metaclass=ABCMeta):
         """
         pass
 
-    async def partitions_handler(self) -> PartitionsResponse:
-        """
-        .. deprecated::
-            Use :meth:`active_partitions_handler` instead.
-
-        Returns the active partitions associated with the source.
-        """
-        warnings.warn(
-            "partitions_handler is deprecated, use active_partitions_handler instead.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return PartitionsResponse(partitions=get_default_partitions())
-
+    @abstractmethod
     async def active_partitions_handler(self) -> PartitionsResponse:
         """
         Returns the active partitions associated with the source, used by the platform
         to determine the partitions to which the watermark should be published.
         Falls back to partitions_handler() if not overridden.
         """
-        return await self.partitions_handler()
+        pass
 
     async def total_partitions_handler(self) -> int | None:
         """
-        Returns the total number of partitions in the source.
+        Optional. Returns the total number of partitions in the source.
         Used by the platform for watermark progression to know when all
         processors have reported in.
         Returns None by default, indicating the source does not report total partitions.

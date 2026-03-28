@@ -303,9 +303,9 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             return source_pb2.PartitionsResponse(
                 result=source_pb2.PartitionsResponse.Result(partitions=[])
             )
-        result = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
-        if total_partitions is not None:
-            result.total_partitions = total_partitions
+        result = source_pb2.PartitionsResponse.Result(
+            partitions=partitions.partitions, total_partitions=total_partitions
+        )
         return source_pb2.PartitionsResponse(result=result)
 
     def clean_background(self, task):

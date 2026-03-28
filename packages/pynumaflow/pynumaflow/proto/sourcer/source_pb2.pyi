@@ -156,10 +156,12 @@ class PendingResponse(_message.Message):
 class PartitionsResponse(_message.Message):
     __slots__ = ("result",)
     class Result(_message.Message):
-        __slots__ = ("partitions",)
+        __slots__ = ("partitions", "total_partitions")
         PARTITIONS_FIELD_NUMBER: _ClassVar[int]
+        TOTAL_PARTITIONS_FIELD_NUMBER: _ClassVar[int]
         partitions: _containers.RepeatedScalarFieldContainer[int]
-        def __init__(self, partitions: _Optional[_Iterable[int]] = ...) -> None: ...
+        total_partitions: int
+        def __init__(self, partitions: _Optional[_Iterable[int]] = ..., total_partitions: _Optional[int] = ...) -> None: ...
     RESULT_FIELD_NUMBER: _ClassVar[int]
     result: PartitionsResponse.Result
     def __init__(self, result: _Optional[_Union[PartitionsResponse.Result, _Mapping]] = ...) -> None: ...

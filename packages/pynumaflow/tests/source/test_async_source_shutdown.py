@@ -41,7 +41,7 @@ class _StubSource(Sourcer):
     async def pending_handler(self) -> PendingResponse:
         return PendingResponse(count=0)
 
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         return PartitionsResponse(partitions=[])
 
 
@@ -194,7 +194,7 @@ def test_shutdown_on_partitions_cancelled_error():
         async def _cancelled_partitions():
             raise asyncio.CancelledError()
 
-        handler.partitions_handler = _cancelled_partitions
+        handler.active_partitions_handler = _cancelled_partitions
 
         servicer = AsyncSourceServicer(source_handler=handler)
         shutdown_event = asyncio.Event()

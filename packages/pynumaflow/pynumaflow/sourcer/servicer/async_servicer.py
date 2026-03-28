@@ -84,7 +84,8 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         self.__source_ack_handler = self.source_handler.ack_handler
         self.__source_nack_handler = self.source_handler.nack_handler
         self.__source_pending_handler = self.source_handler.pending_handler
-        self.__source_partitions_handler = self.source_handler.partitions_handler
+        self.__source_active_partitions_handler = self.source_handler.active_partitions_handler
+        self.__source_total_partitions_handler = self.source_handler.total_partitions_handler
 
     async def ReadFn(
         self,
@@ -278,10 +279,11 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         self, request: _empty_pb2.Empty, context: NumaflowServicerContext
     ) -> source_pb2.PartitionsResponse:
         """
-        PartitionsFn returns the partitions of the user defined source.
+        PartitionsFn returns the active partitions and total partitions of the user defined source.
         """
         try:
-            partitions = await self.__source_partitions_handler()
+            partitions = await self.__source_active_partitions_handler()
+            total_partitions = await self.__source_total_partitions_handler()
         except asyncio.CancelledError:
             # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
             _LOGGER.info("Server shutting down, cancelling RPC.")
@@ -301,8 +303,10 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             return source_pb2.PartitionsResponse(
                 result=source_pb2.PartitionsResponse.Result(partitions=[])
             )
-        resp = source_pb2.PartitionsResponse.Result(partitions=partitions.partitions)
-        return source_pb2.PartitionsResponse(result=resp)
+        result = source_pb2.PartitionsResponse.Result(
+            partitions=partitions.partitions, total_partitions=total_partitions
+        )
+        return source_pb2.PartitionsResponse(result=result)
 
     def clean_background(self, task):
         """

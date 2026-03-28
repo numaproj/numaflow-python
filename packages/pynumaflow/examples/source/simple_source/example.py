@@ -90,7 +90,7 @@ class AsyncSource(Sourcer):
         """
         return PendingResponse(count=0)
 
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         """
         The simple source always returns default partitions.
         """

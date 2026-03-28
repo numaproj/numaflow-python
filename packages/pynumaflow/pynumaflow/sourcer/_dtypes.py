@@ -240,11 +240,10 @@ class PendingResponse:
 class PartitionsResponse:
     """
     PartitionsResponse is the response for the partition request.
-    It indicates the number of partitions at the user defined source.
-    A negative count indicates that the partition information is not available.
+    It indicates the active partitions at the user defined source.
 
     Args:
-        count: the number of partitions.
+        partitions: the list of active partitions.
     """
 
     _partitions: list[int]
@@ -256,7 +255,7 @@ class PartitionsResponse:
 
     @property
     def partitions(self) -> list[int]:
-        """Returns the list of partitions"""
+        """Returns the list of active partitions"""
         return self._partitions
 
 
@@ -298,11 +297,21 @@ class Sourcer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         """
-        The simple source always returns zero to indicate there is no pending record.
+        Returns the active partitions associated with the source, used by the platform
+        to determine the partitions to which the watermark should be published.
         """
         pass
+
+    async def total_partitions_handler(self) -> int | None:
+        """
+        Returns the total number of partitions in the source.
+        Used by the platform for watermark progression to know when all
+        processors have reported in.
+        Returns None by default, indicating the source does not report total partitions.
+        """
+        return None
 
 
 # Create default partition id from the environment variable "NUMAFLOW_REPLICA"

@@ -50,8 +50,42 @@ class AsyncSource(Sourcer):
     async def pending_handler(self) -> PendingResponse:
         return PendingResponse(count=10)
 
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         return PartitionsResponse(partitions=mock_partitions())
+
+
+class AsyncSourceWithTotalPartitions(Sourcer):
+    """A test source that implements active_partitions_handler and total_partitions_handler."""
+
+    async def read_handler(self, datum: ReadRequest, output: NonBlockingIterator):
+        payload = b"payload:test_mock_message"
+        keys = ["test_key"]
+        offset = mock_offset()
+        event_time = mock_event_time()
+        for i in range(10):
+            await output.put(
+                Message(
+                    payload=payload,
+                    keys=keys,
+                    offset=offset,
+                    event_time=event_time,
+                )
+            )
+
+    async def ack_handler(self, ack_request: AckRequest):
+        return
+
+    async def nack_handler(self, nack_request: NackRequest):
+        return
+
+    async def pending_handler(self) -> PendingResponse:
+        return PendingResponse(count=10)
+
+    async def active_partitions_handler(self) -> PartitionsResponse:
+        return PartitionsResponse(partitions=mock_partitions())
+
+    async def total_partitions_handler(self) -> int | None:
+        return 10
 
 
 def read_req_source_fn() -> ReadRequest:
@@ -102,5 +136,5 @@ class AsyncSourceError(Sourcer):
     async def pending_handler(self) -> PendingResponse:
         raise RuntimeError("Got a runtime error from pending handler.")
 
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         raise RuntimeError("Got a runtime error from partition handler.")

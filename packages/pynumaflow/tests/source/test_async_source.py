@@ -17,6 +17,7 @@ from tests.source.utils import (
     ack_req_source_fn,
     mock_partitions,
     AsyncSource,
+    AsyncSourceWithTotalPartitions,
     mock_offset,
     nack_req_source_fn,
 )
@@ -192,6 +193,66 @@ def test_partitions(async_source_server) -> None:
             logging.error(e)
 
         assert response.result.partitions == mock_partitions()
+
+
+def test_partitions_default_total_partitions_is_none(async_source_server) -> None:
+    """
+    Verify total_partitions is not set when the source doesn't override
+    total_partitions_handler.
+    """
+    with grpc.insecure_channel(server_port) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+        request = _empty_pb2.Empty()
+        response = stub.PartitionsFn(request=request)
+
+        assert response.result.partitions == mock_partitions()
+        assert not response.result.HasField("total_partitions")
+
+
+server_port_tp = "unix:///tmp/async_source_tp.sock"
+
+
+def NewAsyncSourcerWithTotalPartitions():
+    class_instance = AsyncSourceWithTotalPartitions()
+    server = SourceAsyncServer(sourcer_instance=class_instance)
+    udfs = server.servicer
+    return udfs
+
+
+async def start_server_tp(udfs):
+    server = grpc.aio.server()
+    source_pb2_grpc.add_SourceServicer_to_server(udfs, server)
+    listen_addr = server_port_tp
+    server.add_insecure_port(listen_addr)
+    logging.info("Starting server on %s", listen_addr)
+    await server.start()
+    return server, listen_addr
+
+
+@pytest.fixture(scope="module")
+def async_source_server_with_total_partitions():
+    """Module-scoped fixture: starts an async gRPC source server with total partitions."""
+    loop = create_async_loop()
+
+    udfs = NewAsyncSourcerWithTotalPartitions()
+    server = start_async_server(loop, start_server_tp(udfs))
+
+    yield loop
+
+    teardown_async_server(loop, server)
+
+
+def test_partitions_with_total_partitions(async_source_server_with_total_partitions) -> None:
+    """
+    Verify total_partitions flows through gRPC when the source implements total_partitions_handler.
+    """
+    with grpc.insecure_channel(server_port_tp) as channel:
+        stub = source_pb2_grpc.SourceStub(channel)
+        request = _empty_pb2.Empty()
+        response = stub.PartitionsFn(request=request)
+
+        assert response.result.partitions == mock_partitions()
+        assert response.result.total_partitions == 10
 
 
 @pytest.mark.parametrize(

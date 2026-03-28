@@ -306,7 +306,7 @@ class Sourcer(metaclass=ABCMeta):
 
     async def total_partitions_handler(self) -> int | None:
         """
-        Optional. Returns the total number of partitions in the source.
+        Returns the total number of partitions in the source.
         Used by the platform for watermark progression to know when all
         processors have reported in.
         Returns None by default, indicating the source does not report total partitions.

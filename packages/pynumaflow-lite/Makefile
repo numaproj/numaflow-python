@@ -43,11 +43,17 @@ test-rust:
 clean:
 	cargo clean
 
+py-fmt:
+	uv run black pynumaflow_lite/ tests/ manifests/
+
+py-lint: py-fmt
+	uv run ruff check --fix .
+
 fmt:
 	cargo fmt --all
 
 .PHONY: lint
-lint: test-fmt clippy
+lint: test-fmt clippy py-lint
 
 .PHONY: test-fmt
 test-fmt:

@@ -6,7 +6,9 @@ from typing import Awaitable, Callable
 from pynumaflow_lite import batchmapper
 
 
-async def async_handler(batch: collections.abc.AsyncIterator[batchmapper.Datum]) -> batchmapper.BatchResponses:
+async def async_handler(
+    batch: collections.abc.AsyncIterator[batchmapper.Datum],
+) -> batchmapper.BatchResponses:
     responses = batchmapper.BatchResponses()
     async for d in batch:
         resp = batchmapper.BatchResponse.from_id(d.id)
@@ -19,7 +21,12 @@ async def async_handler(batch: collections.abc.AsyncIterator[batchmapper.Datum])
     return responses
 
 
-async def start(f: Callable[[collections.abc.AsyncIterator[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]]):
+async def start(
+    f: Callable[
+        [collections.abc.AsyncIterator[batchmapper.Datum]],
+        Awaitable[batchmapper.BatchResponses],
+    ],
+):
     sock_file = "/tmp/var/run/numaflow/batchmap.sock"
     server_info_file = "/tmp/var/run/numaflow/mapper-server-info"
     server = batchmapper.BatchMapAsyncServer(sock_file, server_info_file)

@@ -6,9 +6,7 @@ from pynumaflow_lite import mapper
 
 
 class SimpleCat(mapper.Mapper):
-    async def handler(
-            self, keys: list[str], payload: mapper.Datum
-    ) -> mapper.Messages:
+    async def handler(self, keys: list[str], payload: mapper.Datum) -> mapper.Messages:
 
         messages = mapper.Messages()
 

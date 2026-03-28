@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable, Any
+from typing import Optional, List, Dict, Awaitable
 import datetime as _dt
 
 # Re-export the Python ABC for user convenience and typing
 from ._source_dtypes import Sourcer as Sourcer
 
-
 class UserMetadata:
     """User-defined metadata groups per message (read-write for source)."""
 
     def __init__(self) -> None: ...
-
     def groups(self) -> List[str]:
         """Returns the groups of the user metadata."""
         ...
@@ -42,9 +40,9 @@ class UserMetadata:
 
     def __repr__(self) -> str: ...
 
-
 class Message:
     """A message to be sent from the source."""
+
     payload: bytes
     offset: Offset
     event_time: _dt.datetime
@@ -61,14 +59,12 @@ class Message:
         headers: Optional[Dict[str, str]] = ...,
         user_metadata: Optional[UserMetadata] = ...,
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
     def __str__(self) -> str: ...
-
 
 class Offset:
     """The offset of a message."""
+
     offset: bytes
     partition_id: int
 
@@ -77,14 +73,12 @@ class Offset:
         offset: bytes,
         partition_id: int = ...,
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
     def __str__(self) -> str: ...
-
 
 class ReadRequest:
     """A request to read messages from the source."""
+
     num_records: int
     timeout_ms: int
 
@@ -93,57 +87,51 @@ class ReadRequest:
         num_records: int,
         timeout_ms: int = ...,
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
 
 class AckRequest:
     """A request to acknowledge messages."""
+
     offsets: List[Offset]
 
     def __init__(
         self,
         offsets: List[Offset],
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
 
 class NackRequest:
     """A request to negatively acknowledge messages."""
+
     offsets: List[Offset]
 
     def __init__(
         self,
         offsets: List[Offset],
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
 
 class PendingResponse:
     """Response for pending messages count."""
+
     count: int
 
     def __init__(
         self,
         count: int = ...,
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
 
 class PartitionsResponse:
     """Response for partitions."""
+
     partitions: List[int]
 
     def __init__(
         self,
         partitions: List[int],
     ) -> None: ...
-
     def __repr__(self) -> str: ...
-
 
 class SourceAsyncServer:
     """Async Source Server that can be started from Python code."""
@@ -153,11 +141,8 @@ class SourceAsyncServer:
         sock_file: str | None = ...,
         info_file: str | None = ...,
     ) -> None: ...
-
     def start(self, py_func: Sourcer) -> Awaitable[None]: ...
-
     def stop(self) -> None: ...
-
 
 __all__ = [
     "UserMetadata",
@@ -171,4 +156,3 @@ __all__ = [
     "SourceAsyncServer",
     "Sourcer",
 ]
-

@@ -8,7 +8,9 @@ from pynumaflow_lite.batchmapper import Message
 
 
 class SimpleBatchCat(batchmapper.BatchMapper):
-    async def handler(self, batch: AsyncIterable[batchmapper.Datum]) -> batchmapper.BatchResponses:
+    async def handler(
+        self, batch: AsyncIterable[batchmapper.Datum]
+    ) -> batchmapper.BatchResponses:
         responses = batchmapper.BatchResponses()
         async for d in batch:
             resp = batchmapper.BatchResponse(d.id)
@@ -29,7 +31,11 @@ except AttributeError:
     pass
 
 
-async def start(f: Callable[[AsyncIterable[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]]):
+async def start(
+    f: Callable[
+        [AsyncIterable[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]
+    ],
+):
     server = batchmapper.BatchMapAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run

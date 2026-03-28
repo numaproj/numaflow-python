@@ -1,4 +1,5 @@
-from .pynumaflow_lite import *
+from . import pynumaflow_lite  # type: ignore[attr-defined]  # Rust extension, resolved at runtime
+from .pynumaflow_lite import *  # noqa: F403  # Rust extension; exports resolved at runtime
 
 # Ensure the `mapper`, `batchmapper`, and `mapstreamer` submodules are importable as attributes of the package
 # even though they're primarily registered by the extension module.
@@ -139,8 +140,19 @@ if sideinputer is not None:
         pass
 
 # Public API
-__all__ = ["mapper", "batchmapper", "mapstreamer", "reducer", "session_reducer", "reducestreamer", "accumulator",
-           "sinker", "sourcer", "sourcetransformer", "sideinputer"]
+__all__ = [
+    "mapper",
+    "batchmapper",
+    "mapstreamer",
+    "reducer",
+    "session_reducer",
+    "reducestreamer",
+    "accumulator",
+    "sinker",
+    "sourcer",
+    "sourcetransformer",
+    "sideinputer",
+]
 
 __doc__ = pynumaflow_lite.__doc__
 if hasattr(pynumaflow_lite, "__all__"):

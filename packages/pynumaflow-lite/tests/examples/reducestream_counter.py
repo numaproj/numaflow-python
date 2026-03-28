@@ -8,11 +8,11 @@ from pynumaflow_lite import reducestreamer
 class ReduceStreamCounter(reducestreamer.ReduceStreamer):
     """
     A reduce streaming counter that emits intermediate results.
-    
+
     This test implementation counts datums and yields a message for every
     datum received, demonstrating the streaming capability.
     """
-    
+
     def __init__(self, initial: int = 0) -> None:
         self.counter = initial
 
@@ -24,12 +24,12 @@ class ReduceStreamCounter(reducestreamer.ReduceStreamer):
     ) -> AsyncIterator[reducestreamer.Message]:
         """
         Process datums and yield messages incrementally.
-        
+
         For testing purposes, we yield a message for each datum received.
         """
         iw = md.interval_window
         self.counter = 0
-        
+
         async for _ in datums:
             self.counter += 1
             # Yield a message for each datum (streaming behavior)
@@ -75,4 +75,3 @@ async def start(creator: type, init_args: tuple):
 
 if __name__ == "__main__":
     asyncio.run(start(ReduceStreamCounter, (0,)))
-

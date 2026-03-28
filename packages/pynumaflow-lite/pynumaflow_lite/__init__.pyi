@@ -1,7 +1,5 @@
 import _typeshed
 
-def __getattr__(name: str) -> _typeshed.Incomplete: ...
-
 from . import mapper as mapper
 from . import batchmapper as batchmapper
 from . import mapstreamer as mapstreamer
@@ -13,4 +11,17 @@ from . import sourcer as sourcer
 from . import sourcetransformer as sourcetransformer
 from . import sideinputer as sideinputer
 
-__all__ = ['mapper', 'batchmapper', 'mapstreamer', 'reducer', 'session_reducer', 'accumulator', 'sinker', 'sourcer', 'sourcetransformer', 'sideinputer']
+def __getattr__(name: str) -> _typeshed.Incomplete: ...
+
+__all__ = [
+    "mapper",
+    "batchmapper",
+    "mapstreamer",
+    "reducer",
+    "session_reducer",
+    "accumulator",
+    "sinker",
+    "sourcer",
+    "sourcetransformer",
+    "sideinputer",
+]

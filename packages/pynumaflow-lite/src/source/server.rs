@@ -145,27 +145,27 @@ impl numaflow::source::Sourcer for PySourceRunner {
         }
     }
 
-    /// Returns the partitions associated with the source. This will be used by the platform to determine
+    /// Returns the active partitions associated with the source. This will be used by the platform to determine
     /// the partitions to which the watermark should be published. Some sources might not have the concept of partitions.
     /// Kafka is an example of source where a reader can read from multiple partitions.
     /// If None is returned, Numaflow replica-id will be returned as the partition.
-    async fn partitions(&self) -> Option<Vec<i32>> {
-        // Call the Python partitions_handler
+    async fn active_partitions(&self) -> Option<Vec<i32>> {
+        // Call the Python active_partitions_handler
         let fut = Python::attach(|py| {
             let py_handler = self.py_handler.clone();
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
 
             let coro = py_handler
-                .call_method0(py, "partitions_handler")
-                .expect("failed to call partitions_handler")
+                .call_method0(py, "active_partitions_handler")
+                .expect("failed to call active_partitions_handler")
                 .into_bound(py);
 
             pyo3_async_runtimes::into_future_with_locals(&locals, coro)
-                .expect("failed to convert partitions_handler to future")
+                .expect("failed to convert active_partitions_handler to future")
         });
 
         // Await the Python coroutine and extract the result
-        let result = fut.await.expect("partitions_handler failed");
+        let result = fut.await.expect("active_partitions_handler failed");
 
         let partitions_response = Python::attach(|py| {
             result
@@ -174,6 +174,34 @@ impl numaflow::source::Sourcer for PySourceRunner {
         });
 
         Some(partitions_response.partitions)
+    }
+
+    /// Returns the total number of partitions in the source. This is used by the platform for
+    /// watermark progression to know when all processors have reported in.
+    /// If None is returned, the platform will not use total partitions for watermark tracking.
+    async fn total_partitions(&self) -> Option<i32> {
+        // Call the Python total_partitions_handler
+        let fut = Python::attach(|py| {
+            let py_handler = self.py_handler.clone();
+            let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
+
+            let coro = py_handler
+                .call_method0(py, "total_partitions_handler")
+                .expect("failed to call total_partitions_handler")
+                .into_bound(py);
+
+            pyo3_async_runtimes::into_future_with_locals(&locals, coro)
+                .expect("failed to convert total_partitions_handler to future")
+        });
+
+        // Await the Python coroutine and extract the result
+        let result = fut.await.expect("total_partitions_handler failed");
+
+        Python::attach(|py| {
+            result
+                .extract::<Option<i32>>(py)
+                .expect("failed to extract Option<i32> from total_partitions_handler")
+        })
     }
 }
 

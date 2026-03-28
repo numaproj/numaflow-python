@@ -78,7 +78,7 @@ class SimpleSource(Sourcer):
         """
         return sourcer.PendingResponse(count=0)
 
-    async def partitions_handler(self) -> sourcer.PartitionsResponse:
+    async def active_partitions_handler(self) -> sourcer.PartitionsResponse:
         """
         The simple source always returns default partitions.
         """

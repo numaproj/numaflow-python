@@ -8,6 +8,7 @@ from pynumaflow_lite.sourcer import (
     NackRequest,
     PendingResponse,
     PartitionsResponse,
+    TotalPartitionsResponse,
 )
 
 
@@ -19,10 +20,11 @@ class Sourcer(metaclass=ABCMeta):
     - read_handler: Read messages from the source
     - ack_handler: Acknowledge processed messages
     - pending_handler: Return the number of pending messages
-    - partitions_handler: Return the partitions this source handles
+    - active_partitions_handler: Return the partitions this source handles
     
     Optionally, you can implement:
     - nack_handler: Negatively acknowledge messages (default: no-op)
+    - total_partitions_handler: Return the total number of partitions in the source
     """
 
     def __call__(self, *args, **kwargs):
@@ -88,9 +90,9 @@ class Sourcer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions_handler(self) -> PartitionsResponse:
         """
-        Return the partitions associated with this source.
+        Return the active partitions associated with this source.
         
         This is used by the platform to determine the partitions to which
         the watermark should be published. If your source doesn't have the
@@ -104,6 +106,21 @@ class Sourcer(metaclass=ABCMeta):
                 return PartitionsResponse(partitions=[self.partition_id])
         """
         pass
+
+    async def total_partitions_handler(self) -> int | None:
+        """
+        Optional.
+
+        Returns the total number of partitions in the source.
+        Used by the platform for watermark progression to know when all
+        processors have reported in.
+
+        Returns None by default, indicating the source does not report total partitions.
+
+        :return:
+            TotalPartitionsResponse: Response containing the total number of partitions
+        """
+        return None
 
     async def nack_handler(self, request: NackRequest) -> None:
         """

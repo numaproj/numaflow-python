@@ -87,11 +87,17 @@ class SimpleSource(Sourcer):
         """
         return sourcer.PendingResponse(count=0)
 
-    async def partitions_handler(self) -> sourcer.PartitionsResponse:
+    async def active_partitions_handler(self) -> sourcer.PartitionsResponse:
         """
         The simple source always returns default partitions.
         """
         return sourcer.PartitionsResponse(partitions=[self.partition_idx])
+
+    async def total_partitions_handler(self) -> int:
+        """
+        The simple source has only one partition.
+        """
+        return 1
 
 
 async def start():

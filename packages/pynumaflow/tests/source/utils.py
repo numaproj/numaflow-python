@@ -1,5 +1,3 @@
-from collections.abc import Iterable
-
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.sourcer import ReadRequest, Message, UserMetadata
 from pynumaflow.sourcer import (

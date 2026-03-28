@@ -301,7 +301,6 @@ class Sourcer(metaclass=ABCMeta):
         """
         Returns the active partitions associated with the source, used by the platform
         to determine the partitions to which the watermark should be published.
-        Falls back to partitions_handler() if not overridden.
         """
         pass
 

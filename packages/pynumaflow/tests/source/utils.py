@@ -108,7 +108,7 @@ class SyncSource(Sourcer):
     def pending_handler(self) -> PendingResponse:
         return PendingResponse(count=10)
 
-    def partitions_handler(self) -> PartitionsResponse:
+    def active_partitions_handler(self) -> PartitionsResponse:
         return PartitionsResponse(partitions=mock_partitions())
 
 

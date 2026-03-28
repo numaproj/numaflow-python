@@ -87,7 +87,7 @@ class AsyncSourceWithTotalPartitions(Sourcer):
     async def total_partitions_handler(self) -> int | None:
         return 10
 
-      
+
 def read_req_source_fn() -> ReadRequest:
     request = source_pb2.ReadRequest.Request(
         num_records=10,

@@ -25,7 +25,7 @@ class SessionReduceCounter(session_reducer.SessionReducer):
         self.counter = initial
 
     async def session_reduce(
-            self, keys: list[str], datums: AsyncIterable[session_reducer.Datum]
+        self, keys: list[str], datums: AsyncIterable[session_reducer.Datum]
     ) -> AsyncIterator[session_reducer.Message]:
         """
         Count all incoming messages in this session and yield the count.

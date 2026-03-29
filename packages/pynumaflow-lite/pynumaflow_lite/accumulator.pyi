@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import AsyncIterator, Optional, Callable, Awaitable
+from typing import AsyncIterator, Optional, Callable
 from collections.abc import AsyncIterable
 
 class Message:
@@ -31,6 +31,7 @@ class Message:
         Drop a Message, do not forward to the next vertex.
         """
         ...
+
     @staticmethod
     def from_datum(
         datum: Datum,
@@ -75,7 +76,11 @@ class AccumulatorAsyncServer:
         info_file: str | None = "/var/run/numaflow/accumulator-server-info",
     ) -> None: ...
     async def start(
-        self, py_creator: type[Accumulator] | Callable[[AsyncIterable[Datum]], AsyncIterator[Message]], init_args: tuple | None = None
+        self,
+        py_creator: (
+            type[Accumulator] | Callable[[AsyncIterable[Datum]], AsyncIterator[Message]]
+        ),
+        init_args: tuple | None = None,
     ) -> None:
         """
         Start the server with the given Python class (creator) or function.
@@ -85,6 +90,7 @@ class AccumulatorAsyncServer:
             init_args: Optional tuple of positional arguments for class instantiation
         """
         ...
+
     def stop(self) -> None:
         """
         Trigger server shutdown from Python (idempotent).
@@ -116,4 +122,3 @@ class Accumulator:
             Message objects to be sent to the next vertex
         """
         ...
-

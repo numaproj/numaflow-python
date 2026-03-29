@@ -26,14 +26,14 @@ def _wait_for_socket(path: Path, timeout: float = 10.0) -> None:
 
 
 def run_python_server_with_rust_client(
-        script: str,
-        sock_path: Path,
-        server_info_path: Path,
-        rust_bin_name: str,
-        rust_bin_args: Optional[List[str]] = None,
-        socket_timeout: float = 20.0,
-        rust_timeout: float = 60.0,
-        server_shutdown_timeout: float = 15.0,
+    script: str,
+    sock_path: Path,
+    server_info_path: Path,
+    rust_bin_name: str,
+    rust_bin_args: Optional[List[str]] = None,
+    socket_timeout: float = 20.0,
+    rust_timeout: float = 60.0,
+    server_shutdown_timeout: float = 15.0,
 ) -> None:
     """
     Generic test runner for Python server + Rust client integration tests.
@@ -86,7 +86,12 @@ def run_python_server_with_rust_client(
             rust_cmd.extend(["--"] + rust_bin_args)
 
         rust = subprocess.run(
-            rust_cmd, cwd=str(cargo_root), capture_output=True, text=True, env=env, timeout=rust_timeout
+            rust_cmd,
+            cwd=str(cargo_root),
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=rust_timeout,
         )
         if rust.returncode != 0:
             # Dump helpful logs for debugging
@@ -118,4 +123,6 @@ def run_python_server_with_rust_client(
             except Exception:
                 pass
 
-    assert server.returncode == 0, f"Server did not exit cleanly, code={server.returncode}"
+    assert (
+        server.returncode == 0
+    ), f"Server did not exit cleanly, code={server.returncode}"

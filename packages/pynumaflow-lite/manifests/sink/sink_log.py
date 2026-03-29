@@ -1,5 +1,4 @@
 import asyncio
-import collections
 import logging
 import signal
 from collections.abc import AsyncIterable, AsyncIterator
@@ -36,7 +35,9 @@ except AttributeError:
     pass
 
 
-async def start(f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]]):
+async def start(
+    f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]],
+):
     server = sinker.SinkAsyncServer()
 
     # Register loop-level signal handlers so we control shutdown and avoid asyncio.run
@@ -61,4 +62,3 @@ async def start(f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Resp
 if __name__ == "__main__":
     async_handler = SimpleLogSink()
     asyncio.run(start(async_handler))
-

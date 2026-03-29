@@ -31,4 +31,3 @@ class Accumulator(metaclass=ABCMeta):
             Message objects to be sent to the next vertex
         """
         pass
-

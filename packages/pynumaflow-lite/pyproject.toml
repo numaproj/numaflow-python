@@ -16,5 +16,7 @@ features = ["pyo3/extension-module"]
 
 [dependency-groups]
 dev = [
+    "black>=24.8.0",
     "pytest>=8.3.5",
+    "ruff>=0.15.8",
 ]

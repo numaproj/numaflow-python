@@ -133,10 +133,34 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
                 headers=dict(req.request.headers),
             )
 
-            # Stream results from the user handler as they are produced
+            # Stream results from the user handler as they are produced.
+            # The asyncio.sleep(0) after each put yields control to the event loop,
+            # allowing MapFn to consume and stream the response to gRPC immediately.
+            # Without it, await Queue.put() on an unbounded queue completes without
+            # suspending (Queue.full() is always False), starving other tasks.
+            # The starvation can happen if the UDF code yields messages using regular
+            # for-loop (non async). See the sample code in https://github.com/numaproj/numaflow-python/issues/342
+            # With asyncio.sleep(0), this makes our below 'async for' loop equivalent to:
+            #
+            #   while True:
+            #       msg = await handler.__anext__()  # await point
+            #       await result_queue.put(...)
+            #
+            # The "await result_queue.put()" isn't a real await point yielding control back to
+            # eventloop in the case of an unbounded queue. When queue is not full, it simply calls
+            # a non-async function https://github.com/python/cpython/blob/f4c9bc899b982b9742b45cff0643fa34de3dc84d/Lib/asyncio/queues.py#L125-L154
+            # Or you can refer the source code with:
+            # python -c "import asyncio, inspect; print(inspect.getsource(asyncio.Queue.put))"
+            # This results in a tight loop, blocking other tasks on event loop from proceeding.
+            # Like in the issue linked here, if the user yields 10 messages at 1 second a part,
+            # the task that reads from the queue can only proceed this 'async for loop' ends as
+            # it never yields control back to eventloop. So you will see all 10 messages at the
+            # same time in the next vertex instead of in a true streaming fashion.
+            # The asyncio.sleep(0) will yield the control back to event loop avoiding starvation.
             async for msg in self.__map_stream_handler(list(req.request.keys), datum):
                 res = map_pb2.MapResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
                 await result_queue.put(map_pb2.MapResponse(results=[res], id=req.id))
+                await asyncio.sleep(0)
 
             # Emit EOT for this request id
             await result_queue.put(

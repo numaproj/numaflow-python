@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Release Version](https://img.shields.io/github/v/release/numaproj/numaflow-python?label=pynumaflow)](https://github.com/numaproj/numaflow-python/releases/latest)
 
-`pynumaflow` is the Python SDK for [Numaflow](https://numaflow.numaproj.io/), a Kubernetes-native stream processing framework. Write a Python function, wire it to a server class, and Numaflow handles the gRPC transport, autoscaling, and deployment — no boilerplate required. The SDK supports three execution models (synchronous, asynchronous, and multi-process) and both function-based and class-based handler styles.
+`pynumaflow` is the Python SDK for [Numaflow](https://numaflow.numaproj.io/), a Kubernetes-native stream processing framework. Write a Python function, wire it to a server class, and Numaflow handles the gRPC transport, autoscaling, and deployment — no boilerplate required. The SDK supports synchronous and asynchronous execution models, and both function-based and class-based handler styles.
 
 ## Installation
 
@@ -47,45 +47,38 @@ The SDK covers the full range of Numaflow extension points. Each capability maps
 > [!TIP]
 > Each capability below links to working examples in both function-based and class-based handler styles. See the full [examples directory](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples) for all implementations.
 
-| | Description | Examples |
+| | Description | API Reference |
 |---|---|---|
-| [**User-Defined Functions (UDFs)**](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/) | Process and transform stream data — Map, Reduce, Reduce Stream, Map Stream, Batch Map, Accumulator | [Map](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/map) · [Reduce](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/reduce) · [Reduce Stream](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/reducestream) · [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/mapstream) · [Batch Map](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/batchmap) · [Accumulator](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/accumulator) |
-| [**User-Defined Sources (UDSource)**](https://numaflow.numaproj.io/user-guide/sources/user-defined-sources/) | Ingest data from custom sources with read, ack, pending, and partition handlers | [Source](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/source) · [Source Transform](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sourcetransform) |
-| [**User-Defined Sinks (UDSink)**](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/) | Deliver data to custom destinations with per-message acknowledgment | [Sink](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sink) |
-| [**Side Inputs**](https://numaflow.numaproj.io/specifications/side-inputs/) | Broadcast slow-changing reference data to UDF vertices without passing it through the pipeline | [Side Input](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sideinput) |
+| [**User-Defined Functions (UDFs)**](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/) | Process and transform stream data — Map, Reduce, Reduce Stream, Map Stream, Batch Map, Accumulator | [Map](https://numaproj.io/numaflow-python/latest/api/mapper/) · [Reduce](https://numaproj.io/numaflow-python/latest/api/reducer/) · [Reduce Stream](https://numaproj.io/numaflow-python/latest/api/reducestreamer/) · [Map Stream](https://numaproj.io/numaflow-python/latest/api/mapstreamer/) · [Batch Map](https://numaproj.io/numaflow-python/latest/api/batchmapper/) · [Accumulator](https://numaproj.io/numaflow-python/latest/api/accumulator/) |
+| [**User-Defined Sources (UDSource)**](https://numaflow.numaproj.io/user-guide/sources/user-defined-sources/) | Ingest data from custom sources with read, ack, pending, and partition handlers | [Sourcer](https://numaproj.io/numaflow-python/latest/api/sourcer/) · [Source Transform](https://numaproj.io/numaflow-python/latest/api/sourcetransformer/) |
+| [**User-Defined Sinks (UDSink)**](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/) | Deliver data to custom destinations with per-message acknowledgment | [Sinker](https://numaproj.io/numaflow-python/latest/api/sinker/) |
+| [**Side Inputs**](https://numaflow.numaproj.io/specifications/side-inputs/) | Broadcast slow-changing reference data to UDF vertices without passing it through the pipeline | [Side Input](https://numaproj.io/numaflow-python/latest/api/sideinput/) |
 
 ## Choosing Your Server Type
 
 Each functionality is served by a dedicated server class. Choose the server type that matches your workload characteristics:
 
-| | **Sync** | **Async** | **MultiProcess** |
-|---|---|---|---|
-| **Concurrency Model** | Multithreaded | asyncio event loop | N forked server processes |
-| **Handler Signature** | `def handler(...)` | `async def handler(...)` | `def handler(...)` |
-| **GIL Behaviour** | Subject to GIL | Subject to GIL | Bypasses Python GIL |
-| **Extra Config** | — | — | `server_count=N` required |
-| **Typical Workloads** | Stateless transforms | I/O-bound operations | CPU-intensive operations |
-
-> [!TIP]
-> Both Sync and MultiProcess handlers use a plain `def` — only Async requires `async def`.
-
-> [!IMPORTANT]
-> MultiProcess forks N independent gRPC servers within the same container. The `server_count` parameter is required: `MapMultiprocServer(handler, server_count=2)`.
+| | **Sync** | **Async** |
+|---|---|---|
+| **Concurrency Model** | Multithreaded | asyncio event loop |
+| **Handler Signature** | `def handler(...)` | `async def handler(...)` |
+| **GIL Behaviour** | Subject to GIL | Subject to GIL |
+| **Typical Workloads** | Stateless transforms | I/O-bound operations |
 
 ## Server Class Reference
 
 | Functionality | Server Class(es) |
 |---|---|
-| [**UDSource**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/source) | [SourceAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/source/simple_source/example.py) |
-| [**UDSink**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sink) | [SinkServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sink/log/example.py), [SinkAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sink/async_log/example.py) |
-| [**Side Input**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sideinput) | [SideInputServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sideinput/simple_sideinput/example.py) |
-| [**Map**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/map) | [MapServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/even_odd/example.py), [MapAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/async_forward_message/example.py), [MapMultiprocServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/multiproc_map/example.py) |
-| [**Reduce**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/reduce) | [ReduceAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/reduce/counter/example.py) |
-| [**Reduce Stream**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/reducestream) | [ReduceStreamAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/reducestream/counter/example.py) |
-| [**Map Stream**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/mapstream) | [MapStreamAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/mapstream/flatmap_stream/example.py) |
-| [**Batch Map**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/batchmap) | [BatchMapAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/batchmap/flatmap/example.py) |
-| [**Accumulator**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/accumulator) | [AccumulatorAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/accumulator/streamsorter/example.py) |
-| [**Source Transform**](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sourcetransform) | [SourceTransformServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sourcetransform/event_time_filter/example.py), [SourceTransformAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sourcetransform/async_event_time_filter/example.py), SourceTransformMultiProcServer |
+| [**UDSource**](https://numaproj.io/numaflow-python/latest/api/sourcer/) | [SourceAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/source/simple_source/example.py) |
+| [**UDSink**](https://numaproj.io/numaflow-python/latest/api/sinker/) | [SinkServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sink/log/example.py), [SinkAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sink/async_log/example.py) |
+| [**Side Input**](https://numaproj.io/numaflow-python/latest/api/sideinput/) | [SideInputServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sideinput/simple_sideinput/example.py) |
+| [**Map**](https://numaproj.io/numaflow-python/latest/api/mapper/) | [MapServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/even_odd/example.py), [MapAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/async_forward_message/example.py) |
+| [**Reduce**](https://numaproj.io/numaflow-python/latest/api/reducer/) | [ReduceAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/reduce/counter/example.py) |
+| [**Reduce Stream**](https://numaproj.io/numaflow-python/latest/api/reducestreamer/) | [ReduceStreamAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/reducestream/counter/example.py) |
+| [**Map Stream**](https://numaproj.io/numaflow-python/latest/api/mapstreamer/) | [MapStreamAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/mapstream/flatmap_stream/example.py) |
+| [**Batch Map**](https://numaproj.io/numaflow-python/latest/api/batchmapper/) | [BatchMapAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/batchmap/flatmap/example.py) |
+| [**Accumulator**](https://numaproj.io/numaflow-python/latest/api/accumulator/) | [AccumulatorAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/accumulator/streamsorter/example.py) |
+| [**Source Transform**](https://numaproj.io/numaflow-python/latest/api/sourcetransformer/) | [SourceTransformServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sourcetransform/event_time_filter/example.py), [SourceTransformAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sourcetransform/async_event_time_filter/example.py) |
 
 All server types accept handlers in two styles:
 

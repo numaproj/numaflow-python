@@ -1,0 +1,18 @@
+[project]
+name = "map-async-forward-message"
+version = "0.1.0"
+description = ""
+requires-python = ">=3.13"
+dependencies = [
+    "pynumaflow",
+]
+
+[tool.uv.sources]
+pynumaflow = { path = "../../../" }
+
+[tool.hatch.build.targets.wheel]
+packages = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

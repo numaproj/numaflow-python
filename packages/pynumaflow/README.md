@@ -5,18 +5,16 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Release Version](https://img.shields.io/github/v/release/numaproj/numaflow-python?label=pynumaflow)](https://github.com/numaproj/numaflow-python/releases/latest)
 
-This is the Python SDK for [Numaflow](https://numaflow.numaproj.io/).
-
-This SDK provides the interface for writing different functionalities of Numaflow like [UDFs](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/), [UDSinks](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/), [UDSources](https://numaflow.numaproj.io/user-guide/sources/user-defined-sources/) and [SideInput](https://numaflow.numaproj.io/specifications/side-inputs/) in Python.
+`pynumaflow` is the Python SDK for [Numaflow](https://numaflow.numaproj.io/), a Kubernetes-native stream processing framework. Write a Python function, wire it to a server class, and Numaflow handles the gRPC transport, autoscaling, and deployment — no boilerplate required. The SDK supports synchronous and asynchronous execution models, and both function-based and class-based handler styles.
 
 ## Installation
 
-Install the package using pip.
 ```bash
 pip install pynumaflow
 ```
 
-### Build locally
+<details>
+<summary>Build &amp; develop locally</summary>
 
 This project uses [uv](https://docs.astral.sh/uv/) for dependency management and packaging.
 To build the package locally, run the following command from the root of the project.
@@ -40,124 +38,56 @@ Setup [pre-commit](https://pre-commit.com/) hooks:
 pre-commit install
 ```
 
-## Implementing different functionalities
-- [Implement User Defined Sources](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/source)
-- [Implement User Defined Source Transformers](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sourcetransform)
-- Implement User Defined Functions
-    - [Map](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/map)
-    - [Reduce](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/reduce)
-    - [Map Stream](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/mapstream)
-    - [Batch Map](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/batchmap)
-- [Implement User Defined Sinks](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sink)
-- [Implement User Defined SideInputs](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples/sideinput)
+</details>
 
-## Server Types
+## Capabilities
 
-There are different types of gRPC server mechanisms which can be used to serve the UDFs, UDSinks and UDSource.
-These have different functionalities and are used for different use cases.
+The SDK covers the full range of Numaflow extension points. Each capability maps to a dedicated set of server classes and handler interfaces.
 
-Currently we support the following server types:
+> [!TIP]
+> Each capability below links to working examples in both function-based and class-based handler styles. See the full [examples directory](https://github.com/numaproj/numaflow-python/tree/main/packages/pynumaflow/examples) for all implementations.
 
-- Sync Server
-- Asyncronous Server
-- MultiProcessing Server
+| | Description | API Reference |
+|---|---|---|
+| [**User-Defined Functions (UDFs)**](https://numaflow.numaproj.io/user-guide/user-defined-functions/user-defined-functions/) | Process and transform stream data — Map, Reduce, Reduce Stream, Map Stream, Batch Map, Accumulator | [Map](https://numaproj.io/numaflow-python/latest/api/mapper/) · [Reduce](https://numaproj.io/numaflow-python/latest/api/reducer/) · [Reduce Stream](https://numaproj.io/numaflow-python/latest/api/reducestreamer/) · [Map Stream](https://numaproj.io/numaflow-python/latest/api/mapstreamer/) · [Batch Map](https://numaproj.io/numaflow-python/latest/api/batchmapper/) · [Accumulator](https://numaproj.io/numaflow-python/latest/api/accumulator/) |
+| [**User-Defined Sources (UDSource)**](https://numaflow.numaproj.io/user-guide/sources/user-defined-sources/) | Ingest data from custom sources with read, ack, pending, and partition handlers | [Sourcer](https://numaproj.io/numaflow-python/latest/api/sourcer/) · [Source Transform](https://numaproj.io/numaflow-python/latest/api/sourcetransformer/) |
+| [**User-Defined Sinks (UDSink)**](https://numaflow.numaproj.io/user-guide/sinks/user-defined-sinks/) | Deliver data to custom destinations with per-message acknowledgment | [Sinker](https://numaproj.io/numaflow-python/latest/api/sinker/) |
+| [**Side Inputs**](https://numaflow.numaproj.io/specifications/side-inputs/) | Broadcast slow-changing reference data to UDF vertices without passing it through the pipeline | [Side Input](https://numaproj.io/numaflow-python/latest/api/sideinput/) |
 
-Not all of the above are supported for all UDFs, UDSource and UDSinks.
+## Choosing Your Server Type
 
-For each of the UDFs, UDSource and UDSinks, there are seperate classes for each of the server types.
-This helps in keeping the interface simple and easy to use, and the user can start the specific server type based on the use case.
+Each functionality is served by a dedicated server class. Choose the server type that matches your workload characteristics:
 
+| | **Sync** | **Async** |
+|---|---|---|
+| **Concurrency Model** | Multithreaded | asyncio event loop |
+| **Handler Signature** | `def handler(...)` | `async def handler(...)` |
+| **GIL Behaviour** | Subject to GIL | Subject to GIL |
+| **Typical Workloads** | Stateless transforms | I/O-bound operations |
 
-#### SyncServer
+## Server Class Reference
 
-Syncronous Server is the simplest server type. It is a multithreaded threaded server which can be used for simple UDFs and UDSinks.
-Here the server will invoke the handler function for each message. The messaging is synchronous and the server will wait for the handler to return before processing the next message.
+| Functionality | Server Class(es) |
+|---|---|
+| [**UDSource**](https://numaproj.io/numaflow-python/latest/api/sourcer/) | [SourceAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/source/simple_source/example.py) |
+| [**UDSink**](https://numaproj.io/numaflow-python/latest/api/sinker/) | [SinkServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sink/log/example.py), [SinkAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sink/async_log/example.py) |
+| [**Side Input**](https://numaproj.io/numaflow-python/latest/api/sideinput/) | [SideInputServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sideinput/simple_sideinput/example.py) |
+| [**Map**](https://numaproj.io/numaflow-python/latest/api/mapper/) | [MapServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/even_odd/example.py), [MapAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/map/async_forward_message/example.py) |
+| [**Reduce**](https://numaproj.io/numaflow-python/latest/api/reducer/) | [ReduceAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/reduce/counter/example.py) |
+| [**Reduce Stream**](https://numaproj.io/numaflow-python/latest/api/reducestreamer/) | [ReduceStreamAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/reducestream/counter/example.py) |
+| [**Map Stream**](https://numaproj.io/numaflow-python/latest/api/mapstreamer/) | [MapStreamAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/mapstream/flatmap_stream/example.py) |
+| [**Batch Map**](https://numaproj.io/numaflow-python/latest/api/batchmapper/) | [BatchMapAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/batchmap/flatmap/example.py) |
+| [**Accumulator**](https://numaproj.io/numaflow-python/latest/api/accumulator/) | [AccumulatorAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/accumulator/streamsorter/example.py) |
+| [**Source Transform**](https://numaproj.io/numaflow-python/latest/api/sourcetransformer/) | [SourceTransformServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sourcetransform/event_time_filter/example.py), [SourceTransformAsyncServer](https://github.com/numaproj/numaflow-python/blob/main/packages/pynumaflow/examples/sourcetransform/async_event_time_filter/example.py) |
 
-```
-grpc_server = MapServer(handler)
-```
+All server types accept handlers in two styles:
 
-#### AsyncServer
+- **Function-based** — pass a plain `def` or `async def` directly to the server. Best for simple, stateless logic.
+- **Class-based** — inherit from the corresponding base class (e.g., `Mapper`, `Reducer`, `Sinker`) and implement the `handler` method. Useful when your handler needs initialization arguments, internal state, or helper methods.
 
-Asyncronous Server is a multi threaded server which can be used for UDFs which are asyncronous. Here we utilize the asyncronous capabilities of Python to process multiple messages in parallel. The server will invoke the handler function for each message. The messaging is asyncronous and the server will not wait for the handler to return before processing the next message. Thus this server type is useful for UDFs which are asyncronous.
-The handler function for such a server should be an async function.
+The linked examples above demonstrate both styles for each functionality.
 
-```py
-grpc_server = MapAsyncServer(handler)
-```
+## Contributing
 
-#### MultiProcessServer
-
-MultiProcess Server is a multi process server which can be used for UDFs which are CPU intensive. Here we utilize the multi process capabilities of Python to process multiple messages in parallel by forking multiple servers in different processes.
-The server will invoke the handler function for each message. Individually at the server level the messaging is synchronous and the server will wait for the handler to return before processing the next message. But since we have multiple servers running in parallel, the overall messaging also executes in parallel.
-
-This could be an alternative to creating multiple replicas of the same UDF container as here we are using the multi processing capabilities of the system to process multiple messages in parallel but within the same container.
-
-Thus this server type is useful for UDFs which are CPU intensive.
-```
-grpc_server = MapMultiProcServer(mapper_instance=handler, server_count=2)
-```
-
-#### Currently Supported Server Types for each functionality
-
-These are the class names for the server types supported by each of the functionalities.
-
-- UDFs
-    - Map
-        - MapServer
-        - MapAsyncServer
-        - MapMultiProcServer
-    - Reduce
-        - ReduceAsyncServer
-    - MapStream
-        - MapStreamAsyncServer
-    - BatchMap
-      - BatchMapAsyncServer
-    - Source Transform
-        - SourceTransformServer
-        - SourceTransformMultiProcServer
-- UDSource
-    - SourceServer
-    - SourceAsyncServer
-- UDSink
-    - SinkServer
-    - SinkAsyncServer
-- SideInput
-    - SideInputServer
-
-
-
-
-### Handler Function and Classes
-
-All the server types take a instance of a handler class or a handler function as an argument.
-The handler function or class is the function or class which implements the functionality of the UDF, UDSource or UDSink.
-For ease of use the user can pass either of the two to the server and the server will handle the rest.
-
-The handler for each of the servers has a specific signature which is defined by the server type and the implentation of the handlers
-should follow the same signature.
-
-For using the class based handlers the user can inherit from the base handler class for each of the functionalities and implement the handler function.
-The base handler class for each of the functionalities has the same signature as the handler function for the respective server type.
-The list of base handler classes for each of the functionalities is given below:
-
-- UDFs
-    - Map
-        - Mapper
-    - Reduce
-        - Reducer
-    - MapStream
-        - MapStreamer
-    - Source Transform
-        - SourceTransformer
-    - Batch Map
-      - BatchMapper
-- UDSource
-    - Sourcer
-- UDSink
-    - Sinker
-- SideInput
-    - SideInput
-
-More details about the signature of the handler function for each of the server types is given in the
-documentation of the respective server type.
+For SDK development workflow, testing against a live pipeline, and adding new examples, see the [Developer Guide](../../development.md).
+For general contribution guidelines, see the [Numaproj Contributing Guide](https://github.com/numaproj/numaproj/blob/main/CONTRIBUTING.md).

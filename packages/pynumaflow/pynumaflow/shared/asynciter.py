@@ -25,11 +25,13 @@ class NonBlockingIterator(Generic[T]):
 
     async def put(self, item: T) -> None:
         await self._queue.put(item)
-        # Yield to the event loop after each put.  On an unbounded queue
-        # (maxsize=0, the default) Queue.put() never actually suspends —
-        # it calls the sync put_nowait() under the hood.  This turns any
-        # ``async for … / await queue.put()`` loop into a tight loop that
-        # starves every other task on the event loop.  The sleep(0) gives
-        # consumer tasks (and gRPC) a chance to run between puts.
+        # Yield to the event loop after each put.  The underlying
+        # asyncio.Queue is unbounded (maxsize=0), so Queue.put() never
+        # actually suspends — it calls sync put_nowait() under the hood.
+        # If the UDF async generator yields messages via a sync for-loop
+        # (no await between yields), the event loop is starved and
+        # consumer tasks (including gRPC streaming) cannot make progress
+        # until the generator completes.  The sleep(0) ensures the event
+        # loop gets a turn after every put regardless of the caller's code.
         # See: https://github.com/numaproj/numaflow-python/issues/350
         await asyncio.sleep(0)

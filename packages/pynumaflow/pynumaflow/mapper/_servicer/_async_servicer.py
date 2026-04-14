@@ -108,9 +108,8 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                 self.background_tasks.add(msg_task)
                 msg_task.add_done_callback(self.background_tasks.discard)
 
-            # wait for all tasks to complete
-            for task in self.background_tasks:
-                await task
+            # Wait for all tasks to complete concurrently
+            await asyncio.gather(*self.background_tasks)
 
             # send an EOF to result queue to indicate that all tasks have completed
             await result_queue.put(STREAM_EOF)

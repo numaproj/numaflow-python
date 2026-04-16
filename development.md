@@ -4,7 +4,7 @@ This document explains the development process for the Numaflow Python SDK.
 
 ### Testing
 
-1. Install [Poetry](https://python-poetry.org/docs/) before starting your test. Make sure you have the correct Python version
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) before starting your test. Make sure you have the correct Python version. Run `make setup` from `packages/pynumaflow/` to install all dependencies
 2. Make your SDK changes
 3. Update the `example.py` file inside the desired example directory if needed 
 4. Run `make image TAG=<tag>` inside the same example directory to build your image with an appropriate tag

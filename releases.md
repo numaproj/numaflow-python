@@ -5,10 +5,8 @@ This document explains the release process for the Python SDK. You can find the 
 ### Before Release
 
 1. Before releasing a new SDK version, make sure to update all references from the old version to the new one. For example,
-the version in the root `pyproject.toml` should be updated (for [reference](https://github.com/numaproj/numaflow-python/commit/6a720e7c56121a45b94aa929c6b720312dd9340a))
-   - The version in the root `pyproject.toml` can be updated by running `poetry version <version-bump-rule | PEP440-string>`. e.g., `poetry version 0.8.0`
-   The version bump rules that can be provided and their corresponding effects can be found [here](https://python-poetry.org/docs/cli/#version),
-   in the `Poetry` documentation. A version number can also be directly specified instead, but it must follow the [PEP 440](https://peps.python.org/pep-0440/) specification
+the version in `packages/pynumaflow/pyproject.toml` should be updated (for [reference](https://github.com/numaproj/numaflow-python/commit/6a720e7c56121a45b94aa929c6b720312dd9340a))
+   - Edit the `version` field in `packages/pynumaflow/pyproject.toml` directly (e.g., change `version = "0.12.0"` to `version = "0.12.1"`). The version must follow the [PEP 440](https://peps.python.org/pep-0440/) specification
 2. If the version to be released has backwards incompatible changes, i.e. it does not support older versions of the Numaflow platform,
 you must update the `MINIMUM_NUMAFLOW_VERSION` constant in the `pynumaflow/info/types.py` file to the minimum Numaflow version that is supported by your new SDK version.
 3. After making these changes, create a PR and merge it.

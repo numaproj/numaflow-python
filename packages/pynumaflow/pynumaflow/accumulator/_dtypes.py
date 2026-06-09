@@ -400,14 +400,31 @@ class Message:
         self._id = id or ""
 
     @classmethod
-    def to_drop(cls: type[M]) -> M:
-        """Creates a Message instance that indicates the message should be dropped.
+    def to_drop(cls: type[M], datum: Datum) -> M:
+        """Creates a Message from the given Datum with the DROP tag set, so the message is not
+        forwarded to the next vertex but still allows the accumulator to advance the watermark
+        and release the tracked state.
+
+        Unlike a plain dropped message, the watermark, event time, id and headers are carried over
+        from the datum. This is required for accumulators: the watermark must progress for the
+        tracked windows/messages (WAL) to be garbage collected.
+
+        Args:
+            datum: The Datum to drop the results for.
 
         Returns:
-            M: A Message instance with empty value and DROP tag indicating
-               the message should be dropped.
+            M: A Message instance with empty value and the DROP tag set, carrying the datum's
+               watermark, event time, id and headers.
         """
-        return cls(b"", None, [DROP])
+        return cls(
+            value=b"",
+            keys=datum.keys,
+            tags=[DROP],
+            watermark=datum.watermark,
+            event_time=datum.event_time,
+            headers=datum.headers,
+            id=datum.id,
+        )
 
     @property
     def value(self) -> bytes:

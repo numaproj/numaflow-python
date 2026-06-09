@@ -226,10 +226,33 @@ def test_message_default_values():
 
 
 def test_message_to_drop():
-    msg = Message.to_drop()
-    assert msg.value == b""
-    assert msg.keys == []
+    test_keys = ["key1", "key2"]
+    test_event_time = mock_event_time()
+    test_watermark = mock_watermark()
+    test_headers = {"header1": "value1"}
+    test_id = "test_datum_id"
+
+    datum = Datum(
+        keys=test_keys,
+        value=b"test_message_value",
+        event_time=test_event_time,
+        watermark=test_watermark,
+        id_=test_id,
+        headers=test_headers,
+    )
+
+    msg = Message.to_drop(datum)
+
+    # The DROP tag must be set so the message is not forwarded downstream.
     assert "U+005C__DROP__" in msg.tags
+    # No value is forwarded, but the identifying/watermark fields are carried over so the
+    # accumulator can advance the watermark and release the tracked state.
+    assert msg.value == b""
+    assert msg.keys == test_keys
+    assert msg.event_time == test_event_time
+    assert msg.watermark == test_watermark
+    assert msg.headers == test_headers
+    assert msg.id == test_id
 
 
 def test_message_none_values():

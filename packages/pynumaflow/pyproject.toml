@@ -58,8 +58,27 @@ docs = [
 ]
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+# Mixed Rust/Python layout. This pyproject.toml lives at the package root
+# (packages/pynumaflow/), so `python-source = "."` points there: the pure-Python
+# `pynumaflow/` package sits alongside this file, and the compiled Rust extension
+# is nested inside it as the private module `pynumaflow._pynumaflow_rs`.
+#
+# Run `maturin develop` from this directory. It compiles the Rust and drops the
+# shared library into the source tree at `pynumaflow/_pynumaflow_rs.<abi-tag>.so`
+# (the abi-tag encodes the Python version + platform, e.g. cpython-314-darwin or
+# cpython-311-x86_64-linux-gnu), so that Python code in the package can do
+# `from pynumaflow._pynumaflow_rs import sourcetransformer`.
+python-source = "."
+module-name = "pynumaflow._pynumaflow_rs"
+
+# Passed to cargo build as --features. This enables PyO3's extension-module feature,
+# which is required when building a Python extension (it tells PyO3 not to link against libpython,
+# so the .so/.pyd loads correctly inside the interpreter).
+features = ["pyo3/extension-module"]
 
 [tool.black]
 line-length = 100

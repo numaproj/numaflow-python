@@ -1,0 +1,23 @@
+[package]
+name = "pynumaflow-rs"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "_pynumaflow_rs"
+path = "rust_src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+numaflow = { git = "https://github.com/numaproj/numaflow-rs.git", rev = "44ee3068fcf7088ff265df7ae7ce1881a40694ff" }
+pyo3 = { version = "0.27.1", features = ["chrono", "experimental-inspect"] }
+tokio = "1.47.1"
+tonic = "0.14.2"
+tokio-stream = "0.1.17"
+tower = "0.5.2"
+hyper-util = "0.1.16"
+prost-types = "0.14.1"
+chrono = "0.4.42"
+pyo3-async-runtimes = { version = "0.27.0", features = ["tokio-runtime"] }
+futures-core = "0.3.31"
+pin-project = "1.1.10"

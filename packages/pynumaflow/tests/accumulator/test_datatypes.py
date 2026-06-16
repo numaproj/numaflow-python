@@ -149,7 +149,9 @@ def test_accumulator_result_create():
     consumer_future = None  # In real usage, this would be an asyncio.Task
     watermark = datetime.fromtimestamp(1662998400, timezone.utc)
 
-    result = AccumulatorResult(future, iterator, keys, result_queue, consumer_future, watermark)
+    result = AccumulatorResult(
+        future, iterator, keys, result_queue, consumer_future, watermark, None
+    )
 
     assert result.future == future
     assert result.iterator == iterator
@@ -161,7 +163,7 @@ def test_accumulator_result_create():
 
 def test_accumulator_result_update_watermark():
     result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc), None
     )
     new_watermark = datetime.fromtimestamp(1662998460, timezone.utc)
     result.update_watermark(new_watermark)
@@ -170,7 +172,7 @@ def test_accumulator_result_update_watermark():
 
 def test_accumulator_result_update_watermark_invalid_type():
     result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc), None
     )
     with pytest.raises(TypeError):
         result.update_watermark("not a datetime")

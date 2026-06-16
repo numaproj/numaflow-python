@@ -234,6 +234,7 @@ class AccumulatorResult:
         "_result_queue",
         "_consumer_future",
         "_latest_watermark",
+        "_close_window",
     )
 
     _future: Task
@@ -242,6 +243,7 @@ class AccumulatorResult:
     _result_queue: NonBlockingIterator
     _consumer_future: Task
     _latest_watermark: datetime
+    _close_window: KeyedWindow | None
 
     @property
     def future(self) -> Task:
@@ -309,6 +311,29 @@ class AccumulatorResult:
         if not isinstance(new_watermark, datetime):
             raise TypeError("new_watermark must be a datetime object")
         self._latest_watermark = new_watermark
+
+    @property
+    def close_window(self) -> KeyedWindow | None:
+        """Returns the keyed window from the CLOSE request, if the task was closed.
+
+        Returns:
+            KeyedWindow | None: The window carried by the CLOSE request, echoed back in
+            the EOF response; None if the task has not received a CLOSE.
+        """
+        return self._close_window
+
+    def set_close_window(self, window: KeyedWindow):
+        """Stashes the CLOSE request's keyed window so the EOF response can echo it.
+
+        Args:
+            window (KeyedWindow): The keyed window from the CLOSE request.
+
+        Raises:
+            TypeError: If window is not a KeyedWindow object.
+        """
+        if not isinstance(window, KeyedWindow):
+            raise TypeError("window must be a KeyedWindow object")
+        self._close_window = window
 
 
 @dataclass

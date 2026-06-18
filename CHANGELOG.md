@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.13.0 (2026-04-16)
+
+ * [e3d3afd](https://github.com/numaproj/numaflow-python/commit/e3d3afde3ca14df936771b5a72f87f9072742a8d) Release 0.13.0 (#355)
+
+### Contributors
+
+ * Sreekanth
+
+## v0.12.2 (2026-04-16)
+
+ * [b1c2911](https://github.com/numaproj/numaflow-python/commit/b1c29111f66ed8f7399c30d8925289abf0fbbb5f) fix: Avoid event loop starvation if user has tight loops in streaming UDFs (#352)
+ * [5830a34](https://github.com/numaproj/numaflow-python/commit/5830a34dc17d89ad6e386c9bbd26786f85f5f6b5) fix: Avoid UDF call in map streaming from starving eventloop (#349)
+ * [5c7d07f](https://github.com/numaproj/numaflow-python/commit/5c7d07fa9200503a4fa2cc3365e94ce38c08fac3) feat: Update Sourcer interface for propagating totalPartitions (#343)
+ * [f894c01](https://github.com/numaproj/numaflow-python/commit/f894c01173a207a88adfea6b2b3dc8de71369ebc) Tests: Use shared fixtures, increase test coverage (#341)
+ * [7a908f2](https://github.com/numaproj/numaflow-python/commit/7a908f2dbdc1696e0d98a074edbbbc73ff63da40) fix: Graceful shutdown for all UDFs (#337)
+ * [5b458ad](https://github.com/numaproj/numaflow-python/commit/5b458ad78d7c6d5f0699a9d6f103b17cf2cdac25) fix: Validate message fields before protobuf encoding for better error messages (#333)
+ * [b37f25f](https://github.com/numaproj/numaflow-python/commit/b37f25fef9588a736a1e7957e1b61cc228d25f4e) fix: Handle window closes correctly in reducestreamer (#331)
+ * [4d33841](https://github.com/numaproj/numaflow-python/commit/4d33841dd99ce33eb6b0334dc734ed28538f7e85) fix: use keyed_window.keys for task lookup in accumulator task manager (#330)
+ * [a66cdda](https://github.com/numaproj/numaflow-python/commit/a66cddaabf49c54e38f72846d3e0176ba5723ad7) fix: Clean shutdown for Sink threaded server using threading.Event (#325)
+ * [23bc5d0](https://github.com/numaproj/numaflow-python/commit/23bc5d0509c35a630dab676e20157fb257f5558f) fix: Clean shutdown for Sink Async server using asyncio.Event (#323)
+ * [a83067c](https://github.com/numaproj/numaflow-python/commit/a83067c54081ba10de1e1f8840fce4a2b4866d99) fix: increase minimum protobuf version to 6.31.1 (#318)
+
+### Contributors
+
+ * Kevin Neal
+ * Sreekanth
+ * Vaibhav Kant Tiwari
+
 ## v0.12.1 (2026-02-11)
 
  * [255d20b](https://github.com/numaproj/numaflow-python/commit/255d20bbb73bfb5c67b29b75b5ed0f45366107af) fix: add the error to the global result queue (#315)

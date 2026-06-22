@@ -356,13 +356,9 @@ def test_accumulate_with_close(accumulator_stub) -> None:
 def test_accumulate_close_echoes_eof_window(accumulator_stub) -> None:
     """The EOF response must echo the exact KeyedWindow from the CLOSE request."""
     request = start_request()
-    generator_response = None
-    try:
-        generator_response = accumulator_stub.AccumulateFn(
-            request_iterator=request_generator_custom_close(count=5, request=request)
-        )
-    except grpc.RpcError as e:
-        logging.error(e)
+    generator_response = accumulator_stub.AccumulateFn(
+        request_iterator=request_generator_custom_close(count=5, request=request)
+    )
 
     eof_count = 0
     for r in generator_response:
@@ -380,13 +376,9 @@ def test_accumulate_infinite_window_end_does_not_crash(accumulator_stub) -> None
     """A global window with an 'infinite' end (out of Python datetime range) on OPEN/APPEND
     must not crash decoding; the stream completes and the EOF echoes the CLOSE window."""
     request = start_request()
-    generator_response = None
-    try:
-        generator_response = accumulator_stub.AccumulateFn(
-            request_iterator=request_generator_infinite_then_close(count=5, request=request)
-        )
-    except grpc.RpcError as e:
-        logging.error(e)
+    generator_response = accumulator_stub.AccumulateFn(
+        request_iterator=request_generator_infinite_then_close(count=5, request=request)
+    )
 
     count = 0
     eof_count = 0
@@ -408,13 +400,9 @@ def test_accumulate_eof_window_fallback_without_close(accumulator_stub) -> None:
     """When the stream closes without a CLOSE (e.g. shutdown), the EOF window falls
     back to the synthesized window (start=epoch(0), slot='slot-0')."""
     request = start_request()
-    generator_response = None
-    try:
-        generator_response = accumulator_stub.AccumulateFn(
-            request_iterator=request_generator(count=5, request=request, send_close=False)
-        )
-    except grpc.RpcError as e:
-        logging.error(e)
+    generator_response = accumulator_stub.AccumulateFn(
+        request_iterator=request_generator(count=5, request=request, send_close=False)
+    )
 
     eof_count = 0
     for r in generator_response:

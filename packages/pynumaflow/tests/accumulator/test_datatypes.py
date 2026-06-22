@@ -149,9 +149,7 @@ def test_accumulator_result_create():
     consumer_future = None  # In real usage, this would be an asyncio.Task
     watermark = datetime.fromtimestamp(1662998400, timezone.utc)
 
-    result = AccumulatorResult(
-        future, iterator, keys, result_queue, consumer_future, watermark, None
-    )
+    result = AccumulatorResult(future, iterator, keys, result_queue, consumer_future, watermark)
 
     assert result.future == future
     assert result.iterator == iterator
@@ -163,7 +161,7 @@ def test_accumulator_result_create():
 
 def test_accumulator_result_update_watermark():
     result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc), None
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
     )
     new_watermark = datetime.fromtimestamp(1662998460, timezone.utc)
     result.update_watermark(new_watermark)
@@ -172,10 +170,34 @@ def test_accumulator_result_update_watermark():
 
 def test_accumulator_result_update_watermark_invalid_type():
     result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc), None
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
     )
     with pytest.raises(TypeError):
         result.update_watermark("not a datetime")
+
+
+def test_accumulator_result_close_window_setter():
+    result = AccumulatorResult(
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
+    )
+    # Not set until a CLOSE arrives.
+    assert result.close_window is None
+    window = KeyedWindow(
+        start=datetime.fromtimestamp(1662998400, timezone.utc),
+        end=datetime.fromtimestamp(1662998460, timezone.utc),
+        slot="slot-0",
+        keys=["key1"],
+    )
+    result.close_window = window
+    assert result.close_window is window
+
+
+def test_accumulator_result_close_window_setter_invalid_type():
+    result = AccumulatorResult(
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
+    )
+    with pytest.raises(TypeError):
+        result.close_window = "not a keyed window"
 
 
 # --- TestAccumulatorRequest ---

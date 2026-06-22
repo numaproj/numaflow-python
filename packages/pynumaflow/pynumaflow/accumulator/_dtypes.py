@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from asyncio import Task
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
 from typing import TypeAlias, TypeVar
@@ -223,19 +223,9 @@ class KeyedWindow:
         return self._keys
 
 
-@dataclass
+@dataclass(slots=True)
 class AccumulatorResult:
     """Defines the object to hold the result of accumulator computation."""
-
-    __slots__ = (
-        "_future",
-        "_iterator",
-        "_key",
-        "_result_queue",
-        "_consumer_future",
-        "_latest_watermark",
-        "_close_window",
-    )
 
     _future: Task
     _iterator: NonBlockingIterator
@@ -243,7 +233,9 @@ class AccumulatorResult:
     _result_queue: NonBlockingIterator
     _consumer_future: Task
     _latest_watermark: datetime
-    _close_window: KeyedWindow | None
+    # The CLOSE request's keyed window is only known when the task is closed, so it is set
+    # later (via the close_window setter) rather than passed to the constructor.
+    _close_window: KeyedWindow | None = field(default=None, init=False)
 
     @property
     def future(self) -> Task:
@@ -322,7 +314,8 @@ class AccumulatorResult:
         """
         return self._close_window
 
-    def set_close_window(self, window: KeyedWindow):
+    @close_window.setter
+    def close_window(self, window: KeyedWindow):
         """Stashes the CLOSE request's keyed window so the EOF response can echo it.
 
         Args:

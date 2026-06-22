@@ -115,7 +115,7 @@ class TaskManager:
             # Stash the CLOSE request's keyed window BEFORE signalling EOF so the task's
             # consumer (write_to_global_queue) can echo it back in the EOF response. Core
             # uses the echoed window to identify and garbage-collect the closed window.
-            curr_task.set_close_window(req.keyed_window)
+            curr_task.close_window = req.keyed_window
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
             await curr_task.future
             await curr_task.consumer_future
@@ -171,7 +171,7 @@ class TaskManager:
 
             # Create a new AccumulatorResult object to store the task information
             curr_task = AccumulatorResult(
-                task, niter, keys, res_queue, consumer, datetime.fromtimestamp(-1), None
+                task, niter, keys, res_queue, consumer, datetime.fromtimestamp(-1)
             )
 
             # Save the result of the accumulator operation to the task list

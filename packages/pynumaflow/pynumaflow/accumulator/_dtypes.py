@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from asyncio import Task
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
 from typing import TypeAlias, TypeVar
@@ -223,18 +223,9 @@ class KeyedWindow:
         return self._keys
 
 
-@dataclass
+@dataclass(slots=True)
 class AccumulatorResult:
     """Defines the object to hold the result of accumulator computation."""
-
-    __slots__ = (
-        "_future",
-        "_iterator",
-        "_key",
-        "_result_queue",
-        "_consumer_future",
-        "_latest_watermark",
-    )
 
     _future: Task
     _iterator: NonBlockingIterator
@@ -242,6 +233,9 @@ class AccumulatorResult:
     _result_queue: NonBlockingIterator
     _consumer_future: Task
     _latest_watermark: datetime
+    # The CLOSE request's keyed window is only known when the task is closed, so it is set
+    # later (via the close_window setter) rather than passed to the constructor.
+    _close_window: KeyedWindow | None = field(default=None, init=False)
 
     @property
     def future(self) -> Task:
@@ -309,6 +303,30 @@ class AccumulatorResult:
         if not isinstance(new_watermark, datetime):
             raise TypeError("new_watermark must be a datetime object")
         self._latest_watermark = new_watermark
+
+    @property
+    def close_window(self) -> KeyedWindow | None:
+        """Returns the keyed window from the CLOSE request, if the task was closed.
+
+        Returns:
+            KeyedWindow | None: The window carried by the CLOSE request, echoed back in
+            the EOF response; None if the task has not received a CLOSE.
+        """
+        return self._close_window
+
+    @close_window.setter
+    def close_window(self, window: KeyedWindow):
+        """Stashes the CLOSE request's keyed window so the EOF response can echo it.
+
+        Args:
+            window (KeyedWindow): The keyed window from the CLOSE request.
+
+        Raises:
+            TypeError: If window is not a KeyedWindow object.
+        """
+        if not isinstance(window, KeyedWindow):
+            raise TypeError("window must be a KeyedWindow object")
+        self._close_window = window
 
 
 @dataclass

@@ -4,6 +4,7 @@ from collections.abc import AsyncIterable
 import grpc
 import pytest
 from google.protobuf import empty_pb2 as _empty_pb2
+from google.protobuf import timestamp_pb2
 
 from pynumaflow import setup_logging
 from pynumaflow.accumulator import (
@@ -85,6 +86,69 @@ def request_generator_mixed(count, request, resetkey: bool = False):
             # Set operation to CLOSE for odd requests
             request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
         yield request
+
+
+# Distinct, recognizable close-window values used to prove the EOF echoes the
+# CLOSE request's window rather than the synthesized fallback window.
+CLOSE_WINDOW_START_SECONDS = 1000000000
+CLOSE_WINDOW_END_SECONDS = 2000000000
+CLOSE_WINDOW_SLOT = "slot-7"
+
+# The accumulator's global window carries an "infinite" end (chrono MAX_UTC, ~year 262137)
+# whose seconds exceed Python datetime's range. Core sends this on OPEN/APPEND.
+GLOBAL_WINDOW_END_SECONDS = 8210266876799
+
+
+def request_generator_custom_close(count, request):
+    """Yields OPEN + APPEND requests, then a CLOSE whose keyed window carries
+    distinct start/end/slot values (mirroring core sending a real
+    max_event_time + timeout window on close)."""
+    for i in range(count):
+        if i == 0:
+            request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.OPEN
+        else:
+            request.operation.event = (
+                accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+            )
+        yield request
+
+    # CLOSE carrying a distinct keyed window to be echoed back in the EOF response.
+    request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
+    request.operation.keyedWindow.start.CopyFrom(
+        timestamp_pb2.Timestamp(seconds=CLOSE_WINDOW_START_SECONDS)
+    )
+    request.operation.keyedWindow.end.CopyFrom(
+        timestamp_pb2.Timestamp(seconds=CLOSE_WINDOW_END_SECONDS)
+    )
+    request.operation.keyedWindow.slot = CLOSE_WINDOW_SLOT
+    yield request
+
+
+def request_generator_infinite_then_close(count, request):
+    """OPEN + APPEND requests whose window end is the global 'infinite' sentinel
+    (chrono MAX_UTC, out of Python datetime range), then a CLOSE carrying a concrete,
+    representable window. Mirrors what real core sends to an accumulator."""
+    request.operation.keyedWindow.end.CopyFrom(
+        timestamp_pb2.Timestamp(seconds=GLOBAL_WINDOW_END_SECONDS)
+    )
+    for i in range(count):
+        if i == 0:
+            request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.OPEN
+        else:
+            request.operation.event = (
+                accumulator_pb2.AccumulatorRequest.WindowOperation.Event.APPEND
+            )
+        yield request
+
+    request.operation.event = accumulator_pb2.AccumulatorRequest.WindowOperation.Event.CLOSE
+    request.operation.keyedWindow.start.CopyFrom(
+        timestamp_pb2.Timestamp(seconds=CLOSE_WINDOW_START_SECONDS)
+    )
+    request.operation.keyedWindow.end.CopyFrom(
+        timestamp_pb2.Timestamp(seconds=CLOSE_WINDOW_END_SECONDS)
+    )
+    request.operation.keyedWindow.slot = CLOSE_WINDOW_SLOT
+    yield request
 
 
 def start_request() -> accumulator_pb2.AccumulatorRequest:
@@ -286,6 +350,68 @@ def test_accumulate_with_close(accumulator_stub) -> None:
 
     # We should have received 5 messages (one for each datum)
     assert 5 == count
+    assert 1 == eof_count
+
+
+def test_accumulate_close_echoes_eof_window(accumulator_stub) -> None:
+    """The EOF response must echo the exact KeyedWindow from the CLOSE request."""
+    request = start_request()
+    generator_response = accumulator_stub.AccumulateFn(
+        request_iterator=request_generator_custom_close(count=5, request=request)
+    )
+
+    eof_count = 0
+    for r in generator_response:
+        if r.EOF:
+            eof_count += 1
+            assert r.window.start.seconds == CLOSE_WINDOW_START_SECONDS
+            assert r.window.end.seconds == CLOSE_WINDOW_END_SECONDS
+            assert r.window.slot == CLOSE_WINDOW_SLOT
+            assert list(r.window.keys) == ["test_key"]
+
+    assert 1 == eof_count
+
+
+def test_accumulate_infinite_window_end_does_not_crash(accumulator_stub) -> None:
+    """A global window with an 'infinite' end (out of Python datetime range) on OPEN/APPEND
+    must not crash decoding; the stream completes and the EOF echoes the CLOSE window."""
+    request = start_request()
+    generator_response = accumulator_stub.AccumulateFn(
+        request_iterator=request_generator_infinite_then_close(count=5, request=request)
+    )
+
+    count = 0
+    eof_count = 0
+    for r in generator_response:
+        if r.EOF:
+            eof_count += 1
+            assert r.window.start.seconds == CLOSE_WINDOW_START_SECONDS
+            assert r.window.end.seconds == CLOSE_WINDOW_END_SECONDS
+            assert r.window.slot == CLOSE_WINDOW_SLOT
+        elif r.payload.value:
+            count += 1
+
+    # All 5 datums were processed and exactly one EOF was emitted (no crash).
+    assert 5 == count
+    assert 1 == eof_count
+
+
+def test_accumulate_eof_window_fallback_without_close(accumulator_stub) -> None:
+    """When the stream closes without a CLOSE (e.g. shutdown), the EOF window falls
+    back to the synthesized window (start=epoch(0), slot='slot-0')."""
+    request = start_request()
+    generator_response = accumulator_stub.AccumulateFn(
+        request_iterator=request_generator(count=5, request=request, send_close=False)
+    )
+
+    eof_count = 0
+    for r in generator_response:
+        if r.EOF:
+            eof_count += 1
+            assert r.window.start.seconds == 0
+            assert r.window.slot == "slot-0"
+            assert list(r.window.keys) == ["test_key"]
+
     assert 1 == eof_count
 
 

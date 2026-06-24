@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterable
-from datetime import datetime
+from datetime import datetime, timezone
 
 from google.protobuf import timestamp_pb2
 from pynumaflow._constants import (
@@ -112,6 +112,10 @@ class TaskManager:
         curr_task = self.tasks.get(unified_key, None)
 
         if curr_task:
+            # Stash the CLOSE request's keyed window BEFORE signalling EOF so the task's
+            # consumer (write_to_global_queue) can echo it back in the EOF response. Core
+            # uses the echoed window to identify and garbage-collect the closed window.
+            curr_task.close_window = req.keyed_window
             await self.tasks[unified_key].iterator.put(STREAM_EOF)
             await curr_task.future
             await curr_task.consumer_future
@@ -318,7 +322,7 @@ class TaskManager:
                 watermark_pb.FromDatetime(msg.watermark)
 
             start_dt_pb = timestamp_pb2.Timestamp()
-            start_dt_pb.FromDatetime(datetime.fromtimestamp(0))
+            start_dt_pb.FromDatetime(datetime.fromtimestamp(0, tz=timezone.utc))
 
             end_dt_pb = timestamp_pb2.Timestamp()
             end_dt_pb.FromDatetime(wm)
@@ -339,17 +343,39 @@ class TaskManager:
                 tags=msg.tags,
             )
             await output_queue.put(res)
-        # send EOF
-        start_eof_pb = timestamp_pb2.Timestamp()
-        start_eof_pb.FromDatetime(datetime.fromtimestamp(0))
+        # Send EOF. Echo the CLOSE request's keyed window (start/end/slot/keys) so core can
+        # match the EOF to the window it is closing and garbage-collect it. Mirrors the
+        # numaflow-rs accumulator behavior (PR #177).
+        close_window = task.close_window
+        if close_window is not None:
+            start_eof_pb = timestamp_pb2.Timestamp()
+            start_eof_pb.FromDatetime(close_window.start)
 
-        end_eof_pb = timestamp_pb2.Timestamp()
-        end_eof_pb.FromDatetime(wm)
+            end_eof_pb = timestamp_pb2.Timestamp()
+            end_eof_pb.FromDatetime(close_window.end)
+
+            eof_window = accumulator_pb2.KeyedWindow(
+                start=start_eof_pb,
+                end=end_eof_pb,
+                slot=close_window.slot,
+                keys=close_window.keys,
+            )
+        else:
+            # Fallback for the stream-close/shutdown path (no CLOSE request, e.g.
+            # stream_send_eof on SIGTERM): synthesize the window from epoch(0) and the
+            # latest watermark, preserving prior behavior.
+            start_eof_pb = timestamp_pb2.Timestamp()
+            start_eof_pb.FromDatetime(datetime.fromtimestamp(0, tz=timezone.utc))
+
+            end_eof_pb = timestamp_pb2.Timestamp()
+            end_eof_pb.FromDatetime(wm)
+
+            eof_window = accumulator_pb2.KeyedWindow(
+                start=start_eof_pb, end=end_eof_pb, slot="slot-0", keys=task.keys
+            )
 
         res = accumulator_pb2.AccumulatorResponse(
-            window=accumulator_pb2.KeyedWindow(
-                start=start_eof_pb, end=end_eof_pb, slot="slot-0", keys=task.keys
-            ),
+            window=eof_window,
             EOF=True,
         )
         await output_queue.put(res)

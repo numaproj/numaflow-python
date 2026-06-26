@@ -48,6 +48,8 @@ def run_python_server_with_rust_client(
         server_shutdown_timeout: Timeout for server graceful shutdown
     """
     # Ensure clean socket state
+    sock_path.parent.mkdir(parents=True, exist_ok=True)
+    server_info_path.parent.mkdir(parents=True, exist_ok=True)
     for p in [sock_path, server_info_path]:
         if p.exists():
             p.unlink()

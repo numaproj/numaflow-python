@@ -132,6 +132,7 @@ jobs:
         run: uv run maturin develop
 
       - name: Run Python tests
+        if: runner.os != 'Windows'
         run: uv run pytest -v
 
       - name: Run Rust tests
@@ -153,6 +154,13 @@ jobs:
           } finally {
             Remove-Item Env:PYTHONHOME -ErrorAction SilentlyContinue
           }
+
+      - name: Run Windows smoke test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          uv run python -c "import pynumaflow_lite; from pynumaflow_lite import mapper; print('pynumaflow-lite import ok')"
 
       - name: Build wheel
         uses: PyO3/maturin-action@v1

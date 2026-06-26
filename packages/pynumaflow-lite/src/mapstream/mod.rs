@@ -9,7 +9,7 @@ pub mod server;
 use pyo3::prelude::*;
 
 /// Streaming Datum mirrors MapStreamRequest for Python
-#[pyclass(module = "pynumaflow_lite.mapstreamer")]
+#[pyclass(module = "pynumaflow_lite.mapstreamer", from_py_object)]
 #[derive(Clone)]
 pub struct Datum {
     /// Set of keys in the (key, value) terminology of the map/reduce paradigm.
@@ -61,7 +61,7 @@ impl From<numaflow::mapstream::MapStreamRequest> for Datum {
 }
 
 /// A message to be sent downstream from a streaming handler.
-#[pyclass(module = "pynumaflow_lite.mapstreamer")]
+#[pyclass(module = "pynumaflow_lite.mapstreamer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct Message {
     /// Keys are a collection of strings which will be passed on to the next vertex as is.

@@ -15,7 +15,7 @@ use std::sync::Mutex;
 
 /// SystemMetadata wraps system-generated metadata groups per message.
 /// Since sink is the last vertex in the pipeline, only GET methods are available.
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct SystemMetadata {
     data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -78,7 +78,7 @@ impl From<sink::SystemMetadata> for SystemMetadata {
 
 /// UserMetadata wraps user-defined metadata groups per message.
 /// Since sink is the last vertex in the pipeline, only GET methods are available.
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct UserMetadata {
     data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -140,7 +140,7 @@ impl From<sink::UserMetadata> for UserMetadata {
 }
 
 /// KeyValueGroup represents a group of key-value pairs for user metadata.
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct KeyValueGroup {
     pub key_value: HashMap<String, Vec<u8>>,
@@ -174,7 +174,7 @@ impl From<KeyValueGroup> for sink::KeyValueGroup {
 
 /// Message for OnSuccess sink response.
 /// Contains information that needs to be sent to the OnSuccess sink.
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct Message {
     pub keys: Option<Vec<String>>,
@@ -214,7 +214,7 @@ impl From<Message> for sink::Message {
 }
 
 /// Response for a single datum in the sink.
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Response {
     pub id: String,
@@ -324,7 +324,7 @@ impl From<Response> for sink::Response {
 }
 
 /// A collection of Response objects.
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Responses {
     pub(crate) responses: Vec<Response>,

@@ -13,7 +13,7 @@ use std::sync::Mutex;
 
 /// SystemMetadata wraps system-generated metadata groups per message.
 /// It is read-only to UDFs.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer")]
+#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct SystemMetadata {
     data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -76,7 +76,7 @@ impl From<sourcetransform::SystemMetadata> for SystemMetadata {
 
 /// UserMetadata wraps user-defined metadata groups per message.
 /// Users can read and write to this metadata.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer")]
+#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct UserMetadata {
     data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -180,7 +180,7 @@ impl From<UserMetadata> for sourcetransform::UserMetadata {
 }
 
 /// A collection of [Message]s.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer")]
+#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Messages {
     pub(crate) messages: Vec<Message>,
@@ -210,7 +210,7 @@ impl Messages {
 }
 
 /// A message to be sent to the next vertex with event time transformation.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer")]
+#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct Message {
     /// Keys are a collection of strings which will be passed on to the next vertex as is. It can

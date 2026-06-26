@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use tokio::sync::mpsc;
 
 /// A message to be sent to the next vertex from a reduce handler.
-#[pyclass(module = "pynumaflow_lite.reducer")]
+#[pyclass(module = "pynumaflow_lite.reducer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct Message {
     pub keys: Option<Vec<String>>, // optional keys
@@ -48,7 +48,7 @@ impl From<Message> for reduce::Message {
 }
 
 /// A collection of Messages returned by reducer.
-#[pyclass(module = "pynumaflow_lite.reducer")]
+#[pyclass(module = "pynumaflow_lite.reducer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Messages {
     pub(crate) messages: Vec<Message>,
@@ -141,7 +141,7 @@ impl From<reduce::ReduceRequest> for Datum {
 }
 
 /// IntervalWindow exposed to Python metadata
-#[pyclass(module = "pynumaflow_lite.reducer")]
+#[pyclass(module = "pynumaflow_lite.reducer", from_py_object)]
 #[derive(Clone)]
 pub struct IntervalWindow {
     #[pyo3(get)]
@@ -157,7 +157,7 @@ impl IntervalWindow {
 }
 
 /// Metadata passed to reducer handler in Python.
-#[pyclass(module = "pynumaflow_lite.reducer")]
+#[pyclass(module = "pynumaflow_lite.reducer", from_py_object)]
 #[derive(Clone)]
 pub struct Metadata {
     #[pyo3(get)]

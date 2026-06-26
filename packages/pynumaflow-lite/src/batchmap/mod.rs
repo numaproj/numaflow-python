@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 use std::sync::Mutex;
 
 /// A message to be sent for a single datum in batch response.
-#[pyclass(module = "pynumaflow_lite.batchmapper")]
+#[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct Message {
     /// Keys are a collection of strings which will be passed on to the next vertex as is. It can
@@ -134,7 +134,7 @@ impl From<batchmap::Datum> for Datum {
 }
 
 /// BatchResponse mirrors numaflow::batchmap::BatchResponse for Python
-#[pyclass(module = "pynumaflow_lite.batchmapper")]
+#[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct BatchResponse {
     #[pyo3(get)]
@@ -169,7 +169,7 @@ impl BatchResponse {
 }
 
 /// A collection of BatchResponse objects for a batch.
-#[pyclass(module = "pynumaflow_lite.batchmapper")]
+#[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct BatchResponses {
     pub(crate) responses: Vec<BatchResponse>,

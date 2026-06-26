@@ -318,7 +318,7 @@ result = agen_fail()
     }
 
     // Test data structure for AsyncChannelStream tests
-    #[pyclass]
+    #[pyclass(from_py_object)]
     #[derive(Clone)]
     struct TestDatum {
         #[pyo3(get)]

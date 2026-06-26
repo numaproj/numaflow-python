@@ -1,10 +1,10 @@
 [build-system]
-requires = ["maturin>=1.8,<2.0"]
+requires = ["maturin>=1.14,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "pynumaflow-lite"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -16,7 +16,7 @@ features = ["pyo3/extension-module"]
 
 [tool.ruff]
 src = ["pynumaflow_lite", "tests", "manifests"]
-target-version = "py38"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
@@ -27,6 +27,6 @@ ignore = ["E501"]
 
 [dependency-groups]
 dev = [
-    "pytest>=8.3.5",
-    "ruff>=0.15.8",
+    "pytest>=9.1.1",
+    "ruff>=0.15.20",
 ]

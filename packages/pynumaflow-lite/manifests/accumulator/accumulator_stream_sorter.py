@@ -130,14 +130,5 @@ async def main():
             pass
         return
 
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
-
 if __name__ == "__main__":
     asyncio.run(main())

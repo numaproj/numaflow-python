@@ -26,15 +26,6 @@ class SimpleLogSink(Sinker):
             # we can use Response.as_fallback(msg.id) to write the message to fallback sink
         return responses
 
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
-
-
 async def start(
     f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]],
 ):

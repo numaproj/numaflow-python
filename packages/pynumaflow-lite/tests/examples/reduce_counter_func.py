@@ -21,15 +21,6 @@ async def reduce_handler(
     out.append(reducer.Message(str.encode(msg), keys=keys))
     return out
 
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
-
-
 async def start(
     handler: Callable[
         [list[str], AsyncIterable[reducer.Datum], reducer.Metadata],

@@ -26,15 +26,6 @@ class ReduceCounter(reducer.Reducer):
         out.append(reducer.Message(msg, keys))
         return out
 
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
-
-
 async def start(creator: type, init_args: tuple):
     sock_file = "/tmp/var/run/numaflow/reduce.sock"
     server_info_file = "/tmp/var/run/numaflow/reducer-server-info"

@@ -22,15 +22,6 @@ class SimpleBatchCat(batchmapper.BatchMapper):
             responses.append(resp)
         return responses
 
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
-
-
 async def start(
     f: Callable[
         [AsyncIterable[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]

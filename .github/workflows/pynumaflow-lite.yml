@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   lint:
-    name: Format and lint
+    name: Format, lint, and test
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -32,7 +32,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8
+        uses: astral-sh/setup-uv@v8.1.0
         with:
           python-version: "3.10"
           working-directory: packages/pynumaflow-lite
@@ -57,44 +57,7 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception
 
-  test:
-    name: Test ${{ matrix.platform.artifact }}
-    runs-on: ${{ matrix.platform.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - os: ubuntu-24.04
-            artifact: linux-x86_64
-          - os: ubuntu-24.04-arm
-            artifact: linux-aarch64
-          - os: macos-15-intel
-            artifact: macos-x86_64
-          - os: macos-15
-            artifact: macos-aarch64
-          - os: windows-2025
-            artifact: windows-x86_64
-
-    defaults:
-      run:
-        working-directory: packages/pynumaflow-lite
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8
-        with:
-          working-directory: packages/pynumaflow-lite
-
-      - name: Set up Rust
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-
       - name: Run tests for Python versions
-        if: runner.os != 'Windows'
         shell: bash
         run: |
           set -euo pipefail
@@ -112,32 +75,13 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Run tests for Python versions
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          $versions = @("3.10", "3.11", "3.12", "3.13", "3.14")
-
-          foreach ($pythonVersion in $versions) {
-            Write-Output "::group::Python $pythonVersion"
-            try {
-              uv python install $pythonVersion
-              uv sync --group dev --python $pythonVersion
-              uv pip install "maturin>=1.14,<2.0"
-              uv run maturin develop
-              uv run pytest -v
-              $env:PYTHONHOME = uv run python -c "import sys; print(sys.base_prefix)"
-              cargo test
-            } finally {
-              Remove-Item Env:PYTHONHOME -ErrorAction SilentlyContinue
-              Write-Output "::endgroup::"
-            }
-          }
-
   build-wheels:
     name: Build wheel ${{ matrix.platform.artifact }} py${{ matrix.python-version }}
+    needs: lint
     runs-on: ${{ matrix.platform.os }}
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
 
     strategy:
       fail-fast: false
@@ -167,6 +111,48 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          working-directory: packages/pynumaflow-lite
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Install dependencies
+        run: |
+          uv sync --group dev --python ${{ matrix.python-version }}
+          uv pip install "maturin>=1.14,<2.0"
+
+      - name: Install extension
+        run: uv run maturin develop
+
+      - name: Run Python tests
+        run: uv run pytest -v
+
+      - name: Run Rust tests
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONHOME="$(uv run python -c 'import sys; print(sys.base_prefix)')"
+          cargo test
+
+      - name: Run Rust tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $env:PYTHONHOME = uv run python -c "import sys; print(sys.base_prefix)"
+          try {
+            cargo test
+          } finally {
+            Remove-Item Env:PYTHONHOME -ErrorAction SilentlyContinue
+          }
 
       - name: Build wheel
         uses: PyO3/maturin-action@v1

@@ -57,10 +57,7 @@ async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

@@ -126,10 +126,7 @@ async def main():
         await server.start(StreamSorter)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

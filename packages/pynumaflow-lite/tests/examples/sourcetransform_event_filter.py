@@ -126,10 +126,7 @@ async def start(
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
         # Fallback in case the task was cancelled by the runner
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

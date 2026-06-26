@@ -55,10 +55,7 @@ class ReduceStreamAsyncServer:
     def start(
         self,
         py_creator: (
-            type[ReduceStreamer]
-            | Callable[
-                [list[str], AsyncIterable[Datum], Metadata], AsyncIterator[Message]
-            ]
+            type[ReduceStreamer] | Callable[[list[str], AsyncIterable[Datum], Metadata], AsyncIterator[Message]]
         ),
         init_args: tuple | None = ...,
     ) -> Awaitable[None]: ...

@@ -86,6 +86,7 @@ class SideInputHandler(mapper.Mapper):
         except Exception as e:
             print(f"Error reading file: {e}")
 
+
 async def start_sideinput():
     """Start the SideInput retriever server."""
     server = sideinputer.SideInputAsyncServer()

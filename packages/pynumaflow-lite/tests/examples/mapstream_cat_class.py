@@ -7,15 +7,14 @@ from pynumaflow_lite.mapstreamer import Message
 
 
 class SimpleStreamCat(mapstreamer.MapStreamer):
-    async def handler(
-        self, keys: list[str], datum: mapstreamer.Datum
-    ) -> AsyncIterator[Message]:
+    async def handler(self, keys: list[str], datum: mapstreamer.Datum) -> AsyncIterator[Message]:
         parts = datum.value.decode("utf-8").split(",")
         if not parts:
             yield Message.to_drop()
             return
         for s in parts:
             yield Message(s.encode(), keys)
+
 
 async def start(f: Callable[[list[str], mapstreamer.Datum], AsyncIterator[Message]]):
     sock_file = "/tmp/var/run/numaflow/mapstream.sock"

@@ -25,6 +25,7 @@ class SimpleLogSink(Sinker):
             # we can use Response.as_fallback(msg.id) to write the message to fallback sink
         return responses
 
+
 async def start(
     f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]],
 ):

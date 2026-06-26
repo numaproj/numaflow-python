@@ -53,10 +53,7 @@ class ReduceAsyncServer:
     ) -> None: ...
     def start(
         self,
-        py_creator: (
-            type[Reducer]
-            | Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]
-        ),
+        py_creator: (type[Reducer] | Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[Messages]]),
         init_args: tuple | None = ...,
     ) -> Awaitable[None]: ...
     def stop(self) -> None: ...

@@ -53,9 +53,7 @@ class ReduceCounter(reducestreamer.ReduceStreamer):
             # Emit intermediate result every 10 items
             if self.counter % 10 == 0:
                 msg = (
-                    f"counter:{self.counter} "
-                    f"interval_window_start:{iw.start} "
-                    f"interval_window_end:{iw.end}"
+                    f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}"
                 ).encode()
                 print(f"Yielding intermediate result: counter={self.counter}")
                 # Early release of data - this is the key feature of reduce streaming!
@@ -63,12 +61,11 @@ class ReduceCounter(reducestreamer.ReduceStreamer):
 
         # Emit final result
         msg = (
-            f"counter:{self.counter} (FINAL) "
-            f"interval_window_start:{iw.start} "
-            f"interval_window_end:{iw.end}"
+            f"counter:{self.counter} (FINAL) interval_window_start:{iw.start} interval_window_end:{iw.end}"
         ).encode()
         print(f"Yielding final result: counter={self.counter}")
         yield reducestreamer.Message(msg, keys=keys)
+
 
 async def start(creator: type, init_args: tuple):
     """Start the reduce stream server."""

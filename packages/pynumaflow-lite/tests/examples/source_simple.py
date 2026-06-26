@@ -22,16 +22,12 @@ class SimpleSource(Sourcer):
         self.counter = 0
         self.partition_idx = 0
 
-    async def read_handler(
-        self, datum: sourcer.ReadRequest
-    ) -> AsyncIterator[sourcer.Message]:
+    async def read_handler(self, datum: sourcer.ReadRequest) -> AsyncIterator[sourcer.Message]:
         """
         The simple source generates messages with incrementing numbers.
         Also demonstrates creating user metadata (source is origin, so only user metadata).
         """
-        _LOGGER.info(
-            f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}"
-        )
+        _LOGGER.info(f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}")
 
         # Generate the requested number of messages
         for _ in range(datum.num_records):
@@ -48,12 +44,8 @@ class SimpleSource(Sourcer):
             user_metadata = sourcer.UserMetadata()
             user_metadata.create_group("source_info")
             user_metadata.add_kv("source_info", "source_name", b"simple_source")
-            user_metadata.add_kv(
-                "source_info", "message_id", str(self.counter).encode()
-            )
-            user_metadata.add_kv(
-                "source_info", "partition", str(self.partition_idx).encode()
-            )
+            user_metadata.add_kv("source_info", "message_id", str(self.counter).encode())
+            user_metadata.add_kv("source_info", "partition", str(self.partition_idx).encode())
 
             # Create message
             message = sourcer.Message(
@@ -79,9 +71,7 @@ class SimpleSource(Sourcer):
         """
         _LOGGER.info(f"Acknowledging {len(request.offsets)} offsets")
         for offset in request.offsets:
-            _LOGGER.debug(
-                f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}"
-            )
+            _LOGGER.debug(f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
 
     async def nack_handler(self, request: sourcer.NackRequest) -> None:
         """
@@ -89,9 +79,7 @@ class SimpleSource(Sourcer):
         """
         _LOGGER.info(f"Negatively acknowledging {len(request.offsets)} offsets")
         for offset in request.offsets:
-            _LOGGER.warning(
-                f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}"
-            )
+            _LOGGER.warning(f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
 
     async def pending_handler(self) -> sourcer.PendingResponse:
         """

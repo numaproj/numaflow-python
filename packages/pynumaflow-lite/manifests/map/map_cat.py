@@ -17,6 +17,7 @@ class SimpleCat(mapper.Mapper):
 
         return messages
 
+
 async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
     server = mapper.MapAsyncServer()
 

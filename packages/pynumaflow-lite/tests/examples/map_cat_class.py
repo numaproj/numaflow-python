@@ -31,15 +31,12 @@ class SimpleCat(mapper.Mapper):
             user_metadata = mapper.UserMetadata()
             user_metadata.create_group("processing")
             user_metadata.add_kv("processing", "handler", b"map_cat_class")
-            user_metadata.add_kv(
-                "processing", "msg_length", str(len(payload.value)).encode()
-            )
+            user_metadata.add_kv("processing", "msg_length", str(len(payload.value)).encode())
 
-            messages.append(
-                mapper.Message(payload.value, keys, user_metadata=user_metadata)
-            )
+            messages.append(mapper.Message(payload.value, keys, user_metadata=user_metadata))
 
         return messages
+
 
 async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
     sock_file = "/tmp/var/run/numaflow/map.sock"

@@ -19,12 +19,11 @@ class ReduceCounter(reducer.Reducer):
         self.counter = 0
         async for _ in datums:
             self.counter += 1
-        msg = (
-            f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}"
-        ).encode()
+        msg = (f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}").encode()
         out = reducer.Messages()
         out.append(reducer.Message(msg, keys))
         return out
+
 
 async def start(creator: type[reducer.Reducer], init_args: tuple):
     sock_file = "/var/run/numaflow/reduce.sock"

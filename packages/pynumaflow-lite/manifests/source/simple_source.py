@@ -22,15 +22,11 @@ class SimpleSource(Sourcer):
         self.counter = 0
         self.partition_idx = 0
 
-    async def read_handler(
-        self, datum: sourcer.ReadRequest
-    ) -> AsyncIterator[sourcer.Message]:
+    async def read_handler(self, datum: sourcer.ReadRequest) -> AsyncIterator[sourcer.Message]:
         """
         The simple source generates messages with incrementing numbers.
         """
-        _LOGGER.info(
-            f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}"
-        )
+        _LOGGER.info(f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}")
 
         # Generate the requested number of messages
         for _ in range(datum.num_records):
@@ -66,9 +62,7 @@ class SimpleSource(Sourcer):
         """
         _LOGGER.info(f"Acknowledging {len(request.offsets)} offsets")
         for offset in request.offsets:
-            _LOGGER.debug(
-                f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}"
-            )
+            _LOGGER.debug(f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
 
     async def nack_handler(self, request: sourcer.NackRequest) -> None:
         """
@@ -76,9 +70,7 @@ class SimpleSource(Sourcer):
         """
         _LOGGER.info(f"Negatively acknowledging {len(request.offsets)} offsets")
         for offset in request.offsets:
-            _LOGGER.warning(
-                f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}"
-            )
+            _LOGGER.warning(f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
 
     async def pending_handler(self) -> sourcer.PendingResponse:
         """
@@ -91,6 +83,7 @@ class SimpleSource(Sourcer):
         The simple source always returns default partitions.
         """
         return sourcer.PartitionsResponse(partitions=[self.partition_idx])
+
 
 async def start():
     server = sourcer.SourceAsyncServer()

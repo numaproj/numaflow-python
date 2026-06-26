@@ -6,9 +6,7 @@ from pynumaflow_lite import mapstreamer
 from pynumaflow_lite.mapstreamer import Message
 
 
-async def async_handler(
-    keys: list[str], datum: mapstreamer.Datum
-) -> AsyncIterator[Message]:
+async def async_handler(keys: list[str], datum: mapstreamer.Datum) -> AsyncIterator[Message]:
     """
     A handler that splits the input datum value into multiple strings by `,` separator and
     emits them as a stream.

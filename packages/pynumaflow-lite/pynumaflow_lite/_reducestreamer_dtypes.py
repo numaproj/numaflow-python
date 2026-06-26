@@ -16,9 +16,7 @@ class ReduceStreamer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(
-        self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata
-    ) -> AsyncIterator[Message]:
+    async def handler(self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> AsyncIterator[Message]:
         """
         Implement this handler; consume `datums` async iterable and yield Messages incrementally.
 

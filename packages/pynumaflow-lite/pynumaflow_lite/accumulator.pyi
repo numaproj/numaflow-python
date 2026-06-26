@@ -76,9 +76,7 @@ class AccumulatorAsyncServer:
     ) -> None: ...
     async def start(
         self,
-        py_creator: (
-            type[Accumulator] | Callable[[AsyncIterable[Datum]], AsyncIterator[Message]]
-        ),
+        py_creator: (type[Accumulator] | Callable[[AsyncIterable[Datum]], AsyncIterator[Message]]),
         init_args: tuple | None = None,
     ) -> None:
         """

@@ -33,12 +33,9 @@ class ReduceStreamCounter(reducestreamer.ReduceStreamer):
         async for _ in datums:
             self.counter += 1
             # Yield a message for each datum (streaming behavior)
-            msg = (
-                f"counter:{self.counter} "
-                f"interval_window_start:{iw.start} "
-                f"interval_window_end:{iw.end}"
-            ).encode()
+            msg = (f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}").encode()
             yield reducestreamer.Message(msg, keys=keys)
+
 
 async def start(creator: type, init_args: tuple):
     """Start the reduce stream server."""

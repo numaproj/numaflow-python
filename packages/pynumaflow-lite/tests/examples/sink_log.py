@@ -43,9 +43,7 @@ async def async_handler(
 
 
 async def start(
-    f: Callable[
-        [collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]
-    ],
+    f: Callable[[collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]],
 ):
     sock_file = "/tmp/var/run/numaflow/sink.sock"
     server_info_file = "/tmp/var/run/numaflow/sinker-server-info"

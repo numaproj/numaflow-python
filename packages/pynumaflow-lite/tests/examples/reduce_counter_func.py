@@ -12,13 +12,11 @@ async def reduce_handler(
     counter = 0
     async for _ in datums:
         counter += 1
-    msg = (
-        f"counter:{counter} interval_window_start:{interval_window.start} "
-        f"interval_window_end:{interval_window.end}"
-    )
+    msg = f"counter:{counter} interval_window_start:{interval_window.start} interval_window_end:{interval_window.end}"
     out = reducer.Messages()
     out.append(reducer.Message(str.encode(msg), keys=keys))
     return out
+
 
 async def start(
     handler: Callable[

@@ -7,9 +7,7 @@ from pynumaflow_lite.batchmapper import Message
 
 
 class SimpleBatchCat(batchmapper.BatchMapper):
-    async def handler(
-        self, batch: AsyncIterable[batchmapper.Datum]
-    ) -> batchmapper.BatchResponses:
+    async def handler(self, batch: AsyncIterable[batchmapper.Datum]) -> batchmapper.BatchResponses:
         responses = batchmapper.BatchResponses()
         async for d in batch:
             resp = batchmapper.BatchResponse(d.id)
@@ -21,10 +19,9 @@ class SimpleBatchCat(batchmapper.BatchMapper):
             responses.append(resp)
         return responses
 
+
 async def start(
-    f: Callable[
-        [AsyncIterable[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]
-    ],
+    f: Callable[[AsyncIterable[batchmapper.Datum]], Awaitable[batchmapper.BatchResponses]],
 ):
     server = batchmapper.BatchMapAsyncServer()
 

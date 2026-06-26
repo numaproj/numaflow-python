@@ -1,7 +1,6 @@
 import asyncio
 import signal
-from collections.abc import AsyncIterator
-from typing import Callable
+from collections.abc import AsyncIterator, Callable
 
 from pynumaflow_lite import mapstreamer
 from pynumaflow_lite.mapstreamer import Message
@@ -34,10 +33,7 @@ async def start(f: Callable[[list[str], mapstreamer.Datum], AsyncIterator[Messag
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

@@ -14,8 +14,9 @@ import signal
 import threading
 from threading import Thread
 
-from pynumaflow_lite import mapper, sideinputer
 from watchfiles import watch
+
+from pynumaflow_lite import mapper, sideinputer
 
 
 class ExampleSideInput(sideinputer.SideInput):
@@ -32,7 +33,7 @@ class ExampleSideInput(sideinputer.SideInput):
         """
         time_now = datetime.datetime.now()
         # val is the value to be broadcasted
-        val = f"an example: {str(time_now)}"
+        val = f"an example: {time_now!s}"
         self.counter += 1
         # broadcast_message() is used to indicate that there is a broadcast
         return sideinputer.Response.broadcast_message(val.encode("utf-8"))
@@ -65,7 +66,7 @@ class SideInputHandler(mapper.Mapper):
         path = sideinputer.DIR_PATH
         for changes in watch(path):
             for change in changes:
-                change_type, file_path = change
+                _change_type, file_path = change
                 if file_path.endswith(self.watched_file):
                     with self.data_value_lock:
                         self.update_data_from_file(file_path)

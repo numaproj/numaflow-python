@@ -110,17 +110,17 @@ if sideinputer is not None:
 
 # Public API
 __all__ = [
-    "mapper",
+    "accumulator",
     "batchmapper",
+    "mapper",
     "mapstreamer",
     "reducer",
-    "session_reducer",
     "reducestreamer",
-    "accumulator",
+    "session_reducer",
+    "sideinputer",
     "sinker",
     "sourcer",
     "sourcetransformer",
-    "sideinputer",
 ]
 
 __doc__ = pynumaflow_lite.__doc__

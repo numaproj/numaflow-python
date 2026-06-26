@@ -7,8 +7,8 @@ flushing sorted data when the watermark advances.
 
 import asyncio
 import signal
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator
 
 from pynumaflow_lite.accumulator import (
     Accumulator,
@@ -107,7 +107,6 @@ async def main():
     """
     Start the accumulator server.
     """
-    import signal
 
     server = AccumulatorAsyncServer()
 
@@ -124,10 +123,7 @@ async def main():
         await server.start(StreamSorter)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 if __name__ == "__main__":

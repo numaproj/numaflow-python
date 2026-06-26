@@ -1,6 +1,6 @@
 import asyncio
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import mapper
 
@@ -38,10 +38,7 @@ async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
         # Fallback in case the task was cancelled by the runner
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

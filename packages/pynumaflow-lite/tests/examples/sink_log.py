@@ -2,7 +2,7 @@ import asyncio
 import collections.abc
 import logging
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import sinker
 

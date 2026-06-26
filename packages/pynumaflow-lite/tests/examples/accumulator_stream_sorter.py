@@ -7,8 +7,8 @@ flushing sorted data when the watermark advances.
 
 import asyncio
 import signal
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator
 
 from pynumaflow_lite.accumulator import (
     Accumulator,
@@ -107,7 +107,6 @@ async def main():
     """
     Start the accumulator server.
     """
-    import signal
 
     sock_file = "/tmp/var/run/numaflow/accumulator.sock"
     server_info_file = "/tmp/var/run/numaflow/accumulator-server-info"

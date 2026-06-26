@@ -1,8 +1,7 @@
 import asyncio
 import logging
 import signal
-from collections.abc import AsyncIterable, AsyncIterator
-from typing import Awaitable, Callable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
 
 from pynumaflow_lite import sinker
 from pynumaflow_lite._sink_dtypes import Sinker
@@ -43,10 +42,7 @@ async def start(
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

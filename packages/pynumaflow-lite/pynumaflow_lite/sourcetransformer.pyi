@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as _dt
-from typing import Awaitable, Dict, List, Optional
+from collections.abc import Awaitable
 
 # Re-export the Python ABC for user convenience and typing
 from ._sourcetransformer_dtypes import SourceTransformer as SourceTransformer
@@ -10,11 +10,11 @@ class SystemMetadata:
     """System-generated metadata groups per message (read-only)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the system metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the system metadata for the given group."""
         ...
 
@@ -28,11 +28,11 @@ class UserMetadata:
     """User-defined metadata groups per message (read-write)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the user metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the user metadata for the given group."""
         ...
 
@@ -65,30 +65,30 @@ class Messages:
     def __str__(self) -> str: ...
 
 class Message:
-    keys: Optional[List[str]]
+    keys: list[str] | None
     value: bytes
     event_time: _dt.datetime
-    tags: Optional[List[str]]
-    user_metadata: Optional[UserMetadata]
+    tags: list[str] | None
+    user_metadata: UserMetadata | None
 
     def __init__(
         self,
         value: bytes,
         event_time: _dt.datetime,
-        keys: Optional[List[str]] = ...,
-        tags: Optional[List[str]] = ...,
-        user_metadata: Optional[UserMetadata] = ...,
+        keys: list[str] | None = ...,
+        tags: list[str] | None = ...,
+        user_metadata: UserMetadata | None = ...,
     ) -> None: ...
     @staticmethod
     def message_to_drop(event_time: _dt.datetime) -> Message: ...
 
 class Datum:
     # Read-only attributes provided by the extension
-    keys: List[str]
+    keys: list[str]
     value: bytes
     watermark: _dt.datetime
     event_time: _dt.datetime
-    headers: Dict[str, str]
+    headers: dict[str, str]
     user_metadata: UserMetadata
     system_metadata: SystemMetadata
 
@@ -105,11 +105,11 @@ class SourceTransformAsyncServer:
     def stop(self) -> None: ...
 
 __all__ = [
-    "SystemMetadata",
-    "UserMetadata",
-    "Messages",
-    "Message",
     "Datum",
+    "Message",
+    "Messages",
     "SourceTransformAsyncServer",
     "SourceTransformer",
+    "SystemMetadata",
+    "UserMetadata",
 ]

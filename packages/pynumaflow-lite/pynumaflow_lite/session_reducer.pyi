@@ -1,31 +1,31 @@
 from __future__ import annotations
 
 import datetime as _dt
-from typing import Awaitable, Dict, List, Optional
+from collections.abc import Awaitable
 
 # Re-export the Python ABC for user convenience and typing
 from ._session_reduce_dtypes import SessionReducer as SessionReducer
 
 class Message:
-    keys: Optional[List[str]]
+    keys: list[str] | None
     value: bytes
-    tags: Optional[List[str]]
+    tags: list[str] | None
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[List[str]] = ...,
-        tags: Optional[List[str]] = ...,
+        keys: list[str] | None = ...,
+        tags: list[str] | None = ...,
     ) -> None: ...
     @staticmethod
     def message_to_drop() -> Message: ...
 
 class Datum:
-    keys: List[str]
+    keys: list[str]
     value: bytes
     watermark: _dt.datetime
     eventtime: _dt.datetime
-    headers: Dict[str, str]
+    headers: dict[str, str]
 
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -42,8 +42,8 @@ class SessionReduceAsyncServer:
     def stop(self) -> None: ...
 
 __all__ = [
-    "Message",
     "Datum",
+    "Message",
     "SessionReduceAsyncServer",
     "SessionReducer",
 ]

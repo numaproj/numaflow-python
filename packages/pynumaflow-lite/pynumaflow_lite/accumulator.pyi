@@ -1,15 +1,14 @@
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, AsyncIterator, Callable
 from datetime import datetime
-from typing import AsyncIterator, Callable, Optional
 
 class Message:
     """
     A message to be sent to the next vertex from an accumulator handler.
     """
 
-    keys: Optional[list[str]]
+    keys: list[str] | None
     value: bytes
-    tags: Optional[list[str]]
+    tags: list[str] | None
     id: str
     headers: dict[str, str]
     event_time: datetime

@@ -1,7 +1,7 @@
 import asyncio
 import signal
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Callable
 
 from pynumaflow_lite import sourcetransformer
 

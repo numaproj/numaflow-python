@@ -88,10 +88,7 @@ async def start(creator: type, init_args: tuple):
         await server.start(creator, init_args)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

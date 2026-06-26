@@ -34,7 +34,7 @@ class SimpleSource(Sourcer):
         )
 
         # Generate the requested number of messages
-        for i in range(datum.num_records):
+        for _ in range(datum.num_records):
             # Create message payload
             payload = f"message-{self.counter}".encode()
 

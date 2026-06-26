@@ -1,7 +1,6 @@
 import asyncio
 import signal
-from collections.abc import AsyncIterator
-from typing import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 from pynumaflow_lite import batchmapper
 from pynumaflow_lite.batchmapper import Message

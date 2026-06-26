@@ -1,7 +1,6 @@
 import asyncio
 import signal
-from collections.abc import AsyncIterator
-from typing import Callable
+from collections.abc import AsyncIterator, Callable
 
 from pynumaflow_lite import mapstreamer
 from pynumaflow_lite.mapstreamer import Message

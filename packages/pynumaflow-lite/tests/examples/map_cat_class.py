@@ -1,6 +1,6 @@
 import asyncio
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import mapper
 

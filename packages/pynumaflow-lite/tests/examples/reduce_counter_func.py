@@ -1,7 +1,6 @@
 import asyncio
 import signal
-from collections.abc import AsyncIterable
-from typing import Awaitable, Callable
+from collections.abc import AsyncIterable, Awaitable, Callable
 
 from pynumaflow_lite import reducer
 

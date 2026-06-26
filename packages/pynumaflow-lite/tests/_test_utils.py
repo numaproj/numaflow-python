@@ -5,7 +5,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
 import pytest
 
@@ -30,7 +29,7 @@ def run_python_server_with_rust_client(
     sock_path: Path,
     server_info_path: Path,
     rust_bin_name: str,
-    rust_bin_args: Optional[List[str]] = None,
+    rust_bin_args: list[str] | None = None,
     socket_timeout: float = 20.0,
     rust_timeout: float = 60.0,
     server_shutdown_timeout: float = 15.0,

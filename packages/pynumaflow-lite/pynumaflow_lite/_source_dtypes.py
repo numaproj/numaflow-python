@@ -121,4 +121,4 @@ class Sourcer(metaclass=ABCMeta):
                     # Add back to pending, mark for retry, etc.
                     self.nacked_offsets.add(offset.offset)
         """
-        pass
+        _ = request

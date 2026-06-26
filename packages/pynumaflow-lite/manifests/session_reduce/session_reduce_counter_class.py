@@ -72,10 +72,7 @@ async def main():
         await server.start(SessionReduceCounter)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 if __name__ == "__main__":

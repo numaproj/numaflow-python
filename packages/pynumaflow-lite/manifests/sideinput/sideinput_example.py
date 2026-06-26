@@ -8,13 +8,13 @@ The mode is controlled by the MAPPER environment variable:
 """
 
 import asyncio
+import datetime
 import os
 import signal
 import threading
 from threading import Thread
-import datetime
 
-from pynumaflow_lite import sideinputer, mapper
+from pynumaflow_lite import mapper, sideinputer
 from watchfiles import watch
 
 

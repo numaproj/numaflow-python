@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable, AsyncIterator
 import datetime as _dt
+from typing import AsyncIterator, Awaitable, Callable, Dict, List, Optional
 
 class SystemMetadata:
     """System-generated metadata groups per message (read-only for sink)."""

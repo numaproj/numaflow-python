@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import signal
-from datetime import datetime, timezone
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
 
 from pynumaflow_lite import sourcer
 from pynumaflow_lite._source_dtypes import Sourcer
@@ -36,7 +36,7 @@ class SimpleSource(Sourcer):
         # Generate the requested number of messages
         for i in range(datum.num_records):
             # Create message payload
-            payload = f"message-{self.counter}".encode("utf-8")
+            payload = f"message-{self.counter}".encode()
 
             # Create offset
             offset = sourcer.Offset(

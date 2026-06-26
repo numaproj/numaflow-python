@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable
 import datetime as _dt
+from typing import Awaitable, Callable, Dict, List, Optional
 
 # Re-export the Python ABC for user convenience and typing
 from ._map_dtypes import Mapper as Mapper

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import datetime as _dt
-from typing import Optional, List, Dict, Awaitable, AsyncIterator, Callable
 from collections.abc import AsyncIterable
+from typing import AsyncIterator, Awaitable, Callable, Dict, List, Optional
 
 # Re-export the Python ABC for user convenience and typing
 from ._reducestreamer_dtypes import ReduceStreamer as ReduceStreamer

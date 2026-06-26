@@ -123,6 +123,6 @@ def run_python_server_with_rust_client(
             except Exception:
                 pass
 
-    assert (
-        server.returncode == 0
-    ), f"Server did not exit cleanly, code={server.returncode}"
+    assert server.returncode == 0, (
+        f"Server did not exit cleanly, code={server.returncode}"
+    )

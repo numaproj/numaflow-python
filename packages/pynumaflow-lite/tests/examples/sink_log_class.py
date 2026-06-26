@@ -1,10 +1,10 @@
 import asyncio
 import logging
 import signal
+from collections.abc import AsyncIterable
 
 from pynumaflow_lite import sinker
 from pynumaflow_lite._sink_dtypes import Sinker
-from collections.abc import AsyncIterable
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

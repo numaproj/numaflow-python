@@ -14,9 +14,19 @@ dynamic = ["version"]
 [tool.maturin]
 features = ["pyo3/extension-module"]
 
+[tool.ruff]
+src = ["pynumaflow_lite", "tests", "manifests"]
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/*.pyi" = ["UP006", "UP045"]
+
 [dependency-groups]
 dev = [
-    "black>=24.8.0",
     "pytest>=8.3.5",
     "ruff>=0.15.8",
 ]

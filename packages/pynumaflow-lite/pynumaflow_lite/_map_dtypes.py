@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+
 from pynumaflow_lite.mapper import Datum, Messages
 
 

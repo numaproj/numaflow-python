@@ -1,6 +1,6 @@
-from datetime import datetime
-from typing import AsyncIterator, Optional, Callable
 from collections.abc import AsyncIterable
+from datetime import datetime
+from typing import AsyncIterator, Callable, Optional
 
 class Message:
     """

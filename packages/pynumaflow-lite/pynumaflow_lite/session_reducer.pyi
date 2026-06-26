@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as _dt
-from typing import Optional, List, Dict, Awaitable
+from typing import Awaitable, Dict, List, Optional
 
 # Re-export the Python ABC for user convenience and typing
 from ._session_reduce_dtypes import SessionReducer as SessionReducer

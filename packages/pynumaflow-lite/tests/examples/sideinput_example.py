@@ -1,6 +1,7 @@
 import asyncio
-import signal
 import datetime
+import signal
+
 from pynumaflow_lite import sideinputer
 
 

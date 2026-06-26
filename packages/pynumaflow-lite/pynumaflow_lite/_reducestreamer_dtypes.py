@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from pynumaflow_lite.reducestreamer import Datum, Message, Metadata
 from collections.abc import AsyncIterable, AsyncIterator
+
+from pynumaflow_lite.reducestreamer import Datum, Message, Metadata
 
 
 class ReduceStreamer(metaclass=ABCMeta):

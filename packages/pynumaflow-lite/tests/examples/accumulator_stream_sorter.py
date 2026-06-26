@@ -5,16 +5,16 @@ This accumulator buffers incoming data and sorts it by event time,
 flushing sorted data when the watermark advances.
 """
 
-import signal
 import asyncio
+import signal
 from datetime import datetime
 from typing import AsyncIterator
 
 from pynumaflow_lite.accumulator import (
+    Accumulator,
+    AccumulatorAsyncServer,
     Datum,
     Message,
-    AccumulatorAsyncServer,
-    Accumulator,
 )
 
 

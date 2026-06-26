@@ -1,0 +1,189 @@
+name: pynumaflow-lite
+
+on:
+  push:
+    branches: ["main", "release/*"]
+    paths:
+      - "packages/pynumaflow-lite/**"
+      - ".github/workflows/pynumaflow-lite.yml"
+  pull_request:
+    branches: ["main", "release/*"]
+    paths:
+      - "packages/pynumaflow-lite/**"
+      - ".github/workflows/pynumaflow-lite.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Format and lint
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          python-version: "3.10"
+          working-directory: packages/pynumaflow-lite
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+          rustup default stable
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Check Rust formatting
+        run: cargo fmt --all --check
+
+      - name: Check Python formatting
+        run: uv run ruff format --check pynumaflow_lite/ tests/ manifests/
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception
+
+  test:
+    name: Test ${{ matrix.platform.artifact }}
+    runs-on: ${{ matrix.platform.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-24.04
+            artifact: linux-x86_64
+          - os: ubuntu-24.04-arm
+            artifact: linux-aarch64
+          - os: macos-15-intel
+            artifact: macos-x86_64
+          - os: macos-15
+            artifact: macos-aarch64
+          - os: windows-2025
+            artifact: windows-x86_64
+
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          working-directory: packages/pynumaflow-lite
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Run tests for Python versions
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for python_version in 3.10 3.11 3.12 3.13 3.14; do
+            echo "::group::Python ${python_version}"
+            uv python install "${python_version}"
+            uv sync --group dev --python "${python_version}"
+            uv pip install "maturin>=1.14,<2.0"
+            uv run maturin develop
+            uv run pytest -v
+            export PYTHONHOME="$(uv run python -c 'import sys; print(sys.base_prefix)')"
+            cargo test
+            unset PYTHONHOME
+            echo "::endgroup::"
+          done
+
+      - name: Run tests for Python versions
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $versions = @("3.10", "3.11", "3.12", "3.13", "3.14")
+
+          foreach ($pythonVersion in $versions) {
+            Write-Output "::group::Python $pythonVersion"
+            try {
+              uv python install $pythonVersion
+              uv sync --group dev --python $pythonVersion
+              uv pip install "maturin>=1.14,<2.0"
+              uv run maturin develop
+              uv run pytest -v
+              $env:PYTHONHOME = uv run python -c "import sys; print(sys.base_prefix)"
+              cargo test
+            } finally {
+              Remove-Item Env:PYTHONHOME -ErrorAction SilentlyContinue
+              Write-Output "::endgroup::"
+            }
+          }
+
+  build-wheels:
+    name: Build wheel ${{ matrix.platform.artifact }} py${{ matrix.python-version }}
+    runs-on: ${{ matrix.platform.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        platform:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            artifact: linux-x86_64
+            manylinux: "2014"
+            linux: true
+          - os: macos-15
+            target: aarch64-apple-darwin
+            artifact: macos-aarch64
+            manylinux: "off"
+            linux: false
+          - os: windows-2025
+            target: x86_64-pc-windows-msvc
+            artifact: windows-x86_64
+            manylinux: "off"
+            linux: false
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          working-directory: packages/pynumaflow-lite
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: >-
+            --release
+            --out dist
+            -i ${{ matrix.platform.linux && format('python{0}', matrix.python-version) || 'python' }}
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pynumaflow-lite-${{ matrix.platform.artifact }}-py${{ matrix.python-version }}
+          path: packages/pynumaflow-lite/dist/*.whl
+          if-no-files-found: error
+          compression-level: 0

@@ -59,6 +59,7 @@ lint: test-fmt clippy py-lint
 .PHONY: test-fmt
 test-fmt:
 	cargo fmt --all --check
+	uv run ruff format --check pynumaflow_lite/ tests/ manifests/
 
 .PHONY: clippy
 clippy:

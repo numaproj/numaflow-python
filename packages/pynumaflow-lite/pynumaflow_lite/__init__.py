@@ -76,70 +76,37 @@ from ._source_dtypes import Sourcer
 from ._sourcetransformer_dtypes import SourceTransformer
 
 if mapper is not None:
-    try:
-        setattr(mapper, "Mapper", Mapper)
-    except Exception:
-        pass
+    mapper.Mapper = Mapper
 
 if batchmapper is not None:
-    try:
-        setattr(batchmapper, "BatchMapper", BatchMapper)
-    except Exception:
-        pass
+    batchmapper.BatchMapper = BatchMapper
 
 if mapstreamer is not None:
-    try:
-        setattr(mapstreamer, "MapStreamer", MapStreamer)
-    except Exception:
-        pass
+    mapstreamer.MapStreamer = MapStreamer
 
 if reducer is not None:
-    try:
-        setattr(reducer, "Reducer", Reducer)
-    except Exception:
-        pass
+    reducer.Reducer = Reducer
 
 if session_reducer is not None:
-    try:
-        setattr(session_reducer, "SessionReducer", SessionReducer)
-    except Exception:
-        pass
+    session_reducer.SessionReducer = SessionReducer
 
 if reducestreamer is not None:
-    try:
-        setattr(reducestreamer, "ReduceStreamer", ReduceStreamer)
-    except Exception:
-        pass
+    reducestreamer.ReduceStreamer = ReduceStreamer
 
 if accumulator is not None:
-    try:
-        setattr(accumulator, "Accumulator", Accumulator)
-    except Exception:
-        pass
+    accumulator.Accumulator = Accumulator
 
 if sinker is not None:
-    try:
-        setattr(sinker, "Sinker", Sinker)
-    except Exception:
-        pass
+    sinker.Sinker = Sinker
 
 if sourcer is not None:
-    try:
-        setattr(sourcer, "Sourcer", Sourcer)
-    except Exception:
-        pass
+    sourcer.Sourcer = Sourcer
 
 if sourcetransformer is not None:
-    try:
-        setattr(sourcetransformer, "SourceTransformer", SourceTransformer)
-    except Exception:
-        pass
+    sourcetransformer.SourceTransformer = SourceTransformer
 
 if sideinputer is not None:
-    try:
-        setattr(sideinputer, "SideInput", SideInput)
-    except Exception:
-        pass
+    sideinputer.SideInput = SideInput
 
 # Public API
 __all__ = [

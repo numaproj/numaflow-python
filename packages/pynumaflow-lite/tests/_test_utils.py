@@ -50,11 +50,8 @@ def run_python_server_with_rust_client(
     """
     # Ensure clean socket state
     for p in [sock_path, server_info_path]:
-        try:
-            if p.exists():
-                p.unlink()
-        except FileNotFoundError:
-            pass
+        if p.exists():
+            p.unlink()
 
     # Start Python server
     tests_dir = Path(__file__).resolve().parent
@@ -83,7 +80,7 @@ def run_python_server_with_rust_client(
         # Run Rust client bin
         rust_cmd = ["cargo", "run", "--quiet", "--bin", rust_bin_name]
         if rust_bin_args:
-            rust_cmd.extend(["--"] + rust_bin_args)
+            rust_cmd.extend(["--", *rust_bin_args])
 
         rust = subprocess.run(
             rust_cmd,

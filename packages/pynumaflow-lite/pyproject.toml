@@ -59,4 +59,5 @@ docstring-code-format = true
 dev = [
     "pytest>=9.1.1",
     "ruff>=0.15.20",
+    "maturin>=1.14,<2.0",
 ]

@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   lint:
-    name: Format, lint, and test
+    name: Format and lint
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -57,6 +57,38 @@ jobs:
       - name: Clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception
 
+  test:
+    name: Test ${{ matrix.platform.artifact }}
+    needs: lint
+    runs-on: ${{ matrix.platform.os }}
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-24.04
+            artifact: linux-x86_64
+          - os: macos-15
+            artifact: macos-aarch64
+          - os: windows-2025
+            artifact: windows-x86_64
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          working-directory: packages/pynumaflow-lite
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
       - name: Run tests for Python versions
         shell: bash
         run: |
@@ -65,19 +97,26 @@ jobs:
           for python_version in 3.10 3.11 3.12 3.13 3.14; do
             echo "::group::Python ${python_version}"
             uv python install "${python_version}"
+            export UV_PYTHON="${python_version}"
             uv sync --group dev --python "${python_version}"
-            uv pip install --python "${python_version}" "maturin>=1.14,<2.0"
             uv run --python "${python_version}" maturin develop
-            uv run --python "${python_version}" pytest -v
-            export PYTHONHOME="$(uv run --python "${python_version}" python -c 'import sys; print(sys.base_prefix)')"
-            cargo test
-            unset PYTHONHOME
+
+            if [[ "${RUNNER_OS}" == "Windows" ]]; then
+              uv run --python "${python_version}" python -c "import pynumaflow_lite; from pynumaflow_lite import mapper; print('pynumaflow-lite import ok')"
+            else
+              uv run --python "${python_version}" pytest -v
+              export PYTHONHOME="$(uv run --python "${python_version}" python -c 'import sys; print(sys.base_prefix)')"
+              cargo test
+              unset PYTHONHOME
+            fi
+
+            unset UV_PYTHON
             echo "::endgroup::"
           done
 
   build-wheels:
     name: Build wheel ${{ matrix.platform.artifact }} py${{ matrix.python-version }}
-    needs: lint
+    needs: test
     runs-on: ${{ matrix.platform.os }}
     defaults:
       run:
@@ -112,43 +151,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          python-version: ${{ matrix.python-version }}
-          working-directory: packages/pynumaflow-lite
-
       - name: Set up Rust
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
-
-      - name: Install dependencies
-        run: |
-          uv sync --group dev --python ${{ matrix.python-version }}
-          uv pip install --python ${{ matrix.python-version }} "maturin>=1.14,<2.0"
-
-      - name: Install extension
-        run: uv run --python ${{ matrix.python-version }} maturin develop
-
-      - name: Run Python tests
-        if: runner.os != 'Windows'
-        run: uv run --python ${{ matrix.python-version }} pytest -v
-
-      - name: Run Rust tests
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          set -euo pipefail
-          export PYTHONHOME="$(uv run --python ${{ matrix.python-version }} python -c 'import sys; print(sys.base_prefix)')"
-          cargo test
-
-      - name: Run Windows smoke test
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = "Stop"
-          uv run --python ${{ matrix.python-version }} python -c "import pynumaflow_lite; from pynumaflow_lite import mapper; print('pynumaflow-lite import ok')"
 
       - name: Build wheel
         uses: PyO3/maturin-action@v1

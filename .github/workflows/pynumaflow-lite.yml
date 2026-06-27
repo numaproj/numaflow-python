@@ -101,17 +101,23 @@ jobs:
 
             uv run --python "${python_version}" pytest -v
 
-            # cargo test embeds a Python interpreter via pyo3 (Python::initialize).
-            # pyo3's build script must link against the same uv-managed interpreter
-            # (PYO3_PYTHON), and the embedded interpreter must locate its stdlib at
-            # runtime (PYTHONHOME = that interpreter's base_prefix). Pinning only one
-            # of the two leaves the linked libpython and the stdlib mismatched, which
-            # surfaces as "init_fs_encoding: No module named 'encodings'".
+            # cargo test embeds a Python interpreter via pyo3 (Python::initialize),
+            # which requires pinning the uv-managed interpreter at three layers:
+            #   - PYO3_PYTHON: the interpreter pyo3's build script links against.
+            #   - PYTHONHOME: where the embedded interpreter finds its stdlib at
+            #     runtime; mismatch surfaces as "No module named 'encodings'".
+            #   - LD_LIBRARY_PATH: where the dynamic loader finds libpython at load
+            #     time. On Linux the test binary links libpython3.x.so, which lives
+            #     under the interpreter's lib dir and is not on the default search
+            #     path; missing it surfaces as "error while loading shared libraries:
+            #     libpython3.x.so". (Harmless on macOS, which resolves differently.)
             python_bin="$(uv run --python "${python_version}" python -c 'import sys; print(sys.executable)')"
             export PYO3_PYTHON="${python_bin}"
             export PYTHONHOME="$("${python_bin}" -c 'import sys; print(sys.base_prefix)')"
+            python_libdir="$("${python_bin}" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')"
+            export LD_LIBRARY_PATH="${python_libdir}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
             cargo test
-            unset PYO3_PYTHON PYTHONHOME
+            unset PYO3_PYTHON PYTHONHOME LD_LIBRARY_PATH
 
             unset UV_PYTHON
             echo "::endgroup::"

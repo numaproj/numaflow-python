@@ -73,8 +73,6 @@ jobs:
             artifact: linux-x86_64
           - os: macos-15
             artifact: macos-aarch64
-          - os: windows-2025
-            artifact: windows-x86_64
 
     steps:
       - uses: actions/checkout@v7
@@ -101,14 +99,19 @@ jobs:
             uv sync --group dev --python "${python_version}"
             uv run --python "${python_version}" maturin develop
 
-            if [[ "${RUNNER_OS}" == "Windows" ]]; then
-              uv run --python "${python_version}" python -c "import pynumaflow_lite; from pynumaflow_lite import mapper; print('pynumaflow-lite import ok')"
-            else
-              uv run --python "${python_version}" pytest -v
-              export PYTHONHOME="$(uv run --python "${python_version}" python -c 'import sys; print(sys.base_prefix)')"
-              cargo test
-              unset PYTHONHOME
-            fi
+            uv run --python "${python_version}" pytest -v
+
+            # cargo test embeds a Python interpreter via pyo3 (Python::initialize).
+            # pyo3's build script must link against the same uv-managed interpreter
+            # (PYO3_PYTHON), and the embedded interpreter must locate its stdlib at
+            # runtime (PYTHONHOME = that interpreter's base_prefix). Pinning only one
+            # of the two leaves the linked libpython and the stdlib mismatched, which
+            # surfaces as "init_fs_encoding: No module named 'encodings'".
+            python_bin="$(uv run --python "${python_version}" python -c 'import sys; print(sys.executable)')"
+            export PYO3_PYTHON="${python_bin}"
+            export PYTHONHOME="$("${python_bin}" -c 'import sys; print(sys.base_prefix)')"
+            cargo test
+            unset PYO3_PYTHON PYTHONHOME
 
             unset UV_PYTHON
             echo "::endgroup::"
@@ -135,11 +138,6 @@ jobs:
           - os: macos-15
             target: aarch64-apple-darwin
             artifact: macos-aarch64
-            manylinux: "off"
-            linux: false
-          - os: windows-2025
-            target: x86_64-pc-windows-msvc
-            artifact: windows-x86_64
             manylinux: "off"
             linux: false
 

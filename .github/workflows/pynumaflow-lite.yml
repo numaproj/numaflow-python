@@ -15,6 +15,11 @@ on:
 permissions:
   contents: read
 
+env:
+  RUSTFLAGS: -C debuginfo=0
+  RUST_BACKTRACE: 1
+  PYTHONUTF8: 1
+
 jobs:
   lint:
     name: Format and lint

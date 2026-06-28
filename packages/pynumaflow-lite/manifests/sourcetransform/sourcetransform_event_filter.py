@@ -1,7 +1,7 @@
 import asyncio
 import signal
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Callable
 
 from pynumaflow_lite import sourcetransformer
 
@@ -19,9 +19,7 @@ class EventFilter(sourcetransformer.SourceTransformer):
     - Messages after 2022 are tagged with "after_year_2022"
     """
 
-    async def handler(
-        self, keys: list[str], datum: sourcetransformer.Datum
-    ) -> sourcetransformer.Messages:
+    async def handler(self, keys: list[str], datum: sourcetransformer.Datum) -> sourcetransformer.Messages:
         val = datum.value
         event_time = datum.event_time
         messages = sourcetransformer.Messages()
@@ -30,9 +28,7 @@ class EventFilter(sourcetransformer.SourceTransformer):
             print(f"Got event time: {event_time}, it is before 2022, so dropping")
             messages.append(sourcetransformer.Message.message_to_drop(event_time))
         elif event_time < january_first_2023:
-            print(
-                f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022"
-            )
+            print(f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022")
             messages.append(
                 sourcetransformer.Message(
                     value=val,
@@ -42,9 +38,7 @@ class EventFilter(sourcetransformer.SourceTransformer):
                 )
             )
         else:
-            print(
-                f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022"
-            )
+            print(f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022")
             messages.append(
                 sourcetransformer.Message(
                     value=val,
@@ -55,14 +49,6 @@ class EventFilter(sourcetransformer.SourceTransformer):
             )
 
         return messages
-
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
 
 
 async def start(
@@ -88,10 +74,7 @@ async def start(
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
         # Fallback in case the task was cancelled by the runner
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

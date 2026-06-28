@@ -1,7 +1,7 @@
 import asyncio
 import collections.abc
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import batchmapper
 
@@ -43,10 +43,7 @@ async def start(
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

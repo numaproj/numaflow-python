@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use tokio::sync::mpsc;
 
 /// A message to be sent to the next vertex from an accumulator handler.
-#[pyclass(module = "pynumaflow_lite.accumulator")]
+#[pyclass(module = "pynumaflow_lite.accumulator", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Message {
     #[pyo3(get)]

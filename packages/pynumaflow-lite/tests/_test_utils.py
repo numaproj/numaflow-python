@@ -5,7 +5,6 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import List, Optional
 
 import pytest
 
@@ -30,7 +29,7 @@ def run_python_server_with_rust_client(
     sock_path: Path,
     server_info_path: Path,
     rust_bin_name: str,
-    rust_bin_args: Optional[List[str]] = None,
+    rust_bin_args: list[str] | None = None,
     socket_timeout: float = 20.0,
     rust_timeout: float = 60.0,
     server_shutdown_timeout: float = 15.0,
@@ -49,12 +48,11 @@ def run_python_server_with_rust_client(
         server_shutdown_timeout: Timeout for server graceful shutdown
     """
     # Ensure clean socket state
+    sock_path.parent.mkdir(parents=True, exist_ok=True)
+    server_info_path.parent.mkdir(parents=True, exist_ok=True)
     for p in [sock_path, server_info_path]:
-        try:
-            if p.exists():
-                p.unlink()
-        except FileNotFoundError:
-            pass
+        if p.exists():
+            p.unlink()
 
     # Start Python server
     tests_dir = Path(__file__).resolve().parent
@@ -83,7 +81,7 @@ def run_python_server_with_rust_client(
         # Run Rust client bin
         rust_cmd = ["cargo", "run", "--quiet", "--bin", rust_bin_name]
         if rust_bin_args:
-            rust_cmd.extend(["--"] + rust_bin_args)
+            rust_cmd.extend(["--", *rust_bin_args])
 
         rust = subprocess.run(
             rust_cmd,
@@ -123,6 +121,4 @@ def run_python_server_with_rust_client(
             except Exception:
                 pass
 
-    assert (
-        server.returncode == 0
-    ), f"Server did not exit cleanly, code={server.returncode}"
+    assert server.returncode == 0, f"Server did not exit cleanly, code={server.returncode}"

@@ -1,8 +1,7 @@
 import asyncio
 import logging
 import signal
-from collections.abc import AsyncIterable, AsyncIterator
-from typing import Awaitable, Callable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
 
 from pynumaflow_lite import sinker
 from pynumaflow_lite._sink_dtypes import Sinker
@@ -27,14 +26,6 @@ class SimpleLogSink(Sinker):
         return responses
 
 
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
-
-
 async def start(
     f: Callable[[AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]],
 ):
@@ -52,10 +43,7 @@ async def start(
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

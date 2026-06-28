@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from pynumaflow_lite.batchmapper import Datum, BatchResponse
 from collections.abc import AsyncIterable
+
+from pynumaflow_lite.batchmapper import BatchResponse, Datum
 
 
 class BatchMapper(metaclass=ABCMeta):

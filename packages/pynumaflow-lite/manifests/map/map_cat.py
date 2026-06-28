@@ -1,6 +1,6 @@
 import asyncio
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import mapper
 
@@ -16,14 +16,6 @@ class SimpleCat(mapper.Mapper):
             messages.append(mapper.Message(payload.value, keys))
 
         return messages
-
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
 
 
 async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
@@ -47,10 +39,7 @@ async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
         # Fallback in case the task was cancelled by the runner
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

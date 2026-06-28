@@ -12,7 +12,7 @@ use std::sync::Mutex;
 /// UserMetadata wraps user-defined metadata groups per message.
 /// Source is the origin or the first vertex in the pipeline.
 /// Here, for the first time, the user metadata can be set by the user.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct UserMetadata {
     data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -102,7 +102,7 @@ impl From<UserMetadata> for numaflow::source::UserMetadata {
 }
 
 /// A message to be sent from the source.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Message {
     /// The payload of the message.
@@ -187,7 +187,7 @@ impl From<Message> for numaflow::source::Message {
 }
 
 /// The offset of a message.
-#[pyclass(module = "pynumaflow_lite.sourcer", name = "Offset")] // this to avoid conflict with the Offset in the source module
+#[pyclass(module = "pynumaflow_lite.sourcer", name = "Offset", from_py_object)] // this to avoid conflict with the Offset in the source module
 #[derive(Clone, Debug)]
 pub struct PyOffset {
     /// Offset value in bytes.
@@ -245,7 +245,7 @@ impl From<numaflow::source::Offset> for PyOffset {
 }
 
 /// A request to read messages from the source.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct ReadRequest {
     /// The number of messages to read.
@@ -286,7 +286,7 @@ impl From<numaflow::source::SourceReadRequest> for ReadRequest {
 }
 
 /// A request to acknowledge messages.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct AckRequest {
     /// The offsets to acknowledge.
@@ -309,7 +309,7 @@ impl AckRequest {
 }
 
 /// A request to negatively acknowledge messages.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct NackRequest {
     /// The offsets to negatively acknowledge.
@@ -332,7 +332,7 @@ impl NackRequest {
 }
 
 /// Response for pending messages count.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PendingResponse {
     /// The number of pending messages. -1 if the source doesn't support detecting backlog.
@@ -355,7 +355,7 @@ impl PendingResponse {
 }
 
 /// Response for partitions.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PartitionsResponse {
     /// The list of partition IDs.

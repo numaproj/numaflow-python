@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable
 import datetime as _dt
+from collections.abc import Awaitable, Callable
 
 # Re-export the Python ABC for user convenience and typing
 from ._map_dtypes import Mapper as Mapper
@@ -10,11 +10,11 @@ class SystemMetadata:
     """System-generated metadata groups per message (read-only)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the system metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the system metadata for the given group."""
         ...
 
@@ -28,11 +28,11 @@ class UserMetadata:
     """User-defined metadata groups per message (read-write)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the user metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the user metadata for the given group."""
         ...
 
@@ -65,28 +65,28 @@ class Messages:
     def __str__(self) -> str: ...
 
 class Message:
-    keys: Optional[List[str]]
+    keys: list[str] | None
     value: bytes
-    tags: Optional[List[str]]
-    user_metadata: Optional[UserMetadata]
+    tags: list[str] | None
+    user_metadata: UserMetadata | None
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[List[str]] = ...,
-        tags: Optional[List[str]] = ...,
-        user_metadata: Optional[UserMetadata] = ...,
+        keys: list[str] | None = ...,
+        tags: list[str] | None = ...,
+        user_metadata: UserMetadata | None = ...,
     ) -> None: ...
     @staticmethod
     def message_to_drop() -> Message: ...
 
 class Datum:
     # Read-only attributes provided by the extension
-    keys: List[str]
+    keys: list[str]
     value: bytes
     watermark: _dt.datetime
     eventtime: _dt.datetime
-    headers: Dict[str, str]
+    headers: dict[str, str]
     user_metadata: UserMetadata
     system_metadata: SystemMetadata
 
@@ -99,19 +99,17 @@ class MapAsyncServer:
         sock_file: str | None = ...,
         info_file: str | None = ...,
     ) -> None: ...
-    def start(
-        self, py_func: Callable[[list[str], Datum], Awaitable[Messages]]
-    ) -> Awaitable[None]: ...
+    def start(self, py_func: Callable[[list[str], Datum], Awaitable[Messages]]) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
 # Simple utility function exposed by the extension
 
 __all__ = [
-    "SystemMetadata",
-    "UserMetadata",
-    "Messages",
-    "Message",
     "Datum",
     "MapAsyncServer",
     "Mapper",
+    "Message",
+    "Messages",
+    "SystemMetadata",
+    "UserMetadata",
 ]

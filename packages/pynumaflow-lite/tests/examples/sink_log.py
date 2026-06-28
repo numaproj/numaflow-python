@@ -2,7 +2,7 @@ import asyncio
 import collections.abc
 import logging
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import sinker
 
@@ -43,9 +43,7 @@ async def async_handler(
 
 
 async def start(
-    f: Callable[
-        [collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]
-    ],
+    f: Callable[[collections.abc.AsyncIterator[sinker.Datum]], Awaitable[sinker.Responses]],
 ):
     sock_file = "/tmp/var/run/numaflow/sink.sock"
     server_info_file = "/tmp/var/run/numaflow/sinker-server-info"
@@ -63,10 +61,7 @@ async def start(
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

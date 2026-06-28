@@ -1,29 +1,29 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable, AsyncIterator
 import datetime as _dt
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 class Message:
-    keys: Optional[List[str]]
+    keys: list[str] | None
     value: bytes
-    tags: Optional[List[str]]
+    tags: list[str] | None
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[List[str]] = ...,
-        tags: Optional[List[str]] = ...,
+        keys: list[str] | None = ...,
+        tags: list[str] | None = ...,
     ) -> None: ...
     @staticmethod
     def message_to_drop() -> Message: ...
 
 class Datum:
-    keys: List[str]
+    keys: list[str]
     value: bytes
     watermark: _dt.datetime
     eventtime: _dt.datetime
     id: str
-    headers: Dict[str, str]
+    headers: dict[str, str]
 
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -46,19 +46,17 @@ class BatchMapAsyncServer:
         sock_file: str | None = ...,
         info_file: str | None = ...,
     ) -> None: ...
-    def start(
-        self, py_func: Callable[[AsyncIterator[Datum]], Awaitable[BatchResponses]]
-    ) -> Awaitable[None]: ...
+    def start(self, py_func: Callable[[AsyncIterator[Datum]], Awaitable[BatchResponses]]) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
 class BatchMapper:
     async def handler(self, batch: AsyncIterator[Datum]) -> BatchResponses: ...
 
 __all__ = [
-    "Message",
-    "Datum",
-    "BatchResponse",
-    "BatchResponses",
     "BatchMapAsyncServer",
     "BatchMapper",
+    "BatchResponse",
+    "BatchResponses",
+    "Datum",
+    "Message",
 ]

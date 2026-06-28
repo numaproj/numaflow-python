@@ -53,9 +53,7 @@ class ReduceCounter(reducestreamer.ReduceStreamer):
             # Emit intermediate result every 10 items
             if self.counter % 10 == 0:
                 msg = (
-                    f"counter:{self.counter} "
-                    f"interval_window_start:{iw.start} "
-                    f"interval_window_end:{iw.end}"
+                    f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}"
                 ).encode()
                 print(f"Yielding intermediate result: counter={self.counter}")
                 # Early release of data - this is the key feature of reduce streaming!
@@ -63,20 +61,10 @@ class ReduceCounter(reducestreamer.ReduceStreamer):
 
         # Emit final result
         msg = (
-            f"counter:{self.counter} (FINAL) "
-            f"interval_window_start:{iw.start} "
-            f"interval_window_end:{iw.end}"
+            f"counter:{self.counter} (FINAL) interval_window_start:{iw.start} interval_window_end:{iw.end}"
         ).encode()
         print(f"Yielding final result: counter={self.counter}")
         yield reducestreamer.Message(msg, keys=keys)
-
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
 
 
 async def start(creator: type, init_args: tuple):
@@ -97,10 +85,7 @@ async def start(creator: type, init_args: tuple):
         await server.start(creator, init_args)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

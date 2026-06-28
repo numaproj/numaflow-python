@@ -33,20 +33,8 @@ class ReduceStreamCounter(reducestreamer.ReduceStreamer):
         async for _ in datums:
             self.counter += 1
             # Yield a message for each datum (streaming behavior)
-            msg = (
-                f"counter:{self.counter} "
-                f"interval_window_start:{iw.start} "
-                f"interval_window_end:{iw.end}"
-            ).encode()
+            msg = (f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}").encode()
             yield reducestreamer.Message(msg, keys=keys)
-
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
 
 
 async def start(creator: type, init_args: tuple):
@@ -66,10 +54,7 @@ async def start(creator: type, init_args: tuple):
         await server.start(creator, init_args)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

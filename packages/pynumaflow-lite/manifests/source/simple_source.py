@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import signal
-from datetime import datetime, timezone
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
 
 from pynumaflow_lite import sourcer
 from pynumaflow_lite._source_dtypes import Sourcer
@@ -22,20 +22,16 @@ class SimpleSource(Sourcer):
         self.counter = 0
         self.partition_idx = 0
 
-    async def read_handler(
-        self, datum: sourcer.ReadRequest
-    ) -> AsyncIterator[sourcer.Message]:
+    async def read_handler(self, datum: sourcer.ReadRequest) -> AsyncIterator[sourcer.Message]:
         """
         The simple source generates messages with incrementing numbers.
         """
-        _LOGGER.info(
-            f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}"
-        )
+        _LOGGER.info(f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}")
 
         # Generate the requested number of messages
-        for i in range(datum.num_records):
+        for _ in range(datum.num_records):
             # Create message payload
-            payload = f"message-{self.counter}".encode("utf-8")
+            payload = f"message-{self.counter}".encode()
 
             # Create offset
             offset = sourcer.Offset(
@@ -66,9 +62,7 @@ class SimpleSource(Sourcer):
         """
         _LOGGER.info(f"Acknowledging {len(request.offsets)} offsets")
         for offset in request.offsets:
-            _LOGGER.debug(
-                f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}"
-            )
+            _LOGGER.debug(f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
 
     async def nack_handler(self, request: sourcer.NackRequest) -> None:
         """
@@ -76,9 +70,7 @@ class SimpleSource(Sourcer):
         """
         _LOGGER.info(f"Negatively acknowledging {len(request.offsets)} offsets")
         for offset in request.offsets:
-            _LOGGER.warning(
-                f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}"
-            )
+            _LOGGER.warning(f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
 
     async def pending_handler(self) -> sourcer.PendingResponse:
         """
@@ -91,14 +83,6 @@ class SimpleSource(Sourcer):
         The simple source always returns default partitions.
         """
         return sourcer.PartitionsResponse(partitions=[self.partition_idx])
-
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
 
 
 async def start():
@@ -119,10 +103,7 @@ async def start():
         await server.start(handler)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

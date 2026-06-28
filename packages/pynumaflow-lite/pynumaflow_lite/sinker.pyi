@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Callable, Awaitable, AsyncIterator
 import datetime as _dt
+from collections.abc import AsyncIterator, Awaitable, Callable
 
 class SystemMetadata:
     """System-generated metadata groups per message (read-only for sink)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the system metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the system metadata for the given group."""
         ...
 
@@ -25,11 +25,11 @@ class UserMetadata:
     """User-defined metadata groups per message (read-only for sink)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the user metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the user metadata for the given group."""
         ...
 
@@ -40,22 +40,22 @@ class UserMetadata:
     def __repr__(self) -> str: ...
 
 class KeyValueGroup:
-    key_value: Dict[str, bytes]
+    key_value: dict[str, bytes]
 
-    def __init__(self, key_value: Optional[Dict[str, bytes]] = ...) -> None: ...
+    def __init__(self, key_value: dict[str, bytes] | None = ...) -> None: ...
     @staticmethod
-    def from_dict(key_value: Dict[str, bytes]) -> KeyValueGroup: ...
+    def from_dict(key_value: dict[str, bytes]) -> KeyValueGroup: ...
 
 class Message:
-    keys: Optional[List[str]]
+    keys: list[str] | None
     value: bytes
-    user_metadata: Optional[Dict[str, KeyValueGroup]]
+    user_metadata: dict[str, KeyValueGroup] | None
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[List[str]] = ...,
-        user_metadata: Optional[Dict[str, KeyValueGroup]] = ...,
+        keys: list[str] | None = ...,
+        user_metadata: dict[str, KeyValueGroup] | None = ...,
     ) -> None: ...
 
 class Response:
@@ -70,19 +70,19 @@ class Response:
     @staticmethod
     def as_serve(id: str, payload: bytes) -> Response: ...
     @staticmethod
-    def as_on_success(id: str, message: Optional[Message] = ...) -> Response: ...
+    def as_on_success(id: str, message: Message | None = ...) -> Response: ...
 
 class Responses:
     def __init__(self) -> None: ...
     def append(self, response: Response) -> None: ...
 
 class Datum:
-    keys: List[str]
+    keys: list[str]
     value: bytes
     watermark: _dt.datetime
     eventtime: _dt.datetime
     id: str
-    headers: Dict[str, str]
+    headers: dict[str, str]
     user_metadata: UserMetadata
     system_metadata: SystemMetadata
 
@@ -95,22 +95,20 @@ class SinkAsyncServer:
         sock_file: str | None = ...,
         info_file: str | None = ...,
     ) -> None: ...
-    def start(
-        self, py_func: Callable[[AsyncIterator[Datum]], Awaitable[Responses]]
-    ) -> Awaitable[None]: ...
+    def start(self, py_func: Callable[[AsyncIterator[Datum]], Awaitable[Responses]]) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
 class Sinker:
     async def handler(self, datums: AsyncIterator[Datum]) -> Responses: ...
 
 __all__ = [
-    "SystemMetadata",
-    "UserMetadata",
+    "Datum",
     "KeyValueGroup",
     "Message",
     "Response",
     "Responses",
-    "Datum",
     "SinkAsyncServer",
     "Sinker",
+    "SystemMetadata",
+    "UserMetadata",
 ]

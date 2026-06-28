@@ -1,6 +1,6 @@
 import asyncio
 import signal
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from pynumaflow_lite import mapper
 
@@ -29,13 +29,9 @@ async def async_handler(keys: list[str], payload: mapper.Datum) -> mapper.Messag
         user_metadata = mapper.UserMetadata()
         user_metadata.create_group("processing")
         user_metadata.add_kv("processing", "handler", b"map_cat")
-        user_metadata.add_kv(
-            "processing", "msg_length", str(len(payload.value)).encode()
-        )
+        user_metadata.add_kv("processing", "msg_length", str(len(payload.value)).encode())
 
-        messages.append(
-            mapper.Message(payload.value, keys, user_metadata=user_metadata)
-        )
+        messages.append(mapper.Message(payload.value, keys, user_metadata=user_metadata))
 
     return messages
 
@@ -57,10 +53,7 @@ async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages
         await server.start(f)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
 

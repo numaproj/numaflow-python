@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.accumulator import Datum, Message
 

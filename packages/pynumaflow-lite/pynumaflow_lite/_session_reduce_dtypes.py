@@ -10,9 +10,7 @@ class SessionReducer(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    async def session_reduce(
-        self, keys: list[str], datums: AsyncIterator[Datum]
-    ) -> AsyncIterator[Message]:
+    async def session_reduce(self, keys: list[str], datums: AsyncIterator[Datum]) -> AsyncIterator[Message]:
         """
         Implement this handler; consume `datums` async iterable and yield Messages.
         This is called for each session window.

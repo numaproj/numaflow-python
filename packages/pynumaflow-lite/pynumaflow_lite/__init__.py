@@ -1,4 +1,6 @@
-from . import pynumaflow_lite  # type: ignore[attr-defined]  # Rust extension, resolved at runtime
+from . import (
+    pynumaflow_lite,  # type: ignore[attr-defined]  # Rust extension, resolved at runtime
+)
 from .pynumaflow_lite import *  # noqa: F403  # Rust extension; exports resolved at runtime
 
 # Ensure the `mapper`, `batchmapper`, and `mapstreamer` submodules are importable as attributes of the package
@@ -61,97 +63,64 @@ except Exception:  # pragma: no cover
 
 # Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, ReduceStreamer, Accumulator, Sinker,
 # Sourcer, SourceTransformer, and SideInput classes under the extension submodules for convenient access
-from ._map_dtypes import Mapper
+from ._accumulator_dtypes import Accumulator
 from ._batchmapper_dtypes import BatchMapper
+from ._map_dtypes import Mapper
 from ._mapstream_dtypes import MapStreamer
 from ._reduce_dtypes import Reducer
-from ._session_reduce_dtypes import SessionReducer
 from ._reducestreamer_dtypes import ReduceStreamer
-from ._accumulator_dtypes import Accumulator
+from ._session_reduce_dtypes import SessionReducer
+from ._sideinput_dtypes import SideInput
 from ._sink_dtypes import Sinker
 from ._source_dtypes import Sourcer
 from ._sourcetransformer_dtypes import SourceTransformer
-from ._sideinput_dtypes import SideInput
 
 if mapper is not None:
-    try:
-        setattr(mapper, "Mapper", Mapper)
-    except Exception:
-        pass
+    mapper.Mapper = Mapper
 
 if batchmapper is not None:
-    try:
-        setattr(batchmapper, "BatchMapper", BatchMapper)
-    except Exception:
-        pass
+    batchmapper.BatchMapper = BatchMapper
 
 if mapstreamer is not None:
-    try:
-        setattr(mapstreamer, "MapStreamer", MapStreamer)
-    except Exception:
-        pass
+    mapstreamer.MapStreamer = MapStreamer
 
 if reducer is not None:
-    try:
-        setattr(reducer, "Reducer", Reducer)
-    except Exception:
-        pass
+    reducer.Reducer = Reducer
 
 if session_reducer is not None:
-    try:
-        setattr(session_reducer, "SessionReducer", SessionReducer)
-    except Exception:
-        pass
+    session_reducer.SessionReducer = SessionReducer
 
 if reducestreamer is not None:
-    try:
-        setattr(reducestreamer, "ReduceStreamer", ReduceStreamer)
-    except Exception:
-        pass
+    reducestreamer.ReduceStreamer = ReduceStreamer
 
 if accumulator is not None:
-    try:
-        setattr(accumulator, "Accumulator", Accumulator)
-    except Exception:
-        pass
+    accumulator.Accumulator = Accumulator
 
 if sinker is not None:
-    try:
-        setattr(sinker, "Sinker", Sinker)
-    except Exception:
-        pass
+    sinker.Sinker = Sinker
 
 if sourcer is not None:
-    try:
-        setattr(sourcer, "Sourcer", Sourcer)
-    except Exception:
-        pass
+    sourcer.Sourcer = Sourcer
 
 if sourcetransformer is not None:
-    try:
-        setattr(sourcetransformer, "SourceTransformer", SourceTransformer)
-    except Exception:
-        pass
+    sourcetransformer.SourceTransformer = SourceTransformer
 
 if sideinputer is not None:
-    try:
-        setattr(sideinputer, "SideInput", SideInput)
-    except Exception:
-        pass
+    sideinputer.SideInput = SideInput
 
 # Public API
 __all__ = [
-    "mapper",
+    "accumulator",
     "batchmapper",
+    "mapper",
     "mapstreamer",
     "reducer",
-    "session_reducer",
     "reducestreamer",
-    "accumulator",
+    "session_reducer",
+    "sideinputer",
     "sinker",
     "sourcer",
     "sourcetransformer",
-    "sideinputer",
 ]
 
 __doc__ = pynumaflow_lite.__doc__

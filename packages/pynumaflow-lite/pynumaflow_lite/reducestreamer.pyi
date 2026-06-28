@@ -1,32 +1,31 @@
 from __future__ import annotations
 
 import datetime as _dt
-from typing import Optional, List, Dict, Awaitable, AsyncIterator, Callable
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
 
 # Re-export the Python ABC for user convenience and typing
 from ._reducestreamer_dtypes import ReduceStreamer as ReduceStreamer
 
 class Message:
-    keys: Optional[List[str]]
+    keys: list[str] | None
     value: bytes
-    tags: Optional[List[str]]
+    tags: list[str] | None
 
     def __init__(
         self,
         value: bytes,
-        keys: Optional[List[str]] = ...,
-        tags: Optional[List[str]] = ...,
+        keys: list[str] | None = ...,
+        tags: list[str] | None = ...,
     ) -> None: ...
     @staticmethod
     def message_to_drop() -> Message: ...
 
 class Datum:
-    keys: List[str]
+    keys: list[str]
     value: bytes
     watermark: _dt.datetime
     eventtime: _dt.datetime
-    headers: Dict[str, str]
+    headers: dict[str, str]
 
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -56,19 +55,16 @@ class ReduceStreamAsyncServer:
     def start(
         self,
         py_creator: (
-            type[ReduceStreamer]
-            | Callable[
-                [list[str], AsyncIterable[Datum], Metadata], AsyncIterator[Message]
-            ]
+            type[ReduceStreamer] | Callable[[list[str], AsyncIterable[Datum], Metadata], AsyncIterator[Message]]
         ),
         init_args: tuple | None = ...,
     ) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
 __all__ = [
-    "Message",
     "Datum",
     "IntervalWindow",
+    "Message",
     "Metadata",
     "PyAsyncDatumStream",
     "ReduceStreamAsyncServer",

@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from pynumaflow_lite.mapstreamer import Datum, Message
 from collections.abc import AsyncIterator
+
+from pynumaflow_lite.mapstreamer import Datum, Message
 
 
 class MapStreamer(metaclass=ABCMeta):

@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from pynumaflow_lite.sinker import Datum, Responses
 from collections.abc import AsyncIterable
+
+from pynumaflow_lite.sinker import Datum, Responses
 
 
 class Sinker(metaclass=ABCMeta):

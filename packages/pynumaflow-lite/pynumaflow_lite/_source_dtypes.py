@@ -1,12 +1,13 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import AsyncIterator
+
 from pynumaflow_lite.sourcer import (
-    Message,
-    ReadRequest,
     AckRequest,
+    Message,
     NackRequest,
-    PendingResponse,
     PartitionsResponse,
+    PendingResponse,
+    ReadRequest,
 )
 
 
@@ -120,4 +121,4 @@ class Sourcer(metaclass=ABCMeta):
                     # Add back to pending, mark for retry, etc.
                     self.nacked_offsets.add(offset.offset)
         """
-        pass
+        _ = request

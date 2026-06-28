@@ -1,0 +1,191 @@
+name: pynumaflow-lite
+
+on:
+  push:
+    branches: ["main", "release/*"]
+    paths:
+      - "packages/pynumaflow-lite/**"
+      - ".github/workflows/pynumaflow-lite.yml"
+  pull_request:
+    branches: ["main", "release/*"]
+    paths:
+      - "packages/pynumaflow-lite/**"
+      - ".github/workflows/pynumaflow-lite.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RUSTFLAGS: -C debuginfo=0
+  RUST_BACKTRACE: 1
+  PYTHONUTF8: 1
+
+jobs:
+  lint:
+    name: Format and lint
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          python-version: "3.10"
+          working-directory: packages/pynumaflow-lite
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+          rustup default stable
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Check Rust formatting
+        run: cargo fmt --all --check
+
+      - name: Check Python formatting
+        run: uv run ruff format --check pynumaflow_lite/ tests/ manifests/
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Clippy
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception
+
+  test:
+    name: Test ${{ matrix.platform.artifact }}
+    needs: lint
+    runs-on: ${{ matrix.platform.os }}
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
+
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os: ubuntu-24.04
+            artifact: linux-x86_64
+          - os: macos-15
+            artifact: macos-aarch64
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          working-directory: packages/pynumaflow-lite
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Run tests for Python versions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for python_version in 3.10 3.11 3.12 3.13 3.14; do
+            echo "::group::Python ${python_version}"
+            uv python install "${python_version}"
+            export UV_PYTHON="${python_version}"
+            uv sync --group dev --python "${python_version}"
+            uv run --python "${python_version}" maturin develop --locked
+
+            uv run --python "${python_version}" pytest -v
+
+            # cargo test embeds a Python interpreter via pyo3 (Python::initialize),
+            # which requires pinning the uv-managed interpreter at three layers:
+            #   - PYO3_PYTHON: the interpreter pyo3's build script links against.
+            #   - PYTHONHOME: where the embedded interpreter finds its stdlib at
+            #     runtime; mismatch surfaces as "No module named 'encodings'".
+            #   - LD_LIBRARY_PATH: where the dynamic loader finds libpython at load
+            #     time. On Linux the test binary links libpython3.x.so, which lives
+            #     under the interpreter's lib dir and is not on the default search
+            #     path; missing it surfaces as "error while loading shared libraries:
+            #     libpython3.x.so". (Harmless on macOS, which resolves differently.)
+            python_bin="$(uv run --python "${python_version}" python -c 'import sys; print(sys.executable)')"
+            export PYO3_PYTHON="${python_bin}"
+            export PYTHONHOME="$("${python_bin}" -c 'import sys; print(sys.base_prefix)')"
+            python_libdir="$("${python_bin}" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')"
+            export LD_LIBRARY_PATH="${python_libdir}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+            cargo test --locked
+            unset PYO3_PYTHON PYTHONHOME LD_LIBRARY_PATH
+
+            unset UV_PYTHON
+            echo "::endgroup::"
+          done
+
+  build-wheels:
+    name: Build wheel ${{ matrix.platform.artifact }} py${{ matrix.python-version }}
+    needs: test
+    runs-on: ${{ matrix.platform.os }}
+    defaults:
+      run:
+        working-directory: packages/pynumaflow-lite
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        platform:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            artifact: linux-x86_64
+            manylinux: "2014"
+            linux: true
+          - os: macos-15
+            target: aarch64-apple-darwin
+            artifact: macos-aarch64
+            manylinux: "off"
+            linux: false
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          working-directory: packages/pynumaflow-lite
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: >-
+            --release
+            --locked
+            --out dist
+            -i ${{ matrix.platform.linux && format('python{0}', matrix.python-version) || 'python' }}
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pynumaflow-lite-${{ matrix.platform.artifact }}-py${{ matrix.python-version }}
+          path: packages/pynumaflow-lite/dist/*.whl
+          if-no-files-found: error
+          compression-level: 0

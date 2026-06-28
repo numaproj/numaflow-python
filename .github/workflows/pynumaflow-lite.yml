@@ -12,6 +12,10 @@ on:
       - "packages/pynumaflow-lite/**"
       - ".github/workflows/pynumaflow-lite.yml"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -60,7 +64,7 @@ jobs:
         run: uv run ruff check .
 
       - name: Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings -A clippy::module_inception
 
   test:
     name: Test ${{ matrix.platform.artifact }}
@@ -102,7 +106,7 @@ jobs:
             uv python install "${python_version}"
             export UV_PYTHON="${python_version}"
             uv sync --group dev --python "${python_version}"
-            uv run --python "${python_version}" maturin develop
+            uv run --python "${python_version}" maturin develop --locked
 
             uv run --python "${python_version}" pytest -v
 
@@ -121,7 +125,7 @@ jobs:
             export PYTHONHOME="$("${python_bin}" -c 'import sys; print(sys.base_prefix)')"
             python_libdir="$("${python_bin}" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')"
             export LD_LIBRARY_PATH="${python_libdir}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-            cargo test
+            cargo test --locked
             unset PYO3_PYTHON PYTHONHOME LD_LIBRARY_PATH
 
             unset UV_PYTHON
@@ -174,6 +178,7 @@ jobs:
           manylinux: ${{ matrix.platform.manylinux }}
           args: >-
             --release
+            --locked
             --out dist
             -i ${{ matrix.platform.linux && format('python{0}', matrix.python-version) || 'python' }}
 

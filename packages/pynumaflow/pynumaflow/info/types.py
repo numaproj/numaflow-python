@@ -87,7 +87,7 @@ MINIMUM_NUMAFLOW_VERSION = {
     ContainerType.Sessionreducer: "1.4.0-z",
     ContainerType.Sideinput: "1.4.0-z",
     ContainerType.Fbsinker: "1.4.0-z",
-    ContainerType.Accumulator: "1.8.0-z",
+    ContainerType.Accumulator: "1.5.0-z",
 }
 
 

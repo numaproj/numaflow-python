@@ -54,6 +54,7 @@ MAX_MESSAGE_SIZE = 1024 * 1024 * 64
 STREAM_EOF = "EOF"
 DELIMITER = ":"
 DROP = "U+005C__DROP__"
+NACK = "U+005C__NACK__"
 
 _PROCESS_COUNT = os.cpu_count()
 # Cap max value to 16

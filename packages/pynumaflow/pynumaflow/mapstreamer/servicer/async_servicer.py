@@ -7,6 +7,7 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapstreamer import Datum
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable, MapStreamError
+from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.proto.mapper import map_pb2_grpc, map_pb2
 from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
@@ -158,7 +159,12 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
             # same time in the next vertex instead of in a true streaming fashion.
             # The asyncio.sleep(0) will yield the control back to event loop avoiding starvation.
             async for msg in self.__map_stream_handler(list(req.request.keys), datum):
-                res = map_pb2.MapResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags)
+                res = map_pb2.MapResponse.Result(
+                    keys=msg.keys,
+                    value=msg.value,
+                    tags=msg.tags,
+                    nack_options=_nack_options_to_proto(msg.nack_options),
+                )
                 await result_queue.put(map_pb2.MapResponse(results=[res], id=req.id))
                 await asyncio.sleep(0)
 

@@ -7,6 +7,7 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapper._dtypes import MapAsyncCallable, Datum, MapError, Message, Messages
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
+from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
@@ -143,6 +144,7 @@ class AsyncMapServicer(map_pb2_grpc.MapServicer):
                         value=msg.value,
                         tags=msg.tags,
                         metadata=msg.user_metadata._to_proto(),
+                        nack_options=_nack_options_to_proto(msg.nack_options),
                     )
                 )
             await result_queue.put(map_pb2.MapResponse(results=datums, id=req.id))

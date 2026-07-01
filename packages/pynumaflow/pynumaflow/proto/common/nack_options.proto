@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package common;
+
+// NackOptions carries per-message redelivery options for a negative acknowledgement (nack).
+message NackOptions {
+  // reason is a human-readable reason for nacking the message.
+  optional string reason = 1;
+  // max_deliveries is the maximum number of redelivery attempts.
+  optional uint32 max_deliveries = 2;
+  // delay is the redelivery delay in milliseconds.
+  optional uint64 delay = 3;
+}

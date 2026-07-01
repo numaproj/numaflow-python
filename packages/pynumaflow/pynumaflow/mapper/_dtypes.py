@@ -6,7 +6,8 @@ from typing import TypeAlias, TypeVar
 from collections.abc import Callable
 from warnings import warn
 
-from pynumaflow._constants import DROP
+from pynumaflow._constants import DROP, NACK
+from pynumaflow._nack import NackOptions
 from pynumaflow._metadata import UserMetadata, SystemMetadata
 from pynumaflow._validate import _validate_message_fields
 
@@ -30,6 +31,7 @@ class Message:
     _keys: list[str]
     _tags: list[str]
     _user_metadata: UserMetadata
+    _nack_options: NackOptions | None
 
     def __init__(
         self,
@@ -46,11 +48,22 @@ class Message:
         self._tags = tags or []
         self._value = value or b""
         self._user_metadata = user_metadata or UserMetadata()
+        self._nack_options = None
 
     # returns the Message Object which will be dropped
     @classmethod
     def to_drop(cls: type[M]) -> M:
         return cls(b"", None, [DROP])
+
+    @classmethod
+    def to_nack(cls: type[M], opts: NackOptions | None = None) -> M:
+        m = cls(b"", None, [NACK])
+        m._nack_options = opts
+        return m
+
+    @property
+    def nack_options(self) -> NackOptions | None:
+        return self._nack_options
 
     @property
     def value(self) -> bytes:

@@ -6,6 +6,7 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
+from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.proto.sourcetransformer import transform_pb2, transform_pb2_grpc
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.shared.server import update_context_err
@@ -154,6 +155,7 @@ class SourceTransformAsyncServicer(transform_pb2_grpc.SourceTransformServicer):
                         tags=msg.tags,
                         event_time=event_time_timestamp,
                         metadata=msg.user_metadata._to_proto(),
+                        nack_options=_nack_options_to_proto(msg.nack_options),
                     )
                 )
             await result_queue.put(

@@ -12,6 +12,7 @@ from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.sourcer._dtypes import Message
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
+from pynumaflow._nack import _nack_options_from_proto
 
 
 def _create_read_handshake_response():
@@ -219,7 +220,12 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
             offsets = [
                 Offset(offset.offset, offset.partition_id) for offset in request.request.offsets
             ]
-            await self.__source_nack_handler(NackRequest(offsets=offsets))
+            opts = (
+                _nack_options_from_proto(request.request.nack_options)
+                if request.request.HasField("nack_options")
+                else None
+            )
+            await self.__source_nack_handler(NackRequest(offsets=offsets, nack_options=opts))
         except asyncio.CancelledError:
             # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
             _LOGGER.info("Server shutting down, cancelling RPC.")

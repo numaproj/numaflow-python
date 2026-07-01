@@ -49,18 +49,19 @@ def test_responses():
 
     assert (
         "[Response(id='2', success=True, err=None, fallback=False, "
-        "on_success=False, on_success_msg=None), "
+        "on_success=False, on_success_msg=None, nack=False, nack_options=None), "
         "Response(id='3', success=False, err='RuntimeError encountered!', "
-        "fallback=False, on_success=False, on_success_msg=None), "
+        "fallback=False, on_success=False, on_success_msg=None, nack=False, "
+        "nack_options=None), "
         "Response(id='5', success=False, err=None, fallback=True, "
-        "on_success=False, on_success_msg=None), "
+        "on_success=False, on_success_msg=None, nack=False, nack_options=None), "
         "Response(id='4', success=True, err=None, fallback=False, "
-        "on_success=False, on_success_msg=None), "
+        "on_success=False, on_success_msg=None, nack=False, nack_options=None), "
         "Response(id='6', success=False, err=None, fallback=False, "
         "on_success=True, on_success_msg=Message(_keys=['key'], _value=b'value', "
-        "_user_metadata=UserMetadata(_data={}))), "
+        "_user_metadata=UserMetadata(_data={})), nack=False, nack_options=None), "
         "Response(id='7', success=False, err=None, fallback=False, "
-        "on_success=True, on_success_msg=None)]" == repr(resps)
+        "on_success=True, on_success_msg=None, nack=False, nack_options=None)]" == repr(resps)
     )
 
 

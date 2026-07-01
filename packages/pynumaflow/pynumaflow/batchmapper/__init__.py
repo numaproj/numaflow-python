@@ -8,6 +8,7 @@ from pynumaflow.batchmapper._dtypes import (
     BatchResponse,
 )
 from pynumaflow.batchmapper.async_server import BatchMapAsyncServer
+from pynumaflow._nack import NackOptions
 
 __all__ = [
     "Message",
@@ -17,4 +18,5 @@ __all__ = [
     "BatchMapper",
     "BatchResponses",
     "BatchResponse",
+    "NackOptions",
 ]

@@ -9,6 +9,7 @@ from pynumaflow._metadata import _user_and_system_metadata_from_proto
 
 from pynumaflow._constants import NUM_THREADS_DEFAULT, STREAM_EOF, _LOGGER, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapper._dtypes import MapSyncCallable, Datum, MapError
+from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.proto.mapper import map_pb2, map_pb2_grpc
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.types import NumaflowServicerContext
@@ -155,6 +156,7 @@ class SyncMapServicer(map_pb2_grpc.MapServicer):
                         value=resp.value,
                         tags=resp.tags,
                         metadata=resp.user_metadata._to_proto(),
+                        nack_options=_nack_options_to_proto(resp.nack_options),
                     )
                 )
             result_queue.put(map_pb2.MapResponse(results=results, id=request.id))

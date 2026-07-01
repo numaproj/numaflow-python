@@ -6,6 +6,7 @@ import grpc
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
+from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.shared.server import update_context_err
 from pynumaflow.shared.synciter import SyncIterator
 from pynumaflow.sourcetransformer import Datum
@@ -174,6 +175,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                         tags=resp.tags,
                         event_time=event_time_timestamp,
                         metadata=resp.user_metadata._to_proto(),
+                        nack_options=_nack_options_to_proto(msg.nack_options),
                     )
                 )
             result_queue.put(

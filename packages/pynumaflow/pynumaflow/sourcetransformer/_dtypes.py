@@ -6,7 +6,8 @@ from typing import TypeAlias, TypeVar
 from collections.abc import Awaitable, Callable
 from warnings import warn
 
-from pynumaflow._constants import DROP
+from pynumaflow._constants import DROP, NACK
+from pynumaflow._nack import NackOptions
 from pynumaflow._metadata import UserMetadata, SystemMetadata
 from pynumaflow._validate import _validate_message_fields
 
@@ -32,6 +33,7 @@ class Message:
     _value: bytes
     _event_time: datetime
     _user_metadata: UserMetadata
+    _nack_options: NackOptions | None
 
     def __init__(
         self,
@@ -52,10 +54,25 @@ class Message:
         self._event_time = event_time or datetime(1, 1, 1, 0, 0)
         self._value = value or b""
         self._user_metadata = user_metadata or UserMetadata()
+        self._nack_options = None
 
     @classmethod
     def to_drop(cls: type[M], event_time: datetime) -> M:
         return cls(b"", event_time, None, [DROP])
+
+    @classmethod
+    def to_nack(
+            cls: type[M],
+            event_time: datetime,
+            opts: NackOptions | None = None,
+    ) -> M:
+        m = cls(b"", event_time, None, [NACK])
+        m._nack_options = opts
+        return m
+
+    @property
+    def nack_options(self) -> NackOptions | None:
+        return self._nack_options
 
     @property
     def event_time(self) -> datetime:

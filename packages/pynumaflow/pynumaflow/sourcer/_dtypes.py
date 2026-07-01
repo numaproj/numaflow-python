@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TypeAlias
 
 from pynumaflow._metadata import UserMetadata
+from pynumaflow._nack import NackOptions
 from pynumaflow._validate import _validate_message_fields
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
@@ -200,16 +201,25 @@ class NackRequest:
     ```
     """
 
-    __slots__ = ("_offsets",)
+    __slots__ = ("_offsets", "_nack_options")
     _offsets: list[Offset]
+    _nack_options: NackOptions | None
 
-    def __init__(self, offsets: list[Offset]):
+    def __init__(
+            self,
+            offsets: list[Offset],
+            nack_options: NackOptions | None = None,
+    ):
         self._offsets = offsets
+        self._nack_options = nack_options
 
     @property
     def offsets(self) -> list[Offset]:
-        """Returns the offsets to be negatively acknowledged."""
         return self._offsets
+
+    @property
+    def nack_options(self) -> NackOptions | None:
+        return self._nack_options
 
 
 @dataclass(init=False, slots=True)

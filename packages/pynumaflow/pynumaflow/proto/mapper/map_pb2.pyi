@@ -3,6 +3,7 @@ import datetime
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow.proto.common import metadata_pb2 as _metadata_pb2
+from pynumaflow.proto.common import nack_options_pb2 as _nack_options_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -60,16 +61,18 @@ class TransmissionStatus(_message.Message):
 class MapResponse(_message.Message):
     __slots__ = ("results", "id", "handshake", "status")
     class Result(_message.Message):
-        __slots__ = ("keys", "value", "tags", "metadata")
+        __slots__ = ("keys", "value", "tags", "metadata", "nack_options")
         KEYS_FIELD_NUMBER: _ClassVar[int]
         VALUE_FIELD_NUMBER: _ClassVar[int]
         TAGS_FIELD_NUMBER: _ClassVar[int]
         METADATA_FIELD_NUMBER: _ClassVar[int]
+        NACK_OPTIONS_FIELD_NUMBER: _ClassVar[int]
         keys: _containers.RepeatedScalarFieldContainer[str]
         value: bytes
         tags: _containers.RepeatedScalarFieldContainer[str]
         metadata: _metadata_pb2.Metadata
-        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ...) -> None: ...
+        nack_options: _nack_options_pb2.NackOptions
+        def __init__(self, keys: _Optional[_Iterable[str]] = ..., value: _Optional[bytes] = ..., tags: _Optional[_Iterable[str]] = ..., metadata: _Optional[_Union[_metadata_pb2.Metadata, _Mapping]] = ..., nack_options: _Optional[_Union[_nack_options_pb2.NackOptions, _Mapping]] = ...) -> None: ...
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     ID_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]

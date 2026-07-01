@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 import "pynumaflow/proto/common/metadata.proto";
+import "pynumaflow/proto/common/nack_options.proto";
 
 package sourcetransformer.v1;
 
@@ -54,6 +55,7 @@ message SourceTransformResponse {
     repeated string tags = 4;
     // metadata of the message
     common.Metadata metadata = 5;
+    optional common.NackOptions nack_options = 6;
   }
   repeated Result results = 1;
   // This ID is used to refer the responses to the request it corresponds to.

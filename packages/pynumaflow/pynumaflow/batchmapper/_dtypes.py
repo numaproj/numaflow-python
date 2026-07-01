@@ -5,7 +5,8 @@ from datetime import datetime
 from typing import TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 
-from pynumaflow._constants import DROP
+from pynumaflow._constants import DROP, NACK
+from pynumaflow._nack import NackOptions
 from pynumaflow._validate import _validate_message_fields
 
 M = TypeVar("M", bound="Message")
@@ -27,6 +28,7 @@ class Message:
     _value: bytes
     _keys: list[str]
     _tags: list[str]
+    _nack_options: NackOptions | None
 
     def __init__(self, value: bytes, keys: list[str] | None = None, tags: list[str] | None = None):
         """
@@ -36,11 +38,22 @@ class Message:
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""
+        self._nack_options = None
 
     # returns the Message Object which will be dropped
     @classmethod
     def to_drop(cls: type[M]) -> M:
         return cls(b"", None, [DROP])
+
+    @classmethod
+    def to_nack(cls: type[M], opts: NackOptions | None = None) -> M:
+        m = cls(b"", None, [NACK])
+        m._nack_options = opts
+        return m
+
+    @property
+    def nack_options(self) -> NackOptions | None:
+        return self._nack_options
 
     @property
     def value(self) -> bytes:

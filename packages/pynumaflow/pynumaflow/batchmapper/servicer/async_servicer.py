@@ -10,6 +10,7 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
+from pynumaflow._nack import _nack_options_to_proto
 
 
 class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
@@ -80,7 +81,7 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
                         for msg in batch_response.messages:
                             single_req_resp.append(
                                 map_pb2.MapResponse.Result(
-                                    keys=msg.keys, value=msg.value, tags=msg.tags
+                                    keys=msg.keys, value=msg.value, tags=msg.tags, nack_options=_nack_options_to_proto(msg.nack_options)
                                 )
                             )
                         # send the response for a given ID back to the stream

@@ -3,6 +3,7 @@ import datetime
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.proto.common import metadata_pb2 as _metadata_pb2
+from pynumaflow.proto.common import nack_options_pb2 as _nack_options_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -117,10 +118,12 @@ class AckResponse(_message.Message):
 class NackRequest(_message.Message):
     __slots__ = ("request",)
     class Request(_message.Message):
-        __slots__ = ("offsets",)
+        __slots__ = ("offsets", "nack_options")
         OFFSETS_FIELD_NUMBER: _ClassVar[int]
+        NACK_OPTIONS_FIELD_NUMBER: _ClassVar[int]
         offsets: _containers.RepeatedCompositeFieldContainer[Offset]
-        def __init__(self, offsets: _Optional[_Iterable[_Union[Offset, _Mapping]]] = ...) -> None: ...
+        nack_options: _nack_options_pb2.NackOptions
+        def __init__(self, offsets: _Optional[_Iterable[_Union[Offset, _Mapping]]] = ..., nack_options: _Optional[_Union[_nack_options_pb2.NackOptions, _Mapping]] = ...) -> None: ...
     REQUEST_FIELD_NUMBER: _ClassVar[int]
     request: NackRequest.Request
     def __init__(self, request: _Optional[_Union[NackRequest.Request, _Mapping]] = ...) -> None: ...

@@ -9,6 +9,7 @@ from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiPr
 from pynumaflow.sourcetransformer.server import SourceTransformServer
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
 from pynumaflow._metadata import UserMetadata, SystemMetadata
+from pynumaflow._nack import NackOptions
 
 __all__ = [
     "Message",
@@ -21,4 +22,5 @@ __all__ = [
     "SourceTransformAsyncServer",
     "UserMetadata",
     "SystemMetadata",
+    "NackOptions",
 ]

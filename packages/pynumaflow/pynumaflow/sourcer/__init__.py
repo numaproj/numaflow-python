@@ -12,6 +12,7 @@ from pynumaflow.sourcer._dtypes import (
 )
 from pynumaflow._metadata import UserMetadata
 from pynumaflow.sourcer.async_server import SourceAsyncServer
+from pynumaflow._nack import NackOptions
 
 __all__ = [
     "Message",
@@ -26,4 +27,5 @@ __all__ = [
     "SourceAsyncServer",
     "SourceCallable",
     "UserMetadata",
+    "NackOptions",
 ]

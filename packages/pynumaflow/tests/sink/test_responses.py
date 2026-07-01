@@ -61,8 +61,7 @@ def test_responses():
         "on_success=True, on_success_msg=Message(_keys=['key'], _value=b'value', "
         "_user_metadata=UserMetadata(_data={})), nack=False, nack_options=None), "
         "Response(id='7', success=False, err=None, fallback=False, "
-        "on_success=True, on_success_msg=None, nack=False, nack_options=None)]"
-        == repr(resps)
+        "on_success=True, on_success_msg=None, nack=False, nack_options=None)]" == repr(resps)
     )
 
 

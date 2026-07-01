@@ -81,7 +81,10 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
                         for msg in batch_response.messages:
                             single_req_resp.append(
                                 map_pb2.MapResponse.Result(
-                                    keys=msg.keys, value=msg.value, tags=msg.tags, nack_options=_nack_options_to_proto(msg.nack_options)
+                                    keys=msg.keys,
+                                    value=msg.value,
+                                    tags=msg.tags,
+                                    nack_options=_nack_options_to_proto(msg.nack_options),
                                 )
                             )
                         # send the response for a given ID back to the stream

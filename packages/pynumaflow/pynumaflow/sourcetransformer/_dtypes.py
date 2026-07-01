@@ -62,9 +62,9 @@ class Message:
 
     @classmethod
     def to_nack(
-            cls: type[M],
-            event_time: datetime,
-            opts: NackOptions | None = None,
+        cls: type[M],
+        event_time: datetime,
+        opts: NackOptions | None = None,
     ) -> M:
         m = cls(b"", event_time, None, [NACK])
         m._nack_options = opts

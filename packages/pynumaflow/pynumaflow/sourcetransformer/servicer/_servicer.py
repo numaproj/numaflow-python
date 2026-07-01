@@ -175,7 +175,7 @@ class SourceTransformServicer(transform_pb2_grpc.SourceTransformServicer):
                         tags=resp.tags,
                         event_time=event_time_timestamp,
                         metadata=resp.user_metadata._to_proto(),
-                        nack_options=_nack_options_to_proto(msg.nack_options),
+                        nack_options=_nack_options_to_proto(resp.nack_options),
                     )
                 )
             result_queue.put(

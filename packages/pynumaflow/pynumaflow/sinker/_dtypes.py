@@ -87,14 +87,29 @@ class Response:
     nack: bool
     nack_options: NackOptions | None
 
-    __slots__ = ("id", "success", "err", "fallback", "on_success", "on_success_msg", "nack", "nack_options")
+    __slots__ = (
+        "id",
+        "success",
+        "err",
+        "fallback",
+        "on_success",
+        "on_success_msg",
+        "nack",
+        "nack_options",
+    )
 
     # as_success creates a successful Response with the given id.
     # The Success field is set to true.
     @classmethod
     def as_success(cls, id_: str) -> "Response":
         return Response(
-            id=id_, success=True, err=None, fallback=False, on_success=False, on_success_msg=None, nack=False,
+            id=id_,
+            success=True,
+            err=None,
+            fallback=False,
+            on_success=False,
+            on_success_msg=None,
+            nack=False,
             nack_options=None,
         )
 
@@ -118,7 +133,13 @@ class Response:
     @classmethod
     def as_fallback(cls, id_: str) -> "Response":
         return Response(
-            id=id_, fallback=True, err=None, success=False, on_success=False, on_success_msg=None, nack=False,
+            id=id_,
+            fallback=True,
+            err=None,
+            success=False,
+            on_success=False,
+            on_success_msg=None,
+            nack=False,
             nack_options=None,
         )
 

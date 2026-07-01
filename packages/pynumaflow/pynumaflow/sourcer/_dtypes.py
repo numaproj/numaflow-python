@@ -206,9 +206,9 @@ class NackRequest:
     _nack_options: NackOptions | None
 
     def __init__(
-            self,
-            offsets: list[Offset],
-            nack_options: NackOptions | None = None,
+        self,
+        offsets: list[Offset],
+        nack_options: NackOptions | None = None,
     ):
         self._offsets = offsets
         self._nack_options = nack_options

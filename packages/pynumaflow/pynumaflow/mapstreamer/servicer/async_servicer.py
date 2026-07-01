@@ -159,7 +159,12 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
             # same time in the next vertex instead of in a true streaming fashion.
             # The asyncio.sleep(0) will yield the control back to event loop avoiding starvation.
             async for msg in self.__map_stream_handler(list(req.request.keys), datum):
-                res = map_pb2.MapResponse.Result(keys=msg.keys, value=msg.value, tags=msg.tags, nack_options=_nack_options_to_proto(msg.nack_options))
+                res = map_pb2.MapResponse.Result(
+                    keys=msg.keys,
+                    value=msg.value,
+                    tags=msg.tags,
+                    nack_options=_nack_options_to_proto(msg.nack_options),
+                )
                 await result_queue.put(map_pb2.MapResponse(results=[res], id=req.id))
                 await asyncio.sleep(0)
 

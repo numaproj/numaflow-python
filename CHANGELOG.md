@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.14.0 (2026-07-04)
+
+ * [030ded1](https://github.com/numaproj/numaflow-python/commit/030ded11faf86b8226a7ae5526567edf4c103a00) fix: use the closed window in the eof response (#360)
+
+### Contributors
+
+ * Vaibhav Kant Tiwari
+
 ## v0.13.0 (2026-04-16)
 
  * [e3d3afd](https://github.com/numaproj/numaflow-python/commit/e3d3afde3ca14df936771b5a72f87f9072742a8d) Release 0.13.0 (#355)

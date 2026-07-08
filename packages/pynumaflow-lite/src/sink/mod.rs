@@ -517,9 +517,7 @@ impl SinkAsyncServer {
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::sink::server::start(py_func, sock_file, info_file, rx)
-                .await
-                .expect("server failed to start");
+            crate::sink::server::start(py_func, sock_file, info_file, rx).await?;
             Ok(())
         })
     }

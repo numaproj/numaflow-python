@@ -169,6 +169,19 @@ jobs:
           rustup toolchain install stable --profile minimal
           rustup default stable
 
+      - name: Verify tag matches package version
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/pynumaflow-lite-v')
+        run: |
+          set -euo pipefail
+
+          tag_version="${GITHUB_REF_NAME#pynumaflow-lite-v}"
+          package_version="$(cargo metadata --locked --no-deps --format-version 1 | python -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
+
+          if [ "${package_version}" != "${tag_version}" ]; then
+            echo "Tag version ${tag_version} does not match Cargo.toml version ${package_version}"
+            exit 1
+          fi
+
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:

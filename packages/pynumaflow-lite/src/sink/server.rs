@@ -61,7 +61,10 @@ pub(super) async fn start(
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) -> Result<(), pyo3::PyErr> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking({
+        println!("Starting Sink UDF. socket={}, server_info={}", &sock_file, &info_file);
+        move || crate::pyrs::run_asyncio(tx)
+    });
     let event_loop = rx.await.unwrap();
 
     let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);

@@ -12,6 +12,12 @@ on:
     paths:
       - "packages/pynumaflow-lite/**"
       - ".github/workflows/pynumaflow-lite.yml"
+  workflow_dispatch:
+    inputs:
+      publish-testpypi:
+        description: "Publish pynumaflow-lite wheels to TestPyPI"
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -183,6 +189,50 @@ jobs:
             exit 1
           fi
 
+      - name: Set manual TestPyPI version
+        if: github.event_name == 'workflow_dispatch' && inputs['publish-testpypi']
+        run: |
+          set -euo pipefail
+
+          base_version="$(cargo metadata --locked --no-deps --format-version 1 | python -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
+          if [[ "${base_version}" == *-* ]]; then
+            manual_version="${base_version}.dev.${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          else
+            manual_version="${base_version}-dev.${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          fi
+          export MANUAL_VERSION="${manual_version}"
+
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          version = os.environ["MANUAL_VERSION"]
+
+          cargo_toml = Path("Cargo.toml")
+          cargo_toml.write_text(
+              re.sub(
+                  r'(?m)^version = "[^"]+"',
+                  f'version = "{version}"',
+                  cargo_toml.read_text(),
+                  count=1,
+              )
+          )
+
+          cargo_lock = Path("Cargo.lock")
+          cargo_lock.write_text(
+              re.sub(
+                  r'(?ms)(\[\[package\]\]\nname = "pynumaflow-lite"\nversion = ")[^"]+(")',
+                  lambda match: f"{match.group(1)}{version}{match.group(2)}",
+                  cargo_lock.read_text(),
+                  count=1,
+              )
+          )
+          PY
+
+          cargo metadata --locked --no-deps --format-version 1 >/dev/null
+          echo "Using manual TestPyPI version ${manual_version}"
+
       - name: Build wheel
         uses: PyO3/maturin-action@v1
         with:
@@ -208,7 +258,13 @@ jobs:
     name: Publish to TestPyPI
     needs: build-wheels
     runs-on: ubuntu-24.04
-    if: github.repository == 'numaproj/numaflow-python' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/pynumaflow-lite-v')
+    if: >
+      github.repository == 'numaproj/numaflow-python' &&
+      github.run_attempt == 1 &&
+      (
+        (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/pynumaflow-lite-v')) ||
+        (github.event_name == 'workflow_dispatch' && inputs['publish-testpypi'])
+      )
 
     steps:
       - name: Install uv

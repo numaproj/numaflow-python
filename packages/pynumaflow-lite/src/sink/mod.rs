@@ -24,6 +24,20 @@ fn bytes_literal(value: &[u8]) -> String {
     format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
 }
 
+fn metadata_literal(metadata: &HashMap<String, HashMap<String, Vec<u8>>>) -> String {
+    let groups: Vec<String> = metadata
+        .iter()
+        .map(|(group, kv)| {
+            let entries: Vec<String> = kv
+                .iter()
+                .map(|(key, value)| format!("{:?}: {}", key, bytes_literal(value)))
+                .collect();
+            format!("{:?}: {{{}}}", group, entries.join(", "))
+        })
+        .collect();
+    format!("{{{}}}", groups.join(", "))
+}
+
 fn system_metadata_to_hash_map(
     value: sink::SystemMetadata,
 ) -> HashMap<String, HashMap<String, Vec<u8>>> {
@@ -85,10 +99,14 @@ impl Message {
 
     fn __repr__(&self) -> String {
         format!(
-            "Message(value={}, keys={:?}, user_metadata={:?})",
+            "Message(value={}, keys={}, user_metadata={})",
             bytes_literal(&self.value),
-            self.keys,
+            self.keys
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
             self.user_metadata
+                .as_ref()
+                .map_or_else(|| "None".to_string(), metadata_literal)
         )
     }
 }
@@ -203,8 +221,11 @@ impl Response {
                 bytes_literal(self.serve_response.as_deref().unwrap_or_default())
             ),
             ResponseType::OnSuccess => format!(
-                "Response.on_success(id={:?}, message={:?})",
-                self.id, self.on_success_msg
+                "Response.on_success(id={:?}, message={})",
+                self.id,
+                self.on_success_msg
+                    .as_ref()
+                    .map_or_else(|| "None".to_string(), |m| m.__repr__())
             ),
         }
     }
@@ -308,30 +329,20 @@ impl Datum {
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={}, watermark={}, event_time={}, id={:?}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
+            "Datum(keys={:?}, value={}, watermark={}, event_time={}, id={:?}, headers={:?}, user_metadata={}, system_metadata={})",
             self.keys,
             bytes_literal(&self.value),
             self.watermark,
             self.event_time,
             self.id,
             self.headers,
-            self.user_metadata,
-            self.system_metadata
+            metadata_literal(&self.user_metadata),
+            metadata_literal(&self.system_metadata)
         )
     }
 
     fn __str__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={}, watermark={}, event_time={}, id={:?}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
-            self.keys,
-            bytes_literal(&self.value),
-            self.watermark,
-            self.event_time,
-            self.id,
-            self.headers,
-            self.user_metadata,
-            self.system_metadata
-        )
+        self.__repr__()
     }
 }
 

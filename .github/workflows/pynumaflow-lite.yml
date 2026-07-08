@@ -59,7 +59,7 @@ jobs:
           rustup default stable
 
       - name: Install dependencies
-        run: uv sync --group dev
+        run: uv sync --locked --group dev
 
       - name: Check Rust formatting
         run: cargo fmt --all --check
@@ -112,7 +112,7 @@ jobs:
             echo "::group::Python ${python_version}"
             uv python install "${python_version}"
             export UV_PYTHON="${python_version}"
-            uv sync --group dev --python "${python_version}"
+            uv sync --locked --group dev --python "${python_version}"
             uv run --python "${python_version}" maturin develop --locked
 
             uv run --python "${python_version}" pytest -v

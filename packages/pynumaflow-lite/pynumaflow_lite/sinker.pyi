@@ -2,113 +2,103 @@ from __future__ import annotations
 
 import datetime as _dt
 from collections.abc import AsyncIterator, Awaitable, Callable
-
-class SystemMetadata:
-    """System-generated metadata groups per message (read-only for sink)."""
-
-    def __init__(self) -> None: ...
-    def groups(self) -> list[str]:
-        """Returns the groups of the system metadata."""
-        ...
-
-    def keys(self, group: str) -> list[str]:
-        """Returns the keys of the system metadata for the given group."""
-        ...
-
-    def value(self, group: str, key: str) -> bytes:
-        """Returns the value of the system metadata for the given group and key."""
-        ...
-
-    def __repr__(self) -> str: ...
-
-class UserMetadata:
-    """User-defined metadata groups per message (read-only for sink)."""
-
-    def __init__(self) -> None: ...
-    def groups(self) -> list[str]:
-        """Returns the groups of the user metadata."""
-        ...
-
-    def keys(self, group: str) -> list[str]:
-        """Returns the keys of the user metadata for the given group."""
-        ...
-
-    def value(self, group: str, key: str) -> bytes:
-        """Returns the value of the user metadata for the given group and key."""
-        ...
-
-    def __repr__(self) -> str: ...
-
-class KeyValueGroup:
-    key_value: dict[str, bytes]
-
-    def __init__(self, key_value: dict[str, bytes] | None = ...) -> None: ...
-    @staticmethod
-    def from_dict(key_value: dict[str, bytes]) -> KeyValueGroup: ...
+from types import TracebackType
 
 class Message:
     keys: list[str] | None
     value: bytes
-    user_metadata: dict[str, KeyValueGroup] | None
+    user_metadata: dict[str, dict[str, bytes]] | None
 
     def __init__(
         self,
         value: bytes,
         keys: list[str] | None = ...,
-        user_metadata: dict[str, KeyValueGroup] | None = ...,
+        user_metadata: dict[str, dict[str, bytes]] | None = ...,
     ) -> None: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
 
 class Response:
     id: str
+    error: str | None
 
     @staticmethod
-    def as_success(id: str) -> Response: ...
+    def success(id: str) -> Response: ...
     @staticmethod
-    def as_failure(id: str, err_msg: str) -> Response: ...
+    def failure(id: str, error: str) -> Response: ...
     @staticmethod
-    def as_fallback(id: str) -> Response: ...
+    def fallback(id: str) -> Response: ...
     @staticmethod
-    def as_serve(id: str, payload: bytes) -> Response: ...
+    def serve(id: str, payload: bytes) -> Response: ...
     @staticmethod
-    def as_on_success(id: str, message: Message | None = ...) -> Response: ...
-
-class Responses:
-    def __init__(self) -> None: ...
-    def append(self, response: Response) -> None: ...
+    def on_success(id: str, message: Message | None = ...) -> Response: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
 
 class Datum:
     keys: list[str]
     value: bytes
     watermark: _dt.datetime
-    eventtime: _dt.datetime
+    event_time: _dt.datetime
     id: str
     headers: dict[str, str]
-    user_metadata: UserMetadata
-    system_metadata: SystemMetadata
+    user_metadata: dict[str, dict[str, bytes]]
+    system_metadata: dict[str, dict[str, bytes]]
 
+    def __init__(
+        self,
+        *,
+        keys: list[str] = ...,
+        value: bytes = ...,
+        id: str = ...,
+        event_time: _dt.datetime | None = ...,
+        watermark: _dt.datetime | None = ...,
+        headers: dict[str, str] = ...,
+        user_metadata: dict[str, dict[str, bytes]] = ...,
+        system_metadata: dict[str, dict[str, bytes]] = ...,
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
+
+_SinkHandler = Callable[[AsyncIterator[Datum]], Awaitable[list[Response]]]
+
+class _SinkAsyncServer:
+    def __init__(
+        self,
+        sock_file: str | None = ...,
+        server_info_file: str | None = ...,
+    ) -> None: ...
+    def start(self, handler: _SinkHandler) -> Awaitable[None]: ...
+    def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
+    def stop(self) -> None: ...
+
+class Sinker:
+    async def handler(self, datums: AsyncIterator[Datum]) -> list[Response]: ...
 
 class SinkAsyncServer:
     def __init__(
         self,
+        handler: _SinkHandler | Sinker,
+        *,
         sock_file: str | None = ...,
-        info_file: str | None = ...,
+        server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, py_func: Callable[[AsyncIterator[Datum]], Awaitable[Responses]]) -> Awaitable[None]: ...
+    def run(self) -> None: ...
+    async def serve(self) -> None: ...
     def stop(self) -> None: ...
-
-class Sinker:
-    async def handler(self, datums: AsyncIterator[Datum]) -> Responses: ...
+    async def wait_ready(self, timeout: float = ...) -> None: ...
+    async def __aenter__(self) -> SinkAsyncServer: ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None: ...
 
 __all__ = [
     "Datum",
-    "KeyValueGroup",
     "Message",
     "Response",
-    "Responses",
     "SinkAsyncServer",
     "Sinker",
-    "SystemMetadata",
-    "UserMetadata",
 ]

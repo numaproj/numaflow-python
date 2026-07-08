@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::time::Duration;
 
+use numaflow::proto::sink::sink_client::SinkClient;
 use numaflow::sink;
 
 use chrono::{DateTime, Utc};
@@ -8,178 +11,58 @@ use chrono::{DateTime, Utc};
 /// and can pass in the Python coroutine.
 pub mod server;
 
+use tokio::net::UnixStream;
 use tokio::sync::mpsc;
+use tokio::time::Instant;
+use tonic::transport::Uri;
+use tower::service_fn;
 
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
-/// SystemMetadata wraps system-generated metadata groups per message.
-/// Since sink is the last vertex in the pipeline, only GET methods are available.
-#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct SystemMetadata {
-    data: HashMap<String, HashMap<String, Vec<u8>>>,
+fn bytes_literal(value: &[u8]) -> String {
+    format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
 }
 
-#[pymethods]
-impl SystemMetadata {
-    #[new]
-    #[pyo3(signature = () -> "SystemMetadata")]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns the groups of the system metadata.
-    /// If there are no groups, it returns an empty list.
-    #[pyo3(signature = () -> "list[str]")]
-    fn groups(&self) -> Vec<String> {
-        self.data.keys().cloned().collect()
-    }
-
-    /// Returns the keys of the system metadata for the given group.
-    /// If there are no keys or the group is not present, it returns an empty list.
-    #[pyo3(signature = (group: "str") -> "list[str]")]
-    fn keys(&self, group: &str) -> Vec<String> {
-        self.data
-            .get(group)
-            .map(|kv| kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Returns the value of the system metadata for the given group and key.
-    /// If there is no value or the group or key is not present, it returns an empty bytes.
-    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
-    fn value(&self, group: &str, key: &str) -> Vec<u8> {
-        self.data
-            .get(group)
-            .and_then(|kv| kv.get(key))
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    fn __repr__(&self) -> String {
-        format!("SystemMetadata(groups={:?})", self.groups())
-    }
-}
-
-impl From<sink::SystemMetadata> for SystemMetadata {
-    fn from(value: sink::SystemMetadata) -> Self {
-        let mut data = HashMap::new();
-        for group in value.groups() {
-            let mut kv = HashMap::new();
-            for key in value.keys(&group) {
-                kv.insert(key.clone(), value.value(&group, &key));
-            }
-            data.insert(group, kv);
+fn system_metadata_to_hash_map(
+    value: sink::SystemMetadata,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
+    let mut data = HashMap::new();
+    for group in value.groups() {
+        let mut kv = HashMap::new();
+        for key in value.keys(&group) {
+            kv.insert(key.clone(), value.value(&group, &key));
         }
-        Self { data }
+        data.insert(group, kv);
     }
+    data
 }
 
-/// UserMetadata wraps user-defined metadata groups per message.
-/// Since sink is the last vertex in the pipeline, only GET methods are available.
-#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct UserMetadata {
-    data: HashMap<String, HashMap<String, Vec<u8>>>,
-}
-
-#[pymethods]
-impl UserMetadata {
-    #[new]
-    #[pyo3(signature = () -> "UserMetadata")]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns the groups of the user metadata.
-    /// If there are no groups, it returns an empty list.
-    #[pyo3(signature = () -> "list[str]")]
-    fn groups(&self) -> Vec<String> {
-        self.data.keys().cloned().collect()
-    }
-
-    /// Returns the keys of the user metadata for the given group.
-    /// If there are no keys or the group is not present, it returns an empty list.
-    #[pyo3(signature = (group: "str") -> "list[str]")]
-    fn keys(&self, group: &str) -> Vec<String> {
-        self.data
-            .get(group)
-            .map(|kv| kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Returns the value of the user metadata for the given group and key.
-    /// If there is no value or the group or key is not present, it returns an empty bytes.
-    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
-    fn value(&self, group: &str, key: &str) -> Vec<u8> {
-        self.data
-            .get(group)
-            .and_then(|kv| kv.get(key))
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    fn __repr__(&self) -> String {
-        format!("UserMetadata(groups={:?})", self.groups())
-    }
-}
-
-impl From<sink::UserMetadata> for UserMetadata {
-    fn from(value: sink::UserMetadata) -> Self {
-        let mut data = HashMap::new();
-        for group in value.groups() {
-            let mut kv = HashMap::new();
-            for key in value.keys(&group) {
-                kv.insert(key.clone(), value.value(&group, &key));
-            }
-            data.insert(group, kv);
+fn user_metadata_to_hash_map(
+    value: sink::UserMetadata,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
+    let mut data = HashMap::new();
+    for group in value.groups() {
+        let mut kv = HashMap::new();
+        for key in value.keys(&group) {
+            kv.insert(key.clone(), value.value(&group, &key));
         }
-        Self { data }
+        data.insert(group, kv);
     }
-}
-
-/// KeyValueGroup represents a group of key-value pairs for user metadata.
-#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct KeyValueGroup {
-    pub key_value: HashMap<String, Vec<u8>>,
-}
-
-#[pymethods]
-impl KeyValueGroup {
-    #[new]
-    #[pyo3(signature = (key_value: "dict[str, bytes] | None"=None) -> "KeyValueGroup")]
-    fn new(key_value: Option<HashMap<String, Vec<u8>>>) -> Self {
-        Self {
-            key_value: key_value.unwrap_or_default(),
-        }
-    }
-
-    /// Create a KeyValueGroup from a dictionary of string to bytes.
-    #[staticmethod]
-    #[pyo3(signature = (key_value: "dict[str, bytes]") -> "KeyValueGroup")]
-    fn from_dict(key_value: HashMap<String, Vec<u8>>) -> Self {
-        Self { key_value }
-    }
-}
-
-impl From<KeyValueGroup> for sink::KeyValueGroup {
-    fn from(value: KeyValueGroup) -> Self {
-        Self {
-            key_value: value.key_value,
-        }
-    }
+    data
 }
 
 /// Message for OnSuccess sink response.
 /// Contains information that needs to be sent to the OnSuccess sink.
-#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
-#[derive(Clone, Default, Debug)]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object, eq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Message {
+    #[pyo3(get)]
     pub keys: Option<Vec<String>>,
+    #[pyo3(get)]
     pub value: Vec<u8>,
-    pub user_metadata: Option<HashMap<String, KeyValueGroup>>,
+    #[pyo3(get)]
+    pub user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
 }
 
 #[pymethods]
@@ -187,17 +70,26 @@ impl Message {
     /// Create a new Message with the given value.
     /// Keys and user_metadata are optional.
     #[new]
-    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, user_metadata: "dict[str, KeyValueGroup] | None"=None) -> "Message")]
+    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, user_metadata: "dict[str, dict[str, bytes]] | None"=None) -> "Message")]
     fn new(
         value: Vec<u8>,
         keys: Option<Vec<String>>,
-        user_metadata: Option<HashMap<String, KeyValueGroup>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
             value,
             keys,
             user_metadata,
         }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Message(value={}, keys={:?}, user_metadata={:?})",
+            bytes_literal(&self.value),
+            self.keys,
+            self.user_metadata
+        )
     }
 }
 
@@ -206,20 +98,24 @@ impl From<Message> for sink::Message {
         Self {
             keys: value.keys,
             value: value.value,
-            user_metadata: value
-                .user_metadata
-                .map(|m| m.into_iter().map(|(k, v)| (k, v.into())).collect()),
+            user_metadata: value.user_metadata.map(|m| {
+                m.into_iter()
+                    .map(|(key, key_value)| (key, sink::KeyValueGroup { key_value }))
+                    .collect()
+            }),
         }
     }
 }
 
 /// Response for a single datum in the sink.
-#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
-#[derive(Clone, Debug)]
+#[pyclass(module = "pynumaflow_lite.sinker", from_py_object, eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Response {
+    #[pyo3(get)]
     pub id: String,
     pub response_type: ResponseType,
-    pub err: Option<String>,
+    #[pyo3(get)]
+    pub error: Option<String>,
     pub serve_response: Option<Vec<u8>>,
     pub on_success_msg: Option<Message>,
 }
@@ -229,11 +125,11 @@ impl Response {
     /// Create a success response.
     #[staticmethod]
     #[pyo3(signature = (id: "str") -> "Response")]
-    fn as_success(id: String) -> Self {
+    fn success(id: String) -> Self {
         Self {
             id,
             response_type: ResponseType::Success,
-            err: None,
+            error: None,
             serve_response: None,
             on_success_msg: None,
         }
@@ -241,12 +137,12 @@ impl Response {
 
     /// Create a failure response with an error message.
     #[staticmethod]
-    #[pyo3(signature = (id: "str", err_msg: "str") -> "Response")]
-    fn as_failure(id: String, err_msg: String) -> Self {
+    #[pyo3(signature = (id: "str", error: "str") -> "Response")]
+    fn failure(id: String, error: String) -> Self {
         Self {
             id,
             response_type: ResponseType::Failure,
-            err: Some(err_msg),
+            error: Some(error),
             serve_response: None,
             on_success_msg: None,
         }
@@ -255,11 +151,11 @@ impl Response {
     /// Create a fallback response to forward to fallback sink.
     #[staticmethod]
     #[pyo3(signature = (id: "str") -> "Response")]
-    fn as_fallback(id: String) -> Self {
+    fn fallback(id: String) -> Self {
         Self {
             id,
             response_type: ResponseType::Fallback,
-            err: None,
+            error: None,
             serve_response: None,
             on_success_msg: None,
         }
@@ -268,11 +164,11 @@ impl Response {
     /// Create a serve response with payload for serving store.
     #[staticmethod]
     #[pyo3(signature = (id: "str", payload: "bytes") -> "Response")]
-    fn as_serve(id: String, payload: Vec<u8>) -> Self {
+    fn serve(id: String, payload: Vec<u8>) -> Self {
         Self {
             id,
             response_type: ResponseType::Serve,
-            err: None,
+            error: None,
             serve_response: Some(payload),
             on_success_msg: None,
         }
@@ -282,19 +178,40 @@ impl Response {
     /// If message is None, the original message will be sent to onSuccess sink.
     #[staticmethod]
     #[pyo3(signature = (id: "str", message: "Message | None"=None) -> "Response")]
-    fn as_on_success(id: String, message: Option<Message>) -> Self {
+    fn on_success(id: String, message: Option<Message>) -> Self {
         Self {
             id,
             response_type: ResponseType::OnSuccess,
-            err: None,
+            error: None,
             serve_response: None,
             on_success_msg: message,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        match self.response_type {
+            ResponseType::Success => format!("Response.success(id={:?})", self.id),
+            ResponseType::Failure => format!(
+                "Response.failure(id={:?}, error={:?})",
+                self.id,
+                self.error.as_deref().unwrap_or_default()
+            ),
+            ResponseType::Fallback => format!("Response.fallback(id={:?})", self.id),
+            ResponseType::Serve => format!(
+                "Response.serve(id={:?}, payload={})",
+                self.id,
+                bytes_literal(self.serve_response.as_deref().unwrap_or_default())
+            ),
+            ResponseType::OnSuccess => format!(
+                "Response.on_success(id={:?}, message={:?})",
+                self.id, self.on_success_msg
+            ),
         }
     }
 }
 
 /// Internal enum to track response type
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ResponseType {
     Success,
     Failure,
@@ -316,40 +233,10 @@ impl From<Response> for sink::Response {
         Self {
             id: value.id,
             response_type,
-            err: value.err,
+            err: value.error,
             serve_response: value.serve_response,
             on_success_msg: value.on_success_msg.map(|m| m.into()),
         }
-    }
-}
-
-/// A collection of Response objects.
-#[pyclass(module = "pynumaflow_lite.sinker", from_py_object)]
-#[derive(Clone, Debug)]
-pub struct Responses {
-    pub(crate) responses: Vec<Response>,
-}
-
-#[pymethods]
-impl Responses {
-    #[new]
-    #[pyo3(signature = () -> "Responses")]
-    fn new() -> Self {
-        Self { responses: vec![] }
-    }
-
-    /// Append a Response to the collection.
-    #[pyo3(signature = (response: "Response"))]
-    fn append(&mut self, response: Response) {
-        self.responses.push(response);
-    }
-
-    fn __repr__(&self) -> String {
-        format!("Responses(count={})", self.responses.len())
-    }
-
-    fn __str__(&self) -> String {
-        format!("Responses(count={})", self.responses.len())
     }
 }
 
@@ -367,7 +254,7 @@ pub struct Datum {
     pub watermark: DateTime<Utc>,
     /// Time of the element as seen at source or aligned after a reduce operation.
     #[pyo3(get)]
-    pub eventtime: DateTime<Utc>,
+    pub event_time: DateTime<Utc>,
     /// ID is the unique id of the message to be sent to the Sink.
     #[pyo3(get)]
     pub id: String,
@@ -376,43 +263,56 @@ pub struct Datum {
     pub headers: HashMap<String, String>,
     /// User metadata for the message.
     #[pyo3(get)]
-    pub user_metadata: UserMetadata,
+    pub user_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
     /// System metadata for the message.
     #[pyo3(get)]
-    pub system_metadata: SystemMetadata,
+    pub system_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
 }
 
+#[pymethods]
 impl Datum {
+    #[new]
+    #[pyo3(signature = (
+        *,
+        keys: "list[str] | None"=None,
+        value: "bytes | None"=None,
+        id: "str | None"=None,
+        event_time: "datetime.datetime | None"=None,
+        watermark: "datetime.datetime | None"=None,
+        headers: "dict[str, str] | None"=None,
+        user_metadata: "dict[str, dict[str, bytes]] | None"=None,
+        system_metadata: "dict[str, dict[str, bytes]] | None"=None,
+    ) -> "Datum")]
     #[allow(clippy::too_many_arguments)]
     fn new(
-        keys: Vec<String>,
-        value: Vec<u8>,
-        watermark: DateTime<Utc>,
-        eventtime: DateTime<Utc>,
-        id: String,
-        headers: HashMap<String, String>,
-        user_metadata: UserMetadata,
-        system_metadata: SystemMetadata,
+        keys: Option<Vec<String>>,
+        value: Option<Vec<u8>>,
+        id: Option<String>,
+        event_time: Option<DateTime<Utc>>,
+        watermark: Option<DateTime<Utc>>,
+        headers: Option<HashMap<String, String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+        system_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
-            keys,
-            value,
-            watermark,
-            eventtime,
-            id,
-            headers,
-            user_metadata,
-            system_metadata,
+            keys: keys.unwrap_or_default(),
+            value: value.unwrap_or_default(),
+            watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            id: id.unwrap_or_default(),
+            headers: headers.unwrap_or_default(),
+            user_metadata: user_metadata.unwrap_or_default(),
+            system_metadata: system_metadata.unwrap_or_default(),
         }
     }
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
+            "Datum(keys={:?}, value={}, watermark={}, event_time={}, id={:?}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
             self.keys,
-            self.value,
+            bytes_literal(&self.value),
             self.watermark,
-            self.eventtime,
+            self.event_time,
             self.id,
             self.headers,
             self.user_metadata,
@@ -422,11 +322,11 @@ impl Datum {
 
     fn __str__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
+            "Datum(keys={:?}, value={}, watermark={}, event_time={}, id={:?}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
             self.keys,
-            String::from_utf8_lossy(&self.value),
+            bytes_literal(&self.value),
             self.watermark,
-            self.eventtime,
+            self.event_time,
             self.id,
             self.headers,
             self.user_metadata,
@@ -437,16 +337,16 @@ impl Datum {
 
 impl From<sink::SinkRequest> for Datum {
     fn from(value: sink::SinkRequest) -> Self {
-        Datum::new(
-            value.keys,
-            value.value,
-            value.watermark,
-            value.event_time,
-            value.id,
-            value.headers,
-            value.user_metadata.into(),
-            value.system_metadata.into(),
-        )
+        Self {
+            keys: value.keys,
+            value: value.value,
+            watermark: value.watermark,
+            event_time: value.event_time,
+            id: value.id,
+            headers: value.headers,
+            user_metadata: user_metadata_to_hash_map(value.user_metadata),
+            system_metadata: system_metadata_to_hash_map(value.system_metadata),
+        }
     }
 }
 
@@ -459,14 +359,6 @@ pub struct PyAsyncDatumStream {
 
 #[pymethods]
 impl PyAsyncDatumStream {
-    #[new]
-    fn new() -> Self {
-        let (_tx, rx) = mpsc::channel::<Datum>(1);
-        Self {
-            inner: crate::pyiterables::AsyncChannelStream::new(rx),
-        }
-    }
-
     fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
         slf
     }
@@ -484,32 +376,80 @@ impl PyAsyncDatumStream {
     }
 }
 
+async fn sink_client(sock_file: String) -> PyResult<SinkClient<tonic::transport::Channel>> {
+    let endpoint = tonic::transport::Endpoint::try_from("http://[::]:50051")
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
+
+    let channel = endpoint
+        .connect_with_connector(service_fn(move |_: Uri| {
+            let sock = PathBuf::from(sock_file.clone());
+            async move {
+                Ok::<_, std::io::Error>(hyper_util::rt::TokioIo::new(
+                    UnixStream::connect(sock).await?,
+                ))
+            }
+        }))
+        .await
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
+
+    Ok(SinkClient::new(channel))
+}
+
+async fn wait_for_ready(sock_file: String, timeout: Duration) -> PyResult<()> {
+    let deadline = Instant::now() + timeout;
+
+    loop {
+        if let Ok(mut client) = sink_client(sock_file.clone()).await
+            && let Ok(response) = client.is_ready(()).await
+            && response.into_inner().ready
+        {
+            return Ok(());
+        }
+
+        let now = Instant::now();
+        if now >= deadline {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyTimeoutError, _>(
+                "timed out waiting for sink server readiness",
+            ));
+        }
+
+        tokio::time::sleep(std::cmp::min(
+            Duration::from_millis(100),
+            deadline.saturating_duration_since(now),
+        ))
+        .await;
+    }
+}
+
 /// Async Sink Server that can be started from Python code
-#[pyclass(module = "pynumaflow_lite.sinker")]
+#[pyclass(name = "_SinkAsyncServer", module = "pynumaflow_lite.sinker")]
 pub struct SinkAsyncServer {
     sock_file: String,
-    info_file: String,
+    server_info_file: String,
     shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 #[pymethods]
 impl SinkAsyncServer {
     #[new]
-    #[pyo3(signature = (sock_file: "str | None"=sink::SOCK_ADDR.to_string(), info_file: "str | None"=sink::SERVER_INFO_FILE.to_string()) -> "SinkAsyncServer"
-    )]
-    fn new(sock_file: String, info_file: String) -> Self {
+    #[pyo3(signature = (
+        sock_file: "str | None"=None,
+        server_info_file: "str | None"=None,
+    ) -> "_SinkAsyncServer")]
+    fn new(sock_file: Option<String>, server_info_file: Option<String>) -> Self {
         Self {
-            sock_file,
-            info_file,
+            sock_file: sock_file.unwrap_or_else(|| sink::SOCK_ADDR.to_string()),
+            server_info_file: server_info_file
+                .unwrap_or_else(|| sink::SERVER_INFO_FILE.to_string()),
             shutdown_tx: Mutex::new(None),
         }
     }
 
     /// Start the server with the given Python function.
-    #[pyo3(signature = (py_func: "callable") -> "None")]
-    pub fn start<'a>(&self, py: Python<'a>, py_func: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
+    #[pyo3(signature = (handler: "callable") -> "None")]
+    pub fn start<'a>(&self, py: Python<'a>, handler: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let info_file = self.info_file.clone();
+        let server_info_file = self.server_info_file.clone();
         let (tx, rx) = tokio::sync::oneshot::channel::<()>();
         {
             let mut guard = self.shutdown_tx.lock().unwrap();
@@ -517,7 +457,25 @@ impl SinkAsyncServer {
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::sink::server::start(py_func, sock_file, info_file, rx).await?;
+            crate::sink::server::start(handler, sock_file, server_info_file, rx).await?;
+            Ok(())
+        })
+    }
+
+    /// Wait until the Numaflow IsReady probe succeeds over the sink UDS.
+    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
+        if !timeout.is_finite() || timeout < 0.0 {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "timeout must be a non-negative finite float",
+            ));
+        }
+
+        let sock_file = self.sock_file.clone();
+        let timeout = Duration::from_secs_f64(timeout);
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            wait_for_ready(sock_file, timeout).await?;
             Ok(())
         })
     }
@@ -534,14 +492,9 @@ impl SinkAsyncServer {
 
 /// Helper to populate a PyModule with sink types/functions.
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
-    m.add_class::<SystemMetadata>()?;
-    m.add_class::<UserMetadata>()?;
-    m.add_class::<KeyValueGroup>()?;
     m.add_class::<Message>()?;
     m.add_class::<Response>()?;
-    m.add_class::<Responses>()?;
     m.add_class::<Datum>()?;
-    m.add_class::<PyAsyncDatumStream>()?;
     m.add_class::<SinkAsyncServer>()?;
 
     Ok(())

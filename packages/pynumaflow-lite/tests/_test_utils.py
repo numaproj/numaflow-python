@@ -1,3 +1,4 @@
+import asyncio
 import os
 import signal
 import socket
@@ -22,6 +23,18 @@ def _wait_for_socket(path: Path, timeout: float = 10.0) -> None:
                 pass
         time.sleep(0.1)
     raise TimeoutError(f"Socket {path} not ready after {timeout}s")
+
+
+def _wait_for_sink_ready(path: Path, timeout: float = 10.0) -> None:
+    from pynumaflow_lite import sinker
+
+    async def _unused_handler(datums):
+        async for _datum in datums:
+            pass
+        return []
+
+    server = sinker.SinkAsyncServer(_unused_handler, sock_file=str(path))
+    asyncio.run(server.wait_ready(timeout=timeout))
 
 
 def run_python_server_with_rust_client(
@@ -76,7 +89,10 @@ def run_python_server_with_rust_client(
     )
 
     try:
-        _wait_for_socket(sock_path, timeout=socket_timeout)
+        if rust_bin_name == "test_sink":
+            _wait_for_sink_ready(sock_path, timeout=socket_timeout)
+        else:
+            _wait_for_socket(sock_path, timeout=socket_timeout)
 
         # Run Rust client bin
         rust_cmd = ["cargo", "run", "--quiet", "--bin", rust_bin_name]

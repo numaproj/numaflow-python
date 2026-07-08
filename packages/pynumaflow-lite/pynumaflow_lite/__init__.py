@@ -72,6 +72,7 @@ from ._reducestreamer_dtypes import ReduceStreamer
 from ._session_reduce_dtypes import SessionReducer
 from ._sideinput_dtypes import SideInput
 from ._sink_dtypes import Sinker
+from ._sink_server import SinkAsyncServer
 from ._source_dtypes import Sourcer
 from ._sourcetransformer_dtypes import SourceTransformer
 
@@ -98,6 +99,7 @@ if accumulator is not None:
 
 if sinker is not None:
     sinker.Sinker = Sinker
+    sinker.SinkAsyncServer = SinkAsyncServer
 
 if sourcer is not None:
     sourcer.Sourcer = Sourcer

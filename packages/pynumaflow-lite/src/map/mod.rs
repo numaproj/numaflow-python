@@ -19,7 +19,7 @@ use tower::service_fn;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
-fn bytes_literal(value: &[u8]) -> String {
+pub(crate) fn bytes_literal(value: &[u8]) -> String {
     format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
 }
 
@@ -244,7 +244,9 @@ impl From<map::MapRequest> for Datum {
     }
 }
 
-async fn map_grpc_client(sock_file: String) -> PyResult<MapClient<tonic::transport::Channel>> {
+pub(crate) async fn map_grpc_client(
+    sock_file: String,
+) -> PyResult<MapClient<tonic::transport::Channel>> {
     let endpoint = tonic::transport::Endpoint::try_from("http://[::]:50051")
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
 
@@ -263,7 +265,11 @@ async fn map_grpc_client(sock_file: String) -> PyResult<MapClient<tonic::transpo
     Ok(MapClient::new(channel))
 }
 
-async fn wait_for_ready(sock_file: String, timeout: Duration) -> PyResult<()> {
+pub(crate) async fn wait_for_ready(
+    sock_file: String,
+    timeout: Duration,
+    component: &'static str,
+) -> PyResult<()> {
     let deadline = Instant::now() + timeout;
 
     loop {
@@ -277,7 +283,7 @@ async fn wait_for_ready(sock_file: String, timeout: Duration) -> PyResult<()> {
         let now = Instant::now();
         if now >= deadline {
             return Err(pyo3::PyErr::new::<pyo3::exceptions::PyTimeoutError, _>(
-                "timed out waiting for map server readiness",
+                format!("timed out waiting for {component} server readiness"),
             ));
         }
 
@@ -342,7 +348,7 @@ impl MapAsyncServer {
         let timeout = Duration::from_secs_f64(timeout);
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            wait_for_ready(sock_file, timeout).await?;
+            wait_for_ready(sock_file, timeout, "map").await?;
             Ok(())
         })
     }

@@ -14,10 +14,11 @@ pub(crate) struct PyMapRunner {
 
 impl PyMapRunner {
     fn fail(&self, error: PyErr) -> Vec<map::Message> {
-        Python::attach(|py| error.print(py));
-
+        // Only the first error is reported; later requests may still be in flight
+        // while shutdown is underway, and their failures would be duplicates.
         let mut error_slot = self.error_slot.lock().unwrap();
         if error_slot.is_none() {
+            Python::attach(|py| error.print(py));
             *error_slot = Some(error);
         }
         drop(error_slot);

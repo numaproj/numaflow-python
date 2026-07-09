@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.sinker import Datum, Response
 
@@ -13,7 +13,7 @@ class Sinker(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, datums: AsyncIterable[Datum]) -> list[Response]:
+    async def handler(self, datums: AsyncIterator[Datum]) -> list[Response]:
         """
         Implement this handler function for sink.
         Process the stream of datums and return responses.

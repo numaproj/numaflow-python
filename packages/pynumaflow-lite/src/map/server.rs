@@ -1,40 +1,82 @@
-use crate::map::{Datum, Messages};
 use numaflow::map;
 use numaflow::shared::ServerExtras;
 
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 pub(crate) struct PyMapRunner {
     pub(crate) event_loop: Arc<Py<PyAny>>,
     pub(crate) py_func: Arc<Py<PyAny>>,
+    pub(crate) error_slot: Arc<Mutex<Option<PyErr>>>,
+    pub(crate) shutdown_tx: Arc<Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
+}
+
+impl PyMapRunner {
+    fn fail(&self, error: PyErr) -> Vec<map::Message> {
+        Python::attach(|py| error.print(py));
+
+        let mut error_slot = self.error_slot.lock().unwrap();
+        if error_slot.is_none() {
+            *error_slot = Some(error);
+        }
+        drop(error_slot);
+
+        if let Some(tx) = self.shutdown_tx.lock().unwrap().take() {
+            let _ = tx.send(());
+        }
+
+        Vec::new()
+    }
 }
 
 #[tonic::async_trait]
 impl map::Mapper for PyMapRunner {
     async fn map(&self, input: map::MapRequest) -> Vec<map::Message> {
-        let fut = Python::attach(|py| {
-            let keys = input.keys.clone();
-            let input: Datum = input.into();
-            let py_func = self.py_func.clone();
-
+        let fut = match Python::attach(|py| -> PyResult<_> {
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
+            let datum: crate::map::Datum = input.into();
+            let coro = self.py_func.call1(py, (datum,))?.into_bound(py);
+            let is_awaitable: bool = py
+                .import("inspect")?
+                .call_method1("isawaitable", (&coro,))?
+                .extract()?;
+            if !is_awaitable {
+                return Err(PyErr::new::<PyTypeError, _>(
+                    "map handler must be an async function (coroutine)",
+                ));
+            }
+            pyo3_async_runtimes::into_future_with_locals(&locals, coro).map_err(|_| {
+                PyErr::new::<PyTypeError, _>("map handler must be an async function (coroutine)")
+            })
+        }) {
+            Ok(fut) => fut,
+            Err(error) => return self.fail(error),
+        };
 
-            let coro = py_func.call1(py, (keys, input)).unwrap().into_bound(py);
+        let result = match fut.await {
+            Ok(result) => result,
+            Err(error) => return self.fail(error),
+        };
 
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro).unwrap()
-        });
+        let messages: Vec<crate::map::Message> = match Python::attach(|py| {
+            result.extract(py).map_err(|_| {
+                let type_name = result
+                    .bind(py)
+                    .get_type()
+                    .name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_else(|_| "<unknown>".to_string());
+                PyErr::new::<PyTypeError, _>(format!(
+                    "map handler must return list[Message], got {type_name}"
+                ))
+            })
+        }) {
+            Ok(messages) => messages,
+            Err(error) => return self.fail(error),
+        };
 
-        let result = fut.await.unwrap();
-
-        let result = Python::attach(|py| {
-            let x: Messages = result.extract(py).unwrap();
-            x
-        });
-
-        println!("{:?}", result);
-
-        result.messages.into_iter().map(|m| m.into()).collect()
+        messages.into_iter().map(|m| m.into()).collect()
     }
 }
 
@@ -46,14 +88,34 @@ pub(super) async fn start(
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) -> Result<(), pyo3::PyErr> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking({
+        println!(
+            "Starting Map UDF. socket={}, server_info={}",
+            &sock_file, &info_file
+        );
+        move || crate::pyrs::run_asyncio(tx)
+    });
     let event_loop = rx.await.unwrap();
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
+    let error_slot = Arc::new(Mutex::new(None));
+    let (internal_shutdown_tx, internal_shutdown_rx) = tokio::sync::oneshot::channel();
+    let (server_shutdown_tx, server_shutdown_rx) = tokio::sync::oneshot::channel();
+
+    tokio::spawn(async move {
+        tokio::select! {
+            _ = shutdown_rx => {},
+            _ = internal_shutdown_rx => {},
+        }
+        let _ = server_shutdown_tx.send(());
+    });
+
+    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(server_shutdown_rx);
 
     let py_map_runner = PyMapRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
+        error_slot: error_slot.clone(),
+        shutdown_tx: Arc::new(Mutex::new(Some(internal_shutdown_tx))),
     };
 
     let server = numaflow::map::Server::new(py_map_runner)
@@ -72,7 +134,7 @@ pub(super) async fn start(
         }
     });
 
-    println!("Numaflow Core has shutdown...");
+    println!("Numaflow Map has shutdown...");
 
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
@@ -81,6 +143,10 @@ pub(super) async fn start(
     if !sig_handle.is_finished() {
         println!("Aborting signal handler");
         sig_handle.abort();
+    }
+
+    if let Some(error) = error_slot.lock().unwrap().take() {
+        return Err(error);
     }
 
     result

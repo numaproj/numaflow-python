@@ -66,6 +66,7 @@ except Exception:  # pragma: no cover
 from ._accumulator_dtypes import Accumulator
 from ._batchmapper_dtypes import BatchMapper
 from ._map_dtypes import Mapper
+from ._map_server import MapAsyncServer
 from ._mapstream_dtypes import MapStreamer
 from ._reduce_dtypes import Reducer
 from ._reducestreamer_dtypes import ReduceStreamer
@@ -78,6 +79,7 @@ from ._sourcetransformer_dtypes import SourceTransformer
 
 if mapper is not None:
     mapper.Mapper = Mapper
+    mapper.MapAsyncServer = MapAsyncServer
 
 if batchmapper is not None:
     batchmapper.BatchMapper = BatchMapper

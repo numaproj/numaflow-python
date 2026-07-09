@@ -69,6 +69,7 @@ from ._batchmapper_dtypes import BatchMapper
 from ._map_dtypes import Mapper
 from ._map_server import MapAsyncServer
 from ._mapstream_dtypes import MapStreamer
+from ._mapstream_server import MapStreamAsyncServer
 from ._reduce_dtypes import Reducer
 from ._reducestreamer_dtypes import ReduceStreamer
 from ._session_reduce_dtypes import SessionReducer
@@ -88,6 +89,7 @@ if batchmapper is not None:
 
 if mapstreamer is not None:
     mapstreamer.MapStreamer = MapStreamer
+    mapstreamer.MapStreamAsyncServer = MapStreamAsyncServer
 
 if reducer is not None:
     reducer.Reducer = Reducer

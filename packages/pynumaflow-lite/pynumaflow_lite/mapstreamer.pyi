@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import datetime as _dt
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterable, Awaitable, Callable
+from types import TracebackType
 
 class Message:
     keys: list[str] | None
@@ -15,31 +16,64 @@ class Message:
         tags: list[str] | None = ...,
     ) -> None: ...
     @staticmethod
-    def message_to_drop() -> Message: ...
-    @staticmethod
     def to_drop() -> Message: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
 
 class Datum:
     keys: list[str]
     value: bytes
     watermark: _dt.datetime
-    eventtime: _dt.datetime
+    event_time: _dt.datetime
     headers: dict[str, str]
 
+    def __init__(
+        self,
+        *,
+        keys: list[str] = ...,
+        value: bytes = ...,
+        event_time: _dt.datetime | None = ...,
+        watermark: _dt.datetime | None = ...,
+        headers: dict[str, str] = ...,
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
+
+_MapStreamHandler = Callable[[Datum], AsyncIterable[Message]]
+
+class _MapStreamAsyncServer:
+    def __init__(
+        self,
+        sock_file: str | None = ...,
+        server_info_file: str | None = ...,
+    ) -> None: ...
+    def start(self, handler: _MapStreamHandler) -> Awaitable[None]: ...
+    def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
+    def stop(self) -> None: ...
+
+class MapStreamer:
+    def __call__(self, datum: Datum) -> AsyncIterable[Message]: ...
+    async def handler(self, datum: Datum) -> AsyncIterable[Message]: ...
 
 class MapStreamAsyncServer:
     def __init__(
         self,
+        handler: _MapStreamHandler | MapStreamer,
+        *,
         sock_file: str | None = ...,
-        info_file: str | None = ...,
+        server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, py_func: Callable[[list[str], Datum], AsyncIterator[Message]]) -> Awaitable[None]: ...
+    def run(self) -> None: ...
+    async def serve(self) -> None: ...
     def stop(self) -> None: ...
-
-class MapStreamer:
-    async def handler(self, keys: list[str], datum: Datum) -> AsyncIterator[Message]: ...
+    async def wait_ready(self, timeout: float = ...) -> None: ...
+    async def __aenter__(self) -> MapStreamAsyncServer: ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None: ...
 
 __all__ = [
     "Datum",

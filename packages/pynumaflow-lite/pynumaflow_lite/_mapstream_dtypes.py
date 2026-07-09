@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterable
 
 from pynumaflow_lite.mapstreamer import Datum, Message
 
@@ -14,7 +14,7 @@ class MapStreamer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, keys: list[str], datum: Datum) -> AsyncIterator[Message]:
+    async def handler(self, datum: Datum) -> AsyncIterable[Message]:
         """
         Implement this handler function for streaming mapping.
         It should be an async generator yielding Message objects.

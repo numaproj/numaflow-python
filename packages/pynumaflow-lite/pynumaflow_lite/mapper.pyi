@@ -45,26 +45,23 @@ class Datum:
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
 
-_MapHandler = Callable[[Datum], Awaitable[list[Message]]]
-
 class _MapAsyncServer:
     def __init__(
         self,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, handler: _MapHandler) -> Awaitable[None]: ...
+    def start(
+        self,
+        handler: Callable[[Datum], Awaitable[list[Message]]],
+    ) -> Awaitable[None]: ...
     def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
     def stop(self) -> None: ...
-
-class Mapper:
-    def __call__(self, datum: Datum) -> Awaitable[list[Message]]: ...
-    async def handler(self, datum: Datum) -> list[Message]: ...
 
 class MapAsyncServer:
     def __init__(
         self,
-        handler: _MapHandler | Mapper,
+        handler: Callable[[Datum], Awaitable[list[Message]]],
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
@@ -84,6 +81,5 @@ class MapAsyncServer:
 __all__ = [
     "Datum",
     "MapAsyncServer",
-    "Mapper",
     "Message",
 ]

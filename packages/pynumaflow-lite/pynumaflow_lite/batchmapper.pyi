@@ -51,26 +51,23 @@ class BatchResponse:
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
 
-_BatchMapHandler = Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]]
-
 class _BatchMapAsyncServer:
     def __init__(
         self,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, handler: _BatchMapHandler) -> Awaitable[None]: ...
+    def start(
+        self,
+        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]],
+    ) -> Awaitable[None]: ...
     def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
     def stop(self) -> None: ...
-
-class BatchMapper:
-    def __call__(self, batch: AsyncIterator[Datum]) -> Awaitable[list[BatchResponse]]: ...
-    async def handler(self, batch: AsyncIterator[Datum]) -> list[BatchResponse]: ...
 
 class BatchMapAsyncServer:
     def __init__(
         self,
-        handler: _BatchMapHandler | BatchMapper,
+        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]],
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
@@ -89,7 +86,6 @@ class BatchMapAsyncServer:
 
 __all__ = [
     "BatchMapAsyncServer",
-    "BatchMapper",
     "BatchResponse",
     "Datum",
     "Message",

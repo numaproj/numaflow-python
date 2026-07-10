@@ -1,7 +1,7 @@
 from pynumaflow_lite import mapper
 
 
-class SimpleCat(mapper.Mapper):
+class SimpleCat:
     async def handler(self, datum: mapper.Datum) -> list[mapper.Message]:
         if datum.value == b"bad world":
             return [mapper.Message.to_drop()]
@@ -9,4 +9,5 @@ class SimpleCat(mapper.Mapper):
 
 
 if __name__ == "__main__":
-    mapper.MapAsyncServer(SimpleCat()).run()
+    mapper_obj = SimpleCat()
+    mapper.MapAsyncServer(mapper_obj.handler).run()

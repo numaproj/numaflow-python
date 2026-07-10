@@ -39,26 +39,23 @@ class Datum:
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
 
-_MapStreamHandler = Callable[[Datum], AsyncIterable[Message]]
-
 class _MapStreamAsyncServer:
     def __init__(
         self,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, handler: _MapStreamHandler) -> Awaitable[None]: ...
+    def start(
+        self,
+        handler: Callable[[Datum], AsyncIterable[Message]],
+    ) -> Awaitable[None]: ...
     def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
     def stop(self) -> None: ...
-
-class MapStreamer:
-    def __call__(self, datum: Datum) -> AsyncIterable[Message]: ...
-    async def handler(self, datum: Datum) -> AsyncIterable[Message]: ...
 
 class MapStreamAsyncServer:
     def __init__(
         self,
-        handler: _MapStreamHandler | MapStreamer,
+        handler: Callable[[Datum], AsyncIterable[Message]],
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
@@ -78,6 +75,5 @@ class MapStreamAsyncServer:
 __all__ = [
     "Datum",
     "MapStreamAsyncServer",
-    "MapStreamer",
     "Message",
 ]

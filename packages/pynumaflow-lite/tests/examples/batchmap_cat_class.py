@@ -1,10 +1,10 @@
 from collections.abc import AsyncIterator
 
 from pynumaflow_lite import batchmapper
-from pynumaflow_lite.batchmapper import BatchMapper, BatchResponse, Datum, Message
+from pynumaflow_lite.batchmapper import BatchResponse, Datum, Message
 
 
-class SimpleBatchCat(BatchMapper):
+class SimpleBatchCat:
     async def handler(self, batch: AsyncIterator[Datum]) -> list[BatchResponse]:
         return [
             BatchResponse(
@@ -16,8 +16,9 @@ class SimpleBatchCat(BatchMapper):
 
 
 if __name__ == "__main__":
+    batch_mapper_obj = SimpleBatchCat()
     batchmapper.BatchMapAsyncServer(
-        SimpleBatchCat(),
+        batch_mapper_obj.handler,
         sock_file="/tmp/var/run/numaflow/batchmap.sock",
         server_info_file="/tmp/var/run/numaflow/mapper-server-info",
     ).run()

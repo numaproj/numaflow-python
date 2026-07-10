@@ -4,7 +4,7 @@ from pynumaflow_lite import mapstreamer
 from pynumaflow_lite.mapstreamer import Message
 
 
-class SimpleStreamCat(mapstreamer.MapStreamer):
+class SimpleStreamCat:
     async def handler(self, datum: mapstreamer.Datum) -> AsyncIterable[Message]:
         parts = datum.value.decode("utf-8").split(",")
         if not parts:
@@ -15,4 +15,5 @@ class SimpleStreamCat(mapstreamer.MapStreamer):
 
 
 if __name__ == "__main__":
-    mapstreamer.MapStreamAsyncServer(SimpleStreamCat()).run()
+    map_streamer_obj = SimpleStreamCat()
+    mapstreamer.MapStreamAsyncServer(map_streamer_obj.handler).run()

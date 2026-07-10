@@ -2,16 +2,22 @@ from __future__ import annotations
 
 import asyncio
 import signal
+from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
-from typing import Any
 
 from .pynumaflow_lite import batchmapper as _batchmapper
+
+BatchResponse = _batchmapper.BatchResponse
+Datum = _batchmapper.Datum
 
 
 class BatchMapAsyncServer:
     def __init__(
         self,
-        handler: Any,
+        handler: Callable[
+            [AsyncIterator[Datum]],
+            Awaitable[list[BatchResponse]],
+        ],
         *,
         sock_file: str | None = None,
         server_info_file: str | None = None,

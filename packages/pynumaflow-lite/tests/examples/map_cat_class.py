@@ -1,7 +1,7 @@
 from pynumaflow_lite import mapper
 
 
-class SimpleCat(mapper.Mapper):
+class SimpleCat:
     async def handler(self, datum: mapper.Datum) -> list[mapper.Message]:
         # Read system metadata (read-only)
         print(f"System metadata groups: {list(datum.system_metadata)}")
@@ -28,8 +28,9 @@ class SimpleCat(mapper.Mapper):
 
 
 if __name__ == "__main__":
+    mapper_obj = SimpleCat()
     mapper.MapAsyncServer(
-        SimpleCat(),
+        mapper_obj.handler,
         sock_file="/tmp/var/run/numaflow/map.sock",
         server_info_file="/tmp/var/run/numaflow/mapper-server-info",
     ).run()

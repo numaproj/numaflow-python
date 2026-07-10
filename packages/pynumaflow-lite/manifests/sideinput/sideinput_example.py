@@ -39,7 +39,7 @@ class ExampleSideInput(sideinputer.SideInput):
         return sideinputer.Response.broadcast_message(val.encode("utf-8"))
 
 
-class SideInputHandler(mapper.Mapper):
+class SideInputHandler:
     """
     A Mapper that reads from side input files and includes the value in its output.
     """
@@ -103,16 +103,16 @@ async def start_sideinput():
 
 def start_mapper():
     """Start the Mapper server that reads from side inputs."""
-    handler = SideInputHandler()
+    mapper_obj = SideInputHandler()
 
     # Initialize the data value from the side input file
-    handler.init_data_value()
+    mapper_obj.init_data_value()
 
     # Start the file watcher in a background thread
-    watcher_thread = Thread(target=handler.file_watcher, daemon=True)
+    watcher_thread = Thread(target=mapper_obj.file_watcher, daemon=True)
     watcher_thread.start()
 
-    mapper.MapAsyncServer(handler).run()
+    mapper.MapAsyncServer(mapper_obj.handler).run()
 
 
 if __name__ == "__main__":

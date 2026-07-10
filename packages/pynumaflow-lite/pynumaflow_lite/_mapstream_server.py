@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import asyncio
 import signal
+from collections.abc import AsyncIterable, Callable
 from types import TracebackType
-from typing import Any
 
 from .pynumaflow_lite import mapstreamer as _mapstreamer
+
+Datum = _mapstreamer.Datum
+Message = _mapstreamer.Message
 
 
 class MapStreamAsyncServer:
     def __init__(
         self,
-        handler: Any,
+        handler: Callable[[Datum], AsyncIterable[Message]],
         *,
         sock_file: str | None = None,
         server_info_file: str | None = None,

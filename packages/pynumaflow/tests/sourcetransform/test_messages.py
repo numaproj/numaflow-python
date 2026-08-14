@@ -11,7 +11,7 @@ from pynumaflow.sourcetransformer import (
     SystemMetadata,
     NackOptions,
 )
-from pynumaflow._constants import NACK
+from pynumaflow._constants import FAIL, NACK
 from tests.testing_utils import mock_new_event_time
 
 
@@ -81,6 +81,15 @@ def test_message_to_nack_default_opts():
     assert msgt.tags == [NACK]
     assert msgt.event_time == mock_event_time()
     assert msgt.nack_options is None
+
+
+def test_message_to_fail():
+    msgt = Message.to_fail(mock_event_time())
+    assert isinstance(msgt, Message)
+    assert msgt.keys == []
+    assert msgt.value == b""
+    assert msgt.tags == [FAIL]
+    assert msgt.event_time == mock_event_time()
 
 
 def test_message_default_nack_options():

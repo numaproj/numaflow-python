@@ -1,4 +1,4 @@
-from pynumaflow._constants import DROP
+from pynumaflow._constants import DROP, FAIL
 
 from pynumaflow.batchmapper._dtypes import (
     Message,
@@ -14,6 +14,7 @@ __all__ = [
     "Message",
     "Datum",
     "DROP",
+    "FAIL",
     "BatchMapAsyncServer",
     "BatchMapper",
     "BatchResponses",

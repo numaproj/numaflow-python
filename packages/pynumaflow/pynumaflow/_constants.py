@@ -55,6 +55,7 @@ STREAM_EOF = "EOF"
 DELIMITER = ":"
 DROP = "U+005C__DROP__"
 NACK = "U+005C__NACK__"
+FAIL = "U+005C__FAIL__"
 
 _PROCESS_COUNT = os.cpu_count()
 # Cap max value to 16

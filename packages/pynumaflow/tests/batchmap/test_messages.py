@@ -1,7 +1,7 @@
 import pytest
 
 from pynumaflow.batchmapper import Message, DROP, BatchResponse, BatchResponses, NackOptions
-from pynumaflow._constants import NACK
+from pynumaflow._constants import FAIL, NACK
 from tests.batchmap.test_datatypes import TEST_ID
 from tests.testing_utils import mock_message
 
@@ -30,6 +30,14 @@ def test_message_to_nack_default_opts():
 def test_message_default_nack_options():
     msg = Message(mock_message())
     assert msg.nack_options is None
+
+
+def test_message_to_fail():
+    msg = Message.to_fail()
+    assert type(msg) is Message
+    assert msg.keys == []
+    assert msg.value == b""
+    assert msg.tags == [FAIL]
 
 
 def test_batch_responses_init():

@@ -16,6 +16,14 @@ async def async_nack_map_handler(keys: list[str], datum: Datum) -> Messages:
     return Messages(Message.to_nack(NACK_TEST_OPTIONS))
 
 
+def fail_map_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_fail())
+
+
+async def async_fail_map_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_fail())
+
+
 async def async_map_error_fn(keys: list[str], datum: Datum) -> Messages:
     raise ValueError("error invoking map")
 

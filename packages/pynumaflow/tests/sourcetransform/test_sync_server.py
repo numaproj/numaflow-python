@@ -13,7 +13,7 @@ from pynumaflow.sourcetransformer import (
     Message,
     NackOptions,
 )
-from pynumaflow._constants import NACK
+from pynumaflow._constants import FAIL, NACK
 from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
 from tests.conftest import collect_responses, drain_responses, send_test_requests
 from tests.testing_utils import mock_new_event_time
@@ -152,6 +152,30 @@ def test_transform_nack():
         assert result.nack_options.delay == NACK_TEST_OPTIONS.delay
         assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
         assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
+    assert code == StatusCode.OK
+
+
+def fail_transform_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_fail(mock_new_event_time()))
+
+
+def test_transform_fail():
+    test_server = _make_transform_server(fail_transform_handler)
+    test_datums = get_test_datums()
+    method = _invoke_transform_fn(test_server)
+
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    for resp in responses[1:]:
+        assert len(resp.results) == 1
+        result = resp.results[0]
+        assert FAIL in result.tags
     assert code == StatusCode.OK
 
 

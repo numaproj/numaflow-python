@@ -6,7 +6,7 @@ from typing import TypeAlias, TypeVar
 from collections.abc import Awaitable, Callable
 from warnings import warn
 
-from pynumaflow._constants import DROP, NACK
+from pynumaflow._constants import DROP, FAIL, NACK
 from pynumaflow._nack import NackOptions
 from pynumaflow._metadata import UserMetadata, SystemMetadata
 from pynumaflow._validate import _validate_message_fields
@@ -69,6 +69,10 @@ class Message:
         m = cls(b"", event_time, None, [NACK])
         m._nack_options = opts
         return m
+
+    @classmethod
+    def to_fail(cls: type[M], event_time: datetime) -> M:
+        return cls(b"", event_time, None, [FAIL])
 
     @property
     def nack_options(self) -> NackOptions | None:

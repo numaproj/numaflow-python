@@ -5,34 +5,65 @@ use crate::pyiterables::PyAsyncIterStream;
 use numaflow::mapstream;
 use numaflow::shared::ServerExtras;
 
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc::Sender;
 use tokio_stream::StreamExt;
 
 pub(crate) struct PyMapStreamRunner {
     pub(crate) event_loop: Arc<Py<PyAny>>,
     pub(crate) py_func: Arc<Py<PyAny>>,
+    pub(crate) error_slot: Arc<Mutex<Option<PyErr>>>,
+    pub(crate) shutdown_tx: Arc<Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
+}
+
+impl PyMapStreamRunner {
+    fn fail(&self, error: PyErr) {
+        let mut error_slot = self.error_slot.lock().unwrap();
+        if error_slot.is_none() {
+            Python::attach(|py| error.print(py));
+            *error_slot = Some(error);
+        }
+        drop(error_slot);
+
+        if let Some(tx) = self.shutdown_tx.lock().unwrap().take() {
+            let _ = tx.send(());
+        }
+    }
 }
 
 #[tonic::async_trait]
 impl mapstream::MapStreamer for PyMapStreamRunner {
     async fn map_stream(&self, input: mapstream::MapStreamRequest, tx: Sender<mapstream::Message>) {
-        // Call Python handler: handler(keys, datum) -> AsyncIterator
-        let agen_obj = Python::attach(|py| {
-            let keys = input.keys.clone();
+        // Call Python handler: handler(datum) -> AsyncIterable[Message]
+        let agen_obj = match Python::attach(|py| -> PyResult<Py<PyAny>> {
             let datum: Datum = input.into();
             let py_func = self.py_func.clone();
-            let agen = py_func
-                .call1(py, (keys, datum))
-                .expect("python handler raised before returning async iterable");
-            // Keep as Py<PyAny>
-            agen.clone_ref(py).extract(py).unwrap_or(agen)
-        });
+            let agen = py_func.call1(py, (datum,))?;
+            if !agen.bind(py).hasattr("__aiter__")? {
+                return Err(PyErr::new::<PyTypeError, _>(
+                    "mapstream handler must return an async iterable of Message",
+                ));
+            }
+            Ok(agen)
+        }) {
+            Ok(agen_obj) => agen_obj,
+            Err(error) => {
+                self.fail(error);
+                return;
+            }
+        };
 
         // Wrap the Python AsyncIterable in a Rust Stream that yields incrementally
-        let mut stream = PyAsyncIterStream::<PyMessage>::new(agen_obj, self.event_loop.clone())
-            .expect("failed to construct PyAsyncIterStream");
+        let mut stream =
+            match PyAsyncIterStream::<PyMessage>::new(agen_obj, self.event_loop.clone()) {
+                Ok(stream) => stream,
+                Err(error) => {
+                    self.fail(error);
+                    return;
+                }
+            };
 
         // Forward each yielded message immediately to the sender
         while let Some(item) = stream.next().await {
@@ -44,8 +75,7 @@ impl mapstream::MapStreamer for PyMapStreamRunner {
                     }
                 }
                 Err(e) => {
-                    // Non-stop errors are surfaced per-item; log and stop this stream.
-                    eprintln!("Python async iteration error: {:?}", e);
+                    self.fail(e);
                     break;
                 }
             }
@@ -57,23 +87,43 @@ impl mapstream::MapStreamer for PyMapStreamRunner {
 pub(super) async fn start(
     py_func: Py<PyAny>,
     sock_file: String,
-    info_file: String,
+    server_info_file: String,
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) -> Result<(), pyo3::PyErr> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking({
+        println!(
+            "Starting MapStream UDF. socket={}, server_info={}",
+            sock_file, server_info_file
+        );
+        move || crate::pyrs::run_asyncio(tx)
+    });
     let event_loop = rx.await.unwrap();
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
+    let error_slot = Arc::new(Mutex::new(None));
+    let (internal_shutdown_tx, internal_shutdown_rx) = tokio::sync::oneshot::channel();
+    let (server_shutdown_tx, server_shutdown_rx) = tokio::sync::oneshot::channel();
+
+    tokio::spawn(async move {
+        tokio::select! {
+            _ = shutdown_rx => {},
+            _ = internal_shutdown_rx => {},
+        }
+        let _ = server_shutdown_tx.send(());
+    });
+
+    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(server_shutdown_rx);
 
     let py_runner = PyMapStreamRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
+        error_slot: error_slot.clone(),
+        shutdown_tx: Arc::new(Mutex::new(Some(internal_shutdown_tx))),
     };
 
     let server = numaflow::mapstream::Server::new(py_runner)
         .with_socket_file(sock_file)
-        .with_server_info_file(info_file);
+        .with_server_info_file(server_info_file);
 
     let result = server
         .start_with_shutdown(combined_rx)
@@ -87,7 +137,7 @@ pub(super) async fn start(
         }
     });
 
-    println!("Numaflow Core (stream) has shutdown...");
+    println!("Numaflow MapStream has shutdown...");
 
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
@@ -96,6 +146,10 @@ pub(super) async fn start(
     if !sig_handle.is_finished() {
         println!("Aborting signal handler");
         sig_handle.abort();
+    }
+
+    if let Some(error) = error_slot.lock().unwrap().take() {
+        return Err(error);
     }
 
     result

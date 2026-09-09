@@ -39,7 +39,7 @@ class ExampleSideInput(sideinputer.SideInput):
         return sideinputer.Response.broadcast_message(val.encode("utf-8"))
 
 
-class SideInputHandler(mapper.Mapper):
+class SideInputHandler:
     """
     A Mapper that reads from side input files and includes the value in its output.
     """
@@ -51,13 +51,11 @@ class SideInputHandler(mapper.Mapper):
     # Side input file that we are watching
     watched_file = "myticker"
 
-    async def handler(self, keys: list[str], datum: mapper.Datum) -> mapper.Messages:
+    async def handler(self, datum: mapper.Datum) -> list[mapper.Message]:
         with self.data_value_lock:
             current_value = self.data_value
 
-        messages = mapper.Messages()
-        messages.append(mapper.Message(str.encode(current_value)))
-        return messages
+        return [mapper.Message(str.encode(current_value))]
 
     def file_watcher(self):
         """
@@ -103,27 +101,18 @@ async def start_sideinput():
         server.stop()
 
 
-async def start_mapper():
+def start_mapper():
     """Start the Mapper server that reads from side inputs."""
-    server = mapper.MapAsyncServer()
-    handler = SideInputHandler()
+    mapper_obj = SideInputHandler()
 
     # Initialize the data value from the side input file
-    handler.init_data_value()
+    mapper_obj.init_data_value()
 
     # Start the file watcher in a background thread
-    watcher_thread = Thread(target=handler.file_watcher, daemon=True)
+    watcher_thread = Thread(target=mapper_obj.file_watcher, daemon=True)
     watcher_thread.start()
 
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-    loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-
-    try:
-        await server.start(handler)
-        print("Mapper server shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
+    mapper.MapAsyncServer(mapper_obj.handler).run()
 
 
 if __name__ == "__main__":
@@ -132,7 +121,7 @@ if __name__ == "__main__":
 
     if is_mapper:
         print("Starting as Mapper (reading side inputs)...")
-        asyncio.run(start_mapper())
+        start_mapper()
     else:
         print("Starting as SideInput retriever...")
         asyncio.run(start_sideinput())

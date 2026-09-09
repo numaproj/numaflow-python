@@ -1,41 +1,19 @@
-import asyncio
-import signal
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterable
 
 from pynumaflow_lite import mapstreamer
 from pynumaflow_lite.mapstreamer import Message
 
 
-class SimpleStreamCat(mapstreamer.MapStreamer):
-    async def handler(self, keys: list[str], datum: mapstreamer.Datum) -> AsyncIterator[Message]:
+class SimpleStreamCat:
+    async def handler(self, datum: mapstreamer.Datum) -> AsyncIterable[Message]:
         parts = datum.value.decode("utf-8").split(",")
         if not parts:
             yield Message.to_drop()
             return
         for s in parts:
-            yield Message(s.encode(), keys)
-
-
-async def start(f: Callable[[list[str], mapstreamer.Datum], AsyncIterator[Message]]):
-    # Use default socket/info file locations; no explicit sock file passed
-    server = mapstreamer.MapStreamAsyncServer()
-
-    # Register loop-level signal handlers so we control shutdown and avoid asyncio.run noise.
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        pass
-
-    try:
-        await server.start(f)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
-        return
+            yield Message(s.encode(), keys=datum.keys)
 
 
 if __name__ == "__main__":
-    async_handler = SimpleStreamCat()
-    asyncio.run(start(async_handler))
+    map_streamer_obj = SimpleStreamCat()
+    mapstreamer.MapStreamAsyncServer(map_streamer_obj.handler).run()

@@ -1,6 +1,9 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
+use std::time::Duration;
 
 use numaflow::map;
+use numaflow::proto::map::map_client::MapClient;
 
 use chrono::{DateTime, Utc};
 
@@ -8,233 +11,89 @@ use chrono::{DateTime, Utc};
 /// and can pass in the Python function.
 pub mod server;
 
+use tokio::net::UnixStream;
+use tokio::time::Instant;
+use tonic::transport::Uri;
+use tower::service_fn;
+
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
-/// SystemMetadata wraps system-generated metadata groups per message.
-/// It is read-only to UDFs.
-#[pyclass(module = "pynumaflow_lite.mapper", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct SystemMetadata {
-    data: HashMap<String, HashMap<String, Vec<u8>>>,
+pub(crate) fn bytes_literal(value: &[u8]) -> String {
+    format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
 }
 
-#[pymethods]
-impl SystemMetadata {
-    #[new]
-    #[pyo3(signature = () -> "SystemMetadata")]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns the groups of the system metadata.
-    /// If there are no groups, it returns an empty list.
-    #[pyo3(signature = () -> "list[str]")]
-    fn groups(&self) -> Vec<String> {
-        self.data.keys().cloned().collect()
-    }
-
-    /// Returns the keys of the system metadata for the given group.
-    /// If there are no keys or the group is not present, it returns an empty list.
-    #[pyo3(signature = (group: "str") -> "list[str]")]
-    fn keys(&self, group: &str) -> Vec<String> {
-        self.data
-            .get(group)
-            .map(|kv| kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Returns the value of the system metadata for the given group and key.
-    /// If there is no value or the group or key is not present, it returns an empty bytes.
-    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
-    fn value(&self, group: &str, key: &str) -> Vec<u8> {
-        self.data
-            .get(group)
-            .and_then(|kv| kv.get(key))
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    fn __repr__(&self) -> String {
-        format!("SystemMetadata(groups={:?})", self.groups())
-    }
+fn metadata_literal(metadata: &HashMap<String, HashMap<String, Vec<u8>>>) -> String {
+    let groups: Vec<String> = metadata
+        .iter()
+        .map(|(group, kv)| {
+            let entries: Vec<String> = kv
+                .iter()
+                .map(|(key, value)| format!("{:?}: {}", key, bytes_literal(value)))
+                .collect();
+            format!("{:?}: {{{}}}", group, entries.join(", "))
+        })
+        .collect();
+    format!("{{{}}}", groups.join(", "))
 }
 
-impl From<map::SystemMetadata> for SystemMetadata {
-    fn from(value: map::SystemMetadata) -> Self {
-        let mut data = HashMap::new();
-        for group in value.groups() {
-            let mut kv = HashMap::new();
-            for key in value.keys(&group) {
-                kv.insert(key.clone(), value.value(&group, &key));
-            }
-            data.insert(group, kv);
+fn system_metadata_to_hash_map(
+    value: map::SystemMetadata,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
+    let mut data = HashMap::new();
+    for group in value.groups() {
+        let mut kv = HashMap::new();
+        for key in value.keys(&group) {
+            kv.insert(key.clone(), value.value(&group, &key));
         }
-        Self { data }
+        data.insert(group, kv);
     }
+    data
 }
 
-/// UserMetadata wraps user-defined metadata groups per message.
-/// Users can read and write to this metadata.
-#[pyclass(module = "pynumaflow_lite.mapper", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct UserMetadata {
-    data: HashMap<String, HashMap<String, Vec<u8>>>,
-}
-
-#[pymethods]
-impl UserMetadata {
-    #[new]
-    #[pyo3(signature = () -> "UserMetadata")]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns the groups of the user metadata.
-    /// If there are no groups, it returns an empty list.
-    #[pyo3(signature = () -> "list[str]")]
-    fn groups(&self) -> Vec<String> {
-        self.data.keys().cloned().collect()
-    }
-
-    /// Returns the keys of the user metadata for the given group.
-    /// If there are no keys or the group is not present, it returns an empty list.
-    #[pyo3(signature = (group: "str") -> "list[str]")]
-    fn keys(&self, group: &str) -> Vec<String> {
-        self.data
-            .get(group)
-            .map(|kv| kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Returns the value of the user metadata for the given group and key.
-    /// If there is no value or the group or key is not present, it returns an empty bytes.
-    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
-    fn value(&self, group: &str, key: &str) -> Vec<u8> {
-        self.data
-            .get(group)
-            .and_then(|kv| kv.get(key))
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    /// Creates a new group in the user metadata.
-    /// If the group already exists, this is a no-op.
-    #[pyo3(signature = (group: "str"))]
-    fn create_group(&mut self, group: String) {
-        self.data.entry(group).or_default();
-    }
-
-    /// Adds a key-value pair to the user metadata.
-    /// If the group is not present, it creates a new group.
-    #[pyo3(signature = (group: "str", key: "str", value: "bytes"))]
-    fn add_kv(&mut self, group: String, key: String, value: Vec<u8>) {
-        self.data.entry(group).or_default().insert(key, value);
-    }
-
-    /// Removes a key from a group in the user metadata.
-    /// If the key or group is not present, it's a no-op.
-    #[pyo3(signature = (group: "str", key: "str"))]
-    fn remove_key(&mut self, group: &str, key: &str) {
-        if let Some(kv) = self.data.get_mut(group) {
-            kv.remove(key);
+fn user_metadata_to_hash_map(
+    value: map::UserMetadata,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
+    let mut data = HashMap::new();
+    for group in value.groups() {
+        let mut kv = HashMap::new();
+        for key in value.keys(&group) {
+            kv.insert(key.clone(), value.value(&group, &key));
         }
+        data.insert(group, kv);
     }
-
-    /// Removes a group from the user metadata.
-    /// If the group is not present, it's a no-op.
-    #[pyo3(signature = (group: "str"))]
-    fn remove_group(&mut self, group: &str) {
-        self.data.remove(group);
-    }
-
-    fn __repr__(&self) -> String {
-        format!("UserMetadata(groups={:?})", self.groups())
-    }
-}
-
-impl From<map::UserMetadata> for UserMetadata {
-    fn from(value: map::UserMetadata) -> Self {
-        let mut data = HashMap::new();
-        for group in value.groups() {
-            let mut kv = HashMap::new();
-            for key in value.keys(&group) {
-                kv.insert(key.clone(), value.value(&group, &key));
-            }
-            data.insert(group, kv);
-        }
-        Self { data }
-    }
-}
-
-impl From<UserMetadata> for map::UserMetadata {
-    fn from(value: UserMetadata) -> Self {
-        let mut user_metadata = map::UserMetadata::new();
-        for (group, kv_map) in value.data {
-            for (key, val) in kv_map {
-                user_metadata.add_kv(group.clone(), key, val);
-            }
-        }
-        user_metadata
-    }
-}
-
-/// A collection of [Message]s.
-#[pyclass(module = "pynumaflow_lite.mapper", from_py_object)]
-#[derive(Clone, Debug)]
-pub struct Messages {
-    pub(crate) messages: Vec<Message>,
-}
-
-#[pymethods]
-impl Messages {
-    #[new]
-    #[pyo3(signature = () -> "Messages")]
-    fn new() -> Self {
-        Self { messages: vec![] }
-    }
-
-    /// Append a [Message] to the collection.
-    #[pyo3(signature = (message: "Message"))]
-    fn append(&mut self, message: Message) {
-        self.messages.push(message);
-    }
-
-    fn __repr__(&self) -> String {
-        format!("Messages({:?})", self.messages)
-    }
-
-    fn __str__(&self) -> String {
-        format!("Messages({:?})", self.messages)
-    }
+    data
 }
 
 /// A message to be sent to the next vertex.
-#[pyclass(module = "pynumaflow_lite.mapper", from_py_object)]
-#[derive(Clone, Default, Debug)]
+#[pyclass(module = "pynumaflow_lite.mapper", from_py_object, eq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Message {
     /// Keys are a collection of strings which will be passed on to the next vertex as is. It can
     /// be an empty collection.
+    #[pyo3(get)]
     pub keys: Option<Vec<String>>,
     /// Value is the value passed to the next vertex.
+    #[pyo3(get)]
     pub value: Vec<u8>,
     /// Tags are used for [conditional forwarding](https://numaflow.numaproj.io/user-guide/reference/conditional-forwarding/).
+    #[pyo3(get)]
     pub tags: Option<Vec<String>>,
     /// User metadata for the message.
-    pub user_metadata: Option<UserMetadata>,
+    #[pyo3(get)]
+    pub user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
 }
 
 #[pymethods]
 impl Message {
-    /// Create a new [Message] with the given value, keys, tags, and user_metadata.
+    /// Create a new Message with the given value. Keys, tags, and user_metadata are optional.
     #[new]
-    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "UserMetadata | None"=None) -> "Message"
-    )]
+    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "dict[str, dict[str, bytes]] | None"=None) -> "Message")]
     fn new(
         value: Vec<u8>,
         keys: Option<Vec<String>>,
         tags: Option<Vec<String>>,
-        user_metadata: Option<UserMetadata>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
             keys,
@@ -244,16 +103,32 @@ impl Message {
         }
     }
 
-    /// Drop a [Message], do not forward to the next vertex.
-    #[pyo3(signature = ())]
+    /// A Message marked to be dropped, i.e. not forwarded to the next vertex.
     #[staticmethod]
-    fn message_to_drop() -> Self {
+    #[pyo3(signature = () -> "Message")]
+    fn to_drop() -> Self {
         Self {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
             user_metadata: None,
         }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Message(value={}, keys={}, tags={}, user_metadata={})",
+            bytes_literal(&self.value),
+            self.keys
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
+            self.tags
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |tags| format!("{tags:?}")),
+            self.user_metadata
+                .as_ref()
+                .map_or_else(|| "None".to_string(), metadata_literal),
+        )
     }
 }
 
@@ -263,12 +138,21 @@ impl From<Message> for map::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
-            user_metadata: value.user_metadata.map(|m| m.into()),
+            user_metadata: value.user_metadata.map(|m| {
+                let mut umd = map::UserMetadata::new();
+                for (group, kv) in m {
+                    for (key, val) in kv {
+                        umd.add_kv(group.clone(), key, val);
+                    }
+                }
+                umd
+            }),
         }
     }
 }
 
-/// The incoming [MapRequest] accessible in Python function.
+/// The incoming Datum passed to the map handler. It carries the event's keys, value,
+/// event_time, watermark, headers, and the user/system metadata.
 #[pyclass(module = "pynumaflow_lite.mapper")]
 pub struct Datum {
     /// Set of keys in the (key, value) terminology of map/reduce paradigm.
@@ -283,106 +167,162 @@ pub struct Datum {
     pub watermark: DateTime<Utc>,
     /// Time of the element as seen at source or aligned after a reduce operation.
     #[pyo3(get)]
-    pub eventtime: DateTime<Utc>,
+    pub event_time: DateTime<Utc>,
     /// Headers for the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
     /// User metadata for the message.
     #[pyo3(get)]
-    pub user_metadata: UserMetadata,
+    pub user_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
     /// System metadata for the message.
     #[pyo3(get)]
-    pub system_metadata: SystemMetadata,
+    pub system_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
 }
 
+#[pymethods]
 impl Datum {
+    #[new]
+    #[pyo3(signature = (
+        *,
+        keys: "list[str] | None"=None,
+        value: "bytes | None"=None,
+        event_time: "datetime.datetime | None"=None,
+        watermark: "datetime.datetime | None"=None,
+        headers: "dict[str, str] | None"=None,
+        user_metadata: "dict[str, dict[str, bytes]] | None"=None,
+        system_metadata: "dict[str, dict[str, bytes]] | None"=None,
+    ) -> "Datum")]
     fn new(
-        keys: Vec<String>,
-        value: Vec<u8>,
-        watermark: DateTime<Utc>,
-        eventtime: DateTime<Utc>,
-        headers: HashMap<String, String>,
-        user_metadata: UserMetadata,
-        system_metadata: SystemMetadata,
+        keys: Option<Vec<String>>,
+        value: Option<Vec<u8>>,
+        event_time: Option<DateTime<Utc>>,
+        watermark: Option<DateTime<Utc>>,
+        headers: Option<HashMap<String, String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+        system_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
-            keys,
-            value,
-            watermark,
-            eventtime,
-            headers,
-            user_metadata,
-            system_metadata,
+            keys: keys.unwrap_or_default(),
+            value: value.unwrap_or_default(),
+            watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            headers: headers.unwrap_or_default(),
+            user_metadata: user_metadata.unwrap_or_default(),
+            system_metadata: system_metadata.unwrap_or_default(),
         }
     }
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
+            "Datum(keys={:?}, value={}, watermark={}, event_time={}, headers={:?}, user_metadata={}, system_metadata={})",
             self.keys,
-            self.value,
+            bytes_literal(&self.value),
             self.watermark,
-            self.eventtime,
+            self.event_time,
             self.headers,
-            self.user_metadata,
-            self.system_metadata
+            metadata_literal(&self.user_metadata),
+            metadata_literal(&self.system_metadata)
         )
     }
 
     fn __str__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
-            self.keys,
-            String::from_utf8_lossy(&self.value),
-            self.watermark,
-            self.eventtime,
-            self.headers,
-            self.user_metadata,
-            self.system_metadata
-        )
+        self.__repr__()
     }
 }
 
 impl From<map::MapRequest> for Datum {
     fn from(value: map::MapRequest) -> Self {
-        Datum::new(
-            value.keys,
-            value.value,
-            value.watermark,
-            value.eventtime,
-            value.headers,
-            value.user_metadata.into(),
-            value.system_metadata.into(),
-        )
+        Self {
+            keys: value.keys,
+            value: value.value,
+            watermark: value.watermark,
+            event_time: value.eventtime,
+            headers: value.headers,
+            user_metadata: user_metadata_to_hash_map(value.user_metadata),
+            system_metadata: system_metadata_to_hash_map(value.system_metadata),
+        }
+    }
+}
+
+pub(crate) async fn map_grpc_client(
+    sock_file: String,
+) -> PyResult<MapClient<tonic::transport::Channel>> {
+    let endpoint = tonic::transport::Endpoint::try_from("http://[::]:50051")
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
+
+    let channel = endpoint
+        .connect_with_connector(service_fn(move |_: Uri| {
+            let sock = PathBuf::from(sock_file.clone());
+            async move {
+                Ok::<_, std::io::Error>(hyper_util::rt::TokioIo::new(
+                    UnixStream::connect(sock).await?,
+                ))
+            }
+        }))
+        .await
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
+
+    Ok(MapClient::new(channel))
+}
+
+pub(crate) async fn wait_for_ready(
+    sock_file: String,
+    timeout: Duration,
+    component: &'static str,
+) -> PyResult<()> {
+    let deadline = Instant::now() + timeout;
+
+    loop {
+        if let Ok(mut client) = map_grpc_client(sock_file.clone()).await
+            && let Ok(response) = client.is_ready(()).await
+            && response.into_inner().ready
+        {
+            return Ok(());
+        }
+
+        let now = Instant::now();
+        if now >= deadline {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyTimeoutError, _>(
+                format!("timed out waiting for {component} server readiness"),
+            ));
+        }
+
+        tokio::time::sleep(std::cmp::min(
+            Duration::from_millis(100),
+            deadline.saturating_duration_since(now),
+        ))
+        .await;
     }
 }
 
 /// Async Map Server that can be started from Python code which will run the Python UDF function.
-#[pyclass(module = "pynumaflow_lite.mapper")]
+#[pyclass(name = "_MapAsyncServer", module = "pynumaflow_lite.mapper")]
 pub struct MapAsyncServer {
     sock_file: String,
-    info_file: String,
+    server_info_file: String,
     shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 #[pymethods]
 impl MapAsyncServer {
     #[new]
-    #[pyo3(signature = (sock_file: "str | None"=map::SOCK_ADDR.to_string(), info_file: "str | None"=map::SERVER_INFO_FILE.to_string()) -> "MapAsyncServer"
-    )]
-    fn new(sock_file: String, info_file: String) -> Self {
+    #[pyo3(signature = (
+        sock_file: "str | None"=None,
+        server_info_file: "str | None"=None,
+    ) -> "_MapAsyncServer")]
+    fn new(sock_file: Option<String>, server_info_file: Option<String>) -> Self {
         Self {
-            sock_file,
-            info_file,
+            sock_file: sock_file.unwrap_or_else(|| map::SOCK_ADDR.to_string()),
+            server_info_file: server_info_file.unwrap_or_else(|| map::SERVER_INFO_FILE.to_string()),
             shutdown_tx: Mutex::new(None),
         }
     }
 
     /// Start the server with the given Python function.
-    #[pyo3(signature = (py_func: "callable") -> "None")]
-    pub fn start<'a>(&self, py: Python<'a>, py_func: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
+    #[pyo3(signature = (handler: "callable") -> "None")]
+    pub fn start<'a>(&self, py: Python<'a>, handler: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let info_file = self.info_file.clone();
+        let server_info_file = self.server_info_file.clone();
         let (tx, rx) = tokio::sync::oneshot::channel::<()>();
         {
             let mut guard = self.shutdown_tx.lock().unwrap();
@@ -390,9 +330,25 @@ impl MapAsyncServer {
         }
 
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::map::server::start(py_func, sock_file, info_file, rx)
-                .await
-                .expect("server failed to start");
+            crate::map::server::start(handler, sock_file, server_info_file, rx).await?;
+            Ok(())
+        })
+    }
+
+    /// Wait until the Numaflow IsReady probe succeeds over the map UDS.
+    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
+        if !timeout.is_finite() || timeout < 0.0 {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "timeout must be a non-negative finite float",
+            ));
+        }
+
+        let sock_file = self.sock_file.clone();
+        let timeout = Duration::from_secs_f64(timeout);
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            wait_for_ready(sock_file, timeout, "map").await?;
             Ok(())
         })
     }
@@ -409,9 +365,6 @@ impl MapAsyncServer {
 
 /// Helper to populate a PyModule with map types/functions.
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
-    m.add_class::<SystemMetadata>()?;
-    m.add_class::<UserMetadata>()?;
-    m.add_class::<Messages>()?;
     m.add_class::<Message>()?;
     m.add_class::<Datum>()?;
     m.add_class::<MapAsyncServer>()?;

@@ -125,7 +125,7 @@ pub(super) async fn start(
     let py_asyncio_loop_handle = tokio::task::spawn_blocking({
         println!(
             "Starting Sink UDF. socket={}, server_info={}",
-            &sock_file, &info_file
+            sock_file, info_file
         );
         move || crate::pyrs::run_asyncio(tx)
     });

@@ -2,34 +2,31 @@ from __future__ import annotations
 
 import asyncio
 import signal
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import Awaitable, Callable
 from types import TracebackType
 
-from .pynumaflow_lite import sinker as _sinker
+from .pynumaflow_lite import mapper as _mapper
 
-Datum = _sinker.Datum
-Response = _sinker.Response
+Datum = _mapper.Datum
+Message = _mapper.Message
 
 
-class SinkAsyncServer:
+class MapAsyncServer:
     def __init__(
         self,
-        handler: Callable[
-            [AsyncIterator[Datum]],
-            Awaitable[list[Response]],
-        ],
+        handler: Callable[[Datum], Awaitable[list[Message]]],
         *,
         sock_file: str | None = None,
         server_info_file: str | None = None,
     ) -> None:
-        self._core = _sinker._SinkAsyncServer(sock_file, server_info_file)
+        self._core = _mapper._MapAsyncServer(sock_file, server_info_file)
         self._handler = handler
         self._task: asyncio.Task[None] | None = None
         self._serving = False
 
     async def serve(self) -> None:
         if self._serving:
-            raise RuntimeError("sink server is already serving")
+            raise RuntimeError("map server is already serving")
         self._serving = True
         try:
             await self._core.start(self._handler)
@@ -42,9 +39,9 @@ class SinkAsyncServer:
     async def wait_ready(self, timeout: float = 30.0) -> None:
         await self._core.wait_ready(timeout)
 
-    async def __aenter__(self) -> SinkAsyncServer:
+    async def __aenter__(self) -> MapAsyncServer:
         if self._task is not None and not self._task.done():
-            raise RuntimeError("sink server is already serving")
+            raise RuntimeError("map server is already serving")
 
         self._task = asyncio.create_task(self.serve())
         try:

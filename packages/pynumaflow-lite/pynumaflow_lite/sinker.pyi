@@ -60,23 +60,26 @@ class Datum:
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
 
+_SinkHandler = Callable[[AsyncIterator[Datum]], Awaitable[list[Response]]]
+
 class _SinkAsyncServer:
     def __init__(
         self,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
     ) -> None: ...
-    def start(
-        self,
-        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[Response]]],
-    ) -> Awaitable[None]: ...
+    def start(self, handler: _SinkHandler) -> Awaitable[None]: ...
     def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
     def stop(self) -> None: ...
+
+class Sinker:
+    def __call__(self, datums: AsyncIterator[Datum]) -> Awaitable[list[Response]]: ...
+    async def handler(self, datums: AsyncIterator[Datum]) -> list[Response]: ...
 
 class SinkAsyncServer:
     def __init__(
         self,
-        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[Response]]],
+        handler: _SinkHandler | Sinker,
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
@@ -98,4 +101,5 @@ __all__ = [
     "Message",
     "Response",
     "SinkAsyncServer",
+    "Sinker",
 ]

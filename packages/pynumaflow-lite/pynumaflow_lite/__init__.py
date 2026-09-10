@@ -61,27 +61,29 @@ try:
 except Exception:  # pragma: no cover
     sideinputer = None
 
-# Surface the Python async servers and data-type classes under the extension submodules for convenient access
+# Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, ReduceStreamer, Accumulator, Sinker,
+# Sourcer, SourceTransformer, and SideInput classes under the extension submodules for convenient access
 from ._accumulator_dtypes import Accumulator
-from ._batchmap_server import BatchMapAsyncServer
-from ._map_server import MapAsyncServer
-from ._mapstream_server import MapStreamAsyncServer
+from ._batchmapper_dtypes import BatchMapper
+from ._map_dtypes import Mapper
+from ._mapstream_dtypes import MapStreamer
 from ._reduce_dtypes import Reducer
 from ._reducestreamer_dtypes import ReduceStreamer
 from ._session_reduce_dtypes import SessionReducer
 from ._sideinput_dtypes import SideInput
+from ._sink_dtypes import Sinker
 from ._sink_server import SinkAsyncServer
 from ._source_dtypes import Sourcer
 from ._sourcetransformer_dtypes import SourceTransformer
 
 if mapper is not None:
-    mapper.MapAsyncServer = MapAsyncServer
+    mapper.Mapper = Mapper
 
 if batchmapper is not None:
-    batchmapper.BatchMapAsyncServer = BatchMapAsyncServer
+    batchmapper.BatchMapper = BatchMapper
 
 if mapstreamer is not None:
-    mapstreamer.MapStreamAsyncServer = MapStreamAsyncServer
+    mapstreamer.MapStreamer = MapStreamer
 
 if reducer is not None:
     reducer.Reducer = Reducer
@@ -96,6 +98,7 @@ if accumulator is not None:
     accumulator.Accumulator = Accumulator
 
 if sinker is not None:
+    sinker.Sinker = Sinker
     sinker.SinkAsyncServer = SinkAsyncServer
 
 if sourcer is not None:

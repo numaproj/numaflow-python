@@ -30,7 +30,6 @@ env:
   RUSTFLAGS: -C debuginfo=0
   RUST_BACKTRACE: 1
   PYTHONUTF8: 1
-  RUST_TOOLCHAIN: "1.97"
 
 jobs:
   lint:
@@ -56,8 +55,8 @@ jobs:
 
       - name: Set up Rust
         run: |
-          rustup toolchain install "${RUST_TOOLCHAIN}" --profile minimal --component clippy --component rustfmt
-          rustup default "${RUST_TOOLCHAIN}"
+          rustup toolchain install stable --profile minimal --component clippy --component rustfmt
+          rustup default stable
 
       - name: Install dependencies
         run: uv sync --locked --group dev
@@ -101,8 +100,8 @@ jobs:
 
       - name: Set up Rust
         run: |
-          rustup toolchain install "${RUST_TOOLCHAIN}" --profile minimal
-          rustup default "${RUST_TOOLCHAIN}"
+          rustup toolchain install stable --profile minimal
+          rustup default stable
 
       - name: Run tests for Python versions
         shell: bash
@@ -174,8 +173,8 @@ jobs:
 
       - name: Set up Rust
         run: |
-          rustup toolchain install "${RUST_TOOLCHAIN}" --profile minimal
-          rustup default "${RUST_TOOLCHAIN}"
+          rustup toolchain install stable --profile minimal
+          rustup default stable
 
       - name: Verify tag matches package version
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/pynumaflow-lite-v')

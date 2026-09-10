@@ -2,22 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import signal
-from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
+from typing import Any
 
 from .pynumaflow_lite import sinker as _sinker
-
-Datum = _sinker.Datum
-Response = _sinker.Response
 
 
 class SinkAsyncServer:
     def __init__(
         self,
-        handler: Callable[
-            [AsyncIterator[Datum]],
-            Awaitable[list[Response]],
-        ],
+        handler: Any,
         *,
         sock_file: str | None = None,
         server_info_file: str | None = None,
@@ -25,16 +19,9 @@ class SinkAsyncServer:
         self._core = _sinker._SinkAsyncServer(sock_file, server_info_file)
         self._handler = handler
         self._task: asyncio.Task[None] | None = None
-        self._serving = False
 
     async def serve(self) -> None:
-        if self._serving:
-            raise RuntimeError("sink server is already serving")
-        self._serving = True
-        try:
-            await self._core.start(self._handler)
-        finally:
-            self._serving = False
+        await self._core.start(self._handler)
 
     def stop(self) -> None:
         self._core.stop()

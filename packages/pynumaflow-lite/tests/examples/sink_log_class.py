@@ -1,21 +1,22 @@
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterable
 
 from pynumaflow_lite import sinker
+from pynumaflow_lite.sinker import Sinker
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
 
 
-class SimpleLogSink:
+class SimpleLogSink(Sinker):
     """
     Simple log sink that logs each message and returns success responses.
     This is the class-based approach matching the user's example.
     Also demonstrates reading metadata (read-only for sink).
     """
 
-    async def handler(self, datums: AsyncIterator[sinker.Datum]) -> list[sinker.Response]:
+    async def handler(self, datums: AsyncIterable[sinker.Datum]) -> list[sinker.Response]:
         responses = []
         async for msg in datums:
             _LOGGER.info("User Defined Sink %s", msg.value.decode("utf-8"))
@@ -39,9 +40,8 @@ class SimpleLogSink:
 
 
 if __name__ == "__main__":
-    sinker_obj = SimpleLogSink()
     sinker.SinkAsyncServer(
-        sinker_obj.handler,
+        SimpleLogSink(),
         sock_file="/tmp/var/run/numaflow/sink.sock",
         server_info_file="/tmp/var/run/numaflow/sinker-server-info",
     ).run()

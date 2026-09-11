@@ -37,16 +37,6 @@ def _wait_for_sink_ready(path: Path, timeout: float = 10.0) -> None:
     asyncio.run(server.wait_ready(timeout=timeout))
 
 
-def _wait_for_map_ready(path: Path, timeout: float = 10.0) -> None:
-    from pynumaflow_lite import mapper
-
-    async def _unused_handler(_datum):
-        return []
-
-    server = mapper.MapAsyncServer(_unused_handler, sock_file=str(path))
-    asyncio.run(server.wait_ready(timeout=timeout))
-
-
 def run_python_server_with_rust_client(
     script: str,
     sock_path: Path,
@@ -101,8 +91,6 @@ def run_python_server_with_rust_client(
     try:
         if rust_bin_name == "test_sink":
             _wait_for_sink_ready(sock_path, timeout=socket_timeout)
-        elif rust_bin_name == "test_map":
-            _wait_for_map_ready(sock_path, timeout=socket_timeout)
         else:
             _wait_for_socket(sock_path, timeout=socket_timeout)
 

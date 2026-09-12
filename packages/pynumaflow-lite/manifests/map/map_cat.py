@@ -1,5 +1,6 @@
 import asyncio
-from pynumaflow_lite.mapper import Mapper, Message, Datum, MapAsyncServer
+
+from pynumaflow_lite.mapper import Datum, MapAsyncServer, Mapper, Message
 
 
 class SimpleCat(Mapper):

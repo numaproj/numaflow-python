@@ -1,4 +1,4 @@
-from pynumaflow_lite.mapper import Message, Datum, MapAsyncServer
+from pynumaflow_lite.mapper import Datum, MapAsyncServer, Message
 
 
 async def map_handler(datum: Datum) -> list[Message]:

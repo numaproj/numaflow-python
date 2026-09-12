@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime as _dt
 from collections.abc import Awaitable, Callable
 from types import TracebackType
+
 from ._map_dtypes import Mapper as Mapper
 
 class Message:
@@ -83,7 +84,7 @@ class MapAsyncServer:
 
 __all__ = [
     "Datum",
-    "Mapper",
     "MapAsyncServer",
+    "Mapper",
     "Message",
 ]

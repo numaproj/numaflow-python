@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import signal
 from collections.abc import Awaitable, Callable
 from types import TracebackType
@@ -83,10 +84,8 @@ class MapAsyncServer:
             self._installed_signals.clear()
             return
         for sig in self._installed_signals:
-            try:
+            with contextlib.suppress(NotImplementedError, OSError):
                 loop.remove_signal_handler(sig)
-            except (NotImplementedError, OSError):
-                continue
         self._installed_signals.clear()
 
     async def __aenter__(self) -> MapAsyncServer:

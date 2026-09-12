@@ -8,8 +8,8 @@ spec:
       source:
         # A self data generating source
         generator:
-          rpu: 500
-          duration: 1s
+          rpu: 1
+          duration: 3s
     - name: map
       partitions: 2
       scale:

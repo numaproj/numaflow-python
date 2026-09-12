@@ -1,48 +1,21 @@
 import asyncio
-import signal
-from collections.abc import Awaitable, Callable
-
-from pynumaflow_lite import mapper
+from pynumaflow_lite.mapper import Mapper, Message, Datum, MapAsyncServer
 
 
-class SimpleCat(mapper.Mapper):
-    async def handler(self, keys: list[str], payload: mapper.Datum) -> mapper.Messages:
-
-        messages = mapper.Messages()
-
-        if payload.value == b"bad world":
-            messages.append(mapper.Message.message_to_drop())
-        else:
-            messages.append(mapper.Message(payload.value, keys))
-
-        return messages
+class SimpleCat(Mapper):
+    async def handler(self, datum: Datum) -> list[Message]:
+        if datum.value == b"bad world":
+            return [Message.to_drop()]
+        print(f"Received {datum=}")
+        return [Message(datum.value, keys=datum.keys)]
 
 
-async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
-    server = mapper.MapAsyncServer()
-
-    # Register loop-level signal handlers so we control shutdown and avoid asyncio.run
-    # converting it into KeyboardInterrupt/CancelledError traces.
-    loop = asyncio.get_running_loop()
-    loop.set_debug(True)
-    print("Registering signal handlers", loop)
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        print("Failed to register signal handlers")
-        # add_signal_handler may not be available on some platforms/contexts; fallback below.
-        pass
-
-    try:
-        await server.start(f)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        # Fallback in case the task was cancelled by the runner
-        server.stop()
-        return
+async def main() -> None:
+    print("Starting map server")
+    # `serve` returns when SIGINT or SIGTERM arrives.
+    await MapAsyncServer(SimpleCat()).serve()
+    print("Map server stopped")
 
 
 if __name__ == "__main__":
-    async_handler = SimpleCat()
-    asyncio.run(start(async_handler))
+    asyncio.run(main())

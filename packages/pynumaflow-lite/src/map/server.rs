@@ -8,26 +8,57 @@ use std::sync::{Arc, Mutex};
 pub(crate) struct PyMapRunner {
     pub(crate) event_loop: Arc<Py<PyAny>>,
     pub(crate) py_func: Arc<Py<PyAny>>,
-    pub(crate) error_slot: Arc<Mutex<Option<PyErr>>>,
-    pub(crate) shutdown_tx: Arc<Mutex<Option<tokio::sync::oneshot::Sender<()>>>>,
+    pub(crate) errors: Arc<Mutex<Vec<PyErr>>>,
+}
+
+// Build the full Python traceback text for the panic message, so the sidecar
+// reports the same failure that Python raises.
+fn format_error(py: Python<'_>, error: &PyErr) -> String {
+    match error.traceback(py).map(|traceback| traceback.format()) {
+        Some(Ok(traceback)) => format!("{traceback}{error}"),
+        _ => error.to_string(),
+    }
+}
+
+// Join every handler failure into one error for Python to raise.
+//
+// Python 3.11 and later have BaseExceptionGroup, which prints each traceback in
+// turn. Older versions have no group type, so they get the first error only.
+fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
+    let first = || errors.first().expect("errors is never empty").clone_ref(py);
+
+    if errors.len() == 1 {
+        return first();
+    }
+
+    let Ok(group_type) = py
+        .import("builtins")
+        .and_then(|builtins| builtins.getattr("BaseExceptionGroup"))
+    else {
+        return first();
+    };
+
+    let values: Vec<_> = errors.iter().map(|error| error.value(py).clone()).collect();
+    let message = format!("{} map handler calls failed", values.len());
+
+    match group_type.call1((message, values)) {
+        Ok(group) => PyErr::from_value(group),
+        Err(_) => first(),
+    }
 }
 
 impl PyMapRunner {
-    fn fail(&self, error: PyErr) -> Vec<map::Message> {
-        // Only the first error is reported; later requests may still be in flight
-        // while shutdown is underway, and their failures would be duplicates.
-        let mut error_slot = self.error_slot.lock().unwrap();
-        if error_slot.is_none() {
-            Python::attach(|py| error.print(py));
-            *error_slot = Some(error);
-        }
-        drop(error_slot);
+    fn fail(&self, error: PyErr) -> ! {
+        // numaflow calls map() concurrently, so each error belongs to a different
+        // message. Keep all of them. start() raises them together, which lets
+        // Python format every traceback instead of Rust printing them by hand.
+        let message = Python::attach(|py| format_error(py, &error));
+        self.errors.lock().unwrap().push(error);
 
-        if let Some(tx) = self.shutdown_tx.lock().unwrap().take() {
-            let _ = tx.send(());
-        }
-
-        Vec::new()
+        // numaflow catches this panic, sends a gRPC error for this message, and
+        // starts the server shutdown. An empty result would instead look like a
+        // message that the handler dropped on purpose.
+        panic!("{message}");
     }
 }
 
@@ -52,12 +83,12 @@ impl map::Mapper for PyMapRunner {
             })
         }) {
             Ok(fut) => fut,
-            Err(error) => return self.fail(error),
+            Err(error) => self.fail(error),
         };
 
         let result = match fut.await {
             Ok(result) => result,
-            Err(error) => return self.fail(error),
+            Err(error) => self.fail(error),
         };
 
         let messages: Vec<crate::map::Message> = match Python::attach(|py| {
@@ -74,7 +105,7 @@ impl map::Mapper for PyMapRunner {
             })
         }) {
             Ok(messages) => messages,
-            Err(error) => return self.fail(error),
+            Err(error) => self.fail(error),
         };
 
         messages.into_iter().map(|m| m.into()).collect()
@@ -98,24 +129,15 @@ pub(super) async fn start(
     });
     let event_loop = rx.await.unwrap();
 
-    let error_slot = Arc::new(Mutex::new(None));
-    let (internal_shutdown_tx, internal_shutdown_rx) = tokio::sync::oneshot::channel();
-    let (server_shutdown_tx, server_shutdown_rx) = tokio::sync::oneshot::channel();
+    let errors = Arc::new(Mutex::new(Vec::new()));
 
-    tokio::spawn(async move {
-        tokio::select! {
-            _ = shutdown_rx => {},
-            _ = internal_shutdown_rx => {},
-        }
-        let _ = server_shutdown_tx.send(());
-    });
-
-    // The Python wrapper owns OS signal handling and drives shutdown via stop().
+    // Shutdown has two sources, and neither one needs a channel here. The Python
+    // side signals stop() through shutdown_rx. An uncaught Python error panics in
+    // fail(), and numaflow then shuts the server down on its own.
     let py_map_runner = PyMapRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
-        error_slot: error_slot.clone(),
-        shutdown_tx: Arc::new(Mutex::new(Some(internal_shutdown_tx))),
+        errors: errors.clone(),
     };
 
     let server = numaflow::map::Server::new(py_map_runner)
@@ -123,7 +145,7 @@ pub(super) async fn start(
         .with_server_info_file(info_file);
 
     let result = server
-        .start_with_shutdown(server_shutdown_rx)
+        .start_with_shutdown(shutdown_rx)
         .await
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
 
@@ -139,8 +161,9 @@ pub(super) async fn start(
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
 
-    if let Some(error) = error_slot.lock().unwrap().take() {
-        return Err(error);
+    let errors = std::mem::take(&mut *errors.lock().unwrap());
+    if !errors.is_empty() {
+        return Err(Python::attach(|py| combine_errors(py, errors)));
     }
 
     result

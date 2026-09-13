@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from pynumaflow_lite.mapper import Datum, Messages
+from pynumaflow_lite.mapper import Datum, Message
 
 
 class Mapper(metaclass=ABCMeta):
@@ -17,7 +17,7 @@ class Mapper(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, keys: list[str], payload: Datum) -> Messages:
+    async def handler(self, payload: Datum) -> list[Message]:
         """
         Implement this handler function which implements the MapAsyncCallable interface.
         """

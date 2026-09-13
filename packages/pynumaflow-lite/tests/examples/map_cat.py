@@ -1,61 +1,34 @@
-import asyncio
-import signal
-from collections.abc import Awaitable, Callable
-
-from pynumaflow_lite import mapper
+from pynumaflow_lite.mapper import Datum, MapAsyncServer, Message
 
 
-async def async_handler(keys: list[str], payload: mapper.Datum) -> mapper.Messages:
-    messages = mapper.Messages()
-
+async def map_handler(datum: Datum) -> list[Message]:
     # Read system metadata (read-only)
-    print(f"System metadata groups: {payload.system_metadata.groups()}")
-    for group in payload.system_metadata.groups():
-        for key in payload.system_metadata.keys(group):
-            value = payload.system_metadata.value(group, key)
+    print(f"System metadata groups: {list(datum.system_metadata)}")
+    for group, key_values in datum.system_metadata.items():
+        for key, value in key_values.items():
             print(f"  System[{group}][{key}] = {value}")
 
-    # Read user metadata (read-only from input)
-    print(f"User metadata groups: {payload.user_metadata.groups()}")
-    for group in payload.user_metadata.groups():
-        for key in payload.user_metadata.keys(group):
-            value = payload.user_metadata.value(group, key)
+    # Read user metadata
+    print(f"User metadata groups: {list(datum.user_metadata)}")
+    for group, key_values in datum.user_metadata.items():
+        for key, value in key_values.items():
             print(f"  User[{group}][{key}] = {value}")
 
-    if payload.value == b"bad world":
-        messages.append(mapper.Message.message_to_drop())
-    else:
-        # Create user metadata for the outgoing message
-        user_metadata = mapper.UserMetadata()
-        user_metadata.create_group("processing")
-        user_metadata.add_kv("processing", "handler", b"map_cat")
-        user_metadata.add_kv("processing", "msg_length", str(len(payload.value)).encode())
+    if datum.value == b"bad world":
+        return [Message.to_drop()]
 
-        messages.append(mapper.Message(payload.value, keys, user_metadata=user_metadata))
-
-    return messages
-
-
-async def start(f: Callable[[list[str], mapper.Datum], Awaitable[mapper.Messages]]):
-    sock_file = "/tmp/var/run/numaflow/map.sock"
-    server_info_file = "/tmp/var/run/numaflow/mapper-server-info"
-    server = mapper.MapAsyncServer(sock_file, server_info_file)
-
-    # Register loop-level signal handlers to request graceful shutdown
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        pass
-
-    try:
-        await server.start(f)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
-        return
+    user_metadata = {
+        "processing": {
+            "handler": b"map_cat",
+            "msg_length": str(len(datum.value)).encode(),
+        }
+    }
+    return [Message(datum.value, keys=datum.keys, user_metadata=user_metadata)]
 
 
 if __name__ == "__main__":
-    asyncio.run(start(async_handler))
+    MapAsyncServer(
+        map_handler,
+        sock_file="/tmp/var/run/numaflow/map.sock",
+        server_info_file="/tmp/var/run/numaflow/mapper-server-info",
+    ).run()

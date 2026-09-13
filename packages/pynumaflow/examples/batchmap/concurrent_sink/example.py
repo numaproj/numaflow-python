@@ -1,10 +1,12 @@
 import asyncio
+import atexit
+import gc
 import hashlib
 import logging
 import os
 from collections.abc import AsyncIterable
 from concurrent.futures import ProcessPoolExecutor
-from typing import Tuple
+from typing import Tuple, Optional
 
 from pynumaflow.batchmapper import (
     BatchMapper,
@@ -19,20 +21,38 @@ logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
 
 # Process-level executor
-_EXECUTOR = None
+_executor: Optional[ProcessPoolExecutor] = None
+
+gc.enable()
 
 
-def get_executor(max_workers: int = None) -> ProcessPoolExecutor:
-    """Get or create global ProcessPoolExecutor."""
-    global _EXECUTOR
-    if _EXECUTOR is None:
-        if max_workers is None:
-            max_workers = os.cpu_count() or 2
-        _EXECUTOR = ProcessPoolExecutor(max_workers=max_workers)
-    return _EXECUTOR
+def get_global_executor(proc_count: int = 2) -> ProcessPoolExecutor:
+    """Get or create global ProcessPoolExecutor singleton."""
+    global _executor
+    if _executor is None:
+        proc_count = int(os.getenv("NUM_CPU_MULTIPROC", proc_count))
+        _executor = ProcessPoolExecutor(max_workers=proc_count, max_tasks_per_child=100)
+        _LOGGER.info(
+            f"Created global ProcessPoolExecutor (max_workers={proc_count}, "
+            f"max_tasks_per_child=100, PID={os.getpid()})"
+        )
+        atexit.register(_shutdown_executor)
+    return _executor
 
 
-def _process_message_task(task_data: Tuple[str, list, bytes]) -> Tuple[str, list, bytes, bool]:
+def _shutdown_executor():
+    """Shutdown global executor on process exit."""
+    global _executor
+    if _executor is not None:
+        _LOGGER.info("Shutting down global ProcessPoolExecutor")
+        _executor.shutdown(wait=True)
+        gc.collect()
+        _executor = None
+
+
+def _process_single_message_task(
+    task_data: Tuple[str, list, bytes]
+) -> Tuple[str, list, bytes, bool]:
     """Worker function executed in ProcessPoolExecutor child process.
 
     Returns primitive types (msg_id, keys, payload_bytes, should_drop) to safely
@@ -43,16 +63,12 @@ def _process_message_task(task_data: Tuple[str, list, bytes]) -> Tuple[str, list
 
     try:
         # Decode message
-        message_str = (
-            datum_bytes.decode("utf-8")
-            if isinstance(datum_bytes, bytes)
-            else datum_bytes
-        )
+        message_str = datum_bytes.decode("utf-8") if isinstance(datum_bytes, bytes) else datum_bytes
         _LOGGER.info(f"[Worker PID: {pid}] Processing message: {message_str}")
 
         # CPU-intensive operation: compute hash multiple times
         processed = message_str
-        for _ in range(128):
+        for _ in range(2**10):
             processed = hashlib.sha256(processed.encode()).hexdigest()
 
         # Simulate transformation
@@ -76,7 +92,7 @@ class ConcurrentSink(BatchMapper):
         Args:
             max_workers: Number of worker processes. Defaults to CPU count.
         """
-        self.executor = get_executor(max_workers)
+        self.executor = get_global_executor(proc_count=max_workers)
         _LOGGER.info(f"Initialized ConcurrentSink with ProcessPoolExecutor (PID={os.getpid()})")
 
     async def handler(self, datums: AsyncIterable[Datum]) -> BatchResponses:
@@ -104,8 +120,9 @@ class ConcurrentSink(BatchMapper):
         # Submit all tasks to process pool concurrently
         async def submit_task(datum: Datum):
             """Submit a single message to worker pool."""
-            task_data = (datum.id, datum.keys(), datum.value)
-            return await loop.run_in_executor(self.executor, _process_message_task, task_data)
+            task_data = (datum.id, datum.keys, datum.value)
+            fut = loop.run_in_executor(self.executor, _process_single_message_task, task_data)
+            return await asyncio.wait_for(fut, timeout=30.0)
 
         # Wait for all results
         results = await asyncio.gather(
@@ -143,5 +160,5 @@ if __name__ == "__main__":
     """
     max_workers = int(os.getenv("NUM_WORKERS", str(os.cpu_count() or 2)))
     sink = ConcurrentSink(max_workers=max_workers)
-    grpc_server = BatchMapAsyncServer(sink)
+    grpc_server = BatchMapAsyncServer(batch_mapper_instance=sink, max_threads=1)
     grpc_server.start()

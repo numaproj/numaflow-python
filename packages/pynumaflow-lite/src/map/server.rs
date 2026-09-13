@@ -110,8 +110,7 @@ pub(super) async fn start(
         let _ = server_shutdown_tx.send(());
     });
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(server_shutdown_rx);
-
+    // The Python wrapper owns OS signal handling and drives shutdown via stop().
     let py_map_runner = PyMapRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
@@ -124,7 +123,7 @@ pub(super) async fn start(
         .with_server_info_file(info_file);
 
     let result = server
-        .start_with_shutdown(combined_rx)
+        .start_with_shutdown(server_shutdown_rx)
         .await
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
 
@@ -139,12 +138,6 @@ pub(super) async fn start(
 
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
-
-    // if not finished, abort it
-    if !sig_handle.is_finished() {
-        println!("Aborting signal handler");
-        sig_handle.abort();
-    }
 
     if let Some(error) = error_slot.lock().unwrap().take() {
         return Err(error);

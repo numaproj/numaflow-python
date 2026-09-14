@@ -27,7 +27,8 @@ jobs:
           "examples/sideinput/simple_sideinput", "examples/sideinput/simple_sideinput/udf",
           "examples/sink/async_log", "examples/sink/log", "examples/sink/all_sinks",
           "examples/source/simple_source", "examples/sourcetransform/event_time_filter",
-          "examples/batchmap/flatmap", "examples/accumulator/streamsorter"
+          "examples/batchmap/flatmap", "examples/accumulator/streamsorter",
+          "examples/batchmap/concurrent_sink"
         ]
 
     steps:

@@ -51,7 +51,7 @@ def _shutdown_executor():
 
 
 def _process_single_message_task(
-    task_data: Tuple[str, list, bytes]
+    task_data: Tuple[str, list, bytes],
 ) -> Tuple[str, list, bytes, bool]:
     """Worker function executed in ProcessPoolExecutor child process.
 

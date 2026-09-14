@@ -1,0 +1,41 @@
+apiVersion: numaflow.numaproj.io/v1alpha1
+kind: Pipeline
+metadata:
+  name: concurrent-sink
+spec:
+  vertices:
+    - name: in
+      source:
+        # A self data generating source
+        generator:
+          rpu: 32
+          duration: 1s
+    - name: batch-concurrent-sink
+      partitions: 2
+      scale:
+        min: 1
+        max: 3
+      udf:
+        container:
+          image: quay.io/numaio/numaflow-python/batch-map-concurrent-sink:nf-concurrent-batch-proc
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NUM_WORKERS
+              value: "2"
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+    - name: sink
+      scale:
+        min: 1
+      sink:
+        log: {}
+  edges:
+    - from: in
+      to: batch-concurrent-sink
+    - from: batch-concurrent-sink
+      to: sink

@@ -6,11 +6,29 @@ from types import TracebackType
 
 from ._map_dtypes import Mapper as Mapper
 
+class NackOptions:
+    """Per-message redelivery options for a nack."""
+
+    delay: int | None
+    max_deliveries: int | None
+    reason: str | None
+    nack_map: dict[str, str]
+
+    def __init__(
+        self,
+        delay: int | None = ...,
+        max_deliveries: int | None = ...,
+        reason: str | None = ...,
+        nack_map: dict[str, str] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
 class Message:
     keys: list[str] | None
     value: bytes
     tags: list[str] | None
     user_metadata: dict[str, dict[str, bytes]] | None
+    nack_options: NackOptions | None
 
     def __init__(
         self,
@@ -21,6 +39,10 @@ class Message:
     ) -> None: ...
     @staticmethod
     def to_drop() -> Message: ...
+    @staticmethod
+    def to_nack(nack_options: NackOptions | None = ...) -> Message: ...
+    @staticmethod
+    def to_fail() -> Message: ...
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
 
@@ -87,4 +109,5 @@ __all__ = [
     "MapAsyncServer",
     "Mapper",
     "Message",
+    "NackOptions",
 ]

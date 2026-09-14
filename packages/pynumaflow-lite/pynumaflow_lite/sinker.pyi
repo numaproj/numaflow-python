@@ -4,6 +4,23 @@ import datetime as _dt
 from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
 
+class NackOptions:
+    """Per-message redelivery options for a nack."""
+
+    delay: int | None
+    max_deliveries: int | None
+    reason: str | None
+    nack_map: dict[str, str]
+
+    def __init__(
+        self,
+        delay: int | None = ...,
+        max_deliveries: int | None = ...,
+        reason: str | None = ...,
+        nack_map: dict[str, str] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
 class Message:
     keys: list[str] | None
     value: bytes
@@ -21,6 +38,7 @@ class Message:
 class Response:
     id: str
     error: str | None
+    nack_options: NackOptions | None
 
     @staticmethod
     def success(id: str) -> Response: ...
@@ -32,6 +50,8 @@ class Response:
     def serve(id: str, payload: bytes) -> Response: ...
     @staticmethod
     def on_success(id: str, message: Message | None = ...) -> Response: ...
+    @staticmethod
+    def nack(id: str, nack_options: NackOptions | None = ...) -> Response: ...
     def __repr__(self) -> str: ...
     def __eq__(self, other: object) -> bool: ...
 
@@ -99,6 +119,7 @@ class SinkAsyncServer:
 __all__ = [
     "Datum",
     "Message",
+    "NackOptions",
     "Response",
     "SinkAsyncServer",
     "Sinker",

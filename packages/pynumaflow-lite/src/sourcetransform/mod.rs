@@ -11,6 +11,8 @@ pub mod server;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+use crate::nack::NackOptions;
+
 /// SystemMetadata wraps system-generated metadata groups per message.
 /// It is read-only to UDFs.
 #[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
@@ -224,6 +226,9 @@ pub struct Message {
     pub tags: Option<Vec<String>>,
     /// User metadata for the message.
     pub user_metadata: Option<UserMetadata>,
+    /// Options sent back to the source when nacking the message.
+    #[pyo3(get)]
+    pub nack_options: Option<NackOptions>,
 }
 
 #[pymethods]
@@ -245,6 +250,7 @@ impl Message {
             event_time,
             tags,
             user_metadata,
+            nack_options: None,
         }
     }
 
@@ -260,6 +266,37 @@ impl Message {
             event_time,
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
             user_metadata: None,
+            nack_options: None,
+        }
+    }
+
+    /// A Message marked to be negatively acknowledged (retried), with optional nack options.
+    /// Event time is required so the watermark can still be updated.
+    #[pyo3(signature = (event_time: "datetime.datetime", nack_options: "NackOptions | None"=None) -> "Message")]
+    #[staticmethod]
+    fn to_nack(event_time: DateTime<Utc>, nack_options: Option<NackOptions>) -> Self {
+        Self {
+            keys: None,
+            value: vec![],
+            event_time,
+            tags: Some(vec![numaflow::shared::NACK.to_string()]),
+            user_metadata: None,
+            nack_options,
+        }
+    }
+
+    /// A Message marked to be failed.
+    /// Event time is required so the watermark can still be updated.
+    #[pyo3(signature = (event_time: "datetime.datetime") -> "Message")]
+    #[staticmethod]
+    fn to_fail(event_time: DateTime<Utc>) -> Self {
+        Self {
+            keys: None,
+            value: vec![],
+            event_time,
+            tags: Some(vec![numaflow::shared::FAIL.to_string()]),
+            user_metadata: None,
+            nack_options: None,
         }
     }
 }
@@ -273,6 +310,8 @@ impl From<Message> for sourcetransform::Message {
         if let Some(user_metadata) = value.user_metadata {
             msg = msg.with_user_metadata(user_metadata.into());
         }
+
+        msg.nack_options = value.nack_options.map(Into::into);
 
         msg
     }
@@ -423,6 +462,7 @@ pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<Messages>()?;
     m.add_class::<Message>()?;
     m.add_class::<Datum>()?;
+    m.add_class::<NackOptions>()?;
     m.add_class::<SourceTransformAsyncServer>()?;
 
     Ok(())

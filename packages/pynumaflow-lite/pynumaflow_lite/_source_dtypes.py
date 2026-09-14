@@ -113,12 +113,14 @@ class Sourcer(metaclass=ABCMeta):
         retried or handled differently. Default implementation is a no-op.
 
         Args:
-            request: NackRequest containing the list of offsets to nack
+            request: NackRequest containing the list of nack offsets, each
+                pairing an offset with its optional nack options.
 
         Example:
             async def nack_handler(self, request: NackRequest) -> None:
-                for offset in request.offsets:
+                for nack_offset in request.nack_offsets:
                     # Add back to pending, mark for retry, etc.
-                    self.nacked_offsets.add(offset.offset)
+                    self.nacked_offsets.add(nack_offset.offset.offset)
+                    _ = nack_offset.nack_options
         """
         _ = request

@@ -64,12 +64,30 @@ class Messages:
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
 
+class NackOptions:
+    """Per-message redelivery options for a nack."""
+
+    delay: int | None
+    max_deliveries: int | None
+    reason: str | None
+    nack_map: dict[str, str]
+
+    def __init__(
+        self,
+        delay: int | None = ...,
+        max_deliveries: int | None = ...,
+        reason: str | None = ...,
+        nack_map: dict[str, str] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
 class Message:
     keys: list[str] | None
     value: bytes
     event_time: _dt.datetime
     tags: list[str] | None
     user_metadata: UserMetadata | None
+    nack_options: NackOptions | None
 
     def __init__(
         self,
@@ -81,6 +99,10 @@ class Message:
     ) -> None: ...
     @staticmethod
     def message_to_drop(event_time: _dt.datetime) -> Message: ...
+    @staticmethod
+    def to_nack(event_time: _dt.datetime, nack_options: NackOptions | None = ...) -> Message: ...
+    @staticmethod
+    def to_fail(event_time: _dt.datetime) -> Message: ...
 
 class Datum:
     # Read-only attributes provided by the extension
@@ -108,6 +130,7 @@ __all__ = [
     "Datum",
     "Message",
     "Messages",
+    "NackOptions",
     "SourceTransformAsyncServer",
     "SourceTransformer",
     "SystemMetadata",

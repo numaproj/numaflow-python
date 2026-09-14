@@ -195,12 +195,13 @@ async fn nack_messages_fn(
 ) -> Result<(), Box<dyn std::error::Error>> {
     for message in messages {
         let nack_request = proto::source::NackRequest {
-            request: Some(proto::source::nack_request::Request {
+            request: vec![proto::source::nack_request::Request {
                 offsets: vec![proto::source::Offset {
                     offset: message.offset.as_ref().unwrap().offset.clone(),
                     partition_id: message.offset.as_ref().unwrap().partition_id,
                 }],
-            }),
+                nack_options: None,
+            }],
         };
 
         let nack_response = client.nack_fn(Request::new(nack_request)).await?;

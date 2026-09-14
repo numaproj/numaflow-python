@@ -314,7 +314,11 @@ impl AckRequest {
 ///
 /// Nack is a per-message operation: each offset carries its own (optional)
 /// nack options, giving a 1:1 mapping between an offset and its options.
-#[pyclass(module = "pynumaflow_lite.sourcer", name = "NackOffset", from_py_object)]
+#[pyclass(
+    module = "pynumaflow_lite.sourcer",
+    name = "NackOffset",
+    from_py_object
+)]
 #[derive(Clone, Debug)]
 pub struct NackOffset {
     /// The offset to be negatively acknowledged.

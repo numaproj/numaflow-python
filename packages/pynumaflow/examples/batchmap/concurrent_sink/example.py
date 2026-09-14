@@ -6,7 +6,6 @@ import logging
 import os
 from collections.abc import AsyncIterable
 from concurrent.futures import ProcessPoolExecutor
-from typing import Tuple, Optional
 
 from pynumaflow.batchmapper import (
     BatchMapper,
@@ -21,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
 
 # Process-level executor
-_executor: Optional[ProcessPoolExecutor] = None
+_executor: ProcessPoolExecutor | None = None
 
 gc.enable()
 
@@ -51,8 +50,8 @@ def _shutdown_executor():
 
 
 def _process_single_message_task(
-    task_data: Tuple[str, list, bytes],
-) -> Tuple[str, list, bytes, bool]:
+    task_data: tuple[str, list, bytes],
+) -> tuple[str, list, bytes, bool]:
     """Worker function executed in ProcessPoolExecutor child process.
 
     Returns primitive types (msg_id, keys, payload_bytes, should_drop) to safely

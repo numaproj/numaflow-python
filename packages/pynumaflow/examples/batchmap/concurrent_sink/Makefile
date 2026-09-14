@@ -16,7 +16,7 @@ image-push: update
 
 .PHONY: image
 image: update
-	cd ../../../ && podman build --tls-verify=false \
+	cd ../../../ && docker build \
 	-f ${DOCKER_FILE_PATH} \
 	-t ${IMAGE_REGISTRY} .
 	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}; fi

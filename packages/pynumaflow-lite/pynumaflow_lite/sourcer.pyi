@@ -100,14 +100,44 @@ class AckRequest:
     ) -> None: ...
     def __repr__(self) -> str: ...
 
-class NackRequest:
-    """A request to negatively acknowledge messages."""
+class NackOptions:
+    """Per-message redelivery options for a nack."""
 
-    offsets: list[Offset]
+    delay: int | None
+    max_deliveries: int | None
+    reason: str | None
+    nack_map: dict[str, str]
 
     def __init__(
         self,
-        offsets: list[Offset],
+        delay: int | None = ...,
+        max_deliveries: int | None = ...,
+        reason: str | None = ...,
+        nack_map: dict[str, str] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
+class NackOffset:
+    """An offset to negatively acknowledge, paired with its optional nack options."""
+
+    offset: Offset
+    nack_options: NackOptions | None
+
+    def __init__(
+        self,
+        offset: Offset,
+        nack_options: NackOptions | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
+class NackRequest:
+    """A request to negatively acknowledge messages."""
+
+    nack_offsets: list[NackOffset]
+
+    def __init__(
+        self,
+        nack_offsets: list[NackOffset],
     ) -> None: ...
     def __repr__(self) -> str: ...
 
@@ -147,6 +177,8 @@ class SourceAsyncServer:
 __all__ = [
     "AckRequest",
     "Message",
+    "NackOffset",
+    "NackOptions",
     "NackRequest",
     "Offset",
     "PartitionsResponse",

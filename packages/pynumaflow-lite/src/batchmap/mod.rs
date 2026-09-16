@@ -13,6 +13,8 @@ use tokio::sync::mpsc;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+use crate::nack::NackOptions;
+
 /// A message to be sent for a single datum in batch response.
 #[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object)]
 #[derive(Clone, Default, Debug)]
@@ -24,6 +26,9 @@ pub struct Message {
     pub value: Vec<u8>,
     /// Tags are used for conditional forwarding.
     pub tags: Option<Vec<String>>,
+    /// Options sent back to the source when nacking the message.
+    #[pyo3(get)]
+    pub nack_options: Option<NackOptions>,
 }
 
 #[pymethods]
@@ -33,7 +38,12 @@ impl Message {
     #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None) -> "Message"
     )]
     fn new(value: Vec<u8>, keys: Option<Vec<String>>, tags: Option<Vec<String>>) -> Self {
-        Self { keys, value, tags }
+        Self {
+            keys,
+            value,
+            tags,
+            nack_options: None,
+        }
     }
 
     /// Drop a [Message], do not forward to the next vertex.
@@ -44,6 +54,31 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
+            nack_options: None,
+        }
+    }
+
+    /// A Message marked to be negatively acknowledged (retried), with optional nack options.
+    #[staticmethod]
+    #[pyo3(signature = (nack_options: "NackOptions | None"=None) -> "Message")]
+    fn to_nack(nack_options: Option<NackOptions>) -> Self {
+        Self {
+            keys: None,
+            value: vec![],
+            tags: Some(vec![numaflow::shared::NACK.to_string()]),
+            nack_options,
+        }
+    }
+
+    /// A Message marked to be failed.
+    #[staticmethod]
+    #[pyo3(signature = () -> "Message")]
+    fn to_fail() -> Self {
+        Self {
+            keys: None,
+            value: vec![],
+            tags: Some(vec![numaflow::shared::FAIL.to_string()]),
+            nack_options: None,
         }
     }
 }
@@ -54,6 +89,7 @@ impl From<Message> for batchmap::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
+            nack_options: value.nack_options.map(Into::into),
         }
     }
 }
@@ -288,6 +324,7 @@ impl BatchMapAsyncServer {
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<Message>()?;
     m.add_class::<Datum>()?;
+    m.add_class::<NackOptions>()?;
     m.add_class::<BatchResponse>()?;
     m.add_class::<BatchResponses>()?;
     m.add_class::<BatchMapAsyncServer>()?;

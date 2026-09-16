@@ -77,9 +77,13 @@ class SimpleSource(Sourcer):
         """
         The simple source negatively acknowledges the offsets.
         """
-        _LOGGER.info(f"Negatively acknowledging {len(request.offsets)} offsets")
-        for offset in request.offsets:
-            _LOGGER.warning(f"Nacked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
+        _LOGGER.info(f"Negatively acknowledging {len(request.nack_offsets)} offsets")
+        for nack_offset in request.nack_offsets:
+            offset = nack_offset.offset
+            _LOGGER.warning(
+                f"Nacked offset: {offset.offset.decode('utf-8')}, "
+                f"partition: {offset.partition_id}, options: {nack_offset.nack_options}"
+            )
 
     async def pending_handler(self) -> sourcer.PendingResponse:
         """

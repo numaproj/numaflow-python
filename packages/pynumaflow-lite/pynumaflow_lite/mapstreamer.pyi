@@ -3,10 +3,28 @@ from __future__ import annotations
 import datetime as _dt
 from collections.abc import AsyncIterator, Awaitable, Callable
 
+class NackOptions:
+    """Per-message redelivery options for a nack."""
+
+    delay: int | None
+    max_deliveries: int | None
+    reason: str | None
+    nack_map: dict[str, str]
+
+    def __init__(
+        self,
+        delay: int | None = ...,
+        max_deliveries: int | None = ...,
+        reason: str | None = ...,
+        nack_map: dict[str, str] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
 class Message:
     keys: list[str] | None
     value: bytes
     tags: list[str] | None
+    nack_options: NackOptions | None
 
     def __init__(
         self,
@@ -18,6 +36,10 @@ class Message:
     def message_to_drop() -> Message: ...
     @staticmethod
     def to_drop() -> Message: ...
+    @staticmethod
+    def to_nack(nack_options: NackOptions | None = ...) -> Message: ...
+    @staticmethod
+    def to_fail() -> Message: ...
 
 class Datum:
     keys: list[str]
@@ -46,4 +68,5 @@ __all__ = [
     "MapStreamAsyncServer",
     "MapStreamer",
     "Message",
+    "NackOptions",
 ]

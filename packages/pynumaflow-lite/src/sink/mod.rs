@@ -20,6 +20,8 @@ use tower::service_fn;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+use crate::nack::NackOptions;
+
 fn bytes_literal(value: &[u8]) -> String {
     format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
 }
@@ -136,6 +138,9 @@ pub struct Response {
     pub error: Option<String>,
     pub serve_response: Option<Vec<u8>>,
     pub on_success_msg: Option<Message>,
+    /// Options sent back to the source when nacking the message.
+    #[pyo3(get)]
+    pub nack_options: Option<NackOptions>,
 }
 
 #[pymethods]
@@ -150,6 +155,7 @@ impl Response {
             error: None,
             serve_response: None,
             on_success_msg: None,
+            nack_options: None,
         }
     }
 
@@ -163,6 +169,7 @@ impl Response {
             error: Some(error),
             serve_response: None,
             on_success_msg: None,
+            nack_options: None,
         }
     }
 
@@ -176,6 +183,7 @@ impl Response {
             error: None,
             serve_response: None,
             on_success_msg: None,
+            nack_options: None,
         }
     }
 
@@ -189,6 +197,7 @@ impl Response {
             error: None,
             serve_response: Some(payload),
             on_success_msg: None,
+            nack_options: None,
         }
     }
 
@@ -203,6 +212,21 @@ impl Response {
             error: None,
             serve_response: None,
             on_success_msg: message,
+            nack_options: None,
+        }
+    }
+
+    /// Create a nack response, optionally carrying nack options for the source.
+    #[staticmethod]
+    #[pyo3(signature = (id: "str", nack_options: "NackOptions | None"=None) -> "Response")]
+    fn nack(id: String, nack_options: Option<NackOptions>) -> Self {
+        Self {
+            id,
+            response_type: ResponseType::Nack,
+            error: None,
+            serve_response: None,
+            on_success_msg: None,
+            nack_options,
         }
     }
 
@@ -227,6 +251,10 @@ impl Response {
                     .as_ref()
                     .map_or_else(|| "None".to_string(), |m| m.__repr__())
             ),
+            ResponseType::Nack => format!(
+                "Response.nack(id={:?}, nack_options={:?})",
+                self.id, self.nack_options
+            ),
         }
     }
 }
@@ -239,6 +267,7 @@ pub enum ResponseType {
     Fallback,
     Serve,
     OnSuccess,
+    Nack,
 }
 
 impl From<Response> for sink::Response {
@@ -249,6 +278,7 @@ impl From<Response> for sink::Response {
             ResponseType::Fallback => sink::ResponseType::FallBack,
             ResponseType::Serve => sink::ResponseType::Serve,
             ResponseType::OnSuccess => sink::ResponseType::OnSuccess,
+            ResponseType::Nack => sink::ResponseType::Nack,
         };
 
         Self {
@@ -257,6 +287,7 @@ impl From<Response> for sink::Response {
             err: value.error,
             serve_response: value.serve_response,
             on_success_msg: value.on_success_msg.map(|m| m.into()),
+            nack_options: value.nack_options.map(Into::into),
         }
     }
 }
@@ -506,6 +537,7 @@ pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<Message>()?;
     m.add_class::<Response>()?;
     m.add_class::<Datum>()?;
+    m.add_class::<NackOptions>()?;
     m.add_class::<SinkAsyncServer>()?;
 
     Ok(())

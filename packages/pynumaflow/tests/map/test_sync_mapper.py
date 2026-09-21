@@ -5,7 +5,16 @@ from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.mapper import MapServer
 from pynumaflow.proto.mapper import map_pb2
-from tests.map.utils import map_handler, err_map_handler, ExampleMap, get_test_datums
+from tests.map.utils import (
+    map_handler,
+    err_map_handler,
+    ExampleMap,
+    get_test_datums,
+    nack_map_handler,
+    NACK_TEST_OPTIONS,
+    fail_map_handler,
+)
+from pynumaflow._constants import FAIL, NACK
 from tests.conftest import collect_responses, drain_responses, send_test_requests
 
 
@@ -94,6 +103,54 @@ def test_map_forward_message(map_test_server):
         assert len(responses[idx].results) == 1
         idx += 1
     assert len(result_ids) == 0
+    assert code == StatusCode.OK
+
+
+def test_map_nack():
+    my_server = MapServer(mapper_instance=nack_map_handler)
+    services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
+    test_server = server_from_dictionary(services, strict_real_time())
+
+    test_datums = get_test_datums(handshake=True)
+    method = _invoke_map_fn(test_server)
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    for resp in responses[1:]:
+        assert len(resp.results) == 1
+        result = resp.results[0]
+        # nack messages carry the NACK tag and the serialized nack options
+        assert NACK in result.tags
+        assert result.nack_options.delay == NACK_TEST_OPTIONS.delay
+        assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
+        assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
+    assert code == StatusCode.OK
+
+
+def test_map_fail():
+    my_server = MapServer(mapper_instance=fail_map_handler)
+    services = {map_pb2.DESCRIPTOR.services_by_name["Map"]: my_server.servicer}
+    test_server = server_from_dictionary(services, strict_real_time())
+
+    test_datums = get_test_datums(handshake=True)
+    method = _invoke_map_fn(test_server)
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    for resp in responses[1:]:
+        assert len(resp.results) == 1
+        result = resp.results[0]
+        assert FAIL in result.tags
     assert code == StatusCode.OK
 
 

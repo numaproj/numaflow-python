@@ -20,7 +20,15 @@ from pynumaflow._constants import (
 )
 from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sinker import sink_pb2
-from pynumaflow.sinker import Responses, Datum, Response, SinkServer, Message, UserMetadata
+from pynumaflow.sinker import (
+    Responses,
+    Datum,
+    Response,
+    SinkServer,
+    Message,
+    UserMetadata,
+    NackOptions,
+)
 from pynumaflow.sinker.servicer.sync_servicer import SyncSinkServicer
 from tests.conftest import collect_responses, drain_responses, send_test_requests
 
@@ -280,6 +288,63 @@ def test_forward_message(sink_test_server):
 
     # last message should be EOT response
     assert responses[2].status.eot
+
+    _, code, _ = method.termination()
+    assert code == StatusCode.OK
+
+
+NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
+
+
+def nack_udsink_handler(datums: Iterator[Datum]) -> Responses:
+    results = Responses()
+    for msg in datums:
+        results.append(Response.as_nack(msg.id, NACK_TEST_OPTIONS))
+    return results
+
+
+@pytest.fixture()
+def nack_sink_test_server():
+    server = SinkServer(sinker_instance=nack_udsink_handler)
+    services = {sink_pb2.DESCRIPTOR.services_by_name["Sink"]: server.servicer}
+    return server_from_dictionary(services, strict_real_time())
+
+
+def test_sink_nack(nack_sink_test_server):
+    event_time_timestamp, watermark_timestamp = _make_timestamps()
+
+    test_datums = [
+        sink_pb2.SinkRequest(handshake=sink_pb2.Handshake(sot=True)),
+        sink_pb2.SinkRequest(
+            request=sink_pb2.SinkRequest.Request(
+                id="test_id_0",
+                value=mock_message(),
+                event_time=event_time_timestamp,
+                watermark=watermark_timestamp,
+                metadata=METADATA,
+            )
+        ),
+        sink_pb2.SinkRequest(status=sink_pb2.TransmissionStatus(eot=True)),
+    ]
+
+    method = nack_sink_test_server.invoke_stream_stream(
+        method_descriptor=(sink_pb2.DESCRIPTOR.services_by_name["Sink"].methods_by_name["SinkFn"]),
+        invocation_metadata={},
+        timeout=1,
+    )
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    # 1 handshake + 1 data message + 1 EOT
+    assert len(responses) == 3
+    assert responses[0].handshake.sot
+
+    result = responses[1].results[0]
+    assert result.id == "test_id_0"
+    assert result.status == sink_pb2.Status.NACK
+    assert result.nack_options.delay == NACK_TEST_OPTIONS.delay
+    assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
+    assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
 
     _, code, _ = method.termination()
     assert code == StatusCode.OK

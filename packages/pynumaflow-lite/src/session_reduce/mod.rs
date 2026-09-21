@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use tokio::sync::mpsc;
 
 /// A message to be sent to the next vertex from a session reduce handler.
-#[pyclass(module = "pynumaflow_lite.session_reducer")]
+#[pyclass(module = "pynumaflow_lite.session_reducer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct Message {
     #[pyo3(get)]

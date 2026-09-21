@@ -13,7 +13,9 @@ from pynumaflow.batchmapper import (
     BatchResponses,
     BatchResponse,
     BatchMapAsyncServer,
+    NackOptions,
 )
+from pynumaflow._constants import NACK
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.batchmap.utils import request_generator
 from tests.conftest import create_async_loop, start_async_server, teardown_async_server
@@ -23,6 +25,9 @@ pytestmark = pytest.mark.integration
 LOGGER = setup_logging(__name__)
 
 listen_addr = "unix:///tmp/batch_map.sock"
+nack_listen_addr = "unix:///tmp/batch_map_nack.sock"
+
+NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
 
 
 class ExampleClass(BatchMapper):
@@ -135,6 +140,53 @@ def test_batch_map(batch_map_stub) -> None:
     assert data_resp[len(data_resp) - 1].status.eot is True
     # 10 sink responses + 1 EOT response
     assert 11 == len(data_resp)
+
+
+async def nack_handler(datums: AsyncIterable[Datum]) -> BatchResponses:
+    batch_responses = BatchResponses()
+    async for datum in datums:
+        batch_response = BatchResponse.from_id(datum.id)
+        batch_response.append(Message.to_nack(NACK_TEST_OPTIONS))
+        batch_responses.append(batch_response)
+    return batch_responses
+
+
+async def start_nack_server(udfs):
+    server = grpc.aio.server()
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
+    server.add_insecure_port(nack_listen_addr)
+    logging.info("Starting nack server on %s", nack_listen_addr)
+    await server.start()
+    return server, nack_listen_addr
+
+
+@pytest.fixture(scope="module")
+def async_nack_batch_map_server():
+    loop = create_async_loop()
+    udfs = BatchMapAsyncServer(nack_handler).servicer
+    server = start_async_server(loop, start_nack_server(udfs))
+    yield loop
+    teardown_async_server(loop, server)
+
+
+def test_batch_map_nack(async_nack_batch_map_server) -> None:
+    with grpc.insecure_channel(nack_listen_addr) as channel:
+        stub = map_pb2_grpc.MapStub(channel)
+        generator_response = stub.MapFn(request_iterator=request_generator(count=5, session=1))
+
+        handshake = next(generator_response)
+        assert handshake.handshake.sot
+
+        data_resp = [r for r in generator_response]
+
+    # exclude the trailing EOT response
+    for resp in data_resp[:-1]:
+        result = resp.results[0]
+        assert NACK in result.tags
+        assert result.nack_options.delay == NACK_TEST_OPTIONS.delay
+        assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
+        assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
+    assert data_resp[-1].status.eot is True
 
 
 def test_is_ready(async_batch_map_server) -> None:

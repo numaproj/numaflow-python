@@ -9,7 +9,9 @@ from pynumaflow.sourcetransformer import (
     Datum,
     UserMetadata,
     SystemMetadata,
+    NackOptions,
 )
+from pynumaflow._constants import FAIL, NACK
 from tests.testing_utils import mock_new_event_time
 
 
@@ -61,6 +63,38 @@ def test_message_to_drop():
     assert mock_obj["Value"] == msgt.value
     assert mock_obj["Tags"] == msgt.tags
     assert mock_obj["EventTime"] == msgt.event_time
+
+
+def test_message_to_nack():
+    opts = NackOptions(max_deliveries=2)
+    msgt = Message.to_nack(mock_event_time(), opts)
+    assert isinstance(msgt, Message)
+    assert msgt.keys == []
+    assert msgt.value == b""
+    assert msgt.tags == [NACK]
+    assert msgt.event_time == mock_event_time()
+    assert msgt.nack_options == opts
+
+
+def test_message_to_nack_default_opts():
+    msgt = Message.to_nack(mock_event_time())
+    assert msgt.tags == [NACK]
+    assert msgt.event_time == mock_event_time()
+    assert msgt.nack_options is None
+
+
+def test_message_to_fail():
+    msgt = Message.to_fail(mock_event_time())
+    assert isinstance(msgt, Message)
+    assert msgt.keys == []
+    assert msgt.value == b""
+    assert msgt.tags == [FAIL]
+    assert msgt.event_time == mock_event_time()
+
+
+def test_message_default_nack_options():
+    msgt = Message(mock_message_t(), mock_event_time())
+    assert msgt.nack_options is None
 
 
 def test_message_with_user_metadata():

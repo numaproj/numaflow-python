@@ -176,6 +176,30 @@ def test_accumulator_result_update_watermark_invalid_type():
         result.update_watermark("not a datetime")
 
 
+def test_accumulator_result_close_window_setter():
+    result = AccumulatorResult(
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
+    )
+    # Not set until a CLOSE arrives.
+    assert result.close_window is None
+    window = KeyedWindow(
+        start=datetime.fromtimestamp(1662998400, timezone.utc),
+        end=datetime.fromtimestamp(1662998460, timezone.utc),
+        slot="slot-0",
+        keys=["key1"],
+    )
+    result.close_window = window
+    assert result.close_window is window
+
+
+def test_accumulator_result_close_window_setter_invalid_type():
+    result = AccumulatorResult(
+        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
+    )
+    with pytest.raises(TypeError):
+        result.close_window = "not a keyed window"
+
+
 # --- TestAccumulatorRequest ---
 
 

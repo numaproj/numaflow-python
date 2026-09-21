@@ -12,7 +12,6 @@ pub(crate) fn run_asyncio(tx: Sender<Arc<Py<PyAny>>>) {
     let event_loop = Arc::new(event_loop);
     let _ = tx.send(event_loop.clone());
     Python::attach(|py| {
-        println!("Starting NumaflowCore: event_loop={:?}", event_loop);
         event_loop.call_method0(py, "run_forever").unwrap();
     });
 }

@@ -44,10 +44,11 @@ clean:
 	cargo clean
 
 py-fmt:
-	uv run black pynumaflow_lite/ tests/ manifests/
+	uv run ruff format pynumaflow_lite/ tests/ manifests/
 
-py-lint: py-fmt
+py-lint:
 	uv run ruff check --fix .
+	uv run ruff format pynumaflow_lite/ tests/ manifests/
 
 fmt:
 	cargo fmt --all
@@ -58,6 +59,7 @@ lint: test-fmt clippy py-lint
 .PHONY: test-fmt
 test-fmt:
 	cargo fmt --all --check
+	uv run ruff format --check pynumaflow_lite/ tests/ manifests/
 
 .PHONY: clippy
 clippy:

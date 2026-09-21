@@ -138,7 +138,7 @@ def test_shutdown_on_nack_cancelled_error():
 
         # Build a valid NackRequest proto with at least one offset.
         offset = source_pb2.Offset(offset=b"test", partition_id=0)
-        request = source_pb2.NackRequest(request=source_pb2.NackRequest.Request(offsets=[offset]))
+        request = source_pb2.NackRequest(request=[source_pb2.NackRequest.Request(offsets=[offset])])
         ctx = mock.MagicMock()
         # NackFn is a coroutine (not an async generator), so we await it.
         await servicer.NackFn(request, ctx)

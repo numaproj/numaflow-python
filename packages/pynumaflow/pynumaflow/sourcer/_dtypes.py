@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import TypeAlias
 
 from pynumaflow._metadata import UserMetadata
+from pynumaflow._nack import NackOptions
 from pynumaflow._validate import _validate_message_fields
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
@@ -183,33 +184,78 @@ class AckRequest:
         return self._offsets
 
 
-@dataclass
-class NackRequest:
+@dataclass(init=False, slots=True)
+class NackOffset:
     """
-    Class for defining the request for negatively acknowledging an offset.
-    It takes a list of offsets that need to be negatively acknowledged on the source.
+    Encapsulates a single offset and the nack options associated with it.
+
+    Nack is a per-message operation: each offset carries its own (optional)
+    nack options, giving a 1:1 mapping between an offset and its options.
 
     Args:
-        offsets: the offsets to be negatively acknowledged.
+        offset: the offset to be negatively acknowledged.
+        nack_options: the options to apply when nacking this offset (optional).
 
     Example:
     ```py
-    from pynumaflow.sourcer import NackRequest, Offset
+    from pynumaflow.sourcer import NackOffset, Offset, NackOptions
     offset_val = Offset(offset=b"123", partition_id=0)
-    nack_request = NackRequest(offsets=[offset_val, offset_val])
+    nack_offset = NackOffset(offset=offset_val, nack_options=NackOptions(delay=1000))
     ```
     """
 
-    __slots__ = ("_offsets",)
-    _offsets: list[Offset]
+    _offset: Offset
+    _nack_options: NackOptions | None
 
-    def __init__(self, offsets: list[Offset]):
-        self._offsets = offsets
+    def __init__(
+        self,
+        offset: Offset,
+        nack_options: NackOptions | None = None,
+    ):
+        self._offset = offset
+        self._nack_options = nack_options
 
     @property
-    def offsets(self) -> list[Offset]:
-        """Returns the offsets to be negatively acknowledged."""
-        return self._offsets
+    def offset(self) -> Offset:
+        return self._offset
+
+    @property
+    def nack_options(self) -> NackOptions | None:
+        return self._nack_options
+
+
+@dataclass(init=False, slots=True)
+class NackRequest:
+    """
+    Class for defining the request for negatively acknowledging offsets.
+    It carries a list of NackOffset entries, each pairing an offset with its
+    own (optional) nack options (1:1 mapping between offset and options).
+
+    Args:
+        nack_offsets: the list of offsets (with per-offset options) to be
+            negatively acknowledged.
+
+    Example:
+    ```py
+    from pynumaflow.sourcer import NackRequest, NackOffset, Offset, NackOptions
+    offset_val = Offset(offset=b"123", partition_id=0)
+    nack_request = NackRequest(
+        nack_offsets=[NackOffset(offset=offset_val, nack_options=NackOptions(delay=1000))]
+    )
+    ```
+    """
+
+    _nack_offsets: list[NackOffset]
+
+    def __init__(
+        self,
+        nack_offsets: list[NackOffset],
+    ):
+        self._nack_offsets = nack_offsets
+
+    @property
+    def nack_offsets(self) -> list[NackOffset]:
+        return self._nack_offsets
 
 
 @dataclass(init=False, slots=True)

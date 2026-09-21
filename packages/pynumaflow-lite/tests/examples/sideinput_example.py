@@ -1,6 +1,7 @@
 import asyncio
-import signal
 import datetime
+import signal
+
 from pynumaflow_lite import sideinputer
 
 
@@ -18,7 +19,7 @@ class ExampleSideInput(sideinputer.SideInput):
         """
         time_now = datetime.datetime.now()
         # val is the value to be broadcasted
-        val = f"an example: {str(time_now)}"
+        val = f"an example: {time_now!s}"
         self.counter += 1
         # broadcast every other time
         if self.counter % 2 == 0:

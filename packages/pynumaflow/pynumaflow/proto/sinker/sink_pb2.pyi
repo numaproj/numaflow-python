@@ -3,6 +3,7 @@ import datetime
 from google.protobuf import empty_pb2 as _empty_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow.proto.common import metadata_pb2 as _metadata_pb2
+from pynumaflow.proto.common import nack_options_pb2 as _nack_options_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -19,11 +20,13 @@ class Status(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FALLBACK: _ClassVar[Status]
     SERVE: _ClassVar[Status]
     ON_SUCCESS: _ClassVar[Status]
+    NACK: _ClassVar[Status]
 SUCCESS: Status
 FAILURE: Status
 FALLBACK: Status
 SERVE: Status
 ON_SUCCESS: Status
+NACK: Status
 
 class SinkRequest(_message.Message):
     __slots__ = ("request", "status", "handshake")
@@ -80,7 +83,7 @@ class TransmissionStatus(_message.Message):
 class SinkResponse(_message.Message):
     __slots__ = ("results", "handshake", "status")
     class Result(_message.Message):
-        __slots__ = ("id", "status", "err_msg", "serve_response", "on_success_msg")
+        __slots__ = ("id", "status", "err_msg", "serve_response", "on_success_msg", "nack_options")
         class Message(_message.Message):
             __slots__ = ("value", "keys", "metadata")
             VALUE_FIELD_NUMBER: _ClassVar[int]
@@ -95,12 +98,14 @@ class SinkResponse(_message.Message):
         ERR_MSG_FIELD_NUMBER: _ClassVar[int]
         SERVE_RESPONSE_FIELD_NUMBER: _ClassVar[int]
         ON_SUCCESS_MSG_FIELD_NUMBER: _ClassVar[int]
+        NACK_OPTIONS_FIELD_NUMBER: _ClassVar[int]
         id: str
         status: Status
         err_msg: str
         serve_response: bytes
         on_success_msg: SinkResponse.Result.Message
-        def __init__(self, id: _Optional[str] = ..., status: _Optional[_Union[Status, str]] = ..., err_msg: _Optional[str] = ..., serve_response: _Optional[bytes] = ..., on_success_msg: _Optional[_Union[SinkResponse.Result.Message, _Mapping]] = ...) -> None: ...
+        nack_options: _nack_options_pb2.NackOptions
+        def __init__(self, id: _Optional[str] = ..., status: _Optional[_Union[Status, str]] = ..., err_msg: _Optional[str] = ..., serve_response: _Optional[bytes] = ..., on_success_msg: _Optional[_Union[SinkResponse.Result.Message, _Mapping]] = ..., nack_options: _Optional[_Union[_nack_options_pb2.NackOptions, _Mapping]] = ...) -> None: ...
     RESULTS_FIELD_NUMBER: _ClassVar[int]
     HANDSHAKE_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]

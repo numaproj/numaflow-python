@@ -1,4 +1,5 @@
 from pynumaflow._metadata import _user_and_system_metadata_from_proto
+from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.proto.sinker import sink_pb2
 from pynumaflow.sinker._dtypes import Response, Datum, Responses, Message
 
@@ -37,6 +38,12 @@ def build_sink_response(rspn: Response) -> sink_pb2.SinkResponse.Result:
             id=rid,
             status=sink_pb2.Status.ON_SUCCESS,
             on_success_msg=build_on_success_message(rspn.on_success_msg),
+        )
+    elif rspn.nack:
+        return sink_pb2.SinkResponse.Result(
+            id=rid,
+            status=sink_pb2.Status.NACK,
+            nack_options=_nack_options_to_proto(rspn.nack_options),
         )
     else:
         return sink_pb2.SinkResponse.Result(

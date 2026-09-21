@@ -4,6 +4,7 @@ from pynumaflow.sinker.server import SinkServer
 
 from pynumaflow._metadata import UserMetadata, SystemMetadata
 from pynumaflow.sinker._dtypes import Response, Responses, Datum, Sinker, Message
+from pynumaflow._nack import NackOptions
 
 __all__ = [
     "Message",
@@ -15,4 +16,5 @@ __all__ = [
     "SinkServer",
     "UserMetadata",
     "SystemMetadata",
+    "NackOptions",
 ]

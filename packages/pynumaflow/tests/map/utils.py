@@ -1,8 +1,27 @@
 from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.mapper import map_pb2
 
-from pynumaflow.mapper import Datum, Messages, Message, Mapper
+from pynumaflow.mapper import Datum, Messages, Message, Mapper, NackOptions
 from tests.testing_utils import mock_message, mock_headers, get_time_args
+
+# NackOptions used by the nack handlers below; also asserted by the round-trip tests.
+NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
+
+
+def nack_map_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_nack(NACK_TEST_OPTIONS))
+
+
+async def async_nack_map_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_nack(NACK_TEST_OPTIONS))
+
+
+def fail_map_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_fail())
+
+
+async def async_fail_map_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_fail())
 
 
 async def async_map_error_fn(keys: list[str], datum: Datum) -> Messages:

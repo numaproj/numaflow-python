@@ -9,10 +9,12 @@ pub mod server;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+use crate::nack::NackOptions;
+
 /// UserMetadata wraps user-defined metadata groups per message.
 /// Source is the origin or the first vertex in the pipeline.
 /// Here, for the first time, the user metadata can be set by the user.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Default, Debug)]
 pub struct UserMetadata {
     data: HashMap<String, HashMap<String, Vec<u8>>>,
@@ -102,7 +104,7 @@ impl From<UserMetadata> for numaflow::source::UserMetadata {
 }
 
 /// A message to be sent from the source.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Message {
     /// The payload of the message.
@@ -187,7 +189,7 @@ impl From<Message> for numaflow::source::Message {
 }
 
 /// The offset of a message.
-#[pyclass(module = "pynumaflow_lite.sourcer", name = "Offset")] // this to avoid conflict with the Offset in the source module
+#[pyclass(module = "pynumaflow_lite.sourcer", name = "Offset", from_py_object)] // this to avoid conflict with the Offset in the source module
 #[derive(Clone, Debug)]
 pub struct PyOffset {
     /// Offset value in bytes.
@@ -245,7 +247,7 @@ impl From<numaflow::source::Offset> for PyOffset {
 }
 
 /// A request to read messages from the source.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct ReadRequest {
     /// The number of messages to read.
@@ -286,7 +288,7 @@ impl From<numaflow::source::SourceReadRequest> for ReadRequest {
 }
 
 /// A request to acknowledge messages.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct AckRequest {
     /// The offsets to acknowledge.
@@ -308,31 +310,82 @@ impl AckRequest {
     }
 }
 
+/// An offset to negatively acknowledge, paired with its optional nack options.
+///
+/// Nack is a per-message operation: each offset carries its own (optional)
+/// nack options, giving a 1:1 mapping between an offset and its options.
+#[pyclass(
+    module = "pynumaflow_lite.sourcer",
+    name = "NackOffset",
+    from_py_object
+)]
+#[derive(Clone, Debug)]
+pub struct NackOffset {
+    /// The offset to be negatively acknowledged.
+    #[pyo3(get)]
+    pub offset: PyOffset,
+    /// The options to apply when nacking this offset.
+    #[pyo3(get)]
+    pub nack_options: Option<NackOptions>,
+}
+
+#[pymethods]
+impl NackOffset {
+    /// Create a new [NackOffset] with the given offset and nack options.
+    #[new]
+    #[pyo3(signature = (offset: "Offset", nack_options: "NackOptions | None"=None) -> "NackOffset")]
+    fn new(offset: PyOffset, nack_options: Option<NackOptions>) -> Self {
+        Self {
+            offset,
+            nack_options,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "NackOffset(offset={:?}, nack_options={:?})",
+            self.offset, self.nack_options
+        )
+    }
+}
+
+impl From<numaflow::source::NackOffset> for NackOffset {
+    fn from(value: numaflow::source::NackOffset) -> Self {
+        Self {
+            offset: value.offset.into(),
+            nack_options: value.options.map(Into::into),
+        }
+    }
+}
+
 /// A request to negatively acknowledge messages.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+///
+/// It carries a list of [NackOffset] entries, each pairing an offset with its
+/// own (optional) nack options.
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct NackRequest {
-    /// The offsets to negatively acknowledge.
+    /// The offsets (with per-offset options) to negatively acknowledge.
     #[pyo3(get)]
-    pub offsets: Vec<PyOffset>,
+    pub nack_offsets: Vec<NackOffset>,
 }
 
 #[pymethods]
 impl NackRequest {
-    /// Create a new [NackRequest] with the given offsets.
+    /// Create a new [NackRequest] with the given nack offsets.
     #[new]
-    #[pyo3(signature = (offsets: "list[Offset]") -> "NackRequest")]
-    fn new(offsets: Vec<PyOffset>) -> Self {
-        Self { offsets }
+    #[pyo3(signature = (nack_offsets: "list[NackOffset]") -> "NackRequest")]
+    fn new(nack_offsets: Vec<NackOffset>) -> Self {
+        Self { nack_offsets }
     }
 
     fn __repr__(&self) -> String {
-        format!("NackRequest(offsets={:?})", self.offsets)
+        format!("NackRequest(nack_offsets={:?})", self.nack_offsets)
     }
 }
 
 /// Response for pending messages count.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PendingResponse {
     /// The number of pending messages. -1 if the source doesn't support detecting backlog.
@@ -355,7 +408,7 @@ impl PendingResponse {
 }
 
 /// Response for partitions.
-#[pyclass(module = "pynumaflow_lite.sourcer")]
+#[pyclass(module = "pynumaflow_lite.sourcer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct PartitionsResponse {
     /// The list of partition IDs.
@@ -434,6 +487,8 @@ pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<PyOffset>()?;
     m.add_class::<ReadRequest>()?;
     m.add_class::<AckRequest>()?;
+    m.add_class::<NackOptions>()?;
+    m.add_class::<NackOffset>()?;
     m.add_class::<NackRequest>()?;
     m.add_class::<PendingResponse>()?;
     m.add_class::<PartitionsResponse>()?;

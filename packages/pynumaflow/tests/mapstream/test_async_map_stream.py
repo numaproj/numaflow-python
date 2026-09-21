@@ -10,7 +10,9 @@ from pynumaflow.mapstreamer import (
     Message,
     Datum,
     MapStreamAsyncServer,
+    NackOptions,
 )
+from pynumaflow._constants import NACK
 from pynumaflow.proto.mapper import map_pb2_grpc
 from tests.mapstream.utils import request_generator
 from tests.conftest import create_async_loop, start_async_server, teardown_async_server
@@ -25,6 +27,9 @@ LOGGER = setup_logging(__name__)
 raise_error_from_map = False
 
 SOCK_PATH = "unix:///tmp/async_map_stream.sock"
+NACK_SOCK_PATH = "unix:///tmp/async_map_stream_nack.sock"
+
+NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
 
 
 async def async_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIterable[Message]:
@@ -85,7 +90,7 @@ def test_map_stream(map_stream_stub):
 
     # Prepare expected payload
     expected_payload = bytes(
-        "payload:test_mock_message " "event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
+        "payload:test_mock_message event_time:2022-09-12 16:00:00 watermark:2022-09-12 16:01:00",
         encoding="utf-8",
     )
 
@@ -116,6 +121,53 @@ def test_map_stream(map_stream_stub):
         assert (
             id_counter[f"test-id-{i}"] == 10
         ), f"Expected 10 results for test-id-{i}, got {id_counter[f'test-id-{i}']}"
+
+
+async def async_nack_map_stream_handler(keys: list[str], datum: Datum) -> AsyncIterable[Message]:
+    for i in range(3):
+        yield Message.to_nack(NACK_TEST_OPTIONS)
+
+
+async def _start_nack_server(udfs):
+    server = grpc.aio.server()
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
+    server.add_insecure_port(NACK_SOCK_PATH)
+    logging.info("Starting nack server on %s", NACK_SOCK_PATH)
+    await server.start()
+    return server, NACK_SOCK_PATH
+
+
+@pytest.fixture(scope="module")
+def async_nack_map_stream_server():
+    loop = create_async_loop()
+    server_obj = MapStreamAsyncServer(map_stream_instance=async_nack_map_stream_handler)
+    udfs = server_obj.servicer
+    server = start_async_server(loop, _start_nack_server(udfs))
+    yield loop
+    teardown_async_server(loop, server)
+
+
+def test_map_stream_nack(async_nack_map_stream_server):
+    with grpc.insecure_channel(NACK_SOCK_PATH) as channel:
+        stub = map_pb2_grpc.MapStub(channel)
+        generator_response = stub.MapFn(request_iterator=request_generator(count=2, session=1))
+
+        handshake = next(generator_response)
+        assert handshake.handshake.sot
+
+        result_count = 0
+        for msg in generator_response:
+            if hasattr(msg, "status") and msg.status.eot:
+                continue
+            result = msg.results[0]
+            assert NACK in result.tags
+            assert result.nack_options.delay == NACK_TEST_OPTIONS.delay
+            assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
+            assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
+            result_count += 1
+
+    # 2 requests x 3 nack messages each
+    assert result_count == 6
 
 
 def test_is_ready(async_map_stream_server):

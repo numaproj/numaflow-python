@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Awaitable
+from collections.abc import Awaitable
 
 # Re-export the Python ABC for user convenience and typing
 from ._sideinput_dtypes import SideInput as SideInput
@@ -39,8 +39,8 @@ DIR_PATH: str
 """Default directory path where side input files are stored."""
 
 __all__ = [
-    "Response",
-    "SideInputAsyncServer",
-    "SideInput",
     "DIR_PATH",
+    "Response",
+    "SideInput",
+    "SideInputAsyncServer",
 ]

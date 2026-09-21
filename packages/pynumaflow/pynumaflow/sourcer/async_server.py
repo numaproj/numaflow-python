@@ -118,12 +118,13 @@ class SourceAsyncServer(NumaflowServer):
                     offset = int(req.offset)
                     self.to_ack_set.remove(offset)
 
-            async def nack_handler(self, ack_request: NackRequest):
+            async def nack_handler(self, nack_request: NackRequest):
                 '''
-                Add the offsets that have been negatively acknowledged to the nacked set
+                Add the offsets that have been negatively acknowledged to the nacked set.
+                Each nack_offset carries its own (optional) nack options.
                 '''
-                for req in ack_request.offsets:
-                    offset = int(req.offset)
+                for nack_offset in nack_request.nack_offsets:
+                    offset = int(nack_offset.offset.offset)
                     self.to_ack_set.remove(offset)
                     self.nacked.add(offset)
 

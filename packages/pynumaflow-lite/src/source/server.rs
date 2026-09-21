@@ -84,13 +84,13 @@ impl numaflow::source::Sourcer for PySourceRunner {
     }
 
     /// Negatively acknowledges the message that has been processed by the user-defined source.
-    async fn nack(&self, offsets: Vec<numaflow::source::Offset>) {
-        // Convert Rust offsets to Python Offset objects
-        let py_offsets: Vec<crate::source::PyOffset> =
+    async fn nack(&self, offsets: Vec<numaflow::source::NackOffset>) {
+        // Convert Rust nack offsets to Python NackOffset objects
+        let py_nack_offsets: Vec<crate::source::NackOffset> =
             offsets.into_iter().map(|o| o.into()).collect();
 
         // Create NackRequest
-        let nack_request = crate::source::NackRequest::new(py_offsets);
+        let nack_request = crate::source::NackRequest::new(py_nack_offsets);
 
         // Call the Python nack_handler
         let fut = Python::attach(|py| {

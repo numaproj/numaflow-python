@@ -4,6 +4,7 @@ from pynumaflow.sourcer._dtypes import (
     PendingResponse,
     AckRequest,
     NackRequest,
+    NackOffset,
     Offset,
     PartitionsResponse,
     get_default_partitions,
@@ -12,6 +13,7 @@ from pynumaflow.sourcer._dtypes import (
 )
 from pynumaflow._metadata import UserMetadata
 from pynumaflow.sourcer.async_server import SourceAsyncServer
+from pynumaflow._nack import NackOptions
 
 __all__ = [
     "Message",
@@ -19,6 +21,7 @@ __all__ = [
     "PendingResponse",
     "AckRequest",
     "NackRequest",
+    "NackOffset",
     "Offset",
     "PartitionsResponse",
     "get_default_partitions",
@@ -26,4 +29,5 @@ __all__ = [
     "SourceAsyncServer",
     "SourceCallable",
     "UserMetadata",
+    "NackOptions",
 ]

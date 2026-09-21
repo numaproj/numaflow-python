@@ -3,6 +3,7 @@ syntax = "proto3";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 import "pynumaflow/proto/common/metadata.proto";
+import "pynumaflow/proto/common/nack_options.proto";
 
 package source.v1;
 
@@ -148,11 +149,13 @@ message AckResponse {
 
 message NackRequest {
   message Request {
-    // Required field holding the offsets to be nacked
+    // Required field holding the offset to be nacked
     repeated Offset offsets = 1;
+    // Options passed to the source for nacking
+    optional common.NackOptions nack_options = 2;
   }
   // Required field holding the request. The list will be ordered and will have the same order as the original Read response.
-  Request request = 1;
+  repeated Request request = 1;
 }
 
 message NackResponse {

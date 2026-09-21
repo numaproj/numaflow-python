@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, List, Dict, Awaitable
 import datetime as _dt
+from collections.abc import Awaitable
 
 # Re-export the Python ABC for user convenience and typing
 from ._source_dtypes import Sourcer as Sourcer
@@ -10,11 +10,11 @@ class UserMetadata:
     """User-defined metadata groups per message (read-write for source)."""
 
     def __init__(self) -> None: ...
-    def groups(self) -> List[str]:
+    def groups(self) -> list[str]:
         """Returns the groups of the user metadata."""
         ...
 
-    def keys(self, group: str) -> List[str]:
+    def keys(self, group: str) -> list[str]:
         """Returns the keys of the user metadata for the given group."""
         ...
 
@@ -46,18 +46,18 @@ class Message:
     payload: bytes
     offset: Offset
     event_time: _dt.datetime
-    keys: List[str]
-    headers: Dict[str, str]
-    user_metadata: Optional[UserMetadata]
+    keys: list[str]
+    headers: dict[str, str]
+    user_metadata: UserMetadata | None
 
     def __init__(
         self,
         payload: bytes,
         offset: Offset,
         event_time: _dt.datetime,
-        keys: Optional[List[str]] = ...,
-        headers: Optional[Dict[str, str]] = ...,
-        user_metadata: Optional[UserMetadata] = ...,
+        keys: list[str] | None = ...,
+        headers: dict[str, str] | None = ...,
+        user_metadata: UserMetadata | None = ...,
     ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -92,22 +92,52 @@ class ReadRequest:
 class AckRequest:
     """A request to acknowledge messages."""
 
-    offsets: List[Offset]
+    offsets: list[Offset]
 
     def __init__(
         self,
-        offsets: List[Offset],
+        offsets: list[Offset],
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
+class NackOptions:
+    """Per-message redelivery options for a nack."""
+
+    delay: int | None
+    max_deliveries: int | None
+    reason: str | None
+    nack_map: dict[str, str]
+
+    def __init__(
+        self,
+        delay: int | None = ...,
+        max_deliveries: int | None = ...,
+        reason: str | None = ...,
+        nack_map: dict[str, str] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+
+class NackOffset:
+    """An offset to negatively acknowledge, paired with its optional nack options."""
+
+    offset: Offset
+    nack_options: NackOptions | None
+
+    def __init__(
+        self,
+        offset: Offset,
+        nack_options: NackOptions | None = ...,
     ) -> None: ...
     def __repr__(self) -> str: ...
 
 class NackRequest:
     """A request to negatively acknowledge messages."""
 
-    offsets: List[Offset]
+    nack_offsets: list[NackOffset]
 
     def __init__(
         self,
-        offsets: List[Offset],
+        nack_offsets: list[NackOffset],
     ) -> None: ...
     def __repr__(self) -> str: ...
 
@@ -125,11 +155,11 @@ class PendingResponse:
 class PartitionsResponse:
     """Response for partitions."""
 
-    partitions: List[int]
+    partitions: list[int]
 
     def __init__(
         self,
-        partitions: List[int],
+        partitions: list[int],
     ) -> None: ...
     def __repr__(self) -> str: ...
 
@@ -145,14 +175,16 @@ class SourceAsyncServer:
     def stop(self) -> None: ...
 
 __all__ = [
-    "UserMetadata",
-    "Message",
-    "Offset",
-    "ReadRequest",
     "AckRequest",
+    "Message",
+    "NackOffset",
+    "NackOptions",
     "NackRequest",
-    "PendingResponse",
+    "Offset",
     "PartitionsResponse",
+    "PendingResponse",
+    "ReadRequest",
     "SourceAsyncServer",
     "Sourcer",
+    "UserMetadata",
 ]

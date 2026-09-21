@@ -7,6 +7,7 @@ from collections.abc import Sequence, Iterator
 from warnings import warn
 
 from pynumaflow._metadata import SystemMetadata, UserMetadata
+from pynumaflow._nack import NackOptions
 from pynumaflow._validate import _validate_message_fields
 
 R = TypeVar("R", bound="Response")
@@ -83,15 +84,33 @@ class Response:
     fallback: bool
     on_success: bool
     on_success_msg: Message | None
+    nack: bool
+    nack_options: NackOptions | None
 
-    __slots__ = ("id", "success", "err", "fallback", "on_success", "on_success_msg")
+    __slots__ = (
+        "id",
+        "success",
+        "err",
+        "fallback",
+        "on_success",
+        "on_success_msg",
+        "nack",
+        "nack_options",
+    )
 
     # as_success creates a successful Response with the given id.
     # The Success field is set to true.
     @classmethod
     def as_success(cls, id_: str) -> "Response":
         return Response(
-            id=id_, success=True, err=None, fallback=False, on_success=False, on_success_msg=None
+            id=id_,
+            success=True,
+            err=None,
+            fallback=False,
+            on_success=False,
+            on_success_msg=None,
+            nack=False,
+            nack_options=None,
         )
 
     # as_failure creates a failed Response with the given id and error message.
@@ -105,6 +124,8 @@ class Response:
             fallback=False,
             on_success=False,
             on_success_msg=None,
+            nack=False,
+            nack_options=None,
         )
 
     # as_fallback creates a Response with the fallback field set to true.
@@ -112,7 +133,14 @@ class Response:
     @classmethod
     def as_fallback(cls, id_: str) -> "Response":
         return Response(
-            id=id_, fallback=True, err=None, success=False, on_success=False, on_success_msg=None
+            id=id_,
+            fallback=True,
+            err=None,
+            success=False,
+            on_success=False,
+            on_success_msg=None,
+            nack=False,
+            nack_options=None,
         )
 
     # as_on_success creates a Response with the on_success field set to true.
@@ -126,6 +154,21 @@ class Response:
             success=False,
             on_success=True,
             on_success_msg=on_success,
+            nack=False,
+            nack_options=None,
+        )
+
+    @classmethod
+    def as_nack(cls, id_: str, opts: NackOptions | None = None) -> "Response":
+        return Response(
+            id=id_,
+            success=False,
+            err=None,
+            fallback=False,
+            on_success=False,
+            on_success_msg=None,
+            nack=True,
+            nack_options=opts,
         )
 
 

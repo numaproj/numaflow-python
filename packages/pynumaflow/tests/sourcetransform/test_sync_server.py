@@ -6,7 +6,14 @@ from grpc_testing import server_from_dictionary, strict_real_time
 
 from pynumaflow.proto.common import metadata_pb2
 from pynumaflow.proto.sourcetransformer import transform_pb2
-from pynumaflow.sourcetransformer import SourceTransformServer, Datum, Messages, Message
+from pynumaflow.sourcetransformer import (
+    SourceTransformServer,
+    Datum,
+    Messages,
+    Message,
+    NackOptions,
+)
+from pynumaflow._constants import FAIL, NACK
 from tests.sourcetransform.utils import transform_handler, err_transform_handler, get_test_datums
 from tests.conftest import collect_responses, drain_responses, send_test_requests
 from tests.testing_utils import mock_new_event_time
@@ -115,6 +122,60 @@ def test_mapt_assign_new_event_time(transform_test_server):
     updated_event_time_timestamp = _timestamp_pb2.Timestamp()
     updated_event_time_timestamp.FromDatetime(dt=mock_new_event_time())
     assert responses[1].results[0].event_time == updated_event_time_timestamp
+    assert code == StatusCode.OK
+
+
+NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
+
+
+def nack_transform_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_nack(mock_new_event_time(), NACK_TEST_OPTIONS))
+
+
+def test_transform_nack():
+    test_server = _make_transform_server(nack_transform_handler)
+    test_datums = get_test_datums()
+    method = _invoke_transform_fn(test_server)
+
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    for resp in responses[1:]:
+        assert len(resp.results) == 1
+        result = resp.results[0]
+        assert NACK in result.tags
+        assert result.nack_options.delay == NACK_TEST_OPTIONS.delay
+        assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
+        assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
+    assert code == StatusCode.OK
+
+
+def fail_transform_handler(keys: list[str], datum: Datum) -> Messages:
+    return Messages(Message.to_fail(mock_new_event_time()))
+
+
+def test_transform_fail():
+    test_server = _make_transform_server(fail_transform_handler)
+    test_datums = get_test_datums()
+    method = _invoke_transform_fn(test_server)
+
+    send_test_requests(method, test_datums)
+    responses = collect_responses(method)
+
+    metadata, code, details = method.termination()
+    # 1 handshake + 3 data responses
+    assert len(responses) == 4
+    assert responses[0].handshake.sot
+
+    for resp in responses[1:]:
+        assert len(resp.results) == 1
+        result = resp.results[0]
+        assert FAIL in result.tags
     assert code == StatusCode.OK
 
 

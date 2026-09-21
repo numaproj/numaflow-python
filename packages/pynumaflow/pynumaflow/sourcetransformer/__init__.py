@@ -9,16 +9,20 @@ from pynumaflow.sourcetransformer.multiproc_server import SourceTransformMultiPr
 from pynumaflow.sourcetransformer.server import SourceTransformServer
 from pynumaflow.sourcetransformer.async_server import SourceTransformAsyncServer
 from pynumaflow._metadata import UserMetadata, SystemMetadata
+from pynumaflow._nack import NackOptions
+from pynumaflow._constants import FAIL
 
 __all__ = [
     "Message",
     "Messages",
     "Datum",
     "DROP",
+    "FAIL",
     "SourceTransformServer",
     "SourceTransformer",
     "SourceTransformMultiProcServer",
     "SourceTransformAsyncServer",
     "UserMetadata",
     "SystemMetadata",
+    "NackOptions",
 ]

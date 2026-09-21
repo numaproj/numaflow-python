@@ -6,12 +6,20 @@ from google.protobuf import empty_pb2 as _empty_pb2
 from pynumaflow.shared.asynciter import NonBlockingIterator
 
 from pynumaflow.shared.server import update_context_err
-from pynumaflow.sourcer import ReadRequest, Offset, NackRequest, AckRequest, SourceCallable
+from pynumaflow.sourcer import (
+    ReadRequest,
+    Offset,
+    NackRequest,
+    NackOffset,
+    AckRequest,
+    SourceCallable,
+)
 from pynumaflow.proto.sourcer import source_pb2
 from pynumaflow.proto.sourcer import source_pb2_grpc
 from pynumaflow.sourcer._dtypes import Message
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
+from pynumaflow._nack import _nack_options_from_proto
 
 
 def _create_read_handshake_response():
@@ -216,10 +224,24 @@ class AsyncSourceServicer(source_pb2_grpc.SourceServicer):
         Handles the Nack function for user-defined source.
         """
         try:
-            offsets = [
-                Offset(offset.offset, offset.partition_id) for offset in request.request.offsets
-            ]
-            await self.__source_nack_handler(NackRequest(offsets=offsets))
+            # request.request is a repeated list of sub-requests. Each sub-request
+            # carries a single set of nack options that applies to its offsets,
+            # giving a 1:1 offset-to-options mapping once flattened.
+            nack_offsets = []
+            for req in request.request:
+                opts = (
+                    _nack_options_from_proto(req.nack_options)
+                    if req.HasField("nack_options")
+                    else None
+                )
+                for offset in req.offsets:
+                    nack_offsets.append(
+                        NackOffset(
+                            offset=Offset(offset.offset, offset.partition_id),
+                            nack_options=opts,
+                        )
+                    )
+            await self.__source_nack_handler(NackRequest(nack_offsets=nack_offsets))
         except asyncio.CancelledError:
             # Task cancelled during shutdown (e.g. SIGTERM) — not a UDF fault.
             _LOGGER.info("Server shutting down, cancelling RPC.")

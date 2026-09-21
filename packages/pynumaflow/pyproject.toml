@@ -1,6 +1,6 @@
 [project]
 name = "pynumaflow"
-version = "0.13.0"
+version = "0.14.0"
 description = "Provides the interfaces of writing Python User Defined Functions and Sinks for NumaFlow."
 authors = [
     { name = "NumaFlow Developers" },

@@ -4,16 +4,20 @@ from pynumaflow.mapper.sync_server import MapServer
 
 from pynumaflow.mapper._dtypes import Message, Messages, Datum, DROP, Mapper
 from pynumaflow._metadata import UserMetadata, SystemMetadata
+from pynumaflow._nack import NackOptions
+from pynumaflow._constants import FAIL
 
 __all__ = [
     "Message",
     "Messages",
     "Datum",
     "DROP",
+    "FAIL",
     "Mapper",
     "MapServer",
     "MapAsyncServer",
     "MapMultiprocServer",
     "UserMetadata",
     "SystemMetadata",
+    "NackOptions",
 ]

@@ -2,6 +2,7 @@ pub mod accumulate;
 pub mod batchmap;
 pub mod map;
 pub mod mapstream;
+pub mod nack;
 pub mod pyiterables;
 pub mod pyrs;
 pub mod reduce;

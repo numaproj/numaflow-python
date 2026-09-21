@@ -1,7 +1,37 @@
 import pytest
 
-from pynumaflow.mapstreamer import Messages, Message, DROP
+from pynumaflow.mapstreamer import Messages, Message, DROP, NackOptions
+from pynumaflow._constants import FAIL, NACK
 from tests.testing_utils import mock_message
+
+
+def test_message_to_nack():
+    opts = NackOptions(max_deliveries=2)
+    msg = Message.to_nack(opts)
+    assert type(msg) is Message
+    assert msg.keys == []
+    assert msg.value == b""
+    assert msg.tags == [NACK]
+    assert msg.nack_options == opts
+
+
+def test_message_to_nack_default_opts():
+    msg = Message.to_nack()
+    assert msg.tags == [NACK]
+    assert msg.nack_options is None
+
+
+def test_message_default_nack_options():
+    msg = Message(mock_message())
+    assert msg.nack_options is None
+
+
+def test_message_to_fail():
+    msg = Message.to_fail()
+    assert type(msg) is Message
+    assert msg.keys == []
+    assert msg.value == b""
+    assert msg.tags == [FAIL]
 
 
 def test_message_key():

@@ -9,7 +9,12 @@ from pynumaflow.sourcer import (
     NackRequest,
 )
 from pynumaflow.proto.sourcer import source_pb2
+from pynumaflow.proto.common import nack_options_pb2
 from tests.testing_utils import mock_event_time
+
+# Records NackRequests received by AsyncSource.nack_handler so tests can assert
+# that nack_options sent over the wire are decoded and delivered to the handler.
+RECEIVED_NACK_REQUESTS: list[NackRequest] = []
 
 
 def mock_offset() -> Offset:
@@ -45,6 +50,7 @@ class AsyncSource(Sourcer):
         return
 
     async def nack_handler(self, nack_request: NackRequest):
+        RECEIVED_NACK_REQUESTS.append(nack_request)
         return
 
     async def pending_handler(self) -> PendingResponse:
@@ -105,7 +111,16 @@ def ack_req_source_fn():
 def nack_req_source_fn():
     msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)
     request = source_pb2.NackRequest.Request(offsets=[msg])
-    return source_pb2.NackRequest(request=request)
+    return source_pb2.NackRequest(request=[request])
+
+
+def nack_req_source_fn_with_options():
+    msg = source_pb2.Offset(offset=mock_offset().offset, partition_id=mock_offset().partition_id)
+    request = source_pb2.NackRequest.Request(
+        offsets=[msg],
+        nack_options=nack_options_pb2.NackOptions(delay=1000, max_deliveries=3, reason="retry"),
+    )
+    return source_pb2.NackRequest(request=[request])
 
 
 class AsyncSourceError(Sourcer):

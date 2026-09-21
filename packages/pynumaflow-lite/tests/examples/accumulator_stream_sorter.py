@@ -5,16 +5,16 @@ This accumulator buffers incoming data and sorts it by event time,
 flushing sorted data when the watermark advances.
 """
 
-import signal
 import asyncio
+import signal
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator
 
 from pynumaflow_lite.accumulator import (
+    Accumulator,
+    AccumulatorAsyncServer,
     Datum,
     Message,
-    AccumulatorAsyncServer,
-    Accumulator,
 )
 
 
@@ -107,7 +107,6 @@ async def main():
     """
     Start the accumulator server.
     """
-    import signal
 
     sock_file = "/tmp/var/run/numaflow/accumulator.sock"
     server_info_file = "/tmp/var/run/numaflow/accumulator-server-info"
@@ -126,19 +125,9 @@ async def main():
         await server.start(StreamSorter)
         print("Shutting down gracefully...")
     except asyncio.CancelledError:
-        try:
-            server.stop()
-        except Exception:
-            pass
+        server.stop()
         return
 
-
-# Optional: ensure default signal handlers are in place so asyncio.run can handle them cleanly.
-signal.signal(signal.SIGINT, signal.default_int_handler)
-try:
-    signal.signal(signal.SIGTERM, signal.SIG_DFL)
-except AttributeError:
-    pass
 
 if __name__ == "__main__":
     asyncio.run(main())

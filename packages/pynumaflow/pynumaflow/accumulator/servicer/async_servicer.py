@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterable
+from datetime import datetime
 
 from google.protobuf import empty_pb2 as _empty_pb2
 
@@ -16,6 +17,25 @@ from pynumaflow.accumulator.servicer.task_manager import TaskManager
 from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 
+# protobuf Timestamp.ToDatetime() is only valid for years 1..9999, i.e. seconds in
+# [-62135596800, 253402300799]. Accumulator windows are global per key, so core sends the
+# window end as an "infinite" sentinel (chrono DateTime::<Utc>::MAX_UTC, ~year 262137) whose
+# seconds exceed that range and make ToDatetime() raise. Clamp out-of-range timestamps to the
+# representable datetime bounds instead of crashing the UDF.
+_TIMESTAMP_MAX_SECONDS = 253402300799
+_TIMESTAMP_MIN_SECONDS = -62135596800
+
+
+def _to_datetime(ts) -> datetime:
+    """Convert a protobuf Timestamp to a datetime, clamping values outside the representable
+    range (year 1..9999) to datetime.max / datetime.min so an infinite window bound does not
+    crash decoding."""
+    if ts.seconds > _TIMESTAMP_MAX_SECONDS:
+        return datetime.max
+    if ts.seconds < _TIMESTAMP_MIN_SECONDS:
+        return datetime.min
+    return ts.ToDatetime()
+
 
 async def datum_generator(
     request_iterator: AsyncIterable[accumulator_pb2.AccumulatorRequest],
@@ -24,8 +44,8 @@ async def datum_generator(
     async for d in request_iterator:
         # Convert protobuf KeyedWindow to our KeyedWindow dataclass
         keyed_window = KeyedWindow(
-            start=d.operation.keyedWindow.start.ToDatetime(),
-            end=d.operation.keyedWindow.end.ToDatetime(),
+            start=_to_datetime(d.operation.keyedWindow.start),
+            end=_to_datetime(d.operation.keyedWindow.end),
             slot=d.operation.keyedWindow.slot,
             keys=list(d.operation.keyedWindow.keys),
         )

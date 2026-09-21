@@ -7,7 +7,7 @@ use std::sync::Mutex;
 
 /// Response from the side input retrieve handler.
 /// Indicates whether to broadcast a value or not.
-#[pyclass(module = "pynumaflow_lite.sideinputer")]
+#[pyclass(module = "pynumaflow_lite.sideinputer", from_py_object)]
 #[derive(Clone, Debug)]
 pub struct Response {
     /// The value to broadcast (if any).

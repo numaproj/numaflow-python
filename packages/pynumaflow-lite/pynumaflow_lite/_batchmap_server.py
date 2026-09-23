@@ -14,6 +14,7 @@ BatchResponse: TypeAlias = _batchmapper.BatchResponse
 
 _SHUTDOWN_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
+
 class BatchMapAsyncServer:
     def __init__(
         self,

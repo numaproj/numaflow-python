@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime as _dt
 from collections.abc import AsyncIterator, Awaitable, Callable
+from types import TracebackType
 
 class NackOptions:
     """Per-message redelivery options for a nack."""
@@ -32,20 +33,32 @@ class Message:
         keys: list[str] | None = ...,
         tags: list[str] | None = ...,
     ) -> None: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
     @staticmethod
-    def message_to_drop() -> Message: ...
+    def to_drop() -> Message: ...
     @staticmethod
     def to_nack(nack_options: NackOptions | None = ...) -> Message: ...
     @staticmethod
     def to_fail() -> Message: ...
 
 class Datum:
+    id: str
     keys: list[str]
     value: bytes
     watermark: _dt.datetime
-    eventtime: _dt.datetime
-    id: str
+    event_time: _dt.datetime
     headers: dict[str, str]
+
+    def __init(
+        *,
+        id: str,
+        keys: list[str] | None = None,
+        value: bytes | None = None,
+        event_time: _dt.datetime | None = None,
+        watermark: _dt.datetime | None = None,
+        headers: dict[str, str] | None = None,
+    ): ...
 
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -58,27 +71,48 @@ class BatchResponse:
     def from_id(id: str) -> BatchResponse: ...
     def append(self, message: Message) -> None: ...
 
-class BatchResponses:
-    def __init__(self) -> None: ...
-    def append(self, response: BatchResponse) -> None: ...
+class _BatchMapAsyncServer:
+    def __init__(
+        self,
+        sock_file: str | None = ...,
+        server_info_file: str | None = ...,
+    ) -> None: ...
+    def start(
+        self,
+        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]]
+    ) -> Awaitable[None]: ...
+    def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
+    def stop(self) -> None: ...
 
 class BatchMapAsyncServer:
     def __init__(
         self,
+        handler: Callable[[Datum], Awaitable[list[Message]]],
+        *,
         sock_file: str | None = ...,
-        info_file: str | None = ...,
+        server_info_file: str | None = ...,
+        install_signal_handlers: bool = ...,
     ) -> None: ...
-    def start(self, py_func: Callable[[AsyncIterator[Datum]], Awaitable[BatchResponses]]) -> Awaitable[None]: ...
+    def run(self) -> None: ...
+    async def serve(self) -> None: ...
     def stop(self) -> None: ...
+    async def wait_ready(self, timeout: float = ...) -> None: ...
+    async def wait_for_termination(self) -> None: ...
+    async def __aenter__(self) -> BatchMapAsyncServer: ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None: ...
 
 class BatchMapper:
-    async def handler(self, batch: AsyncIterator[Datum]) -> BatchResponses: ...
+    async def handler(self, batch: AsyncIterator[Datum]) -> list[BatchResponse]: ...
 
 __all__ = [
     "BatchMapAsyncServer",
     "BatchMapper",
     "BatchResponse",
-    "BatchResponses",
     "Datum",
     "Message",
     "NackOptions",

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use numaflow::batchmap;
 
@@ -16,15 +16,18 @@ use std::sync::Mutex;
 use crate::nack::NackOptions;
 
 /// A message to be sent for a single datum in batch response.
-#[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object)]
-#[derive(Clone, Default, Debug)]
+#[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object, eq)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Message {
     /// Keys are a collection of strings which will be passed on to the next vertex as is. It can
     /// be an empty collection.
+    #[pyo3(get)]
     pub keys: Option<Vec<String>>,
     /// Value is the value passed to the next vertex.
+    #[pyo3(get)]
     pub value: Vec<u8>,
     /// Tags are used for conditional forwarding.
+    #[pyo3(get)]
     pub tags: Option<Vec<String>>,
     /// Options sent back to the source when nacking the message.
     #[pyo3(get)]
@@ -33,7 +36,7 @@ pub struct Message {
 
 #[pymethods]
 impl Message {
-    /// Create a new [Message] with the given value, keys, and tags.
+    /// Create a new [Message] with the given value. The keys and tags are optional.
     #[new]
     #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None) -> "Message"
     )]
@@ -47,9 +50,9 @@ impl Message {
     }
 
     /// Drop a [Message], do not forward to the next vertex.
-    #[pyo3(signature = ())]
+    #[pyo3(signature = () -> "Message")]
     #[staticmethod]
-    fn message_to_drop() -> Self {
+    fn to_drop() -> Self {
         Self {
             keys: None,
             value: vec![],
@@ -81,6 +84,23 @@ impl Message {
             nack_options: None,
         }
     }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Message(value=b\"{}\", keys={}, tags={}, user_metadata={})",
+            String::from_utf8_lossy(&self.value).escape_debug(),
+            self.keys
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
+            self.tags
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |tags| format!("{tags:?}")),
+            self.nack_options.as_ref().map_or_else(
+                || "None".to_string(),
+                |nack_options| nack_options.__repr__()
+            ),
+        )
+    }
 }
 
 impl From<Message> for batchmap::Message {
@@ -94,7 +114,7 @@ impl From<Message> for batchmap::Message {
     }
 }
 
-/// The incoming Datum for BatchMap
+/// The incoming Datum passed to the BatchMap handler.
 #[pyclass(module = "pynumaflow_lite.batchmapper")]
 pub struct Datum {
     /// Set of keys in the (key, value) terminology of map/reduce paradigm.
@@ -108,7 +128,7 @@ pub struct Datum {
     pub watermark: DateTime<Utc>,
     /// Time of the element as seen at source or aligned after a reduce operation.
     #[pyo3(get)]
-    pub eventtime: DateTime<Utc>,
+    pub event_time: DateTime<Utc>,
     /// ID is the unique id of the message
     #[pyo3(get)]
     pub id: String,
@@ -117,41 +137,47 @@ pub struct Datum {
     pub headers: HashMap<String, String>,
 }
 
+#[pymethods]
 impl Datum {
+    #[new]
+    #[pyo3(signature = (
+        *,
+        id: "str",
+        keys: "list[str] | None"=None,
+        value: "bytes | None"=None,
+        event_time: "datetime.datetime | None"=None,
+        watermark: "datetime.datetime | None"=None,
+        headers: "dict[str, str] | None"=None,
+    ) -> "Datum")]
     fn new(
-        keys: Vec<String>,
-        value: Vec<u8>,
-        watermark: DateTime<Utc>,
-        eventtime: DateTime<Utc>,
         id: String,
-        headers: HashMap<String, String>,
+        keys: Option<Vec<String>>,
+        value: Option<Vec<u8>>,
+        event_time: Option<DateTime<Utc>>,
+        watermark: Option<DateTime<Utc>>,
+        headers: Option<HashMap<String, String>>,
     ) -> Self {
         Self {
-            keys,
-            value,
-            watermark,
-            eventtime,
             id,
-            headers,
+            keys: keys.unwrap_or_default(),
+            value: value.unwrap_or_default(),
+            watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            headers: headers.unwrap_or_default(),
         }
     }
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?})",
-            self.keys, self.value, self.watermark, self.eventtime, self.id, self.headers
+            "Datum(id={}, keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?})",
+            self.id, self.keys, self.value, self.watermark, self.event_time, self.headers
         )
     }
 
     fn __str__(&self) -> String {
         format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, eventtime={}, id={}, headers={:?})",
-            self.keys,
-            String::from_utf8_lossy(&self.value),
-            self.watermark,
-            self.eventtime,
-            self.id,
-            self.headers
+            "Datum(id={}, keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?})",
+            self.id, self.keys, self.value, self.watermark, self.event_time, self.headers
         )
     }
 }
@@ -159,12 +185,12 @@ impl Datum {
 impl From<batchmap::Datum> for Datum {
     fn from(value: batchmap::Datum) -> Self {
         Datum::new(
-            value.keys,
-            value.value,
-            value.watermark,
-            value.event_time,
             value.id,
-            value.headers,
+            Some(value.keys),
+            Some(value.value),
+            Some(value.watermark),
+            Some(value.event_time),
+            Some(value.headers),
         )
     }
 }
@@ -201,28 +227,6 @@ impl BatchResponse {
     #[pyo3(signature = (message))]
     fn append(&mut self, message: Message) {
         self.messages.push(message);
-    }
-}
-
-/// A collection of BatchResponse objects for a batch.
-#[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object)]
-#[derive(Clone, Debug)]
-pub struct BatchResponses {
-    pub(crate) responses: Vec<BatchResponse>,
-}
-
-#[pymethods]
-impl BatchResponses {
-    #[new]
-    #[pyo3(signature = () -> "BatchResponses")]
-    fn new() -> Self {
-        Self { responses: vec![] }
-    }
-
-    /// Append a BatchResponse to the collection.
-    #[pyo3(signature = (response: "BatchResponse"))]
-    fn append(&mut self, response: BatchResponse) {
-        self.responses.push(response);
     }
 }
 
@@ -271,30 +275,33 @@ impl PyAsyncDatumStream {
 }
 
 /// Async Batch Map Server that can be started from Python code
-#[pyclass(module = "pynumaflow_lite.batchmapper")]
+#[pyclass(name = "_BatchMapAsyncServer", module = "pynumaflow_lite.batchmapper")]
 pub struct BatchMapAsyncServer {
     sock_file: String,
-    info_file: String,
+    server_info_file: String,
     shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 #[pymethods]
 impl BatchMapAsyncServer {
     #[new]
-    #[pyo3(signature = (sock_file: "str | None"=batchmap::SOCK_ADDR.to_string(), info_file: "str | None"=batchmap::SERVER_INFO_FILE.to_string()) -> "BatchMapAsyncServer"
-    )]
-    fn new(sock_file: String, info_file: String) -> Self {
+    #[pyo3(signature = (
+        sock_file: "str"=batchmap::SOCK_ADDR.to_string(),
+        server_info_file: "str"=batchmap::SERVER_INFO_FILE.to_string()
+    ) -> "_BatchMapAsyncServer")]
+    fn new(sock_file: Option<String>, server_info_file: Option<String>) -> Self {
         Self {
-            sock_file,
-            info_file,
+            sock_file: sock_file.unwrap_or_else(|| batchmap::SOCK_ADDR.to_string()),
+            server_info_file: server_info_file
+                .unwrap_or_else(|| batchmap::SERVER_INFO_FILE.to_string()),
             shutdown_tx: Mutex::new(None),
         }
     }
 
-    #[pyo3(signature = (py_func: "callable") -> "None")]
-    pub fn start<'a>(&self, py: Python<'a>, py_func: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
+    #[pyo3(signature = (handler: "callable") -> "None")]
+    pub fn start<'a>(&self, py: Python<'a>, handler: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let info_file = self.info_file.clone();
+        let info_file = self.server_info_file.clone();
         let (tx, rx) = tokio::sync::oneshot::channel::<()>();
         {
             let mut guard = self.shutdown_tx.lock().unwrap();
@@ -304,9 +311,27 @@ impl BatchMapAsyncServer {
         pyo3_async_runtimes::tokio::future_into_py(py, async move {
             // batch server uses the same runner loop and shutdown composition for now
             // dedicated start is wired below
-            crate::batchmap::server::start(py_func, sock_file, info_file, rx)
+            crate::batchmap::server::start(handler, sock_file, info_file, rx)
                 .await
                 .expect("server failed to start");
+            Ok(())
+        })
+    }
+
+    /// Wait until the Numaflow IsReady probe succeeds over the map UDS.
+    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
+        if !timeout.is_finite() || timeout < 0.0 {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "timeout must be a non-negative finite float",
+            ));
+        }
+
+        let sock_file = self.sock_file.clone();
+        let timeout = Duration::from_secs_f64(timeout);
+
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            crate::map::wait_for_ready(sock_file, timeout, "map").await?;
             Ok(())
         })
     }
@@ -326,7 +351,6 @@ pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<Datum>()?;
     m.add_class::<NackOptions>()?;
     m.add_class::<BatchResponse>()?;
-    m.add_class::<BatchResponses>()?;
     m.add_class::<BatchMapAsyncServer>()?;
     m.add_class::<PyAsyncDatumStream>()?;
 

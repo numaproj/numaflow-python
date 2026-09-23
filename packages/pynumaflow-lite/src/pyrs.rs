@@ -1,5 +1,7 @@
-use pyo3::{Py, PyAny, Python};
 use std::sync::Arc;
+
+use pyo3::prelude::*;
+use pyo3::{Py, PyAny, PyErr, Python};
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
@@ -49,4 +51,40 @@ pub(crate) fn setup_sig_handler(shutdown_rx: Receiver<()>) -> (JoinHandle<()>, R
     });
 
     (sig_handle, combined_rx)
+}
+
+// Build the full Python traceback text for the panic message, so the sidecar
+// reports the same failure that Python raises.
+pub(crate) fn format_error(py: Python<'_>, error: &PyErr) -> String {
+    match error.traceback(py).map(|traceback| traceback.format()) {
+        Some(Ok(traceback)) => format!("{traceback}{error}"),
+        _ => error.to_string(),
+    }
+}
+
+// Join every handler failure into one error for Python to raise.
+//
+// Python 3.11 and later have BaseExceptionGroup, which prints each traceback in
+// turn. Older versions have no group type, so they get the first error only.
+pub(crate) fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
+    let first = || errors.first().expect("errors is never empty").clone_ref(py);
+
+    if errors.len() == 1 {
+        return first();
+    }
+
+    let Ok(group_type) = py
+        .import("builtins")
+        .and_then(|builtins| builtins.getattr("BaseExceptionGroup"))
+    else {
+        return first();
+    };
+
+    let values: Vec<_> = errors.iter().map(|error| error.value(py).clone()).collect();
+    let message = format!("{} map handler calls failed", values.len());
+
+    match group_type.call1((message, values)) {
+        Ok(group) => PyErr::from_value(group),
+        Err(_) => first(),
+    }
 }

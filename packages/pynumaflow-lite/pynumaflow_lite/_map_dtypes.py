@@ -17,7 +17,7 @@ class Mapper(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, payload: Datum) -> list[Message]:
+    async def handler(self, datum: Datum) -> list[Message]:
         """
         Implement this handler function which implements the MapAsyncCallable interface.
         """

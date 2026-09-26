@@ -41,7 +41,7 @@ impl NackOptions {
         }
     }
 
-    fn __repr__(&self) -> String {
+    pub(crate) fn __repr__(&self) -> String {
         let opt = |v: &Option<String>| v.as_ref().map_or_else(|| "None".to_string(), |s| s.clone());
         format!(
             "NackOptions(delay={}, max_deliveries={}, reason={}, nack_map={:?})",

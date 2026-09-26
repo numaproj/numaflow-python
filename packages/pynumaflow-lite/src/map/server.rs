@@ -1,50 +1,16 @@
+use std::sync::{Arc, Mutex};
+
 use numaflow::map;
 use numaflow::shared::ServerExtras;
-
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use std::sync::{Arc, Mutex};
+
+use crate::pyrs::{combine_errors, format_error};
 
 pub(crate) struct PyMapRunner {
     pub(crate) event_loop: Arc<Py<PyAny>>,
     pub(crate) py_func: Arc<Py<PyAny>>,
     pub(crate) errors: Arc<Mutex<Vec<PyErr>>>,
-}
-
-// Build the full Python traceback text for the panic message, so the sidecar
-// reports the same failure that Python raises.
-fn format_error(py: Python<'_>, error: &PyErr) -> String {
-    match error.traceback(py).map(|traceback| traceback.format()) {
-        Some(Ok(traceback)) => format!("{traceback}{error}"),
-        _ => error.to_string(),
-    }
-}
-
-// Join every handler failure into one error for Python to raise.
-//
-// Python 3.11 and later have BaseExceptionGroup, which prints each traceback in
-// turn. Older versions have no group type, so they get the first error only.
-fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
-    let first = || errors.first().expect("errors is never empty").clone_ref(py);
-
-    if errors.len() == 1 {
-        return first();
-    }
-
-    let Ok(group_type) = py
-        .import("builtins")
-        .and_then(|builtins| builtins.getattr("BaseExceptionGroup"))
-    else {
-        return first();
-    };
-
-    let values: Vec<_> = errors.iter().map(|error| error.value(py).clone()).collect();
-    let message = format!("{} map handler calls failed", values.len());
-
-    match group_type.call1((message, values)) {
-        Ok(group) => PyErr::from_value(group),
-        Err(_) => first(),
-    }
 }
 
 impl PyMapRunner {
@@ -137,7 +103,7 @@ pub(super) async fn start(
     let py_map_runner = PyMapRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
-        errors: errors.clone(),
+        errors: Arc::clone(&errors),
     };
 
     let server = numaflow::map::Server::new(py_map_runner)

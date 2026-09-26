@@ -108,104 +108,27 @@ fn pynumaflow_lite(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_wrapped(pyo3::wrap_pymodule!(sourcetransformer))?;
     m.add_wrapped(pyo3::wrap_pymodule!(sideinputer))?;
 
-    // Ensure it's importable as `pynumaflow_lite.mapper` as well as attribute access
-    let binding = m.getattr("mapper")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.mapper";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.batchmapper` as well
-    let binding = m.getattr("batchmapper")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.batchmapper";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.mapstreamer` as well
-    let binding = m.getattr("mapstreamer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.mapstreamer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.reducer` as well
-    let binding = m.getattr("reducer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.reducer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.session_reducer` as well
-    let binding = m.getattr("session_reducer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.session_reducer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.reducestreamer` as well
-    let binding = m.getattr("reducestreamer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.reducestreamer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.accumulator` as well
-    let binding = m.getattr("accumulator")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.accumulator";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.sinker` as well
-    let binding = m.getattr("sinker")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.sinker";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.sourcer` as well
-    let binding = m.getattr("sourcer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.sourcer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.sourcetransformer` as well
-    let binding = m.getattr("sourcetransformer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.sourcetransformer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
-
-    // Ensure it's importable as `pynumaflow_lite.sideinputer` as well
-    let binding = m.getattr("sideinputer")?;
-    let sub = binding.cast::<PyModule>()?;
-    let fullname = "pynumaflow_lite.sideinputer";
-    sub.setattr("__name__", fullname)?;
-    py.import("sys")?
-        .getattr("modules")?
-        .set_item(fullname, sub)?;
+    // Ensure each submodule is importable as `pynumaflow_lite.<name>` as well as attribute access
+    let sys_modules = py.import("sys")?.getattr("modules")?;
+    for name in [
+        "mapper",
+        "batchmapper",
+        "mapstreamer",
+        "reducer",
+        "session_reducer",
+        "reducestreamer",
+        "accumulator",
+        "sinker",
+        "sourcer",
+        "sourcetransformer",
+        "sideinputer",
+    ] {
+        let binding = m.getattr(name)?;
+        let sub = binding.cast::<PyModule>()?;
+        let fullname = format!("pynumaflow_lite.{name}");
+        sub.setattr("__name__", &fullname)?;
+        sys_modules.set_item(&fullname, sub)?;
+    }
 
     Ok(())
 }

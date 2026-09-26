@@ -3,28 +3,28 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import signal
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterable, Awaitable, Callable
 from types import TracebackType
 from typing import TypeAlias
 
-from .pynumaflow_lite import mapper as _mapper
+from .pynumaflow_lite import batchmapper as _batchmapper
 
-Datum: TypeAlias = _mapper.Datum
-Message: TypeAlias = _mapper.Message
+Datum: TypeAlias = _batchmapper.Datum
+BatchResponse: TypeAlias = _batchmapper.BatchResponse
 
 _SHUTDOWN_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
 
-class MapAsyncServer:
+class BatchMapAsyncServer:
     def __init__(
         self,
-        handler: Callable[[Datum], Awaitable[list[Message]]],
+        handler: Callable[[AsyncIterable[Datum]], Awaitable[list[BatchResponse]]],
         *,
         sock_file: str | None = None,
         server_info_file: str | None = None,
         install_signal_handlers: bool = True,
-    ) -> None:
-        self._core = _mapper._MapAsyncServer(sock_file, server_info_file)
+    ):
+        self._core = _batchmapper._BatchMapAsyncServer(sock_file, server_info_file)
         self._handler = handler
         self._install_signal_handlers = install_signal_handlers
         self._task: asyncio.Task[None] | None = None
@@ -32,7 +32,7 @@ class MapAsyncServer:
         self._installed_signals: list[signal.Signals] = []
 
     async def serve(self) -> None:
-        """Run the map server until it stops.
+        """Run the batchmap server until it stops.
 
         This is the entrypoint for an application that already runs an event
         loop. It returns when a shutdown signal arrives or when `stop()` runs.
@@ -41,7 +41,7 @@ class MapAsyncServer:
 
     async def _serve(self, *, install_signal_handlers: bool) -> None:
         if self._serving:
-            raise RuntimeError("map server is already serving")
+            raise RuntimeError("batchmap server is already serving")
         self._serving = True
         try:
             if install_signal_handlers:
@@ -64,7 +64,7 @@ class MapAsyncServer:
         the server task failed.
         """
         if self._task is None:
-            raise RuntimeError("map server is not serving")
+            raise RuntimeError("batchmap server is not serving")
         await asyncio.shield(self._task)
 
     def _add_signal_handlers(self) -> None:
@@ -89,14 +89,14 @@ class MapAsyncServer:
                 loop.remove_signal_handler(sig)
         self._installed_signals.clear()
 
-    async def __aenter__(self) -> MapAsyncServer:
+    async def __aenter__(self) -> BatchMapAsyncServer:
         """Start the server in a background task and wait until it is ready.
 
         This form is for tests and for code that must run other work next to
         the server. It never installs signal handlers.
         """
         if self._task is not None and not self._task.done():
-            raise RuntimeError("map server is already serving")
+            raise RuntimeError("batchmap server is already serving")
 
         self._task = asyncio.create_task(self._serve(install_signal_handlers=False))
         try:
@@ -125,7 +125,7 @@ class MapAsyncServer:
                 self._task = None
 
     def run(self) -> None:
-        """Run the map server in a new event loop until it stops."""
+        """Run the batchmap server in a new event loop until it stops."""
         try:
             asyncio.run(self.serve())
         except KeyboardInterrupt:

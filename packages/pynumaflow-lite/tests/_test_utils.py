@@ -37,6 +37,34 @@ def _wait_for_sink_ready(path: Path, timeout: float = 10.0) -> None:
     asyncio.run(server.wait_ready(timeout=timeout))
 
 
+def _stop_server(server: subprocess.Popen, timeout: float) -> str:
+    """Stop the server (SIGINT, then SIGKILL after `timeout`) and return its output."""
+    # Request graceful shutdown via SIGINT
+    try:
+        if server.poll() is None:
+            if hasattr(os, "killpg") and server.pid:
+                os.killpg(os.getpgid(server.pid), signal.SIGINT)
+            else:
+                server.send_signal(signal.SIGINT)
+    except Exception:
+        pass
+
+    # Wait for server to exit. communicate() drains the pipe, so a server with a lot of
+    # output cannot block on a full pipe.
+    try:
+        logs, _ = server.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        try:
+            if hasattr(os, "killpg") and server.pid:
+                os.killpg(os.getpgid(server.pid), signal.SIGKILL)
+            else:
+                server.kill()
+        except Exception:
+            pass
+        logs, _ = server.communicate()
+    return logs or ""
+
+
 def run_python_server_with_rust_client(
     script: str,
     sock_path: Path,
@@ -107,34 +135,16 @@ def run_python_server_with_rust_client(
             env=env,
             timeout=rust_timeout,
         )
-        if rust.returncode != 0:
-            # Dump helpful logs for debugging
-            server_logs = server.stdout.read() if server.stdout else ""
-            pytest.fail(
-                f"Rust client failed: code={rust.returncode}\nStdout:\n{rust.stdout}\nStderr:\n{rust.stderr}\nServer logs so far:\n{server_logs}"
-            )
-
     finally:
-        # Request graceful shutdown via SIGINT
-        try:
-            if server.poll() is None:
-                if hasattr(os, "killpg") and server.pid:
-                    os.killpg(os.getpgid(server.pid), signal.SIGINT)
-                else:
-                    server.send_signal(signal.SIGINT)
-        except Exception:
-            pass
+        # Always stop the server before reading its output. Reading the pipe of a live
+        # server blocks until it exits.
+        server_logs = _stop_server(server, server_shutdown_timeout)
 
-        # Wait for server to exit
-        try:
-            server.wait(timeout=server_shutdown_timeout)
-        except subprocess.TimeoutExpired:
-            try:
-                if hasattr(os, "killpg") and server.pid:
-                    os.killpg(os.getpgid(server.pid), signal.SIGKILL)
-                else:
-                    server.kill()
-            except Exception:
-                pass
+    if rust.returncode != 0:
+        pytest.fail(
+            f"Rust client failed: code={rust.returncode}\nStdout:\n{rust.stdout}\nStderr:\n{rust.stderr}\nServer logs:\n{server_logs}"
+        )
 
-    assert server.returncode == 0, f"Server did not exit cleanly, code={server.returncode}"
+    assert server.returncode == 0, (
+        f"Server did not exit cleanly, code={server.returncode}\nServer logs:\n{server_logs}"
+    )

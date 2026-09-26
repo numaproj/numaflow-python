@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as _dt
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterable, Awaitable, Callable
 from types import TracebackType
 
 class NackOptions:
@@ -65,9 +65,7 @@ class Datum:
 class BatchResponse:
     id: str
 
-    def __init__(self, id: str) -> None: ...
-    @staticmethod
-    def from_id(id: str) -> BatchResponse: ...
+    def __init__(self, id: str, *messages: Message) -> None: ...
     def append(self, message: Message) -> None: ...
 
 class _BatchMapAsyncServer:
@@ -76,14 +74,14 @@ class _BatchMapAsyncServer:
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]]) -> Awaitable[None]: ...
+    def start(self, handler: Callable[[AsyncIterable[Datum]], Awaitable[list[BatchResponse]]]) -> Awaitable[None]: ...
     def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
 class BatchMapAsyncServer:
     def __init__(
         self,
-        handler: Callable[[Datum], Awaitable[list[Message]]],
+        handler: Callable[[AsyncIterable[Datum]], Awaitable[list[BatchResponse]]],
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
@@ -103,7 +101,10 @@ class BatchMapAsyncServer:
     ) -> None: ...
 
 class BatchMapper:
-    async def handler(self, batch: AsyncIterator[Datum]) -> list[BatchResponse]: ...
+    def __call__(self, *args, **kwargs):
+        return self.handler(*args, **kwargs)
+
+    async def handler(self, batch: AsyncIterable[Datum]) -> list[BatchResponse]: ...
 
 __all__ = [
     "BatchMapAsyncServer",

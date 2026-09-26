@@ -65,6 +65,7 @@ except Exception:  # pragma: no cover
 # Sourcer, SourceTransformer, and SideInput classes under the extension submodules for convenient access
 from ._accumulator_dtypes import Accumulator
 from ._batchmapper_dtypes import BatchMapper
+from ._batchmap_server import BatchMapAsyncServer
 from ._map_dtypes import Mapper
 from ._map_server import MapAsyncServer
 from ._mapstream_dtypes import MapStreamer
@@ -83,6 +84,7 @@ if mapper is not None:
 
 if batchmapper is not None:
     batchmapper.BatchMapper = BatchMapper
+    batchmapper.BatchMapAsyncServer = BatchMapAsyncServer
 
 if mapstreamer is not None:
     mapstreamer.MapStreamer = MapStreamer

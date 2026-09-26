@@ -48,12 +48,12 @@ impl batchmap::BatchMapper for PyBatchMapRunner {
         });
 
         // Call the Python coroutine: py_func(batch: AsyncIterable[Datum]) -> BatchResponses
-        let fut = Python::attach(|py| {
+        let fut = Python::attach(|py| -> PyResult<_>{
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
             let py_func = self.py_func.clone();
 
             let stream = crate::batchmap::PyAsyncDatumStream::new_with(rx);
-            let coro = py_func.call1(py, (stream,)).unwrap().into_bound(py);
+            let coro = py_func.call1(py, (stream,))?.into_bound(py);
             pyo3_async_runtimes::into_future_with_locals(&locals, coro).map_err(|_| {
                 PyErr::new::<PyTypeError, _>("map handler must be an async function (coroutine)")
             })

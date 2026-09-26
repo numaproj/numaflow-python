@@ -13,7 +13,7 @@ use tokio::sync::mpsc;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
-use crate::nack::NackOptions;
+use crate::{nack::NackOptions, pyrs::bytes_literal};
 
 /// A message to be sent for a single datum in batch response.
 #[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object, eq)]
@@ -87,8 +87,8 @@ impl Message {
 
     fn __repr__(&self) -> String {
         format!(
-            "Message(value=b\"{}\", keys={}, tags={}, user_metadata={})",
-            String::from_utf8_lossy(&self.value).escape_debug(),
+            "Message(value=b\"{:?}\", keys={}, tags={}, nack_options={})",
+            &self.value,
             self.keys
                 .as_ref()
                 .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
@@ -169,16 +169,13 @@ impl Datum {
 
     fn __repr__(&self) -> String {
         format!(
-            "Datum(id={}, keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?})",
-            self.id, self.keys, self.value, self.watermark, self.event_time, self.headers
+            "Datum(id={}, keys={:?}, value={}, watermark={}, event_time={}, headers={:?})",
+            self.id, self.keys, bytes_literal(&self.value), self.watermark, self.event_time, self.headers
         )
     }
 
     fn __str__(&self) -> String {
-        format!(
-            "Datum(id={}, keys={:?}, value={:?}, watermark={}, eventtime={}, headers={:?})",
-            self.id, self.keys, self.value, self.watermark, self.event_time, self.headers
-        )
+        self.__repr__()
     }
 }
 
@@ -207,21 +204,10 @@ pub struct BatchResponse {
 #[pymethods]
 impl BatchResponse {
     #[new]
-    #[pyo3(signature = (id: "str") -> "BatchResponse")]
-    fn new(id: String) -> Self {
-        Self {
-            id,
-            messages: Vec::new(),
-        }
-    }
-
-    #[staticmethod]
-    #[pyo3(signature = (id: "str") -> "BatchResponse")]
-    fn from_id(id: String) -> Self {
-        Self {
-            id,
-            messages: Vec::new(),
-        }
+    /// Create a new [BatchResponse] for the given datum id, with optional messages.
+    #[pyo3(signature = (id: "str", *messages: "Message") -> "BatchResponse")]
+    fn new(id: String, messages: Vec<Message>) -> Self {
+        Self { id, messages }
     }
 
     #[pyo3(signature = (message))]
@@ -308,14 +294,10 @@ impl BatchMapAsyncServer {
             *guard = Some(tx);
         }
 
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            // batch server uses the same runner loop and shutdown composition for now
-            // dedicated start is wired below
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
             crate::batchmap::server::start(handler, sock_file, info_file, rx)
-                .await
-                .expect("server failed to start");
-            Ok(())
-        })
+        )
     }
 
     /// Wait until the Numaflow IsReady probe succeeds over the map UDS.
@@ -330,10 +312,10 @@ impl BatchMapAsyncServer {
         let sock_file = self.sock_file.clone();
         let timeout = Duration::from_secs_f64(timeout);
 
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::map::wait_for_ready(sock_file, timeout, "map").await?;
-            Ok(())
-        })
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
+            crate::map::wait_for_ready(sock_file, timeout, "map")
+        )
     }
 
     #[pyo3(signature = () -> "None")]

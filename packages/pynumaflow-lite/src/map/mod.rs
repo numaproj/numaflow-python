@@ -20,10 +20,7 @@ use pyo3::prelude::*;
 use std::sync::Mutex;
 
 use crate::nack::NackOptions;
-
-pub(crate) fn bytes_literal(value: &[u8]) -> String {
-    format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
-}
+use crate::pyrs::bytes_literal;
 
 fn metadata_literal(metadata: &HashMap<String, HashMap<String, Vec<u8>>>) -> String {
     let groups: Vec<String> = metadata
@@ -162,6 +159,10 @@ impl Message {
                 .as_ref()
                 .map_or_else(|| "None".to_string(), metadata_literal),
         )
+    }
+
+    fn __str__(&self) -> String {
+       self.__repr__()
     }
 }
 
@@ -363,10 +364,10 @@ impl MapAsyncServer {
             *guard = Some(tx);
         }
 
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::map::server::start(handler, sock_file, server_info_file, rx).await?;
-            Ok(())
-        })
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
+            crate::map::server::start(handler, sock_file, server_info_file, rx)
+        )
     }
 
     /// Wait until the Numaflow IsReady probe succeeds over the map UDS.
@@ -381,10 +382,10 @@ impl MapAsyncServer {
         let sock_file = self.sock_file.clone();
         let timeout = Duration::from_secs_f64(timeout);
 
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            wait_for_ready(sock_file, timeout, "map").await?;
-            Ok(())
-        })
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
+            wait_for_ready(sock_file, timeout, "map")
+        )
     }
 
     /// Trigger server shutdown from Python (idempotent).

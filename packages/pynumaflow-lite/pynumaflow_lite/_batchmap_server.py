@@ -32,7 +32,7 @@ class BatchMapAsyncServer:
         self._installed_signals: list[signal.Signals] = []
 
     async def serve(self) -> None:
-        """Run the map server until it stops.
+        """Run the batchmap server until it stops.
 
         This is the entrypoint for an application that already runs an event
         loop. It returns when a shutdown signal arrives or when `stop()` runs.
@@ -96,7 +96,7 @@ class BatchMapAsyncServer:
         the server. It never installs signal handlers.
         """
         if self._task is not None and not self._task.done():
-            raise RuntimeError("map server is already serving")
+            raise RuntimeError("BatchMap server is already serving")
 
         self._task = asyncio.create_task(self._serve(install_signal_handlers=False))
         try:

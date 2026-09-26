@@ -88,3 +88,36 @@ pub(crate) fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
         Err(_) => first(),
     }
 }
+
+/// Format bytes the same way as Python `repr(bytes)`.
+pub(crate) fn bytes_literal(value: &[u8]) -> String {
+    use std::fmt::Write;
+
+    let quote = if value.contains(&b'\'') && !value.contains(&b'"') {
+        b'"'
+    } else {
+        b'\''
+    };
+
+    let mut out = String::with_capacity(value.len() + 3);
+    out.push('b');
+    out.push(quote as char);
+    for &byte in value {
+        match byte {
+            b'\\' => out.push_str("\\\\"),
+            b'\t' => out.push_str("\\t"),
+            b'\n' => out.push_str("\\n"),
+            b'\r' => out.push_str("\\r"),
+            _ if byte == quote => {
+                out.push('\\');
+                out.push(quote as char);
+            }
+            0x20..=0x7e => out.push(byte as char),
+            _ => {
+                let _ = write!(out, "\\x{byte:02x}");
+            }
+        }
+    }
+    out.push(quote as char);
+    out
+}

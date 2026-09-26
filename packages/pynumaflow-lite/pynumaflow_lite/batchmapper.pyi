@@ -4,6 +4,8 @@ import datetime as _dt
 from collections.abc import AsyncIterable, Awaitable, Callable
 from types import TracebackType
 
+from ._batchmapper_dtypes import BatchMapper as BatchMapper
+
 class NackOptions:
     """Per-message redelivery options for a nack."""
 
@@ -50,23 +52,26 @@ class Datum:
     event_time: _dt.datetime
     headers: dict[str, str]
 
-    def __init(
+    def __init__(
+        self,
         *,
         id: str,
-        keys: list[str] | None = None,
-        value: bytes | None = None,
-        event_time: _dt.datetime | None = None,
-        watermark: _dt.datetime | None = None,
-        headers: dict[str, str] | None = None,
-    ): ...
+        keys: list[str] | None = ...,
+        value: bytes | None = ...,
+        event_time: _dt.datetime | None = ...,
+        watermark: _dt.datetime | None = ...,
+        headers: dict[str, str] | None = ...,
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
 
 class BatchResponse:
     id: str
+    messages: list[Message]
 
     def __init__(self, id: str, *messages: Message) -> None: ...
     def append(self, message: Message) -> None: ...
+    def __repr__(self) -> str: ...
 
 class _BatchMapAsyncServer:
     def __init__(
@@ -99,12 +104,6 @@ class BatchMapAsyncServer:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None: ...
-
-class BatchMapper:
-    def __call__(self, *args, **kwargs):
-        return self.handler(*args, **kwargs)
-
-    async def handler(self, batch: AsyncIterable[Datum]) -> list[BatchResponse]: ...
 
 __all__ = [
     "BatchMapAsyncServer",

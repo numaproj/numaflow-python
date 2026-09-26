@@ -64,8 +64,8 @@ except Exception:  # pragma: no cover
 # Surface the Python Mapper, BatchMapper, MapStreamer, Reducer, SessionReducer, ReduceStreamer, Accumulator, Sinker,
 # Sourcer, SourceTransformer, and SideInput classes under the extension submodules for convenient access
 from ._accumulator_dtypes import Accumulator
-from ._batchmapper_dtypes import BatchMapper
 from ._batchmap_server import BatchMapAsyncServer
+from ._batchmapper_dtypes import BatchMapper
 from ._map_dtypes import Mapper
 from ._map_server import MapAsyncServer
 from ._mapstream_dtypes import MapStreamer

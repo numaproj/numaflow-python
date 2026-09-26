@@ -162,7 +162,7 @@ impl Message {
     }
 
     fn __str__(&self) -> String {
-       self.__repr__()
+        self.__repr__()
     }
 }
 
@@ -366,7 +366,7 @@ impl MapAsyncServer {
 
         pyo3_async_runtimes::tokio::future_into_py(
             py,
-            crate::map::server::start(handler, sock_file, server_info_file, rx)
+            crate::map::server::start(handler, sock_file, server_info_file, rx),
         )
     }
 
@@ -382,10 +382,7 @@ impl MapAsyncServer {
         let sock_file = self.sock_file.clone();
         let timeout = Duration::from_secs_f64(timeout);
 
-        pyo3_async_runtimes::tokio::future_into_py(
-            py,
-            wait_for_ready(sock_file, timeout, "map")
-        )
+        pyo3_async_runtimes::tokio::future_into_py(py, wait_for_ready(sock_file, timeout, "map"))
     }
 
     /// Trigger server shutdown from Python (idempotent).

@@ -1,6 +1,6 @@
 FROM python:3.11-slim-trixie AS builder
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /uvx /bin/
 
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -18,7 +18,8 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
-RUN uv pip install ./pynumaflow_lite-0.1.0a1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+# Install the local pynumaflow-lite wheel that matches the build platform.
+RUN uv pip install --no-index --find-links . pynumaflow-lite
 
 FROM python:3.11-slim-trixie
 

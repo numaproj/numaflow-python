@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import AsyncIterable
 
-from pynumaflow_lite.batchmapper import Message, BatchMapAsyncServer, BatchMapper, Datum,BatchResponse
+from pynumaflow_lite.batchmapper import BatchMapAsyncServer, BatchMapper, BatchResponse, Datum, Message
 
 
 class SimpleBatchCat(BatchMapper):
@@ -18,9 +18,10 @@ class SimpleBatchCat(BatchMapper):
 async def main():
     await BatchMapAsyncServer(
         SimpleBatchCat(),
-        sock_file = "/tmp/var/run/numaflow/batchmap.sock",
-        server_info_file = "/tmp/var/run/numaflow/mapper-server-info",
+        sock_file="/tmp/var/run/numaflow/batchmap.sock",
+        server_info_file="/tmp/var/run/numaflow/mapper-server-info",
     ).serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

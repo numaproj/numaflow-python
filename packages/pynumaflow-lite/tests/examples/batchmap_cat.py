@@ -1,8 +1,7 @@
 import asyncio
-import signal
 from collections.abc import AsyncIterable
 
-from pynumaflow_lite.batchmapper import Datum, BatchResponse, Message, BatchMapAsyncServer
+from pynumaflow_lite.batchmapper import BatchMapAsyncServer, BatchResponse, Datum, Message
 
 
 async def async_handler(
@@ -20,8 +19,8 @@ async def async_handler(
 async def main():
     await BatchMapAsyncServer(
         handler=async_handler,
-        sock_file = "/tmp/var/run/numaflow/batchmap.sock",
-        server_info_file = "/tmp/var/run/numaflow/mapper-server-info",
+        sock_file="/tmp/var/run/numaflow/batchmap.sock",
+        server_info_file="/tmp/var/run/numaflow/mapper-server-info",
     ).serve()
 
 

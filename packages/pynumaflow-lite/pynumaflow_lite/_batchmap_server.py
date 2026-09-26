@@ -41,7 +41,7 @@ class BatchMapAsyncServer:
 
     async def _serve(self, *, install_signal_handlers: bool) -> None:
         if self._serving:
-            raise RuntimeError("map server is already serving")
+            raise RuntimeError("batchmap server is already serving")
         self._serving = True
         try:
             if install_signal_handlers:
@@ -64,7 +64,7 @@ class BatchMapAsyncServer:
         the server task failed.
         """
         if self._task is None:
-            raise RuntimeError("map server is not serving")
+            raise RuntimeError("batchmap server is not serving")
         await asyncio.shield(self._task)
 
     def _add_signal_handlers(self) -> None:
@@ -96,7 +96,7 @@ class BatchMapAsyncServer:
         the server. It never installs signal handlers.
         """
         if self._task is not None and not self._task.done():
-            raise RuntimeError("BatchMap server is already serving")
+            raise RuntimeError("batchmap server is already serving")
 
         self._task = asyncio.create_task(self._serve(install_signal_handlers=False))
         try:
@@ -125,7 +125,7 @@ class BatchMapAsyncServer:
                 self._task = None
 
     def run(self) -> None:
-        """Run the map server in a new event loop until it stops."""
+        """Run the batchmap server in a new event loop until it stops."""
         try:
             asyncio.run(self.serve())
         except KeyboardInterrupt:

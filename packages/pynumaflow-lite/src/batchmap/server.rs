@@ -15,8 +15,8 @@ pub(crate) struct PyBatchMapRunner {
 
 impl PyBatchMapRunner {
     fn fail(&self, error: PyErr) -> ! {
-        // numaflow calls map() concurrently, so each error belongs to a different
-        // message. Keep all of them. start() raises them together, which lets
+        // numaflow calls batchmap() concurrently, so each error belongs to a different
+        // batch. Keep all of them. start() raises them together, which lets
         // Python format every traceback instead of Rust printing them by hand.
         let message = Python::attach(|py| format_error(py, &error));
         self.errors.lock().unwrap().push(error);
@@ -47,15 +47,17 @@ impl batchmap::BatchMapper for PyBatchMapRunner {
             // When input ends, dropping tx closes the channel
         });
 
-        // Call the Python coroutine: py_func(batch: AsyncIterable[Datum]) -> BatchResponses
-        let fut = Python::attach(|py| -> PyResult<_>{
+        // Call the Python coroutine: py_func(batch: AsyncIterable[Datum]) -> list[BatchResponse]
+        let fut = Python::attach(|py| -> PyResult<_> {
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
             let py_func = self.py_func.clone();
 
             let stream = crate::batchmap::PyAsyncDatumStream::new_with(rx);
             let coro = py_func.call1(py, (stream,))?.into_bound(py);
             pyo3_async_runtimes::into_future_with_locals(&locals, coro).map_err(|_| {
-                PyErr::new::<PyTypeError, _>("map handler must be an async function (coroutine)")
+                PyErr::new::<PyTypeError, _>(
+                    "batchmap handler must be an async function (coroutine)",
+                )
             })
         });
 

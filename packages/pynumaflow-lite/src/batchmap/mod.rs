@@ -13,7 +13,8 @@ use tokio::sync::mpsc;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
-use crate::{nack::NackOptions, pyrs::bytes_literal};
+use crate::nack::NackOptions;
+use crate::pyrs::{bytes_literal, py_repr};
 
 /// A message to be sent for a single datum in batch response.
 #[pyclass(module = "pynumaflow_lite.batchmapper", from_py_object, eq)]
@@ -85,21 +86,16 @@ impl Message {
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Message(value=b\"{:?}\", keys={}, tags={}, nack_options={})",
-            &self.value,
-            self.keys
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Message(value={}, keys={}, tags={}, nack_options={})",
+            bytes_literal(&self.value),
+            py_repr(py, &self.keys)?,
+            py_repr(py, &self.tags)?,
+            self.nack_options
                 .as_ref()
-                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
-            self.tags
-                .as_ref()
-                .map_or_else(|| "None".to_string(), |tags| format!("{tags:?}")),
-            self.nack_options.as_ref().map_or_else(
-                || "None".to_string(),
-                |nack_options| nack_options.__repr__()
-            ),
-        )
+                .map_or_else(|| "None".to_string(), NackOptions::__repr__),
+        ))
     }
 }
 
@@ -167,15 +163,20 @@ impl Datum {
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Datum(id={}, keys={:?}, value={}, watermark={}, event_time={}, headers={:?})",
-            self.id, self.keys, bytes_literal(&self.value), self.watermark, self.event_time, self.headers
-        )
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Datum(id={}, keys={}, value={}, watermark={}, event_time={}, headers={})",
+            py_repr(py, &self.id)?,
+            py_repr(py, &self.keys)?,
+            bytes_literal(&self.value),
+            self.watermark,
+            self.event_time,
+            py_repr(py, &self.headers)?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        self.__repr__()
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 
@@ -198,13 +199,14 @@ impl From<batchmap::Datum> for Datum {
 pub struct BatchResponse {
     #[pyo3(get)]
     pub id: String,
+    #[pyo3(get)]
     pub messages: Vec<Message>,
 }
 
 #[pymethods]
 impl BatchResponse {
-    #[new]
     /// Create a new [BatchResponse] for the given datum id, with optional messages.
+    #[new]
     #[pyo3(signature = (id: "str", *messages: "Message") -> "BatchResponse")]
     fn new(id: String, messages: Vec<Message>) -> Self {
         Self { id, messages }
@@ -213,6 +215,14 @@ impl BatchResponse {
     #[pyo3(signature = (message))]
     fn append(&mut self, message: Message) {
         self.messages.push(message);
+    }
+
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "BatchResponse(id={}, messages={})",
+            py_repr(py, &self.id)?,
+            py_repr(py, self.messages.clone())?,
+        ))
     }
 }
 
@@ -272,8 +282,8 @@ pub struct BatchMapAsyncServer {
 impl BatchMapAsyncServer {
     #[new]
     #[pyo3(signature = (
-        sock_file: "str"=batchmap::SOCK_ADDR.to_string(),
-        server_info_file: "str"=batchmap::SERVER_INFO_FILE.to_string()
+        sock_file: "str | None"=None,
+        server_info_file: "str | None"=None,
     ) -> "_BatchMapAsyncServer")]
     fn new(sock_file: Option<String>, server_info_file: Option<String>) -> Self {
         Self {
@@ -296,11 +306,11 @@ impl BatchMapAsyncServer {
 
         pyo3_async_runtimes::tokio::future_into_py(
             py,
-            crate::batchmap::server::start(handler, sock_file, info_file, rx)
+            crate::batchmap::server::start(handler, sock_file, info_file, rx),
         )
     }
 
-    /// Wait until the Numaflow IsReady probe succeeds over the map UDS.
+    /// Wait until the Numaflow IsReady probe succeeds over the batchmap UDS.
     #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
     pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
         if !timeout.is_finite() || timeout < 0.0 {
@@ -314,7 +324,7 @@ impl BatchMapAsyncServer {
 
         pyo3_async_runtimes::tokio::future_into_py(
             py,
-            crate::map::wait_for_ready(sock_file, timeout, "map")
+            crate::map::wait_for_ready(sock_file, timeout, "batchmap"),
         )
     }
 

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use pyo3::prelude::*;
-use pyo3::{Py, PyAny, PyErr, Python};
+use pyo3::{IntoPyObjectExt, Py, PyAny, PyErr, Python};
 use tokio::sync::oneshot::{Receiver, Sender};
 use tokio::task::JoinHandle;
 
@@ -81,12 +81,20 @@ pub(crate) fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
     };
 
     let values: Vec<_> = errors.iter().map(|error| error.value(py).clone()).collect();
-    let message = format!("{} map handler calls failed", values.len());
+    let message = format!("{} handler calls failed", values.len());
 
     match group_type.call1((message, values)) {
         Ok(group) => PyErr::from_value(group),
         Err(_) => first(),
     }
+}
+
+/// Convert a value to a Python object and return its Python `repr()`.
+pub(crate) fn py_repr<'py, T>(py: Python<'py>, value: T) -> PyResult<String>
+where
+    T: IntoPyObject<'py>,
+{
+    Ok(value.into_bound_py_any(py)?.repr()?.to_string())
 }
 
 /// Format bytes the same way as Python `repr(bytes)`.

@@ -1,14 +1,16 @@
-use chrono::{DateTime, Utc};
-use numaflow::mapstream;
 use std::collections::HashMap;
 use std::sync::Mutex;
+use std::time::Duration;
+
+use chrono::{DateTime, Utc};
+use numaflow::mapstream;
+use pyo3::prelude::*;
 
 pub mod server;
 
-/// Types for streaming handler
-use pyo3::prelude::*;
-
+use crate::map::wait_for_ready;
 use crate::nack::NackOptions;
+use crate::pyrs::bytes_literal;
 
 /// Streaming Datum mirrors MapStreamRequest for Python
 #[pyclass(module = "pynumaflow_lite.mapstreamer", from_py_object)]
@@ -26,39 +28,64 @@ pub struct Datum {
     pub watermark: DateTime<Utc>,
     /// Time of the element as seen at source or aligned after a reduce operation.
     #[pyo3(get)]
-    pub eventtime: DateTime<Utc>,
+    pub event_time: DateTime<Utc>,
     /// Headers associated with the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
 }
 
+#[pymethods]
 impl Datum {
-    pub(crate) fn new(
-        keys: Vec<String>,
-        value: Vec<u8>,
-        watermark: DateTime<Utc>,
-        eventtime: DateTime<Utc>,
-        headers: HashMap<String, String>,
+    #[new]
+    #[pyo3(signature = (
+        *,
+        keys: "list[str] | None"=None,
+        value: "bytes | None"=None,
+        event_time: "datetime.datetime | None"=None,
+        watermark: "datetime.datetime | None"=None,
+        headers: "dict[str, str] | None"=None,
+    ) -> "Datum")]
+    fn new(
+        keys: Option<Vec<String>>,
+        value: Option<Vec<u8>>,
+        event_time: Option<DateTime<Utc>>,
+        watermark: Option<DateTime<Utc>>,
+        headers: Option<HashMap<String, String>>,
     ) -> Self {
         Self {
-            keys,
-            value,
-            watermark,
-            eventtime,
-            headers,
+            keys: keys.unwrap_or_default(),
+            value: value.unwrap_or_default(),
+            watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            headers: headers.unwrap_or_default(),
         }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Datum(keys={:?}, value={}, watermark={}, event_time={}, headers={:?})",
+            self.keys,
+            bytes_literal(&self.value),
+            self.watermark,
+            self.event_time,
+            self.headers,
+        )
+    }
+
+    fn __str__(&self) -> String {
+        self.__repr__()
     }
 }
 
 impl From<numaflow::mapstream::MapStreamRequest> for Datum {
     fn from(value: numaflow::mapstream::MapStreamRequest) -> Self {
-        Self::new(
-            value.keys,
-            value.value,
-            value.watermark,
-            value.eventtime,
-            value.headers,
-        )
+        Self {
+            keys: value.keys,
+            value: value.value,
+            watermark: value.watermark,
+            event_time: value.eventtime,
+            headers: value.headers,
+        }
     }
 }
 
@@ -92,22 +119,15 @@ impl Message {
     }
 
     /// Drop a Message, do not forward to the next vertex.
-    #[pyo3(signature = ())]
     #[staticmethod]
-    fn message_to_drop() -> Self {
+    #[pyo3(signature = () -> "Message")]
+    fn to_drop() -> Self {
         Self {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
             nack_options: None,
         }
-    }
-
-    /// Convenience alias to match example usage: Message.to_drop()
-    #[pyo3(signature = ())]
-    #[staticmethod]
-    fn to_drop() -> Self {
-        Self::message_to_drop()
     }
 
     /// A Message marked to be negatively acknowledged (retried), with optional nack options.
@@ -133,6 +153,26 @@ impl Message {
             nack_options: None,
         }
     }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "Message(value={}, keys={}, tags={}, user_metadata={})",
+            bytes_literal(&self.value),
+            self.keys
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
+            self.tags
+                .as_ref()
+                .map_or_else(|| "None".to_string(), |tags| format!("{tags:?}")),
+            self.nack_options
+                .as_ref()
+                .map_or_else(|| "None".to_string(), NackOptions::__repr__),
+        )
+    }
+
+    fn __str__(&self) -> String {
+        self.__repr__()
+    }
 }
 
 impl From<Message> for mapstream::Message {
@@ -147,43 +187,62 @@ impl From<Message> for mapstream::Message {
 }
 
 /// Async MapStream Server that can be started from Python code which will run the Python UDF async generator.
-#[pyclass(module = "pynumaflow_lite.mapstreamer")]
+#[pyclass(name = "_MapStreamAsyncServer", module = "pynumaflow_lite.mapstreamer")]
 pub struct MapStreamAsyncServer {
     sock_file: String,
-    info_file: String,
+    server_info_file: String,
     shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 #[pymethods]
 impl MapStreamAsyncServer {
     #[new]
-    #[pyo3(signature = (sock_file: "str | None"=mapstream::SOCK_ADDR.to_string(), info_file: "str | None"=mapstream::SERVER_INFO_FILE.to_string()) -> "MapStreamAsyncServer"
-    )]
-    fn new(sock_file: String, info_file: String) -> Self {
+    #[pyo3(signature = (
+        sock_file: "str | None"=None,
+        server_info_file: "str | None"=None,
+    ) -> "_MapStreamAsyncServer")]
+    fn new(sock_file: Option<String>, server_info_file: Option<String>) -> Self {
         Self {
-            sock_file,
-            info_file,
+            sock_file: sock_file.unwrap_or_else(|| mapstream::SOCK_ADDR.to_string()),
+            server_info_file: server_info_file
+                .unwrap_or_else(|| mapstream::SERVER_INFO_FILE.to_string()),
             shutdown_tx: Mutex::new(None),
         }
     }
 
     /// Start the server with the given Python async generator function.
-    #[pyo3(signature = (py_func: "callable") -> "None")]
-    pub fn start<'a>(&self, py: Python<'a>, py_func: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
+    #[pyo3(signature = (handler: "callable") -> "None")]
+    pub fn start<'a>(&self, py: Python<'a>, handler: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let info_file = self.info_file.clone();
+        let info_file = self.server_info_file.clone();
         let (tx, rx) = tokio::sync::oneshot::channel::<()>();
         {
             let mut guard = self.shutdown_tx.lock().unwrap();
             *guard = Some(tx);
         }
 
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::mapstream::server::start(py_func, sock_file, info_file, rx)
-                .await
-                .expect("server failed to start");
-            Ok(())
-        })
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
+            crate::mapstream::server::start(handler, sock_file, info_file, rx),
+        )
+    }
+
+    /// Wait until the Numaflow IsReady probe succeeds over the mapstream UDS.
+    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
+        if !timeout.is_finite() || timeout < 0.0 {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "timeout must be a non-negative finite float",
+            ));
+        }
+
+        let sock_file = self.sock_file.clone();
+        let timeout = Duration::from_secs_f64(timeout);
+
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
+            wait_for_ready(sock_file, timeout, "mapstream"),
+        )
     }
 
     /// Trigger server shutdown from Python (idempotent).

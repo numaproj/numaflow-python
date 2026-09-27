@@ -119,8 +119,9 @@ pub(super) async fn start(
 
     let errors = Arc::new(Mutex::new(Vec::new()));
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
-
+    // Shutdown has two sources, and neither one needs a channel here. The Python
+    // side signals stop() through shutdown_rx. An uncaught Python error panics in
+    // fail(), and numaflow then shuts the server down on its own.
     let py_runner = PyBatchMapRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
@@ -132,7 +133,7 @@ pub(super) async fn start(
         .with_server_info_file(info_file);
 
     let result = server
-        .start_with_shutdown(combined_rx)
+        .start_with_shutdown(shutdown_rx)
         .await
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
 
@@ -151,12 +152,6 @@ pub(super) async fn start(
     let errors = std::mem::take(&mut *errors.lock().unwrap());
     if !errors.is_empty() {
         return Err(Python::attach(|py| combine_errors(py, errors)));
-    }
-
-    // if not finished, abort it
-    if !sig_handle.is_finished() {
-        println!("Aborting signal handler");
-        sig_handle.abort();
     }
 
     result

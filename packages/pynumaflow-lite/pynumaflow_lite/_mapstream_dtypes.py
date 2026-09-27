@@ -14,9 +14,10 @@ class MapStreamer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, keys: list[str], datum: Datum) -> AsyncIterator[Message]:
+    async def handler(self, datum: Datum) -> AsyncIterator[Message]:
         """
         Implement this handler function for streaming mapping.
         It should be an async generator yielding Message objects.
         """
-        pass
+        raise NotImplementedError
+        yield  # makes this an async generator, so overrides that yield type-check

@@ -1,3 +1,4 @@
+import asyncio
 import collections.abc
 import logging
 
@@ -37,9 +38,13 @@ async def async_handler(
     return responses
 
 
-if __name__ == "__main__":
-    sinker.SinkAsyncServer(
+async def main() -> None:
+    await sinker.SinkAsyncServer(
         async_handler,
         sock_file="/tmp/var/run/numaflow/sink.sock",
         server_info_file="/tmp/var/run/numaflow/sinker-server-info",
-    ).run()
+    ).serve()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -21,24 +21,7 @@ use pyo3::prelude::*;
 use std::sync::Mutex;
 
 use crate::nack::NackOptions;
-
-fn bytes_literal(value: &[u8]) -> String {
-    format!("b\"{}\"", String::from_utf8_lossy(value).escape_debug())
-}
-
-fn metadata_literal(metadata: &HashMap<String, HashMap<String, Vec<u8>>>) -> String {
-    let groups: Vec<String> = metadata
-        .iter()
-        .map(|(group, kv)| {
-            let entries: Vec<String> = kv
-                .iter()
-                .map(|(key, value)| format!("{:?}: {}", key, bytes_literal(value)))
-                .collect();
-            format!("{:?}: {{{}}}", group, entries.join(", "))
-        })
-        .collect();
-    format!("{{{}}}", groups.join(", "))
-}
+use crate::pyrs::{bytes_literal, py_repr};
 
 fn system_metadata_to_hash_map(
     value: sink::SystemMetadata,
@@ -99,17 +82,13 @@ impl Message {
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
             "Message(value={}, keys={}, user_metadata={})",
             bytes_literal(&self.value),
-            self.keys
-                .as_ref()
-                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
-            self.user_metadata
-                .as_ref()
-                .map_or_else(|| "None".to_string(), metadata_literal)
-        )
+            py_repr(py, &self.keys)?,
+            py_repr(py, &self.user_metadata)?,
+        ))
     }
 }
 
@@ -136,8 +115,12 @@ pub struct Response {
     pub response_type: ResponseType,
     #[pyo3(get)]
     pub error: Option<String>,
+    /// Payload for the serving store. It is set only for a serve response.
+    #[pyo3(get)]
     pub serve_response: Option<Vec<u8>>,
-    pub on_success_msg: Option<Message>,
+    /// Message for the OnSuccess sink. It is set only for an on_success response.
+    #[pyo3(get)]
+    pub on_success_message: Option<Message>,
     /// Options sent back to the source when nacking the message.
     #[pyo3(get)]
     pub nack_options: Option<NackOptions>,
@@ -154,7 +137,7 @@ impl Response {
             response_type: ResponseType::Success,
             error: None,
             serve_response: None,
-            on_success_msg: None,
+            on_success_message: None,
             nack_options: None,
         }
     }
@@ -168,7 +151,7 @@ impl Response {
             response_type: ResponseType::Failure,
             error: Some(error),
             serve_response: None,
-            on_success_msg: None,
+            on_success_message: None,
             nack_options: None,
         }
     }
@@ -182,7 +165,7 @@ impl Response {
             response_type: ResponseType::Fallback,
             error: None,
             serve_response: None,
-            on_success_msg: None,
+            on_success_message: None,
             nack_options: None,
         }
     }
@@ -196,7 +179,7 @@ impl Response {
             response_type: ResponseType::Serve,
             error: None,
             serve_response: Some(payload),
-            on_success_msg: None,
+            on_success_message: None,
             nack_options: None,
         }
     }
@@ -211,7 +194,7 @@ impl Response {
             response_type: ResponseType::OnSuccess,
             error: None,
             serve_response: None,
-            on_success_msg: message,
+            on_success_message: message,
             nack_options: None,
         }
     }
@@ -225,37 +208,38 @@ impl Response {
             response_type: ResponseType::Nack,
             error: None,
             serve_response: None,
-            on_success_msg: None,
+            on_success_message: None,
             nack_options,
         }
     }
 
-    fn __repr__(&self) -> String {
-        match self.response_type {
-            ResponseType::Success => format!("Response.success(id={:?})", self.id),
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        let id = py_repr(py, &self.id)?;
+        Ok(match self.response_type {
+            ResponseType::Success => format!("Response.success(id={id})"),
             ResponseType::Failure => format!(
-                "Response.failure(id={:?}, error={:?})",
-                self.id,
-                self.error.as_deref().unwrap_or_default()
+                "Response.failure(id={id}, error={})",
+                py_repr(py, self.error.as_deref().unwrap_or_default())?
             ),
-            ResponseType::Fallback => format!("Response.fallback(id={:?})", self.id),
+            ResponseType::Fallback => format!("Response.fallback(id={id})"),
             ResponseType::Serve => format!(
-                "Response.serve(id={:?}, payload={})",
-                self.id,
+                "Response.serve(id={id}, payload={})",
                 bytes_literal(self.serve_response.as_deref().unwrap_or_default())
             ),
             ResponseType::OnSuccess => format!(
-                "Response.on_success(id={:?}, message={})",
-                self.id,
-                self.on_success_msg
-                    .as_ref()
-                    .map_or_else(|| "None".to_string(), |m| m.__repr__())
+                "Response.on_success(id={id}, message={})",
+                match &self.on_success_message {
+                    Some(message) => message.__repr__(py)?,
+                    None => "None".to_string(),
+                }
             ),
             ResponseType::Nack => format!(
-                "Response.nack(id={:?}, nack_options={:?})",
-                self.id, self.nack_options
+                "Response.nack(id={id}, nack_options={})",
+                self.nack_options
+                    .as_ref()
+                    .map_or_else(|| "None".to_string(), NackOptions::__repr__)
             ),
-        }
+        })
     }
 }
 
@@ -286,7 +270,7 @@ impl From<Response> for sink::Response {
             response_type,
             err: value.error,
             serve_response: value.serve_response,
-            on_success_msg: value.on_success_msg.map(|m| m.into()),
+            on_success_msg: value.on_success_message.map(|m| m.into()),
             nack_options: value.nack_options.map(Into::into),
         }
     }
@@ -326,9 +310,9 @@ impl Datum {
     #[new]
     #[pyo3(signature = (
         *,
+        id: "str",
         keys: "list[str] | None"=None,
         value: "bytes | None"=None,
-        id: "str | None"=None,
         event_time: "datetime.datetime | None"=None,
         watermark: "datetime.datetime | None"=None,
         headers: "dict[str, str] | None"=None,
@@ -337,9 +321,9 @@ impl Datum {
     ) -> "Datum")]
     #[allow(clippy::too_many_arguments)]
     fn new(
+        id: String,
         keys: Option<Vec<String>>,
         value: Option<Vec<u8>>,
-        id: Option<String>,
         event_time: Option<DateTime<Utc>>,
         watermark: Option<DateTime<Utc>>,
         headers: Option<HashMap<String, String>>,
@@ -351,29 +335,29 @@ impl Datum {
             value: value.unwrap_or_default(),
             watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
             event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
-            id: id.unwrap_or_default(),
+            id,
             headers: headers.unwrap_or_default(),
             user_metadata: user_metadata.unwrap_or_default(),
             system_metadata: system_metadata.unwrap_or_default(),
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={}, watermark={}, event_time={}, id={:?}, headers={:?}, user_metadata={}, system_metadata={})",
-            self.keys,
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Datum(id={}, keys={}, value={}, watermark={}, event_time={}, headers={}, user_metadata={}, system_metadata={})",
+            py_repr(py, &self.id)?,
+            py_repr(py, &self.keys)?,
             bytes_literal(&self.value),
             self.watermark,
             self.event_time,
-            self.id,
-            self.headers,
-            metadata_literal(&self.user_metadata),
-            metadata_literal(&self.system_metadata)
-        )
+            py_repr(py, &self.headers)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, &self.system_metadata)?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        self.__repr__()
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 

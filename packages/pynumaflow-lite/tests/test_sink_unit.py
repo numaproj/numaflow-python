@@ -49,7 +49,11 @@ async def _run_sink_client(sock_path: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-async def _exercise_server(tmp_path: Path, handler) -> None:
+async def _exercise_server(
+    tmp_path: Path,
+    handler,
+    clients: list[subprocess.CompletedProcess[str]] | None = None,
+) -> None:
     path_id = f"{tmp_path.name[:12]}-{uuid.uuid4().hex[:12]}"
     sock_path = Path(f"/tmp/pnl-{path_id}.sock")
     server_info_path = Path(f"/tmp/pnl-{path_id}.info")
@@ -61,7 +65,9 @@ async def _exercise_server(tmp_path: Path, handler) -> None:
 
     try:
         async with server:
-            await _run_sink_client(sock_path)
+            client = await _run_sink_client(sock_path)
+            if clients is not None:
+                clients.append(client)
     finally:
         for path in (sock_path, server_info_path):
             with suppress(FileNotFoundError):
@@ -74,8 +80,16 @@ def test_sink_server_propagates_handler_exception(tmp_path: Path):
             raise RuntimeError("sink exploded")
         return []
 
+    clients: list[subprocess.CompletedProcess[str]] = []
     with pytest.raises(RuntimeError, match="sink exploded"):
-        asyncio.run(_exercise_server(tmp_path, handler))
+        asyncio.run(_exercise_server(tmp_path, handler, clients))
+
+    # The client must get a gRPC error that carries the handler error, not an
+    # empty batch result.
+    [client] = clients
+    assert client.returncode != 0
+    assert "sink exploded" in client.stderr
+    assert "results.len()" not in client.stderr
 
 
 def test_sink_server_rejects_non_list_response(tmp_path: Path):

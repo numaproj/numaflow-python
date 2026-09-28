@@ -4,6 +4,8 @@ import datetime as _dt
 from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
 
+from ._sink_dtypes import Sinker as Sinker
+
 class NackOptions:
     """Per-message redelivery options for a nack."""
 
@@ -38,6 +40,8 @@ class Message:
 class Response:
     id: str
     error: str | None
+    serve_response: bytes | None
+    on_success_message: Message | None
     nack_options: NackOptions | None
 
     @staticmethod
@@ -56,11 +60,11 @@ class Response:
     def __eq__(self, other: object) -> bool: ...
 
 class Datum:
+    id: str
     keys: list[str]
     value: bytes
     watermark: _dt.datetime
     event_time: _dt.datetime
-    id: str
     headers: dict[str, str]
     user_metadata: dict[str, dict[str, bytes]]
     system_metadata: dict[str, dict[str, bytes]]
@@ -68,14 +72,14 @@ class Datum:
     def __init__(
         self,
         *,
-        keys: list[str] = ...,
-        value: bytes = ...,
-        id: str = ...,
+        id: str,
+        keys: list[str] | None = ...,
+        value: bytes | None = ...,
         event_time: _dt.datetime | None = ...,
         watermark: _dt.datetime | None = ...,
-        headers: dict[str, str] = ...,
-        user_metadata: dict[str, dict[str, bytes]] = ...,
-        system_metadata: dict[str, dict[str, bytes]] = ...,
+        headers: dict[str, str] | None = ...,
+        user_metadata: dict[str, dict[str, bytes]] | None = ...,
+        system_metadata: dict[str, dict[str, bytes]] | None = ...,
     ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -92,10 +96,6 @@ class _SinkAsyncServer:
     def wait_ready(self, timeout: float = ...) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
-class Sinker:
-    def __call__(self, datums: AsyncIterator[Datum]) -> Awaitable[list[Response]]: ...
-    async def handler(self, datums: AsyncIterator[Datum]) -> list[Response]: ...
-
 class SinkAsyncServer:
     def __init__(
         self,
@@ -103,11 +103,12 @@ class SinkAsyncServer:
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
+        install_signal_handlers: bool = ...,
     ) -> None: ...
-    def run(self) -> None: ...
     async def serve(self) -> None: ...
     def stop(self) -> None: ...
     async def wait_ready(self, timeout: float = ...) -> None: ...
+    async def wait_for_termination(self) -> None: ...
     async def __aenter__(self) -> SinkAsyncServer: ...
     async def __aexit__(
         self,

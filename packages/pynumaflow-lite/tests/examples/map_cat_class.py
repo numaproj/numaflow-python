@@ -1,3 +1,5 @@
+import asyncio
+
 from pynumaflow_lite.mapper import Datum, MapAsyncServer, Mapper, Message
 
 
@@ -27,9 +29,13 @@ class SimpleCat(Mapper):
         return [Message(datum.value, keys=datum.keys, user_metadata=user_metadata)]
 
 
-if __name__ == "__main__":
-    MapAsyncServer(
+async def main() -> None:
+    await MapAsyncServer(
         SimpleCat(),
         sock_file="/tmp/var/run/numaflow/map.sock",
         server_info_file="/tmp/var/run/numaflow/mapper-server-info",
-    ).run()
+    ).serve()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

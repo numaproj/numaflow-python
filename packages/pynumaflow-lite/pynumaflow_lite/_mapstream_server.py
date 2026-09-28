@@ -123,10 +123,3 @@ class MapStreamAsyncServer:
                 await self._task
             finally:
                 self._task = None
-
-    def run(self) -> None:
-        """Run the mapstream server in a new event loop until it stops."""
-        try:
-            asyncio.run(self.serve())
-        except KeyboardInterrupt:
-            self.stop()

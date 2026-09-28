@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import AsyncIterable
 
@@ -39,9 +40,13 @@ class SimpleLogSink(Sinker):
         return responses
 
 
-if __name__ == "__main__":
-    sinker.SinkAsyncServer(
+async def main() -> None:
+    await sinker.SinkAsyncServer(
         SimpleLogSink(),
         sock_file="/tmp/var/run/numaflow/sink.sock",
         server_info_file="/tmp/var/run/numaflow/sinker-server-info",
-    ).run()
+    ).serve()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

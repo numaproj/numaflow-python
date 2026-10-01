@@ -49,6 +49,10 @@ name = "test_accumulator"
 path = "tests/bin/accumulator.rs"
 
 [[bin]]
+name = "test_accumulator_blackhole"
+path = "tests/bin/accumulator_blackhole.rs"
+
+[[bin]]
 name = "test_reducestream"
 path = "tests/bin/reducestream.rs"
 

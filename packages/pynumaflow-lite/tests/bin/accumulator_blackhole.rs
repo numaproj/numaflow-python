@@ -103,7 +103,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Every response should carry the DROP tag"
         );
         let payload = r.payload.expect("Drop response should carry a payload");
-        assert!(payload.value.is_empty(), "Drop message value should be empty");
+        assert!(
+            payload.value.is_empty(),
+            "Drop message value should be empty"
+        );
         assert_eq!(payload.keys, vec!["key1".to_string()]);
         assert_eq!(payload.headers, headers);
         dropped.push(payload);

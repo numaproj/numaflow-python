@@ -92,9 +92,7 @@ impl Message {
             bytes_literal(&self.value),
             py_repr(py, &self.keys)?,
             py_repr(py, &self.tags)?,
-            self.nack_options
-                .as_ref()
-                .map_or_else(|| "None".to_string(), NackOptions::__repr__),
+            py_repr(py, self.nack_options.clone())?,
         ))
     }
 }

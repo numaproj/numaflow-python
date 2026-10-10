@@ -20,21 +20,7 @@ use pyo3::prelude::*;
 use std::sync::Mutex;
 
 use crate::nack::NackOptions;
-use crate::pyrs::bytes_literal;
-
-fn metadata_literal(metadata: &HashMap<String, HashMap<String, Vec<u8>>>) -> String {
-    let groups: Vec<String> = metadata
-        .iter()
-        .map(|(group, kv)| {
-            let entries: Vec<String> = kv
-                .iter()
-                .map(|(key, value)| format!("{:?}: {}", key, bytes_literal(value)))
-                .collect();
-            format!("{:?}: {{{}}}", group, entries.join(", "))
-        })
-        .collect();
-    format!("{{{}}}", groups.join(", "))
-}
+use crate::pyrs::{bytes_literal, py_repr};
 
 fn system_metadata_to_hash_map(
     value: map::SystemMetadata,
@@ -145,24 +131,19 @@ impl Message {
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Message(value={}, keys={}, tags={}, user_metadata={})",
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Message(value={}, keys={}, tags={}, user_metadata={}, nack_options={})",
             bytes_literal(&self.value),
-            self.keys
-                .as_ref()
-                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
-            self.tags
-                .as_ref()
-                .map_or_else(|| "None".to_string(), |tags| format!("{tags:?}")),
-            self.user_metadata
-                .as_ref()
-                .map_or_else(|| "None".to_string(), metadata_literal),
-        )
+            py_repr(py, &self.keys)?,
+            py_repr(py, &self.tags)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, self.nack_options.clone())?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        self.__repr__()
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 
@@ -247,21 +228,21 @@ impl Datum {
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={}, watermark={}, event_time={}, headers={:?}, user_metadata={}, system_metadata={})",
-            self.keys,
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Datum(keys={}, value={}, watermark={}, event_time={}, headers={}, user_metadata={}, system_metadata={})",
+            py_repr(py, &self.keys)?,
             bytes_literal(&self.value),
             self.watermark,
             self.event_time,
-            self.headers,
-            metadata_literal(&self.user_metadata),
-            metadata_literal(&self.system_metadata)
-        )
+            py_repr(py, &self.headers)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, &self.system_metadata)?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        self.__repr__()
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 

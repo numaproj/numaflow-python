@@ -235,9 +235,7 @@ impl Response {
             ),
             ResponseType::Nack => format!(
                 "Response.nack(id={id}, nack_options={})",
-                self.nack_options
-                    .as_ref()
-                    .map_or_else(|| "None".to_string(), NackOptions::__repr__)
+                py_repr(py, self.nack_options.clone())?
             ),
         })
     }

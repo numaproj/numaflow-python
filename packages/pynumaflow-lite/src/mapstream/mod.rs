@@ -10,7 +10,7 @@ pub mod server;
 
 use crate::map::wait_for_ready;
 use crate::nack::NackOptions;
-use crate::pyrs::bytes_literal;
+use crate::pyrs::{bytes_literal, py_repr};
 
 /// Streaming Datum mirrors MapStreamRequest for Python
 #[pyclass(module = "pynumaflow_lite.mapstreamer", from_py_object)]
@@ -154,24 +154,18 @@ impl Message {
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Message(value={}, keys={}, tags={}, user_metadata={})",
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Message(value={}, keys={}, tags={}, nack_options={})",
             bytes_literal(&self.value),
-            self.keys
-                .as_ref()
-                .map_or_else(|| "None".to_string(), |keys| format!("{keys:?}")),
-            self.tags
-                .as_ref()
-                .map_or_else(|| "None".to_string(), |tags| format!("{tags:?}")),
-            self.nack_options
-                .as_ref()
-                .map_or_else(|| "None".to_string(), NackOptions::__repr__),
-        )
+            py_repr(py, &self.keys)?,
+            py_repr(py, &self.tags)?,
+            py_repr(py, self.nack_options.clone())?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        self.__repr__()
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 

@@ -144,12 +144,13 @@ impl Message {
 
     fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         Ok(format!(
-            "Message(value={}, event_time={}, keys={}, tags={}, user_metadata={})",
+            "Message(value={}, event_time={}, keys={}, tags={}, user_metadata={}, nack_options={})",
             bytes_literal(&self.value),
-            self.event_time,
+            py_repr(py, self.event_time)?,
             py_repr(py, &self.keys)?,
             py_repr(py, &self.tags)?,
             py_repr(py, &self.user_metadata)?,
+            py_repr(py, self.nack_options.clone())?,
         ))
     }
 

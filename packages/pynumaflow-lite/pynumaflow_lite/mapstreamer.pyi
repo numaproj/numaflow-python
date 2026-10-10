@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import datetime as _dt
 from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
+from typing import Self
 
 from ._mapstream_dtypes import MapStreamer as MapStreamer
 
@@ -86,7 +85,7 @@ class MapStreamAsyncServer:
     def stop(self) -> None: ...
     async def wait_ready(self, timeout: float = ...) -> None: ...
     async def wait_for_termination(self) -> None: ...
-    async def __aenter__(self) -> MapStreamAsyncServer: ...
+    async def __aenter__(self) -> Self: ...
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,

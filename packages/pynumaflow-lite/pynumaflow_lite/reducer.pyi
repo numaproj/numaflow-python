@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import datetime as _dt
 from collections.abc import AsyncIterable, Awaitable, Callable
 

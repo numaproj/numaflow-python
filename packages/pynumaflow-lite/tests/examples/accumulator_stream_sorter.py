@@ -8,7 +8,7 @@ flushing sorted data when the watermark advances.
 import asyncio
 import signal
 from collections.abc import AsyncIterator
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pynumaflow_lite.accumulator import (
     Accumulator,
@@ -25,10 +25,8 @@ class StreamSorter(Accumulator):
     """
 
     def __init__(self):
-        from datetime import timezone
-
         # Initialize with a very old timestamp (timezone-aware)
-        self.latest_wm = datetime.fromtimestamp(-1, tz=timezone.utc)
+        self.latest_wm = datetime.fromtimestamp(-1, tz=UTC)
         self.sorted_buffer: list[Datum] = []
         print("StreamSorter initialized")
 

@@ -1,10 +1,10 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pynumaflow_lite.sourcetransformer import Datum, Message, SourceTransformAsyncServer, SourceTransformer
 
-january_first_2022 = datetime(2022, 1, 1, tzinfo=timezone.utc)
-january_first_2023 = datetime(2023, 1, 1, tzinfo=timezone.utc)
+january_first_2022 = datetime(2022, 1, 1, tzinfo=UTC)
+january_first_2023 = datetime(2023, 1, 1, tzinfo=UTC)
 
 
 class EventFilter(SourceTransformer):

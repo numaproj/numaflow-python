@@ -5,7 +5,7 @@ import contextlib
 import signal
 from collections.abc import AsyncIterable, Awaitable, Callable
 from types import TracebackType
-from typing import TypeAlias
+from typing import Self, TypeAlias
 
 from .pynumaflow_lite import batchmapper as _batchmapper
 
@@ -89,7 +89,7 @@ class BatchMapAsyncServer:
                 loop.remove_signal_handler(sig)
         self._installed_signals.clear()
 
-    async def __aenter__(self) -> BatchMapAsyncServer:
+    async def __aenter__(self) -> Self:
         """Start the server in a background task and wait until it is ready.
 
         This form is for tests and for code that must run other work next to

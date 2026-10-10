@@ -1,8 +1,7 @@
-from __future__ import annotations
-
 import datetime as _dt
 from collections.abc import Awaitable, Callable
 from types import TracebackType
+from typing import Self
 
 from ._map_dtypes import Mapper as Mapper
 
@@ -95,7 +94,7 @@ class MapAsyncServer:
     def stop(self) -> None: ...
     async def wait_ready(self, timeout: float = ...) -> None: ...
     async def wait_for_termination(self) -> None: ...
-    async def __aenter__(self) -> MapAsyncServer: ...
+    async def __aenter__(self) -> Self: ...
     async def __aexit__(
         self,
         exc_type: type[BaseException] | None,

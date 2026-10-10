@@ -4,10 +4,16 @@ build-backend = "maturin"
 
 [project]
 name = "pynumaflow-lite"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Rust",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -18,7 +24,7 @@ features = ["pyo3/extension-module"]
 [tool.ruff]
 line-length = 119
 src = ["pynumaflow_lite", "tests", "manifests"]
-target-version = "py310"
+target-version = "py311"
 show-fixes = true
 
 [tool.ruff.lint]
@@ -42,6 +48,7 @@ select = [
 ]
 ignore = [
     "E501",  # line too long
+    "ASYNC109",  # wait_ready(timeout=...) is public API; the timeout runs in Rust
 ]
 
 [tool.ruff.lint.isort]
@@ -59,6 +66,6 @@ docstring-code-format = true
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
-    "ruff>=0.15.20",
-    "maturin>=1.14,<2.0",
+    "ruff>=0.17.0",
+    "maturin>=1.15,<2.0",
 ]

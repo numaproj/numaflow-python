@@ -17,11 +17,18 @@ async def event_filter(datum: Datum) -> list[Message]:
     else:
         tag, new_event_time = "after_year_2022", january_first_2023
 
+    # Forward the incoming user metadata, echo the system metadata, and add the filter result
     user_metadata = {
+        **datum.user_metadata,
+        "system_echo": {
+            f"{group}.{key}": value
+            for group, key_values in datum.system_metadata.items()
+            for key, value in key_values.items()
+        },
         "filter_info": {
             "filter_result": tag.encode(),
             "original_event_time": str(event_time).encode(),
-        }
+        },
     }
     return [
         Message(

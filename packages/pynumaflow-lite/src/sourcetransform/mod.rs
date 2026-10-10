@@ -8,7 +8,6 @@ use numaflow::proto::source_transformer::source_transform_client::SourceTransfor
 use numaflow::sourcetransform;
 use pyo3::prelude::*;
 use tokio::net::UnixStream;
-use tokio::time::Instant;
 use tonic::transport::Uri;
 use tower::service_fn;
 
@@ -294,29 +293,18 @@ async fn source_transform_client(
     Ok(SourceTransformClient::new(channel))
 }
 
-async fn wait_for_ready(sock_file: String, timeout: Duration) -> PyResult<()> {
-    let deadline = Instant::now() + timeout;
-
+// Poll the IsReady probe until it succeeds. There is no deadline: Python sets
+// one with asyncio.timeout(), and cancellation drops this future.
+async fn wait_for_ready(sock_file: String) {
     loop {
         if let Ok(mut client) = source_transform_client(sock_file.clone()).await
             && let Ok(response) = client.is_ready(()).await
             && response.into_inner().ready
         {
-            return Ok(());
+            return;
         }
 
-        let now = Instant::now();
-        if now >= deadline {
-            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyTimeoutError, _>(
-                "timed out waiting for sourcetransform server readiness",
-            ));
-        }
-
-        tokio::time::sleep(std::cmp::min(
-            Duration::from_millis(100),
-            deadline.saturating_duration_since(now),
-        ))
-        .await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 }
 
@@ -365,18 +353,14 @@ impl SourceTransformAsyncServer {
     }
 
     /// Wait until the Numaflow IsReady probe succeeds over the sourcetransform UDS.
-    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
-    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
-        if !timeout.is_finite() || timeout < 0.0 {
-            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "timeout must be a non-negative finite float",
-            ));
-        }
-
+    #[pyo3(signature = () -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let timeout = Duration::from_secs_f64(timeout);
 
-        pyo3_async_runtimes::tokio::future_into_py(py, wait_for_ready(sock_file, timeout))
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            wait_for_ready(sock_file).await;
+            Ok(())
+        })
     }
 
     /// Trigger server shutdown from Python (idempotent).

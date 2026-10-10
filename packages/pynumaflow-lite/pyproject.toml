@@ -48,7 +48,6 @@ select = [
 ]
 ignore = [
     "E501",  # line too long
-    "ASYNC109",  # wait_ready(timeout=...) is public API; the timeout runs in Rust
 ]
 
 [tool.ruff.lint.isort]

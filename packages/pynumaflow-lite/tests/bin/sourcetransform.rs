@@ -81,6 +81,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(msg.value, "hello".as_bytes());
     // Verify event_time is set
     assert!(msg.event_time.is_some());
+    assert!(msg.tags.contains(&"after_year_2022".to_string()));
+    // Verify the user metadata that the handler created
+    let filter_info = &msg
+        .metadata
+        .as_ref()
+        .expect("metadata is set")
+        .user_metadata["filter_info"];
+    assert_eq!(
+        filter_info.key_value["filter_result"],
+        b"after_year_2022".to_vec()
+    );
 
     // Request 2 - message to be dropped (event time in 2021)
     let request_2 = proto::source_transformer::SourceTransformRequest {

@@ -102,6 +102,33 @@ def test_sink_server_rejects_non_list_response(tmp_path: Path):
         asyncio.run(_exercise_server(tmp_path, handler))
 
 
+def test_sink_server_startup_failure_raises_at_once():
+    server = sinker.SinkAsyncServer(
+        _unit_handler,
+        sock_file="/nonexistent-pnl-dir/sink.sock",
+        server_info_file="/nonexistent-pnl-dir/sink.info",
+    )
+
+    async def enter() -> None:
+        # The timeout is only a guard. The server error must arrive first.
+        async with asyncio.timeout(10), server:
+            pass
+
+    with pytest.raises(Exception, match="binding Unix socket"):
+        asyncio.run(enter())
+
+
+def test_sink_server_wait_ready_obeys_asyncio_timeout(tmp_path: Path):
+    server = sinker.SinkAsyncServer(_unit_handler, sock_file=str(tmp_path / "nobody-listens.sock"))
+
+    async def wait() -> None:
+        async with asyncio.timeout(0.2):
+            await server.wait_ready()
+
+    with pytest.raises(TimeoutError):
+        asyncio.run(wait())
+
+
 def test_sink_server_rejects_sync_handler(tmp_path: Path):
     def handler(datums: AsyncIterator[sinker.Datum]) -> list[sinker.Response]:
         return []

@@ -12,7 +12,6 @@ use chrono::{DateTime, Utc};
 pub mod server;
 
 use tokio::net::UnixStream;
-use tokio::time::Instant;
 use tonic::transport::Uri;
 use tower::service_fn;
 
@@ -281,33 +280,18 @@ pub(crate) async fn map_grpc_client(
     Ok(MapClient::new(channel))
 }
 
-pub(crate) async fn wait_for_ready(
-    sock_file: String,
-    timeout: Duration,
-    component: &'static str,
-) -> PyResult<()> {
-    let deadline = Instant::now() + timeout;
-
+// Poll the IsReady probe until it succeeds. There is no deadline: Python sets
+// one with asyncio.timeout(), and cancellation drops this future.
+pub(crate) async fn wait_for_ready(sock_file: String) {
     loop {
         if let Ok(mut client) = map_grpc_client(sock_file.clone()).await
             && let Ok(response) = client.is_ready(()).await
             && response.into_inner().ready
         {
-            return Ok(());
+            return;
         }
 
-        let now = Instant::now();
-        if now >= deadline {
-            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyTimeoutError, _>(
-                format!("timed out waiting for {component} server readiness"),
-            ));
-        }
-
-        tokio::time::sleep(std::cmp::min(
-            Duration::from_millis(100),
-            deadline.saturating_duration_since(now),
-        ))
-        .await;
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 }
 
@@ -352,18 +336,14 @@ impl MapAsyncServer {
     }
 
     /// Wait until the Numaflow IsReady probe succeeds over the map UDS.
-    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
-    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
-        if !timeout.is_finite() || timeout < 0.0 {
-            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "timeout must be a non-negative finite float",
-            ));
-        }
-
+    #[pyo3(signature = () -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let timeout = Duration::from_secs_f64(timeout);
 
-        pyo3_async_runtimes::tokio::future_into_py(py, wait_for_ready(sock_file, timeout, "map"))
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            wait_for_ready(sock_file).await;
+            Ok(())
+        })
     }
 
     /// Trigger server shutdown from Python (idempotent).

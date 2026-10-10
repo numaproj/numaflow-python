@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use pyo3::exceptions::PyBaseExceptionGroup;
 use pyo3::prelude::*;
 use pyo3::{IntoPyObjectExt, Py, PyAny, PyErr, Python};
 use tokio::sync::oneshot::{Receiver, Sender};
@@ -62,10 +63,8 @@ pub(crate) fn format_error(py: Python<'_>, error: &PyErr) -> String {
     }
 }
 
-// Join every handler failure into one error for Python to raise.
-//
-// Python 3.11 and later have BaseExceptionGroup, which prints each traceback in
-// turn. Older versions have no group type, so they get the first error only.
+// Join every handler failure into one BaseExceptionGroup for Python to raise,
+// so that Python prints each traceback in turn.
 pub(crate) fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
     let first = || errors.first().expect("errors is never empty").clone_ref(py);
 
@@ -73,17 +72,13 @@ pub(crate) fn combine_errors(py: Python<'_>, errors: Vec<PyErr>) -> PyErr {
         return first();
     }
 
-    let Ok(group_type) = py
-        .import("builtins")
-        .and_then(|builtins| builtins.getattr("BaseExceptionGroup"))
-    else {
-        return first();
-    };
-
     let values: Vec<_> = errors.iter().map(|error| error.value(py).clone()).collect();
     let message = format!("{} handler calls failed", values.len());
 
-    match group_type.call1((message, values)) {
+    match py
+        .get_type::<PyBaseExceptionGroup>()
+        .call1((message, values))
+    {
         Ok(group) => PyErr::from_value(group),
         Err(_) => first(),
     }

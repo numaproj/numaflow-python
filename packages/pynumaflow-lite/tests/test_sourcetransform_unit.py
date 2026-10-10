@@ -3,7 +3,7 @@ import os
 import subprocess
 import uuid
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -12,7 +12,7 @@ from pynumaflow_lite import sourcetransformer
 
 CARGO_ROOT = Path(__file__).resolve().parent.parent
 
-EVENT_TIME = datetime(2023, 6, 1, tzinfo=timezone.utc)
+EVENT_TIME = datetime(2023, 6, 1, tzinfo=UTC)
 
 
 async def _unit_handler(datum: sourcetransformer.Datum) -> list[sourcetransformer.Message]:

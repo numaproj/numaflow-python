@@ -42,15 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.10"
-
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: "3.10"
+          python-version: "3.11"
           working-directory: packages/pynumaflow-lite
 
       - name: Set up Rust
@@ -94,7 +89,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v10.3.0
         with:
           working-directory: packages/pynumaflow-lite
 
@@ -108,7 +103,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          for python_version in 3.10 3.11 3.12 3.13 3.14; do
+          for python_version in 3.11 3.12 3.13 3.14 3.15; do
             echo "::group::Python ${python_version}"
             uv python install "${python_version}"
             export UV_PYTHON="${python_version}"
@@ -150,7 +145,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
         platform:
           - os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
@@ -166,10 +161,23 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.0
         with:
-          python-version: ${{ matrix.python-version }}
+          working-directory: packages/pynumaflow-lite
+
+      # On Linux, maturin builds in the manylinux container and uses the
+      # python3.x of that container. On macOS, it builds on the host, so it
+      # needs an interpreter from uv.
+      - name: Set up Python ${{ matrix.python-version }}
+        if: ${{ !matrix.platform.linux }}
+        env:
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: |
+          set -euo pipefail
+
+          uv python install "${PYTHON_VERSION}"
+          echo "PYTHON_BIN=$(uv python find --no-project "${PYTHON_VERSION}")" >> "${GITHUB_ENV}"
 
       - name: Set up Rust
         run: |
@@ -182,7 +190,7 @@ jobs:
           set -euo pipefail
 
           tag_version="${GITHUB_REF_NAME#pynumaflow-lite-v}"
-          package_version="$(cargo metadata --locked --no-deps --format-version 1 | python -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
+          package_version="$(cargo metadata --locked --no-deps --format-version 1 | uv run --no-project python -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
 
           if [ "${package_version}" != "${tag_version}" ]; then
             echo "Tag version ${tag_version} does not match Cargo.toml version ${package_version}"
@@ -194,7 +202,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          base_version="$(cargo metadata --locked --no-deps --format-version 1 | python -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
+          base_version="$(cargo metadata --locked --no-deps --format-version 1 | uv run --no-project python -c 'import json, sys; print(json.load(sys.stdin)["packages"][0]["version"])')"
           if [[ "${base_version}" == *-* ]]; then
             manual_version="${base_version}.dev.${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
           else
@@ -202,7 +210,7 @@ jobs:
           fi
           export MANUAL_VERSION="${manual_version}"
 
-          python - <<'PY'
+          uv run --no-project python - <<'PY'
           import os
           import re
           from pathlib import Path
@@ -244,7 +252,7 @@ jobs:
             --release
             --locked
             --out dist
-            -i ${{ matrix.platform.linux && format('python{0}', matrix.python-version) || 'python' }}
+            -i ${{ matrix.platform.linux && format('python{0}', matrix.python-version) || env.PYTHON_BIN }}
 
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v7
@@ -268,10 +276,10 @@ jobs:
 
     steps:
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v10.3.0
 
       - name: Download wheel artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: pynumaflow-lite-*
           path: dist

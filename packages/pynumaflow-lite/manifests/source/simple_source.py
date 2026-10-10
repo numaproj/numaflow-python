@@ -2,7 +2,7 @@ import asyncio
 import logging
 import signal
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pynumaflow_lite import sourcer
 from pynumaflow_lite._source_dtypes import Sourcer
@@ -43,7 +43,7 @@ class SimpleSource(Sourcer):
             message = sourcer.Message(
                 payload=payload,
                 offset=offset,
-                event_time=datetime.now(timezone.utc),
+                event_time=datetime.now(UTC),
                 keys=["key1"],
                 headers={"source": "simple"},
             )

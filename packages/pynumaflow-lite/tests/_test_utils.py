@@ -34,7 +34,12 @@ def _wait_for_sink_ready(path: Path, timeout: float = 10.0) -> None:
         return []
 
     server = sinker.SinkAsyncServer(_unused_handler, sock_file=str(path))
-    asyncio.run(server.wait_ready(timeout=timeout))
+
+    async def _wait() -> None:
+        async with asyncio.timeout(timeout):
+            await server.wait_ready()
+
+    asyncio.run(_wait())
 
 
 def _stop_server(server: subprocess.Popen, timeout: float) -> str:

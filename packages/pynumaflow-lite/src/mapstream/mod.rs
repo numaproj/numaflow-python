@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
-use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use numaflow::mapstream;
@@ -222,21 +221,14 @@ impl MapStreamAsyncServer {
     }
 
     /// Wait until the Numaflow IsReady probe succeeds over the mapstream UDS.
-    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
-    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
-        if !timeout.is_finite() || timeout < 0.0 {
-            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "timeout must be a non-negative finite float",
-            ));
-        }
-
+    #[pyo3(signature = () -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let timeout = Duration::from_secs_f64(timeout);
 
-        pyo3_async_runtimes::tokio::future_into_py(
-            py,
-            wait_for_ready(sock_file, timeout, "mapstream"),
-        )
+        pyo3_async_runtimes::tokio::future_into_py(py, async move {
+            wait_for_ready(sock_file).await;
+            Ok(())
+        })
     }
 
     /// Trigger server shutdown from Python (idempotent).

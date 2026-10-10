@@ -9,6 +9,7 @@ SERVER_INFO = Path("/tmp/var/run/numaflow/sourcetransformer-server-info")
 
 SCRIPTS = [
     "sourcetransform_event_filter.py",
+    "sourcetransform_event_filter_func.py",
 ]
 
 

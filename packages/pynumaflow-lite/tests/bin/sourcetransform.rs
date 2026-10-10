@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 
@@ -52,7 +53,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let handshake_response = handshake_response.unwrap();
     assert!(handshake_response.handshake.is_some());
 
-    // Request 1 - normal message (event time in 2023)
+    // Request 1 - normal message (event time in 2023), with user and system metadata
     let request_1 = proto::source_transformer::SourceTransformRequest {
         request: Some(
             proto::source_transformer::source_transform_request::Request {
@@ -65,7 +66,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     nanos: 0,
                 }),
                 headers: Default::default(),
-                metadata: None,
+                metadata: Some(proto::metadata::Metadata {
+                    previous_vertex: "in".to_string(),
+                    sys_metadata: HashMap::from([(
+                        "sys_group".to_string(),
+                        kv_group(&[("sys_key", b"sys_value")]),
+                    )]),
+                    user_metadata: HashMap::from([(
+                        "user_group".to_string(),
+                        kv_group(&[("user_key", b"user_value")]),
+                    )]),
+                }),
             },
         ),
         handshake: None,
@@ -79,8 +90,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let msg = &r.results[0];
     assert_eq!(msg.keys.first(), Some(&"first".to_owned()));
     assert_eq!(msg.value, "hello".as_bytes());
-    // Verify event_time is set
-    assert!(msg.event_time.is_some());
+    // Verify the handler set the event time to 2023-01-01 00:00:00 UTC
+    assert_eq!(
+        msg.event_time,
+        Some(prost_types::Timestamp {
+            seconds: 1672531200,
+            nanos: 0,
+        })
+    );
+    assert!(msg.tags.contains(&"after_year_2022".to_string()));
+    let user_metadata = &msg
+        .metadata
+        .as_ref()
+        .expect("metadata is set")
+        .user_metadata;
+    // Verify the user metadata that the handler created
+    assert_eq!(
+        user_metadata["filter_info"].key_value["filter_result"],
+        b"after_year_2022".to_vec()
+    );
+    // Verify the handler received the incoming user metadata in Datum.user_metadata
+    assert_eq!(
+        user_metadata["user_group"].key_value["user_key"],
+        b"user_value".to_vec()
+    );
+    // Verify the handler received the incoming system metadata in Datum.system_metadata
+    assert_eq!(
+        user_metadata["system_echo"].key_value["sys_group.sys_key"],
+        b"sys_value".to_vec()
+    );
 
     // Request 2 - message to be dropped (event time in 2021)
     let request_2 = proto::source_transformer::SourceTransformRequest {
@@ -135,10 +173,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(r.id, "3");
     let msg = &r.results[0];
     assert_eq!(msg.value, "year_2022_message".as_bytes());
+    // Verify the handler set the event time to 2022-01-01 00:00:00 UTC
+    assert_eq!(
+        msg.event_time,
+        Some(prost_types::Timestamp {
+            seconds: 1640995200,
+            nanos: 0,
+        })
+    );
     assert!(msg.tags.contains(&"within_year_2022".to_string()));
+    // Verify the user metadata that the handler created
+    let user_metadata = &msg
+        .metadata
+        .as_ref()
+        .expect("metadata is set")
+        .user_metadata;
+    assert_eq!(
+        user_metadata["filter_info"].key_value["filter_result"],
+        b"within_year_2022".to_vec()
+    );
+    // No metadata was sent, so the handler forwards no user groups and echoes no system metadata
+    assert!(!user_metadata.contains_key("user_group"));
+    assert!(
+        user_metadata
+            .get("system_echo")
+            .is_none_or(|g| g.key_value.is_empty())
+    );
 
     // close request stream
     drop(tx);
 
     Ok(())
+}
+
+fn kv_group(pairs: &[(&str, &[u8])]) -> proto::metadata::KeyValueGroup {
+    proto::metadata::KeyValueGroup {
+        key_value: pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_vec()))
+            .collect(),
+    }
 }

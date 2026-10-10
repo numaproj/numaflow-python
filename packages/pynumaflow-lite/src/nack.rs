@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use pyo3::prelude::*;
 
+use crate::pyrs::py_repr;
+
 /// Per-message redelivery options for a nack.
 ///
 /// Shared across all UDF types (mapper, batchmapper, mapstreamer,
@@ -41,17 +43,14 @@ impl NackOptions {
         }
     }
 
-    pub(crate) fn __repr__(&self) -> String {
-        let opt = |v: &Option<String>| v.as_ref().map_or_else(|| "None".to_string(), |s| s.clone());
-        format!(
-            "NackOptions(delay={}, max_deliveries={}, reason={}, nack_map={:?})",
-            self.delay
-                .map_or_else(|| "None".to_string(), |v| v.to_string()),
-            self.max_deliveries
-                .map_or_else(|| "None".to_string(), |v| v.to_string()),
-            opt(&self.reason),
-            self.nack_map
-        )
+    pub(crate) fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "NackOptions(delay={}, max_deliveries={}, reason={}, nack_map={})",
+            py_repr(py, self.delay)?,
+            py_repr(py, self.max_deliveries)?,
+            py_repr(py, &self.reason)?,
+            py_repr(py, &self.nack_map)?,
+        ))
     }
 }
 

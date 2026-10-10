@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
-from pynumaflow_lite.sourcetransformer import Datum, Messages
+from pynumaflow_lite.sourcetransformer import Datum, Message
 
 
 class SourceTransformer(metaclass=ABCMeta):
@@ -20,16 +20,16 @@ class SourceTransformer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, keys: list[str], datum: Datum) -> Messages:
+    async def handler(self, datum: Datum) -> list[Message]:
         """
         Implement this handler function which implements the SourceTransformer interface.
 
         Args:
-            keys: The keys associated with the message.
-            datum: The input datum containing value, event_time, watermark, and headers.
+            datum: The input datum containing keys, value, event_time, watermark,
+                headers, and metadata.
 
         Returns:
-            Messages: A collection of transformed messages with potentially modified
-                     event times and tags for conditional forwarding.
+            The transformed messages, with potentially modified event times and
+            tags for conditional forwarding.
         """
         pass

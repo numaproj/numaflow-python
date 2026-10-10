@@ -1,231 +1,72 @@
 use std::collections::HashMap;
-
-use numaflow::sourcetransform;
+use std::path::PathBuf;
+use std::sync::Mutex;
+use std::time::Duration;
 
 use chrono::{DateTime, Utc};
+use numaflow::proto::source_transformer::source_transform_client::SourceTransformClient;
+use numaflow::sourcetransform;
+use pyo3::prelude::*;
+use tokio::net::UnixStream;
+use tokio::time::Instant;
+use tonic::transport::Uri;
+use tower::service_fn;
+
+use crate::nack::NackOptions;
+use crate::pyrs::{bytes_literal, py_repr};
 
 /// SourceTransform interface managed by Python. It means Python code will start the server
 /// and can pass in the Python function.
 pub mod server;
 
-use pyo3::prelude::*;
-use std::sync::Mutex;
-
-use crate::nack::NackOptions;
-
-/// SystemMetadata wraps system-generated metadata groups per message.
-/// It is read-only to UDFs.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct SystemMetadata {
-    data: HashMap<String, HashMap<String, Vec<u8>>>,
-}
-
-#[pymethods]
-impl SystemMetadata {
-    #[new]
-    #[pyo3(signature = () -> "SystemMetadata")]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns the groups of the system metadata.
-    /// If there are no groups, it returns an empty list.
-    #[pyo3(signature = () -> "list[str]")]
-    fn groups(&self) -> Vec<String> {
-        self.data.keys().cloned().collect()
-    }
-
-    /// Returns the keys of the system metadata for the given group.
-    /// If there are no keys or the group is not present, it returns an empty list.
-    #[pyo3(signature = (group: "str") -> "list[str]")]
-    fn keys(&self, group: &str) -> Vec<String> {
-        self.data
-            .get(group)
-            .map(|kv| kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Returns the value of the system metadata for the given group and key.
-    /// If there is no value or the group or key is not present, it returns an empty bytes.
-    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
-    fn value(&self, group: &str, key: &str) -> Vec<u8> {
-        self.data
-            .get(group)
-            .and_then(|kv| kv.get(key))
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    fn __repr__(&self) -> String {
-        format!("SystemMetadata(groups={:?})", self.groups())
-    }
-}
-
-impl From<sourcetransform::SystemMetadata> for SystemMetadata {
-    fn from(value: sourcetransform::SystemMetadata) -> Self {
-        let mut data = HashMap::new();
-        for group in value.groups() {
-            let mut kv = HashMap::new();
-            for key in value.keys(&group) {
-                kv.insert(key.clone(), value.value(&group, &key));
-            }
-            data.insert(group, kv);
+fn system_metadata_to_hash_map(
+    value: sourcetransform::SystemMetadata,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
+    let mut data = HashMap::new();
+    for group in value.groups() {
+        let mut kv = HashMap::new();
+        for key in value.keys(&group) {
+            kv.insert(key.clone(), value.value(&group, &key));
         }
-        Self { data }
+        data.insert(group, kv);
     }
+    data
 }
 
-/// UserMetadata wraps user-defined metadata groups per message.
-/// Users can read and write to this metadata.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
-#[derive(Clone, Default, Debug)]
-pub struct UserMetadata {
-    data: HashMap<String, HashMap<String, Vec<u8>>>,
-}
-
-#[pymethods]
-impl UserMetadata {
-    #[new]
-    #[pyo3(signature = () -> "UserMetadata")]
-    fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns the groups of the user metadata.
-    /// If there are no groups, it returns an empty list.
-    #[pyo3(signature = () -> "list[str]")]
-    fn groups(&self) -> Vec<String> {
-        self.data.keys().cloned().collect()
-    }
-
-    /// Returns the keys of the user metadata for the given group.
-    /// If there are no keys or the group is not present, it returns an empty list.
-    #[pyo3(signature = (group: "str") -> "list[str]")]
-    fn keys(&self, group: &str) -> Vec<String> {
-        self.data
-            .get(group)
-            .map(|kv| kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
-    /// Returns the value of the user metadata for the given group and key.
-    /// If there is no value or the group or key is not present, it returns an empty bytes.
-    #[pyo3(signature = (group: "str", key: "str") -> "bytes")]
-    fn value(&self, group: &str, key: &str) -> Vec<u8> {
-        self.data
-            .get(group)
-            .and_then(|kv| kv.get(key))
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    /// Creates a new group in the user metadata.
-    /// If the group already exists, this is a no-op.
-    #[pyo3(signature = (group: "str"))]
-    fn create_group(&mut self, group: String) {
-        self.data.entry(group).or_default();
-    }
-
-    /// Adds a key-value pair to the user metadata.
-    /// If the group is not present, it creates a new group.
-    #[pyo3(signature = (group: "str", key: "str", value: "bytes"))]
-    fn add_kv(&mut self, group: String, key: String, value: Vec<u8>) {
-        self.data.entry(group).or_default().insert(key, value);
-    }
-
-    /// Removes a key from a group in the user metadata.
-    /// If the key or group is not present, it's a no-op.
-    #[pyo3(signature = (group: "str", key: "str"))]
-    fn remove_key(&mut self, group: &str, key: &str) {
-        if let Some(kv) = self.data.get_mut(group) {
-            kv.remove(key);
+fn user_metadata_to_hash_map(
+    value: sourcetransform::UserMetadata,
+) -> HashMap<String, HashMap<String, Vec<u8>>> {
+    let mut data = HashMap::new();
+    for group in value.groups() {
+        let mut kv = HashMap::new();
+        for key in value.keys(&group) {
+            kv.insert(key.clone(), value.value(&group, &key));
         }
+        data.insert(group, kv);
     }
-
-    /// Removes a group from the user metadata.
-    /// If the group is not present, it's a no-op.
-    #[pyo3(signature = (group: "str"))]
-    fn remove_group(&mut self, group: &str) {
-        self.data.remove(group);
-    }
-
-    fn __repr__(&self) -> String {
-        format!("UserMetadata(groups={:?})", self.groups())
-    }
-}
-
-impl From<sourcetransform::UserMetadata> for UserMetadata {
-    fn from(value: sourcetransform::UserMetadata) -> Self {
-        let mut data = HashMap::new();
-        for group in value.groups() {
-            let mut kv = HashMap::new();
-            for key in value.keys(&group) {
-                kv.insert(key.clone(), value.value(&group, &key));
-            }
-            data.insert(group, kv);
-        }
-        Self { data }
-    }
-}
-
-impl From<UserMetadata> for sourcetransform::UserMetadata {
-    fn from(value: UserMetadata) -> Self {
-        let mut user_metadata = sourcetransform::UserMetadata::new();
-        for (group, kv_map) in value.data {
-            for (key, val) in kv_map {
-                user_metadata.add_kv(group.clone(), key, val);
-            }
-        }
-        user_metadata
-    }
-}
-
-/// A collection of [Message]s.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
-#[derive(Clone, Debug)]
-pub struct Messages {
-    pub(crate) messages: Vec<Message>,
-}
-
-#[pymethods]
-impl Messages {
-    #[new]
-    #[pyo3(signature = () -> "Messages")]
-    fn new() -> Self {
-        Self { messages: vec![] }
-    }
-
-    /// Append a [Message] to the collection.
-    #[pyo3(signature = (message: "Message"))]
-    fn append(&mut self, message: Message) {
-        self.messages.push(message);
-    }
-
-    fn __repr__(&self) -> String {
-        format!("Messages({:?})", self.messages)
-    }
-
-    fn __str__(&self) -> String {
-        format!("Messages({:?})", self.messages)
-    }
+    data
 }
 
 /// A message to be sent to the next vertex with event time transformation.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object)]
-#[derive(Clone, Default, Debug)]
+#[pyclass(module = "pynumaflow_lite.sourcetransformer", from_py_object, eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Message {
     /// Keys are a collection of strings which will be passed on to the next vertex as is. It can
     /// be an empty collection.
+    #[pyo3(get)]
     pub keys: Option<Vec<String>>,
     /// Value is the value passed to the next vertex.
+    #[pyo3(get)]
     pub value: Vec<u8>,
     /// Time for the given event. This will be used for tracking watermarks.
+    #[pyo3(get)]
     pub event_time: DateTime<Utc>,
-    /// Tags are used for conditional forwarding.
+    /// Tags are used for [conditional forwarding](https://numaflow.numaproj.io/user-guide/reference/conditional-forwarding/).
+    #[pyo3(get)]
     pub tags: Option<Vec<String>>,
     /// User metadata for the message.
-    pub user_metadata: Option<UserMetadata>,
+    #[pyo3(get)]
+    pub user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     /// Options sent back to the source when nacking the message.
     #[pyo3(get)]
     pub nack_options: Option<NackOptions>,
@@ -233,16 +74,16 @@ pub struct Message {
 
 #[pymethods]
 impl Message {
-    /// Create a new [Message] with the given value, event_time, keys, tags, and user_metadata.
+    /// Create a new Message with the given value and event_time. Keys, tags, and
+    /// user_metadata are optional.
     #[new]
-    #[pyo3(signature = (value: "bytes", event_time: "datetime.datetime", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "UserMetadata | None"=None) -> "Message"
-    )]
+    #[pyo3(signature = (value: "bytes", event_time: "datetime.datetime", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "dict[str, dict[str, bytes]] | None"=None) -> "Message")]
     fn new(
         value: Vec<u8>,
         event_time: DateTime<Utc>,
         keys: Option<Vec<String>>,
         tags: Option<Vec<String>>,
-        user_metadata: Option<UserMetadata>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
             keys,
@@ -254,12 +95,12 @@ impl Message {
         }
     }
 
-    /// Drop a [Message], do not forward to the next vertex.
-    /// Event time is required because even though a message is dropped,
-    /// it is still considered as being processed, hence the watermark should be updated.
-    #[pyo3(signature = (event_time: "datetime.datetime"))]
+    /// A Message marked to be dropped, i.e. not forwarded to the next vertex.
+    /// Event time is required because a dropped message is still processed, so the
+    /// watermark must be updated.
     #[staticmethod]
-    fn message_to_drop(event_time: DateTime<Utc>) -> Self {
+    #[pyo3(signature = (event_time: "datetime.datetime") -> "Message")]
+    fn to_drop(event_time: DateTime<Utc>) -> Self {
         Self {
             keys: None,
             value: vec![],
@@ -272,8 +113,8 @@ impl Message {
 
     /// A Message marked to be negatively acknowledged (retried), with optional nack options.
     /// Event time is required so the watermark can still be updated.
-    #[pyo3(signature = (event_time: "datetime.datetime", nack_options: "NackOptions | None"=None) -> "Message")]
     #[staticmethod]
+    #[pyo3(signature = (event_time: "datetime.datetime", nack_options: "NackOptions | None"=None) -> "Message")]
     fn to_nack(event_time: DateTime<Utc>, nack_options: Option<NackOptions>) -> Self {
         Self {
             keys: None,
@@ -287,8 +128,8 @@ impl Message {
 
     /// A Message marked to be failed.
     /// Event time is required so the watermark can still be updated.
-    #[pyo3(signature = (event_time: "datetime.datetime") -> "Message")]
     #[staticmethod]
+    #[pyo3(signature = (event_time: "datetime.datetime") -> "Message")]
     fn to_fail(event_time: DateTime<Utc>) -> Self {
         Self {
             keys: None,
@@ -299,6 +140,22 @@ impl Message {
             nack_options: None,
         }
     }
+
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Message(value={}, event_time={}, keys={}, tags={}, user_metadata={}, nack_options={})",
+            bytes_literal(&self.value),
+            py_repr(py, self.event_time)?,
+            py_repr(py, &self.keys)?,
+            py_repr(py, &self.tags)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, self.nack_options.clone())?,
+        ))
+    }
+
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
+    }
 }
 
 impl From<Message> for sourcetransform::Message {
@@ -308,7 +165,13 @@ impl From<Message> for sourcetransform::Message {
             .with_tags(value.tags.unwrap_or_default());
 
         if let Some(user_metadata) = value.user_metadata {
-            msg = msg.with_user_metadata(user_metadata.into());
+            let mut umd = sourcetransform::UserMetadata::new();
+            for (group, kv) in user_metadata {
+                for (key, val) in kv {
+                    umd.add_kv(group.clone(), key, val);
+                }
+            }
+            msg = msg.with_user_metadata(umd);
         }
 
         msg.nack_options = value.nack_options.map(Into::into);
@@ -317,7 +180,8 @@ impl From<Message> for sourcetransform::Message {
     }
 }
 
-/// The incoming [SourceTransformRequest] accessible in Python function.
+/// The incoming Datum passed to the source transform handler. It carries the event's keys,
+/// value, event_time, watermark, headers, and the user/system metadata.
 #[pyclass(module = "pynumaflow_lite.sourcetransformer")]
 pub struct Datum {
     /// Set of keys in the (key, value) terminology of map/reduce paradigm.
@@ -326,10 +190,11 @@ pub struct Datum {
     /// The value in the (key, value) terminology of map/reduce paradigm.
     #[pyo3(get)]
     pub value: Vec<u8>,
-    /// Watermark represented by time is a guarantee that we will not see an element older than this time.
+    /// [watermark](https://numaflow.numaproj.io/core-concepts/watermarks/) represented by time is a
+    /// guarantee that we will not see an element older than this time.
     #[pyo3(get)]
     pub watermark: DateTime<Utc>,
-    /// Time of the element as seen at source or aligned after a reduce operation.
+    /// Time of the element as seen at source.
     #[pyo3(get)]
     pub event_time: DateTime<Utc>,
     /// Headers for the message.
@@ -337,112 +202,181 @@ pub struct Datum {
     pub headers: HashMap<String, String>,
     /// User metadata for the message.
     #[pyo3(get)]
-    pub user_metadata: UserMetadata,
+    pub user_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
     /// System metadata for the message.
     #[pyo3(get)]
-    pub system_metadata: SystemMetadata,
+    pub system_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
 }
 
+#[pymethods]
 impl Datum {
+    #[new]
+    #[pyo3(signature = (
+        *,
+        keys: "list[str] | None"=None,
+        value: "bytes | None"=None,
+        event_time: "datetime.datetime | None"=None,
+        watermark: "datetime.datetime | None"=None,
+        headers: "dict[str, str] | None"=None,
+        user_metadata: "dict[str, dict[str, bytes]] | None"=None,
+        system_metadata: "dict[str, dict[str, bytes]] | None"=None,
+    ) -> "Datum")]
     fn new(
-        keys: Vec<String>,
-        value: Vec<u8>,
-        watermark: DateTime<Utc>,
-        event_time: DateTime<Utc>,
-        headers: HashMap<String, String>,
-        user_metadata: UserMetadata,
-        system_metadata: SystemMetadata,
+        keys: Option<Vec<String>>,
+        value: Option<Vec<u8>>,
+        event_time: Option<DateTime<Utc>>,
+        watermark: Option<DateTime<Utc>>,
+        headers: Option<HashMap<String, String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+        system_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
-            keys,
-            value,
-            watermark,
-            event_time,
-            headers,
-            user_metadata,
-            system_metadata,
+            keys: keys.unwrap_or_default(),
+            value: value.unwrap_or_default(),
+            watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
+            headers: headers.unwrap_or_default(),
+            user_metadata: user_metadata.unwrap_or_default(),
+            system_metadata: system_metadata.unwrap_or_default(),
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, event_time={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
-            self.keys,
-            self.value,
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Datum(keys={}, value={}, watermark={}, event_time={}, headers={}, user_metadata={}, system_metadata={})",
+            py_repr(py, &self.keys)?,
+            bytes_literal(&self.value),
             self.watermark,
             self.event_time,
-            self.headers,
-            self.user_metadata,
-            self.system_metadata
-        )
+            py_repr(py, &self.headers)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, &self.system_metadata)?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={:?}, watermark={}, event_time={}, headers={:?}, user_metadata={:?}, system_metadata={:?})",
-            self.keys,
-            String::from_utf8_lossy(&self.value),
-            self.watermark,
-            self.event_time,
-            self.headers,
-            self.user_metadata,
-            self.system_metadata
-        )
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 
 impl From<sourcetransform::SourceTransformRequest> for Datum {
     fn from(value: sourcetransform::SourceTransformRequest) -> Self {
-        Datum::new(
-            value.keys,
-            value.value,
-            value.watermark,
-            value.eventtime,
-            value.headers,
-            value.user_metadata.into(),
-            value.system_metadata.into(),
-        )
+        Self {
+            keys: value.keys,
+            value: value.value,
+            watermark: value.watermark,
+            event_time: value.eventtime,
+            headers: value.headers,
+            user_metadata: user_metadata_to_hash_map(value.user_metadata),
+            system_metadata: system_metadata_to_hash_map(value.system_metadata),
+        }
+    }
+}
+
+async fn source_transform_client(
+    sock_file: String,
+) -> PyResult<SourceTransformClient<tonic::transport::Channel>> {
+    let endpoint = tonic::transport::Endpoint::try_from("http://[::]:50051")
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
+
+    let channel = endpoint
+        .connect_with_connector(service_fn(move |_: Uri| {
+            let sock = PathBuf::from(sock_file.clone());
+            async move {
+                Ok::<_, std::io::Error>(hyper_util::rt::TokioIo::new(
+                    UnixStream::connect(sock).await?,
+                ))
+            }
+        }))
+        .await
+        .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()))?;
+
+    Ok(SourceTransformClient::new(channel))
+}
+
+async fn wait_for_ready(sock_file: String, timeout: Duration) -> PyResult<()> {
+    let deadline = Instant::now() + timeout;
+
+    loop {
+        if let Ok(mut client) = source_transform_client(sock_file.clone()).await
+            && let Ok(response) = client.is_ready(()).await
+            && response.into_inner().ready
+        {
+            return Ok(());
+        }
+
+        let now = Instant::now();
+        if now >= deadline {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyTimeoutError, _>(
+                "timed out waiting for sourcetransform server readiness",
+            ));
+        }
+
+        tokio::time::sleep(std::cmp::min(
+            Duration::from_millis(100),
+            deadline.saturating_duration_since(now),
+        ))
+        .await;
     }
 }
 
 /// Async SourceTransform Server that can be started from Python code which will run the Python UDF function.
-#[pyclass(module = "pynumaflow_lite.sourcetransformer")]
+#[pyclass(
+    name = "_SourceTransformAsyncServer",
+    module = "pynumaflow_lite.sourcetransformer"
+)]
 pub struct SourceTransformAsyncServer {
     sock_file: String,
-    info_file: String,
+    server_info_file: String,
     shutdown_tx: Mutex<Option<tokio::sync::oneshot::Sender<()>>>,
 }
 
 #[pymethods]
 impl SourceTransformAsyncServer {
     #[new]
-    #[pyo3(signature = (sock_file: "str | None"=sourcetransform::SOCK_ADDR.to_string(), info_file: "str | None"=sourcetransform::SERVER_INFO_FILE.to_string()) -> "SourceTransformAsyncServer"
-    )]
-    fn new(sock_file: String, info_file: String) -> Self {
+    #[pyo3(signature = (
+        sock_file: "str | None"=None,
+        server_info_file: "str | None"=None,
+    ) -> "_SourceTransformAsyncServer")]
+    fn new(sock_file: Option<String>, server_info_file: Option<String>) -> Self {
         Self {
-            sock_file,
-            info_file,
+            sock_file: sock_file.unwrap_or_else(|| sourcetransform::SOCK_ADDR.to_string()),
+            server_info_file: server_info_file
+                .unwrap_or_else(|| sourcetransform::SERVER_INFO_FILE.to_string()),
             shutdown_tx: Mutex::new(None),
         }
     }
 
     /// Start the server with the given Python function.
-    #[pyo3(signature = (py_func: "callable") -> "None")]
-    pub fn start<'a>(&self, py: Python<'a>, py_func: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
+    #[pyo3(signature = (handler: "callable") -> "None")]
+    pub fn start<'a>(&self, py: Python<'a>, handler: Py<PyAny>) -> PyResult<Bound<'a, PyAny>> {
         let sock_file = self.sock_file.clone();
-        let info_file = self.info_file.clone();
+        let server_info_file = self.server_info_file.clone();
         let (tx, rx) = tokio::sync::oneshot::channel::<()>();
         {
             let mut guard = self.shutdown_tx.lock().unwrap();
             *guard = Some(tx);
         }
 
-        pyo3_async_runtimes::tokio::future_into_py(py, async move {
-            crate::sourcetransform::server::start(py_func, sock_file, info_file, rx)
-                .await
-                .expect("server failed to start");
-            Ok(())
-        })
+        pyo3_async_runtimes::tokio::future_into_py(
+            py,
+            crate::sourcetransform::server::start(handler, sock_file, server_info_file, rx),
+        )
+    }
+
+    /// Wait until the Numaflow IsReady probe succeeds over the sourcetransform UDS.
+    #[pyo3(signature = (timeout: "float"=30.0) -> "None")]
+    pub fn wait_ready<'a>(&self, py: Python<'a>, timeout: f64) -> PyResult<Bound<'a, PyAny>> {
+        if !timeout.is_finite() || timeout < 0.0 {
+            return Err(pyo3::PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "timeout must be a non-negative finite float",
+            ));
+        }
+
+        let sock_file = self.sock_file.clone();
+        let timeout = Duration::from_secs_f64(timeout);
+
+        pyo3_async_runtimes::tokio::future_into_py(py, wait_for_ready(sock_file, timeout))
     }
 
     /// Trigger server shutdown from Python (idempotent).
@@ -457,9 +391,6 @@ impl SourceTransformAsyncServer {
 
 /// Helper to populate a PyModule with sourcetransform types/functions.
 pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
-    m.add_class::<SystemMetadata>()?;
-    m.add_class::<UserMetadata>()?;
-    m.add_class::<Messages>()?;
     m.add_class::<Message>()?;
     m.add_class::<Datum>()?;
     m.add_class::<NackOptions>()?;

@@ -1,16 +1,13 @@
 import asyncio
-import signal
-from collections.abc import Callable
 from datetime import datetime, timezone
 
-from pynumaflow_lite import sourcetransformer
+from pynumaflow_lite.sourcetransformer import Datum, Message, SourceTransformAsyncServer, SourceTransformer
 
-# Define epoch timestamps for filtering
 january_first_2022 = datetime(2022, 1, 1, tzinfo=timezone.utc)
 january_first_2023 = datetime(2023, 1, 1, tzinfo=timezone.utc)
 
 
-class EventFilter(sourcetransformer.SourceTransformer):
+class EventFilter(SourceTransformer):
     """
     A source transformer that filters and routes messages based on event time.
 
@@ -21,97 +18,62 @@ class EventFilter(sourcetransformer.SourceTransformer):
     Also demonstrates reading and creating metadata.
     """
 
-    async def handler(self, keys: list[str], datum: sourcetransformer.Datum) -> sourcetransformer.Messages:
-        val = datum.value
-        event_time = datum.event_time
-        messages = sourcetransformer.Messages()
-
+    async def handler(self, datum: Datum) -> list[Message]:
         # Read system metadata (read-only)
-        print(f"System metadata groups: {datum.system_metadata.groups()}")
-        for group in datum.system_metadata.groups():
-            for key in datum.system_metadata.keys(group):
-                value = datum.system_metadata.value(group, key)
+        print(f"System metadata groups: {list(datum.system_metadata)}")
+        for group, key_values in datum.system_metadata.items():
+            for key, value in key_values.items():
                 print(f"  System[{group}][{key}] = {value}")
 
-        # Read user metadata (read-only from input)
-        print(f"User metadata groups: {datum.user_metadata.groups()}")
-        for group in datum.user_metadata.groups():
-            for key in datum.user_metadata.keys(group):
-                value = datum.user_metadata.value(group, key)
+        # Read user metadata
+        print(f"User metadata groups: {list(datum.user_metadata)}")
+        for group, key_values in datum.user_metadata.items():
+            for key, value in key_values.items():
                 print(f"  User[{group}][{key}] = {value}")
 
+        event_time = datum.event_time
         if event_time < january_first_2022:
             print(f"Got event time: {event_time}, it is before 2022, so dropping")
-            messages.append(sourcetransformer.Message.message_to_drop(event_time))
-        elif event_time < january_first_2023:
+            return [Message.to_drop(event_time)]
+
+        if event_time < january_first_2023:
             print(f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022")
-
-            # Create user metadata for the outgoing message
-            user_metadata = sourcetransformer.UserMetadata()
-            user_metadata.create_group("filter_info")
-            user_metadata.add_kv("filter_info", "filter_result", b"within_year_2022")
-            user_metadata.add_kv("filter_info", "original_event_time", str(event_time).encode())
-
-            messages.append(
-                sourcetransformer.Message(
-                    value=val,
-                    event_time=january_first_2022,
-                    keys=keys,
-                    tags=["within_year_2022"],
-                    user_metadata=user_metadata,
-                )
-            )
+            tag, new_event_time = "within_year_2022", january_first_2022
         else:
             print(f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022")
+            tag, new_event_time = "after_year_2022", january_first_2023
 
-            # Create user metadata for the outgoing message
-            user_metadata = sourcetransformer.UserMetadata()
-            user_metadata.create_group("filter_info")
-            user_metadata.add_kv("filter_info", "filter_result", b"after_year_2022")
-            user_metadata.add_kv("filter_info", "original_event_time", str(event_time).encode())
-
-            messages.append(
-                sourcetransformer.Message(
-                    value=val,
-                    event_time=january_first_2023,
-                    keys=keys,
-                    tags=["after_year_2022"],
-                    user_metadata=user_metadata,
-                )
+        # Forward the incoming user metadata, echo the system metadata, and add the filter result
+        user_metadata = {
+            **datum.user_metadata,
+            "system_echo": {
+                f"{group}.{key}": value
+                for group, key_values in datum.system_metadata.items()
+                for key, value in key_values.items()
+            },
+            "filter_info": {
+                "filter_result": tag.encode(),
+                "original_event_time": str(event_time).encode(),
+            },
+        }
+        return [
+            Message(
+                datum.value,
+                new_event_time,
+                keys=datum.keys,
+                tags=[tag],
+                user_metadata=user_metadata,
             )
+        ]
 
-        return messages
 
-
-async def start(
-    f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages],
-):
-    sock_file = "/tmp/var/run/numaflow/sourcetransform.sock"
-    server_info_file = "/tmp/var/run/numaflow/sourcetransformer-server-info"
-    server = sourcetransformer.SourceTransformAsyncServer(sock_file, server_info_file)
-
-    # Register loop-level signal handlers so we control shutdown and avoid asyncio.run
-    # converting it into KeyboardInterrupt/CancelledError traces.
-    loop = asyncio.get_running_loop()
-    loop.set_debug(True)
-    print("Registering signal handlers", loop)
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        print("Failed to register signal handlers")
-        # add_signal_handler may not be available on some platforms/contexts; fallback below.
-        pass
-
-    try:
-        await server.start(f)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        # Fallback in case the task was cancelled by the runner
-        server.stop()
-        return
+async def main() -> None:
+    await SourceTransformAsyncServer(
+        EventFilter(),
+        sock_file="/tmp/var/run/numaflow/sourcetransform.sock",
+        server_info_file="/tmp/var/run/numaflow/sourcetransformer-server-info",
+    ).serve()
 
 
 if __name__ == "__main__":
-    async_handler = EventFilter()
-    asyncio.run(start(async_handler))
+    asyncio.run(main())

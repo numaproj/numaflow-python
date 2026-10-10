@@ -1,13 +1,31 @@
-use crate::sourcetransform::{Datum, Messages};
+use std::sync::{Arc, Mutex};
+
 use numaflow::shared::ServerExtras;
 use numaflow::sourcetransform;
-
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use std::sync::Arc;
+
+use crate::pyrs::{combine_errors, format_error};
 
 pub(crate) struct PySourceTransformRunner {
     pub(crate) event_loop: Arc<Py<PyAny>>,
     pub(crate) py_func: Arc<Py<PyAny>>,
+    pub(crate) errors: Arc<Mutex<Vec<PyErr>>>,
+}
+
+impl PySourceTransformRunner {
+    fn fail(&self, error: PyErr) -> ! {
+        // numaflow calls transform() concurrently, so each error belongs to a
+        // different message. Keep all of them. start() raises them together, which
+        // lets Python format every traceback instead of Rust printing them by hand.
+        let message = Python::attach(|py| format_error(py, &error));
+        self.errors.lock().unwrap().push(error);
+
+        // numaflow catches this panic, sends a gRPC error for this message, and
+        // starts the server shutdown. An empty result would instead look like a
+        // message that the handler dropped on purpose.
+        panic!("{message}");
+    }
 }
 
 #[tonic::async_trait]
@@ -16,28 +34,52 @@ impl sourcetransform::SourceTransformer for PySourceTransformRunner {
         &self,
         input: sourcetransform::SourceTransformRequest,
     ) -> Vec<sourcetransform::Message> {
-        let fut = Python::attach(|py| {
-            let keys = input.keys.clone();
-            let input: Datum = input.into();
-            let py_func = self.py_func.clone();
-
+        let fut = match Python::attach(|py| -> PyResult<_> {
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
+            let datum: crate::sourcetransform::Datum = input.into();
+            let coro = self.py_func.call1(py, (datum,))?.into_bound(py);
+            let is_awaitable: bool = py
+                .import("inspect")?
+                .call_method1("isawaitable", (&coro,))?
+                .extract()?;
+            if !is_awaitable {
+                return Err(PyErr::new::<PyTypeError, _>(
+                    "sourcetransform handler must be an async function (coroutine)",
+                ));
+            }
+            pyo3_async_runtimes::into_future_with_locals(&locals, coro).map_err(|_| {
+                PyErr::new::<PyTypeError, _>(
+                    "sourcetransform handler must be an async function (coroutine)",
+                )
+            })
+        }) {
+            Ok(fut) => fut,
+            Err(error) => self.fail(error),
+        };
 
-            let coro = py_func.call1(py, (keys, input)).unwrap().into_bound(py);
+        let result = match fut.await {
+            Ok(result) => result,
+            Err(error) => self.fail(error),
+        };
 
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro).unwrap()
-        });
+        let messages: Vec<crate::sourcetransform::Message> = match Python::attach(|py| {
+            result.extract(py).map_err(|_| {
+                let type_name = result
+                    .bind(py)
+                    .get_type()
+                    .name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_else(|_| "<unknown>".to_string());
+                PyErr::new::<PyTypeError, _>(format!(
+                    "sourcetransform handler must return list[Message], got {type_name}"
+                ))
+            })
+        }) {
+            Ok(messages) => messages,
+            Err(error) => self.fail(error),
+        };
 
-        let result = fut.await.unwrap();
-
-        let result = Python::attach(|py| {
-            let x: Messages = result.extract(py).unwrap();
-            x
-        });
-
-        println!("{:?}", result);
-
-        result.messages.into_iter().map(|m| m.into()).collect()
+        messages.into_iter().map(|m| m.into()).collect()
     }
 }
 
@@ -49,14 +91,24 @@ pub(super) async fn start(
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) -> Result<(), pyo3::PyErr> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking({
+        println!(
+            "Starting SourceTransform UDF. socket={}, server_info={}",
+            sock_file, info_file
+        );
+        move || crate::pyrs::run_asyncio(tx)
+    });
     let event_loop = rx.await.unwrap();
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
+    let errors = Arc::new(Mutex::new(Vec::new()));
 
+    // Shutdown has two sources, and neither one needs a channel here. The Python
+    // side signals stop() through shutdown_rx. An uncaught Python error panics in
+    // fail(), and numaflow then shuts the server down on its own.
     let py_sourcetransform_runner = PySourceTransformRunner {
         py_func: Arc::new(py_func),
         event_loop: event_loop.clone(),
+        errors: Arc::clone(&errors),
     };
 
     let server = numaflow::sourcetransform::Server::new(py_sourcetransform_runner)
@@ -64,7 +116,7 @@ pub(super) async fn start(
         .with_server_info_file(info_file);
 
     let result = server
-        .start_with_shutdown(combined_rx)
+        .start_with_shutdown(shutdown_rx)
         .await
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
 
@@ -80,10 +132,9 @@ pub(super) async fn start(
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
 
-    // if not finished, abort it
-    if !sig_handle.is_finished() {
-        println!("Aborting signal handler");
-        sig_handle.abort();
+    let errors = std::mem::take(&mut *errors.lock().unwrap());
+    if !errors.is_empty() {
+        return Err(Python::attach(|py| combine_errors(py, errors)));
     }
 
     result

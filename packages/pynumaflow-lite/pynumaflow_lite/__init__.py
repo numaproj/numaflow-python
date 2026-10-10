@@ -18,6 +18,7 @@ from ._sideinput_dtypes import SideInput
 from ._sink_dtypes import Sinker
 from ._sink_server import SinkAsyncServer
 from ._source_dtypes import Sourcer
+from ._sourcetransform_server import SourceTransformAsyncServer
 from ._sourcetransformer_dtypes import SourceTransformer
 from .pynumaflow_lite import *  # noqa: F403  # Rust extension; exports resolved at runtime
 
@@ -51,6 +52,7 @@ sinker.Sinker = Sinker
 sinker.SinkAsyncServer = SinkAsyncServer
 sourcer.Sourcer = Sourcer
 sourcetransformer.SourceTransformer = SourceTransformer
+sourcetransformer.SourceTransformAsyncServer = SourceTransformAsyncServer
 sideinputer.SideInput = SideInput
 
 # Public API

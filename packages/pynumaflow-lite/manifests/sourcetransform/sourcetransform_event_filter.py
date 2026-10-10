@@ -1,16 +1,13 @@
 import asyncio
-import signal
-from collections.abc import Callable
 from datetime import datetime, timezone
 
-from pynumaflow_lite import sourcetransformer
+from pynumaflow_lite.sourcetransformer import Datum, Message, SourceTransformAsyncServer, SourceTransformer
 
-# Define epoch timestamps for filtering
 january_first_2022 = datetime(2022, 1, 1, tzinfo=timezone.utc)
 january_first_2023 = datetime(2023, 1, 1, tzinfo=timezone.utc)
 
 
-class EventFilter(sourcetransformer.SourceTransformer):
+class EventFilter(SourceTransformer):
     """
     A source transformer that filters and routes messages based on event time.
 
@@ -19,65 +16,23 @@ class EventFilter(sourcetransformer.SourceTransformer):
     - Messages after 2022 are tagged with "after_year_2022"
     """
 
-    async def handler(self, keys: list[str], datum: sourcetransformer.Datum) -> sourcetransformer.Messages:
-        val = datum.value
+    async def handler(self, datum: Datum) -> list[Message]:
         event_time = datum.event_time
-        messages = sourcetransformer.Messages()
-
         if event_time < january_first_2022:
             print(f"Got event time: {event_time}, it is before 2022, so dropping")
-            messages.append(sourcetransformer.Message.message_to_drop(event_time))
-        elif event_time < january_first_2023:
+            return [Message.to_drop(event_time)]
+
+        if event_time < january_first_2023:
             print(f"Got event time: {event_time}, it is within year 2022, so forwarding to within_year_2022")
-            messages.append(
-                sourcetransformer.Message(
-                    value=val,
-                    event_time=january_first_2022,
-                    keys=keys,
-                    tags=["within_year_2022"],
-                )
-            )
-        else:
-            print(f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022")
-            messages.append(
-                sourcetransformer.Message(
-                    value=val,
-                    event_time=january_first_2023,
-                    keys=keys,
-                    tags=["after_year_2022"],
-                )
-            )
+            return [Message(datum.value, january_first_2022, keys=datum.keys, tags=["within_year_2022"])]
 
-        return messages
+        print(f"Got event time: {event_time}, it is after year 2022, so forwarding to after_year_2022")
+        return [Message(datum.value, january_first_2023, keys=datum.keys, tags=["after_year_2022"])]
 
 
-async def start(
-    f: Callable[[list[str], sourcetransformer.Datum], sourcetransformer.Messages],
-):
-    server = sourcetransformer.SourceTransformAsyncServer()
-
-    # Register loop-level signal handlers so we control shutdown and avoid asyncio.run
-    # converting it into KeyboardInterrupt/CancelledError traces.
-    loop = asyncio.get_running_loop()
-    loop.set_debug(True)
-    print("Registering signal handlers", loop)
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        print("Failed to register signal handlers")
-        # add_signal_handler may not be available on some platforms/contexts; fallback below.
-        pass
-
-    try:
-        await server.start(f)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        # Fallback in case the task was cancelled by the runner
-        server.stop()
-        return
+async def main() -> None:
+    await SourceTransformAsyncServer(EventFilter()).serve()
 
 
 if __name__ == "__main__":
-    async_handler = EventFilter()
-    asyncio.run(start(async_handler))
+    asyncio.run(main())

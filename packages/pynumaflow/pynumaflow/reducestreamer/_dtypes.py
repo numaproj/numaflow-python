@@ -36,13 +36,13 @@ class Datum:
 
     ```py
     from pynumaflow.reducer import Datum
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     d = Datum(
           keys=["test_key"],
           value="test_mock_message".encode(),
-          event_time=datetime.fromtimestamp(1662998400, timezone.utc),
-          watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+          event_time=datetime.fromtimestamp(1662998400, UTC),
+          watermark=datetime.fromtimestamp(1662998460, UTC),
           headers={"key1": "value1", "key2": "value2"}
        )
     ```

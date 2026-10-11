@@ -121,7 +121,8 @@ class ConcurrentSink(BatchMapper):
             """Submit a single message to worker pool."""
             task_data = (datum.id, datum.keys, datum.value)
             fut = loop.run_in_executor(self.executor, _process_single_message_task, task_data)
-            return await asyncio.wait_for(fut, timeout=30.0)
+            async with asyncio.timeout(30.0):
+                return await fut
 
         # Wait for all results
         results = await asyncio.gather(

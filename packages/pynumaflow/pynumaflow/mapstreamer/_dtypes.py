@@ -130,13 +130,13 @@ class Datum:
     Example:
     ```py
     from pynumaflow.mapstreamer import Datum
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     d = Datum(
           keys=["test_key"],
           value=b"test_mock_message",
-          event_time=datetime.fromtimestamp(1662998400, timezone.utc),
-          watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+          event_time=datetime.fromtimestamp(1662998400, UTC),
+          watermark=datetime.fromtimestamp(1662998460, UTC),
           headers={"key1": "value1", "key2": "value2"},
        )
     ```

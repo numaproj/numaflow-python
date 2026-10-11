@@ -1,6 +1,6 @@
 import os
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from unittest import mock
 
 import grpc
@@ -79,12 +79,12 @@ def mock_fallback_message():
 
 
 def mock_event_time():
-    t = datetime.fromtimestamp(1662998400, timezone.utc)
+    t = datetime.fromtimestamp(1662998400, UTC)
     return t
 
 
 def mock_watermark():
-    t = datetime.fromtimestamp(1662998460, timezone.utc)
+    t = datetime.fromtimestamp(1662998460, UTC)
     return t
 
 

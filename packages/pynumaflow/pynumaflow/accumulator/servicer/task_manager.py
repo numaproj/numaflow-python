@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterable
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from google.protobuf import timestamp_pb2
 from pynumaflow._constants import (
@@ -322,7 +322,7 @@ class TaskManager:
                 watermark_pb.FromDatetime(msg.watermark)
 
             start_dt_pb = timestamp_pb2.Timestamp()
-            start_dt_pb.FromDatetime(datetime.fromtimestamp(0, tz=timezone.utc))
+            start_dt_pb.FromDatetime(datetime.fromtimestamp(0, tz=UTC))
 
             end_dt_pb = timestamp_pb2.Timestamp()
             end_dt_pb.FromDatetime(wm)
@@ -365,7 +365,7 @@ class TaskManager:
             # stream_send_eof on SIGTERM): synthesize the window from epoch(0) and the
             # latest watermark, preserving prior behavior.
             start_eof_pb = timestamp_pb2.Timestamp()
-            start_eof_pb.FromDatetime(datetime.fromtimestamp(0, tz=timezone.utc))
+            start_eof_pb.FromDatetime(datetime.fromtimestamp(0, tz=UTC))
 
             end_eof_pb = timestamp_pb2.Timestamp()
             end_eof_pb.FromDatetime(wm)

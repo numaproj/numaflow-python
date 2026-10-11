@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from pynumaflow import setup_logging
 from pynumaflow.info.types import EOF
@@ -22,17 +22,17 @@ def mock_message():
 
 
 def mock_event_time():
-    t = datetime.fromtimestamp(1662998400, timezone.utc)
+    t = datetime.fromtimestamp(1662998400, UTC)
     return t
 
 
 def mock_new_event_time():
-    t = datetime.fromtimestamp(1663098400, timezone.utc)
+    t = datetime.fromtimestamp(1663098400, UTC)
     return t
 
 
 def mock_watermark():
-    t = datetime.fromtimestamp(1662998460, timezone.utc)
+    t = datetime.fromtimestamp(1662998460, UTC)
     return t
 
 
@@ -43,7 +43,7 @@ def mock_headers():
 
 def mock_interval_window_start():
     event_time_timestamp = _timestamp_pb2.Timestamp()
-    t = datetime.fromtimestamp(1662998400000 / 1e3, timezone.utc)
+    t = datetime.fromtimestamp(1662998400000 / 1e3, UTC)
     event_time_timestamp.FromDatetime(dt=t)
     # t = datetime.fromtimestamp(1662998400000, timezone.utc)
     return event_time_timestamp
@@ -51,19 +51,19 @@ def mock_interval_window_start():
 
 def mock_interval_window_end():
     event_time_timestamp = _timestamp_pb2.Timestamp()
-    t = datetime.fromtimestamp(1662998460000 / 1e3, timezone.utc)
+    t = datetime.fromtimestamp(1662998460000 / 1e3, UTC)
     event_time_timestamp.FromDatetime(dt=t)
     # t = datetime.fromtimestamp(1662998460000, timezone.utc)
     return event_time_timestamp
 
 
 def mock_start_time():
-    t = datetime.fromtimestamp(1662998400, timezone.utc)
+    t = datetime.fromtimestamp(1662998400, UTC)
     return t
 
 
 def mock_end_time():
-    t = datetime.fromtimestamp(1662998520, timezone.utc)
+    t = datetime.fromtimestamp(1662998520, UTC)
     return t
 
 

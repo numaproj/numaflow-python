@@ -3,14 +3,12 @@ from asyncio import Task
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeAlias, TypeVar
+from typing import Self, TypeAlias
 from collections.abc import AsyncIterable, Callable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 from pynumaflow._validate import _validate_message_fields
-
-M = TypeVar("M", bound="Message")
 
 
 class WindowOperation(IntEnum):
@@ -279,7 +277,7 @@ class Message:
 
     # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: type[M]) -> M:
+    def to_drop(cls) -> Self:
         return cls(b"", None, [DROP])
 
     @property

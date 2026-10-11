@@ -4,7 +4,7 @@ from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeAlias, TypeVar
+from typing import Self, TypeAlias, TypeVar
 from collections.abc import AsyncIterable, Callable
 from warnings import warn
 
@@ -56,7 +56,7 @@ class Message:
 
     # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: type[M]) -> M:
+    def to_drop(cls) -> Self:
         return cls(b"", None, [DROP])
 
     @property

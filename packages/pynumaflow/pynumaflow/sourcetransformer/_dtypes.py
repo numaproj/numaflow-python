@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeAlias, TypeVar
+from typing import Self, TypeAlias, TypeVar
 from collections.abc import Awaitable, Callable
 from warnings import warn
 
@@ -57,21 +57,21 @@ class Message:
         self._nack_options = None
 
     @classmethod
-    def to_drop(cls: type[M], event_time: datetime) -> M:
+    def to_drop(cls, event_time: datetime) -> Self:
         return cls(b"", event_time, None, [DROP])
 
     @classmethod
     def to_nack(
-        cls: type[M],
+        cls,
         event_time: datetime,
         opts: NackOptions | None = None,
-    ) -> M:
+    ) -> Self:
         m = cls(b"", event_time, None, [NACK])
         m._nack_options = opts
         return m
 
     @classmethod
-    def to_fail(cls: type[M], event_time: datetime) -> M:
+    def to_fail(cls, event_time: datetime) -> Self:
         return cls(b"", event_time, None, [FAIL])
 
     @property

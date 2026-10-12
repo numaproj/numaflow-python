@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from pynumaflow.sourcetransformer import (
     Messages,
@@ -21,7 +21,7 @@ def mock_message_t():
 
 
 def mock_event_time():
-    t = datetime.fromtimestamp(1662998400, timezone.utc)
+    t = datetime.fromtimestamp(1662998400, UTC)
     return t
 
 

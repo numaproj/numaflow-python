@@ -3,14 +3,12 @@ from asyncio import Task
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
-from typing import TypeAlias, TypeVar
+from typing import Self, TypeAlias
 from collections.abc import AsyncIterable, Callable
 
 from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import DROP
 from pynumaflow._validate import _validate_message_fields
-
-M = TypeVar("M", bound="Message")
 
 
 class WindowOperation(IntEnum):
@@ -37,13 +35,13 @@ class Datum:
     Example usage
     ```py
     from pynumaflow.accumulator import Datum
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     d = Datum(
           keys=["test_key"],
           value=b"test_mock_message",
-          event_time=datetime.fromtimestamp(1662998400, timezone.utc),
-          watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+          event_time=datetime.fromtimestamp(1662998400, UTC),
+          watermark=datetime.fromtimestamp(1662998460, UTC),
           headers={"key1": "value1", "key2": "value2"},
        )
     ```
@@ -418,7 +416,7 @@ class Message:
         self._id = id or ""
 
     @classmethod
-    def to_drop(cls: type[M], datum: Datum) -> M:
+    def to_drop(cls, datum: Datum) -> Self:
         """Creates a Message from the given Datum with the DROP tag set, so the message is not
         forwarded to the next vertex but still allows the accumulator to advance the watermark
         and release the tracked state.
@@ -431,7 +429,7 @@ class Message:
             datum: The Datum to drop the results for.
 
         Returns:
-            M: A Message instance with empty value and the DROP tag set, carrying the datum's
+            Message: A Message instance with empty value and the DROP tag set, carrying the datum's
                watermark, event time, id and headers.
         """
         return cls(

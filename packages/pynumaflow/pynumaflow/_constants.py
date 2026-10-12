@@ -1,6 +1,6 @@
 import logging
 import os
-from enum import Enum
+from enum import StrEnum
 
 from pynumaflow import setup_logging
 
@@ -73,7 +73,7 @@ if os.getenv("PYTHONDEBUG"):
     _LOGGER.setLevel(logging.DEBUG)
 
 
-class UDFType(str, Enum):
+class UDFType(StrEnum):
     """
     Enumerate the type of UDF.
     """

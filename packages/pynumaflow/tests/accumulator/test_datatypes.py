@@ -1,7 +1,7 @@
 import asyncio
 import pytest
 from collections.abc import AsyncIterable
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow.accumulator import Accumulator
@@ -147,7 +147,7 @@ def test_accumulator_result_create():
     keys = ["key1", "key2"]
     result_queue = NonBlockingIterator()
     consumer_future = None  # In real usage, this would be an asyncio.Task
-    watermark = datetime.fromtimestamp(1662998400, timezone.utc)
+    watermark = datetime.fromtimestamp(1662998400, UTC)
 
     result = AccumulatorResult(future, iterator, keys, result_queue, consumer_future, watermark)
 
@@ -160,31 +160,25 @@ def test_accumulator_result_create():
 
 
 def test_accumulator_result_update_watermark():
-    result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
-    )
-    new_watermark = datetime.fromtimestamp(1662998460, timezone.utc)
+    result = AccumulatorResult(None, None, [], None, None, datetime.fromtimestamp(1662998400, UTC))
+    new_watermark = datetime.fromtimestamp(1662998460, UTC)
     result.update_watermark(new_watermark)
     assert result.latest_watermark == new_watermark
 
 
 def test_accumulator_result_update_watermark_invalid_type():
-    result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
-    )
+    result = AccumulatorResult(None, None, [], None, None, datetime.fromtimestamp(1662998400, UTC))
     with pytest.raises(TypeError):
         result.update_watermark("not a datetime")
 
 
 def test_accumulator_result_close_window_setter():
-    result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
-    )
+    result = AccumulatorResult(None, None, [], None, None, datetime.fromtimestamp(1662998400, UTC))
     # Not set until a CLOSE arrives.
     assert result.close_window is None
     window = KeyedWindow(
-        start=datetime.fromtimestamp(1662998400, timezone.utc),
-        end=datetime.fromtimestamp(1662998460, timezone.utc),
+        start=datetime.fromtimestamp(1662998400, UTC),
+        end=datetime.fromtimestamp(1662998460, UTC),
         slot="slot-0",
         keys=["key1"],
     )
@@ -193,9 +187,7 @@ def test_accumulator_result_close_window_setter():
 
 
 def test_accumulator_result_close_window_setter_invalid_type():
-    result = AccumulatorResult(
-        None, None, [], None, None, datetime.fromtimestamp(1662998400, timezone.utc)
-    )
+    result = AccumulatorResult(None, None, [], None, None, datetime.fromtimestamp(1662998400, UTC))
     with pytest.raises(TypeError):
         result.close_window = "not a keyed window"
 

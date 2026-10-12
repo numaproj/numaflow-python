@@ -2,7 +2,7 @@ from abc import ABCMeta, abstractmethod
 from collections.abc import Iterator, Sequence, Awaitable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TypeAlias, TypeVar
+from typing import Self, TypeAlias, TypeVar
 from collections.abc import Callable
 from warnings import warn
 
@@ -52,17 +52,17 @@ class Message:
 
     # returns the Message Object which will be dropped
     @classmethod
-    def to_drop(cls: type[M]) -> M:
+    def to_drop(cls) -> Self:
         return cls(b"", None, [DROP])
 
     @classmethod
-    def to_nack(cls: type[M], opts: NackOptions | None = None) -> M:
+    def to_nack(cls, opts: NackOptions | None = None) -> Self:
         m = cls(b"", None, [NACK])
         m._nack_options = opts
         return m
 
     @classmethod
-    def to_fail(cls: type[M]) -> M:
+    def to_fail(cls) -> Self:
         return cls(b"", None, [FAIL])
 
     @property
@@ -144,13 +144,13 @@ class Datum:
     Example usage
     ```py
     from pynumaflow.mapper import Datum
-    from datetime import datetime, timezone
+    from datetime import UTC, datetime
 
     d = Datum(
           keys=["test_key"],
           value=b'test_mock_message'
-          event_time=datetime.fromtimestamp(1662998400, timezone.utc),
-          watermark=datetime.fromtimestamp(1662998460, timezone.utc),
+          event_time=datetime.fromtimestamp(1662998400, UTC),
+          watermark=datetime.fromtimestamp(1662998460, UTC),
           headers={"key1": "value1", "key2": "value2"},
        )
     ```

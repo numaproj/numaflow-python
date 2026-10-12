@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from collections.abc import AsyncIterable
 
 from pynumaflow.exceptions import UDFError
@@ -153,8 +153,8 @@ class TaskManager:
         new_instance = self.__reduce_handler
 
         # Convert the window to a datetime object
-        start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, timezone.utc)
-        end_dt = datetime.fromtimestamp(int(window.end.ToMilliseconds()) / 1e3, timezone.utc)
+        start_dt = datetime.fromtimestamp(int(window.start.ToMilliseconds()) / 1e3, UTC)
+        end_dt = datetime.fromtimestamp(int(window.end.ToMilliseconds()) / 1e3, UTC)
         interval_window = IntervalWindow(start_dt, end_dt)
         md = Metadata(interval_window=interval_window)
         # If the reduce handler is a class instance, create a new instance of it.

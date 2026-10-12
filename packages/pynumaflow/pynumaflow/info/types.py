@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from importlib.metadata import version
 from typing import TypeVar
 
@@ -30,7 +30,7 @@ MULTIPROC_KEY = "MULTIPROC"
 SI = TypeVar("SI", bound="ServerInfo")
 
 
-class Protocol(str, Enum):
+class Protocol(StrEnum):
     """
     Enumerate grpc server connection protocol.
     """
@@ -39,7 +39,7 @@ class Protocol(str, Enum):
     TCP = "tcp"
 
 
-class Language(str, Enum):
+class Language(StrEnum):
     """
     Enumerate Numaflow SDK language.
     """
@@ -47,7 +47,7 @@ class Language(str, Enum):
     PYTHON = "python"
 
 
-class MapMode(str, Enum):
+class MapMode(StrEnum):
     """
     Enumerate Map Mode to be enabled
     """
@@ -57,7 +57,7 @@ class MapMode(str, Enum):
     BatchMap = "batch-map"
 
 
-class ContainerType(str, Enum):
+class ContainerType(StrEnum):
     """
     Enumerate Numaflow container type.
     """

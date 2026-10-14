@@ -1,61 +1,57 @@
+use std::sync::{Arc, Mutex};
+
 use crate::reduce::{
     Datum as PyDatum, IntervalWindow as PyIntervalWindow, Message as PyMessage,
-    Messages as PyMessages, Metadata as PyMetadata, PyAsyncDatumStream,
+    Metadata as PyMetadata, PyAsyncDatumStream,
 };
 use numaflow::reduce;
 use numaflow::shared::ServerExtras;
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::PyTuple;
-use std::sync::Arc;
+
+use crate::pyrs::{combine_errors, format_error};
 
 pub(crate) struct PyReduceCreator {
     /// handle to Python event loop
     pub(crate) event_loop: Arc<Py<PyAny>>,
-    /// Python class to instantiate per window OR a function
-    pub(crate) py_creator: Arc<Py<PyAny>>,
-    /// optional tuple of positional args (only for class)
-    pub(crate) init_args: Option<Arc<Py<PyAny>>>,
-    /// true if py_creator is a function, false if it's a class.
-    pub(crate) is_function: bool,
+    /// Zero-argument Python callable that returns the handler for one window
+    pub(crate) factory: Arc<Py<PyAny>>,
+    pub(crate) errors: Arc<Mutex<Vec<PyErr>>>,
 }
 
 pub(crate) struct PyReduceRunner {
     /// handle to Python event loop
     pub(crate) event_loop: Arc<Py<PyAny>>,
-    /// Instance of class per window OR the function itself. It can be class because we have overloaded
-    /// __call__ method to make it callable like a function.
-    pub(crate) py_obj: Arc<Py<PyAny>>,
+    pub(crate) factory: Arc<Py<PyAny>>,
+    pub(crate) errors: Arc<Mutex<Vec<PyErr>>>,
 }
 
-#[tonic::async_trait]
 impl reduce::ReducerCreator for PyReduceCreator {
     type R = PyReduceRunner;
 
+    // The factory runs later, in reduce(). A panic in create() would stop the numaflow
+    // task executor without an error to the client, but reduce() reports a panic.
     fn create(&self) -> Self::R {
-        // If it's a function, just clone the reference; if it's a class, instantiate it.
-        let inst = if self.is_function {
-            // For functions, we don't instantiate; just use the function directly
-            Python::attach(|py| self.py_creator.clone_ref(py))
-        } else {
-            // For classes, instantiate the Python class synchronously under the GIL.
-            Python::attach(|py| {
-                let class = self.py_creator.as_ref();
-                match &self.init_args {
-                    Some(args) => {
-                        let bound = args.as_ref().bind(py);
-                        let py_tuple = bound.cast::<PyTuple>()?;
-                        class.call1(py, py_tuple)
-                    }
-                    None => class.call0(py),
-                }
-            })
-            .expect("failed to instantiate Python reducer class")
-        };
-
         PyReduceRunner {
             event_loop: self.event_loop.clone(),
-            py_obj: Arc::new(inst),
+            factory: self.factory.clone(),
+            errors: self.errors.clone(),
         }
+    }
+}
+
+impl PyReduceRunner {
+    fn fail(&self, error: PyErr) -> ! {
+        // numaflow calls reduce() concurrently, so each error belongs to a
+        // different window. Keep all of them. start() raises them together, which
+        // lets Python format every traceback instead of Rust printing them by hand.
+        let message = Python::attach(|py| format_error(py, &error));
+        self.errors.lock().unwrap().push(error);
+
+        // numaflow catches this panic, sends a gRPC error for this window, and
+        // starts the server shutdown. An empty result would instead look like a
+        // window that the handler reduced to no messages on purpose.
+        panic!("{message}");
     }
 }
 
@@ -73,97 +69,96 @@ impl reduce::Reducer for PyReduceRunner {
         // Spawn a task forwarding incoming datums to the Python-facing channel
         let forwarder = tokio::spawn(async move {
             while let Some(req) = input.recv().await {
-                let datum = PyDatum::from(req);
-                if tx.send(datum).await.is_err() {
+                if tx.send(req.into()).await.is_err() {
                     break;
                 }
             }
         });
 
         // Call the Python coroutine:
-        // - For class-based: obj.handler(keys, datums: AsyncIterable[Datum], md: Metadata) -> Messages
-        // - For function-based: obj(keys, datums: AsyncIterable[Datum], md: Metadata) -> Messages
-        let fut = Python::attach(|py| {
+        // factory()(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> list[Message]
+        let fut = match Python::attach(|py| -> PyResult<_> {
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
-            let obj = self.py_obj.clone();
+            let handler = self.factory.call0(py)?;
 
-            // Build metadata and stream objects
             let stream = PyAsyncDatumStream::new_with(rx);
             let interval =
                 PyIntervalWindow::new(md.interval_window.start_time, md.interval_window.end_time);
             let md_py = PyMetadata::new(interval);
 
-            // doesn't matter whether it is func or class, obj is callable
-            let coro = obj
-                .call1(py, (keys.clone(), stream, md_py))
-                .unwrap()
-                .into_bound(py);
+            let coro = handler.call1(py, (keys, stream, md_py))?.into_bound(py);
+            let is_awaitable: bool = py
+                .import("inspect")?
+                .call_method1("isawaitable", (&coro,))?
+                .extract()?;
+            if !is_awaitable {
+                return Err(PyErr::new::<PyTypeError, _>(
+                    "reduce handler must be an async function (coroutine)",
+                ));
+            }
+            pyo3_async_runtimes::into_future_with_locals(&locals, coro).map_err(|_| {
+                PyErr::new::<PyTypeError, _>("reduce handler must be an async function (coroutine)")
+            })
+        }) {
+            Ok(fut) => fut,
+            Err(error) => self.fail(error),
+        };
 
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro).unwrap()
-        });
-
-        let result = fut.await.unwrap();
+        let result = match fut.await {
+            Ok(result) => result,
+            Err(error) => self.fail(error),
+        };
 
         // Ensure forwarder completes
         let _ = forwarder.await;
 
-        Python::attach(|py| {
-            // Expect Messages; also allow a single Message for convenience
-            if let Ok(msgs) = result.extract::<PyMessages>(py) {
-                msgs.messages
-                    .into_iter()
-                    .map(reduce::Message::from)
-                    .collect::<Vec<reduce::Message>>()
-            } else if let Ok(single) = result.extract::<PyMessage>(py) {
-                vec![single.into()]
-            } else {
-                vec![]
-            }
-        })
+        let messages: Vec<PyMessage> = match Python::attach(|py| {
+            result.extract(py).map_err(|_| {
+                let type_name = result
+                    .bind(py)
+                    .get_type()
+                    .name()
+                    .map(|name| name.to_string_lossy().into_owned())
+                    .unwrap_or_else(|_| "<unknown>".to_string());
+                PyErr::new::<PyTypeError, _>(format!(
+                    "reduce handler must return list[Message], got {type_name}"
+                ))
+            })
+        }) {
+            Ok(messages) => messages,
+            Err(error) => self.fail(error),
+        };
+
+        messages.into_iter().map(|m| m.into()).collect()
     }
 }
 
 /// Start the reduce server by spinning up a dedicated Python asyncio loop and wiring shutdown.
 pub(super) async fn start(
-    py_creator: Py<PyAny>,
-    init_args: Option<Py<PyAny>>,
+    factory: Py<PyAny>,
     sock_file: String,
     info_file: String,
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) -> Result<(), pyo3::PyErr> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking({
+        println!(
+            "Starting Reduce UDF. socket={}, server_info={}",
+            sock_file, info_file
+        );
+        move || crate::pyrs::run_asyncio(tx)
+    });
     let event_loop = rx.await.unwrap();
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
+    let errors = Arc::new(Mutex::new(Vec::new()));
 
-    // Detect if py_creator is a function or a class
-    let is_function = Python::attach(|py| {
-        let obj = py_creator.bind(py);
-        // Check if it's a function or coroutine function using inspect module
-        let inspect = py.import("inspect").ok()?;
-        if let Ok(is_func) = inspect.call_method1("isfunction", (obj,))
-            && let Ok(result) = is_func.extract::<bool>()
-            && result
-        {
-            return Some(true);
-        }
-        // Also check for coroutine function
-        if let Ok(is_coro) = inspect.call_method1("iscoroutinefunction", (obj,))
-            && let Ok(result) = is_coro.extract::<bool>()
-            && result
-        {
-            return Some(true);
-        }
-        Some(false)
-    })
-    .unwrap_or(false);
-
+    // Shutdown has two sources, and neither one needs a channel here. The Python
+    // side signals stop() through shutdown_rx. An uncaught Python error panics in
+    // fail(), and numaflow then shuts the server down on its own.
     let creator = PyReduceCreator {
         event_loop: event_loop.clone(),
-        py_creator: Arc::new(py_creator),
-        init_args: init_args.map(Arc::new),
-        is_function,
+        factory: Arc::new(factory),
+        errors: Arc::clone(&errors),
     };
 
     let server = reduce::Server::new(creator)
@@ -171,7 +166,7 @@ pub(super) async fn start(
         .with_server_info_file(info_file);
 
     let result = server
-        .start_with_shutdown(combined_rx)
+        .start_with_shutdown(shutdown_rx)
         .await
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
 
@@ -182,15 +177,14 @@ pub(super) async fn start(
         }
     });
 
-    println!("Numaflow Core (reduce) has shutdown...");
+    println!("Numaflow Reduce has shutdown...");
 
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
 
-    // if not finished, abort it
-    if !sig_handle.is_finished() {
-        println!("Aborting signal handler");
-        sig_handle.abort();
+    let errors = std::mem::take(&mut *errors.lock().unwrap());
+    if !errors.is_empty() {
+        return Err(Python::attach(|py| combine_errors(py, errors)));
     }
 
     result

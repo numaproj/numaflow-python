@@ -12,6 +12,7 @@ from ._map_server import MapAsyncServer
 from ._mapstream_dtypes import MapStreamer
 from ._mapstream_server import MapStreamAsyncServer
 from ._reduce_dtypes import Reducer
+from ._reduce_server import ReduceAsyncServer
 from ._reducestreamer_dtypes import ReduceStreamer
 from ._session_reduce_dtypes import SessionReducer
 from ._sideinput_dtypes import SideInput
@@ -45,6 +46,7 @@ batchmapper.BatchMapAsyncServer = BatchMapAsyncServer
 mapstreamer.MapStreamer = MapStreamer
 mapstreamer.MapStreamAsyncServer = MapStreamAsyncServer
 reducer.Reducer = Reducer
+reducer.ReduceAsyncServer = ReduceAsyncServer
 session_reducer.SessionReducer = SessionReducer
 reducestreamer.ReduceStreamer = ReduceStreamer
 accumulator.Accumulator = Accumulator

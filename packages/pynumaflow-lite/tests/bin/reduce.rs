@@ -75,7 +75,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         if let Some(r) = resp.message().await? {
             if let Some(res) = r.result {
-                assert!(!res.value.is_empty());
+                let value = String::from_utf8(res.value)?;
+                assert!(value.starts_with("counter:1 "), "unexpected value: {value}");
+                assert_eq!(res.keys, vec!["k".to_string()]);
                 break;
             }
         } else {

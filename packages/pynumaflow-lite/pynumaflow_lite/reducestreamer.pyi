@@ -16,13 +16,13 @@ class Message:
         tags: list[str] | None = ...,
     ) -> None: ...
     @staticmethod
-    def message_to_drop() -> Message: ...
+    def to_drop() -> Message: ...
 
 class Datum:
     keys: list[str]
     value: bytes
     watermark: _dt.datetime
-    eventtime: _dt.datetime
+    event_time: _dt.datetime
     headers: dict[str, str]
 
     def __repr__(self) -> str: ...

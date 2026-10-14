@@ -1,49 +1,30 @@
 import asyncio
-import signal
+import functools
 from collections.abc import AsyncIterable
 
-from pynumaflow_lite import reducer
+from pynumaflow_lite.reducer import Datum, Message, Metadata, ReduceAsyncServer, Reducer
 
 
-class ReduceCounter(reducer.Reducer):
+class ReduceCounter(Reducer):
     def __init__(self, initial: int = 0) -> None:
-        self.counter = initial
+        self.initial = initial
 
-    async def handler(
-        self,
-        keys: list[str],
-        datums: AsyncIterable[reducer.Datum],
-        md: reducer.Metadata,
-    ) -> reducer.Messages:
-        iw = md.interval_window
-        self.counter = 0
+    async def handler(self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> list[Message]:
+        counter = self.initial
         async for _ in datums:
-            self.counter += 1
-        msg = (f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}").encode()
-        out = reducer.Messages()
-        out.append(reducer.Message(msg, keys))
-        return out
+            counter += 1
+        iw = md.interval_window
+        msg = f"counter:{counter} interval_window_start:{iw.start} interval_window_end:{iw.end}"
+        return [Message(msg.encode(), keys=keys)]
 
 
-async def start(creator: type, init_args: tuple):
-    sock_file = "/tmp/var/run/numaflow/reduce.sock"
-    server_info_file = "/tmp/var/run/numaflow/reducer-server-info"
-    server = reducer.ReduceAsyncServer(sock_file, server_info_file)
-
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        pass
-
-    try:
-        await server.start(creator, init_args)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
-        return
+async def main() -> None:
+    await ReduceAsyncServer(
+        functools.partial(ReduceCounter, initial=0),
+        sock_file="/tmp/var/run/numaflow/reduce.sock",
+        server_info_file="/tmp/var/run/numaflow/reducer-server-info",
+    ).serve()
 
 
 if __name__ == "__main__":
-    asyncio.run(start(ReduceCounter, (0,)))
+    asyncio.run(main())

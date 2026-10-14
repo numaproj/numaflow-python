@@ -84,11 +84,12 @@ def test_sink_server_propagates_handler_exception(tmp_path: Path):
     with pytest.raises(RuntimeError, match="sink exploded"):
         asyncio.run(_exercise_server(tmp_path, handler, clients))
 
-    # The client must get a gRPC error that carries the handler error, not an
-    # empty batch result.
+    # The client must get a gRPC error, not an empty batch result. Do not check for
+    # the handler text: numaflow-rs keeps only the first panic of the process, and
+    # an earlier test in the same pytest process can own it.
     [client] = clients
     assert client.returncode != 0
-    assert "sink exploded" in client.stderr
+    assert "UDF_EXECUTION_ERROR" in client.stderr
     assert "results.len()" not in client.stderr
 
 

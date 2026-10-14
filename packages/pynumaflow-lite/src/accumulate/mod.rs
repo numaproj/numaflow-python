@@ -68,18 +68,20 @@ impl Message {
         }
     }
 
-    /// Drop a Message, do not forward to the next vertex.
-    #[pyo3(signature = ())]
+    /// Builds a Message from the given Datum with drop tags set, so the message is not
+    /// forwarded to the next vertex but still allows the accumulator to advance the watermark
+    /// and release tracked state.
+    #[pyo3(signature = (datum))]
     #[staticmethod]
-    fn message_to_drop() -> Self {
+    fn message_to_drop(datum: &Datum) -> Self {
         Self {
-            keys: None,
+            keys: Some(datum.keys.clone()),
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
-            id: String::new(),
-            headers: HashMap::new(),
-            event_time: chrono::Utc::now(),
-            watermark: chrono::Utc::now(),
+            id: datum.id.clone(),
+            headers: datum.headers.clone(),
+            event_time: datum.event_time,
+            watermark: datum.watermark,
         }
     }
 

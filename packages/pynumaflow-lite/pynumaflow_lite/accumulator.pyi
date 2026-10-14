@@ -25,9 +25,14 @@ class Message:
         watermark: datetime | None = None,
     ) -> None: ...
     @staticmethod
-    def message_to_drop() -> Message:
+    def message_to_drop(datum: Datum) -> Message:
         """
-        Drop a Message, do not forward to the next vertex.
+        Builds a Message from the given Datum with drop tags set, so the message is not
+        forwarded to the next vertex but still allows the accumulator to advance the watermark
+        and release tracked state.
+
+        Args:
+            datum: The input Datum to drop the results for
         """
         ...
 

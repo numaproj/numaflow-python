@@ -21,3 +21,13 @@ def test_python_accumulator_server_and_rust_client(script: str, tmp_path: Path):
         rust_bin_name="test_accumulator",
         rust_bin_args=[str(SOCK_PATH)],
     )
+
+
+def test_python_accumulator_drop_messages(tmp_path: Path):
+    run_python_server_with_rust_client(
+        script="accumulator_blackhole.py",
+        sock_path=SOCK_PATH,
+        server_info_path=SERVER_INFO,
+        rust_bin_name="test_accumulator_blackhole",
+        rust_bin_args=[str(SOCK_PATH)],
+    )

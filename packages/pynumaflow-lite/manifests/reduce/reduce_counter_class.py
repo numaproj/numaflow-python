@@ -1,49 +1,34 @@
 import asyncio
-import signal
-from collections.abc import AsyncIterable
+import functools
+from collections.abc import AsyncIterator
 
-from pynumaflow_lite import reducer
+from pynumaflow_lite.reducer import Datum, Message, Metadata, ReduceAsyncServer, Reducer
 
 
-class ReduceCounter(reducer.Reducer):
+class ReduceCounter(Reducer):
+    """Counts the datums of each window. The server creates a new instance for each window."""
+
     def __init__(self, initial: int = 0) -> None:
-        self.counter = initial
+        self.initial = initial
 
-    async def handler(
-        self,
-        keys: list[str],
-        datums: AsyncIterable[reducer.Datum],
-        md: reducer.Metadata,
-    ) -> reducer.Messages:
-        iw = md.interval_window
-        self.counter = 0
+    async def handler(self, keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> list[Message]:
+        counter = self.initial
         async for _ in datums:
-            self.counter += 1
-        msg = (f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}").encode()
-        out = reducer.Messages()
-        out.append(reducer.Message(msg, keys))
-        return out
+            counter += 1
+        iw = md.interval_window
+        msg = f"counter:{counter} interval_window_start:{iw.start} interval_window_end:{iw.end}"
+        return [Message(msg.encode(), keys=keys)]
 
 
-async def start(creator: type[reducer.Reducer], init_args: tuple):
-    sock_file = "/var/run/numaflow/reduce.sock"
-    server_info_file = "/var/run/numaflow/reducer-server-info"
-    server = reducer.ReduceAsyncServer(sock_file, server_info_file)
-
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        pass
-
-    try:
-        await server.start(creator, init_args)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
-        return
+async def main() -> None:
+    # ReduceAsyncServer needs a factory: a callable that takes no arguments and
+    # returns a new Reducer. The server calls it at the start of every window (once
+    # for each set of keys), so each window starts with its own state.
+    # functools.partial binds initial=100, so the server can call
+    # ReduceCounter(initial=100) without arguments.
+    # `serve` returns when SIGINT or SIGTERM arrives.
+    await ReduceAsyncServer(functools.partial(ReduceCounter, initial=100)).serve()
 
 
 if __name__ == "__main__":
-    asyncio.run(start(ReduceCounter, (0,)))
+    asyncio.run(main())

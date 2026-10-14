@@ -1,11 +1,11 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.batchmapper import BatchMapAsyncServer, BatchMapper, BatchResponse, Datum, Message
 
 
 class SimpleBatchCat(BatchMapper):
-    async def handler(self, batch: AsyncIterable[Datum]) -> list[BatchResponse]:
+    async def handler(self, batch: AsyncIterator[Datum]) -> list[BatchResponse]:
         responses = []
         async for datum in batch:
             if datum.value == b"bad world":

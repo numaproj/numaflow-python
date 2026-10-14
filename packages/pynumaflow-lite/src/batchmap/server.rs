@@ -47,7 +47,7 @@ impl batchmap::BatchMapper for PyBatchMapRunner {
             // When input ends, dropping tx closes the channel
         });
 
-        // Call the Python coroutine: py_func(batch: AsyncIterable[Datum]) -> list[BatchResponse]
+        // Call the Python coroutine: py_func(batch: AsyncIterator[Datum]) -> list[BatchResponse]
         let fut = Python::attach(|py| -> PyResult<_> {
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
             let py_func = self.py_func.clone();

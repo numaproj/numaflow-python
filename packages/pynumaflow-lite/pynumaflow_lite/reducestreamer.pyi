@@ -1,5 +1,7 @@
 import datetime as _dt
-from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
+from types import TracebackType
+from typing import Self, TypeAlias
 
 # Re-export the Python ABC for user convenience and typing
 from ._reducestreamer_dtypes import ReduceStreamer as ReduceStreamer
@@ -16,15 +18,26 @@ class Message:
         tags: list[str] | None = ...,
     ) -> None: ...
     @staticmethod
-    def message_to_drop() -> Message: ...
+    def to_drop() -> Message: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
 
 class Datum:
     keys: list[str]
     value: bytes
     watermark: _dt.datetime
-    eventtime: _dt.datetime
+    event_time: _dt.datetime
     headers: dict[str, str]
 
+    def __init__(
+        self,
+        *,
+        keys: list[str] = ...,
+        value: bytes = ...,
+        event_time: _dt.datetime | None = ...,
+        watermark: _dt.datetime | None = ...,
+        headers: dict[str, str] = ...,
+    ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
 
@@ -32,39 +45,54 @@ class IntervalWindow:
     start: _dt.datetime
     end: _dt.datetime
 
+    def __init__(self, start: _dt.datetime, end: _dt.datetime) -> None: ...
+
 class Metadata:
     interval_window: IntervalWindow
 
-class PyAsyncDatumStream:
-    """
-    Python-visible async iterator that yields Datum items from a Tokio mpsc channel.
-    """
+    def __init__(self, *, interval_window: IntervalWindow) -> None: ...
 
-    def __init__(self) -> None: ...
-    def __aiter__(self) -> PyAsyncDatumStream: ...
-    def __anext__(self) -> Datum: ...
+_ReduceStreamHandler: TypeAlias = Callable[[list[str], AsyncIterator[Datum], Metadata], AsyncIterator[Message]]
+
+class _ReduceStreamAsyncServer:
+    def __init__(
+        self,
+        sock_file: str | None = ...,
+        server_info_file: str | None = ...,
+    ) -> None: ...
+    def start(
+        self,
+        factory: Callable[[], _ReduceStreamHandler],
+    ) -> Awaitable[None]: ...
+    def wait_ready(self) -> Awaitable[None]: ...
+    def stop(self) -> None: ...
 
 class ReduceStreamAsyncServer:
     def __init__(
         self,
-        sock_file: str = ...,
-        info_file: str = ...,
+        handler: _ReduceStreamHandler | Callable[[], _ReduceStreamHandler],
+        *,
+        sock_file: str | None = ...,
+        server_info_file: str | None = ...,
+        install_signal_handlers: bool = ...,
     ) -> None: ...
-    def start(
-        self,
-        py_creator: (
-            type[ReduceStreamer] | Callable[[list[str], AsyncIterable[Datum], Metadata], AsyncIterator[Message]]
-        ),
-        init_args: tuple | None = ...,
-    ) -> Awaitable[None]: ...
+    async def serve(self) -> None: ...
     def stop(self) -> None: ...
+    async def wait_ready(self) -> None: ...
+    async def wait_for_termination(self) -> None: ...
+    async def __aenter__(self) -> Self: ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None: ...
 
 __all__ = [
     "Datum",
     "IntervalWindow",
     "Message",
     "Metadata",
-    "PyAsyncDatumStream",
     "ReduceStreamAsyncServer",
     "ReduceStreamer",
 ]

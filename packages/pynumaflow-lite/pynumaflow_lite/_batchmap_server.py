@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterable, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TypeAlias
 
 from ._async_server import _AsyncServer
@@ -15,7 +15,7 @@ class BatchMapAsyncServer(_AsyncServer):
 
     def __init__(
         self,
-        handler: Callable[[AsyncIterable[Datum]], Awaitable[list[BatchResponse]]],
+        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]],
         *,
         sock_file: str | None = None,
         server_info_file: str | None = None,

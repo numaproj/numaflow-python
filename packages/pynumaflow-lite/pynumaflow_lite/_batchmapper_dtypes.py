@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.batchmapper import BatchResponse, Datum
 
@@ -13,7 +13,7 @@ class BatchMapper(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, batch: AsyncIterable[Datum]) -> list[BatchResponse]:
+    async def handler(self, batch: AsyncIterator[Datum]) -> list[BatchResponse]:
         """
         Implement this handler function for batch mapping.
         The returned list length should equal the input batch size.

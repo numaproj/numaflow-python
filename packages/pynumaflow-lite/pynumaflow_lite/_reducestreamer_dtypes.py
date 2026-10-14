@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterable, AsyncIterator
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.reducestreamer import Datum, Message, Metadata
 
@@ -16,9 +16,9 @@ class ReduceStreamer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> AsyncIterator[Message]:
+    async def handler(self, keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> AsyncIterator[Message]:
         """
-        Implement this handler; consume `datums` async iterable and yield Messages incrementally.
+        Implement this handler; consume `datums` async iterator and yield Messages incrementally.
 
         Args:
             keys: List of keys for this window
@@ -28,4 +28,5 @@ class ReduceStreamer(metaclass=ABCMeta):
         Yields:
             Message objects to be sent to the next vertex
         """
-        pass
+        raise NotImplementedError
+        yield  # makes this an async generator, so overrides that yield type-check

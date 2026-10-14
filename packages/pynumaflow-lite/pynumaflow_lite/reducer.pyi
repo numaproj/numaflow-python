@@ -1,5 +1,5 @@
 import datetime as _dt
-from collections.abc import AsyncIterable, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
 from typing import Self, TypeAlias
 
@@ -52,7 +52,7 @@ class Metadata:
 
     def __init__(self, *, interval_window: IntervalWindow) -> None: ...
 
-_ReduceHandler: TypeAlias = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[list[Message]]]
+_ReduceHandler: TypeAlias = Callable[[list[str], AsyncIterator[Datum], Metadata], Awaitable[list[Message]]]
 
 class _ReduceAsyncServer:
     def __init__(

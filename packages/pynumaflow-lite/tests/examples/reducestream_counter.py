@@ -1,11 +1,11 @@
 import asyncio
-import signal
-from collections.abc import AsyncIterable, AsyncIterator
+import functools
+from collections.abc import AsyncIterator
 
-from pynumaflow_lite import reducestreamer
+from pynumaflow_lite.reducestreamer import Datum, Message, Metadata, ReduceStreamAsyncServer, ReduceStreamer
 
 
-class ReduceStreamCounter(reducestreamer.ReduceStreamer):
+class ReduceStreamCounter(ReduceStreamer):
     """
     A reduce streaming counter that emits intermediate results.
 
@@ -16,47 +16,27 @@ class ReduceStreamCounter(reducestreamer.ReduceStreamer):
     def __init__(self, initial: int = 0) -> None:
         self.counter = initial
 
-    async def handler(
-        self,
-        keys: list[str],
-        datums: AsyncIterable[reducestreamer.Datum],
-        md: reducestreamer.Metadata,
-    ) -> AsyncIterator[reducestreamer.Message]:
+    async def handler(self, keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> AsyncIterator[Message]:
         """
         Process datums and yield messages incrementally.
 
         For testing purposes, we yield a message for each datum received.
         """
         iw = md.interval_window
-        self.counter = 0
-
         async for _ in datums:
             self.counter += 1
             # Yield a message for each datum (streaming behavior)
-            msg = (f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}").encode()
-            yield reducestreamer.Message(msg, keys=keys)
+            msg = f"counter:{self.counter} interval_window_start:{iw.start} interval_window_end:{iw.end}"
+            yield Message(msg.encode(), keys=keys)
 
 
-async def start(creator: type, init_args: tuple):
-    """Start the reduce stream server."""
-    sock_file = "/tmp/var/run/numaflow/reducestream.sock"
-    server_info_file = "/tmp/var/run/numaflow/reducestreamer-server-info"
-    server = reducestreamer.ReduceStreamAsyncServer(sock_file, server_info_file)
-
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        pass
-
-    try:
-        await server.start(creator, init_args)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
-        return
+async def main() -> None:
+    await ReduceStreamAsyncServer(
+        functools.partial(ReduceStreamCounter, initial=0),
+        sock_file="/tmp/var/run/numaflow/reducestream.sock",
+        server_info_file="/tmp/var/run/numaflow/reducestreamer-server-info",
+    ).serve()
 
 
 if __name__ == "__main__":
-    asyncio.run(start(ReduceStreamCounter, (0,)))
+    asyncio.run(main())

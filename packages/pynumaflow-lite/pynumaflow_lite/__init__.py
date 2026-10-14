@@ -13,6 +13,7 @@ from ._mapstream_dtypes import MapStreamer
 from ._mapstream_server import MapStreamAsyncServer
 from ._reduce_dtypes import Reducer
 from ._reduce_server import ReduceAsyncServer
+from ._reducestream_server import ReduceStreamAsyncServer
 from ._reducestreamer_dtypes import ReduceStreamer
 from ._session_reduce_dtypes import SessionReducer
 from ._sideinput_dtypes import SideInput
@@ -49,6 +50,7 @@ reducer.Reducer = Reducer
 reducer.ReduceAsyncServer = ReduceAsyncServer
 session_reducer.SessionReducer = SessionReducer
 reducestreamer.ReduceStreamer = ReduceStreamer
+reducestreamer.ReduceStreamAsyncServer = ReduceStreamAsyncServer
 accumulator.Accumulator = Accumulator
 sinker.Sinker = Sinker
 sinker.SinkAsyncServer = SinkAsyncServer

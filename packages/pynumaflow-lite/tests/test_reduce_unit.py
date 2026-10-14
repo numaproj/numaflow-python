@@ -3,7 +3,7 @@ import functools
 import os
 import subprocess
 import uuid
-from collections.abc import AsyncIterable, AsyncIterator
+from collections.abc import AsyncIterator
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -22,7 +22,7 @@ class Counter(reducer.Reducer):
         self.counter = initial
 
     async def handler(
-        self, keys: list[str], datums: AsyncIterable[reducer.Datum], md: reducer.Metadata
+        self, keys: list[str], datums: AsyncIterator[reducer.Datum], md: reducer.Metadata
     ) -> list[reducer.Message]:
         async for _ in datums:
             self.counter += 1
@@ -96,7 +96,7 @@ def test_reduce_server_creates_reducer_from_factory(tmp_path: Path):
 
 def test_reduce_server_propagates_handler_exception(tmp_path: Path):
     async def handler(
-        keys: list[str], datums: AsyncIterable[reducer.Datum], md: reducer.Metadata
+        keys: list[str], datums: AsyncIterator[reducer.Datum], md: reducer.Metadata
     ) -> list[reducer.Message]:
         async for _datum in datums:
             raise RuntimeError("reduce exploded")
@@ -122,7 +122,7 @@ def test_reduce_server_propagates_factory_exception(tmp_path: Path):
 
 
 def test_reduce_server_rejects_non_list_response(tmp_path: Path):
-    async def handler(keys: list[str], datums: AsyncIterable[reducer.Datum], md: reducer.Metadata) -> str:
+    async def handler(keys: list[str], datums: AsyncIterator[reducer.Datum], md: reducer.Metadata) -> str:
         async for _datum in datums:
             pass
         return "not messages"

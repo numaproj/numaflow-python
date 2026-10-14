@@ -1,5 +1,5 @@
 import datetime as _dt
-from collections.abc import AsyncIterable, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from types import TracebackType
 from typing import Self
 
@@ -78,14 +78,14 @@ class _BatchMapAsyncServer:
         sock_file: str | None = ...,
         server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, handler: Callable[[AsyncIterable[Datum]], Awaitable[list[BatchResponse]]]) -> Awaitable[None]: ...
+    def start(self, handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]]) -> Awaitable[None]: ...
     def wait_ready(self) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
 class BatchMapAsyncServer:
     def __init__(
         self,
-        handler: Callable[[AsyncIterable[Datum]], Awaitable[list[BatchResponse]]],
+        handler: Callable[[AsyncIterator[Datum]], Awaitable[list[BatchResponse]]],
         *,
         sock_file: str | None = ...,
         server_info_file: str | None = ...,

@@ -76,7 +76,7 @@ impl reduce::Reducer for PyReduceRunner {
         });
 
         // Call the Python coroutine:
-        // factory()(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> list[Message]
+        // factory()(keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> list[Message]
         let fut = match Python::attach(|py| -> PyResult<_> {
             let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
             let handler = self.factory.call0(py)?;

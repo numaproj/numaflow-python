@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.reducer import Datum, Message, Metadata
 
@@ -13,8 +13,8 @@ class Reducer(metaclass=ABCMeta):
         return self.handler(*args, **kwargs)
 
     @abstractmethod
-    async def handler(self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> list[Message]:
+    async def handler(self, keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> list[Message]:
         """
-        Implement this handler; consume `datums` async iterable and return the messages.
+        Implement this handler; consume `datums` async iterator and return the messages.
         """
         pass

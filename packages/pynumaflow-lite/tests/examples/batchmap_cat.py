@@ -1,11 +1,11 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.batchmapper import BatchMapAsyncServer, BatchResponse, Datum, Message
 
 
 async def async_handler(
-    batch: AsyncIterable[Datum],
+    batch: AsyncIterator[Datum],
 ) -> list[BatchResponse]:
     responses = []
     async for d in batch:

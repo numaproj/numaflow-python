@@ -1,6 +1,6 @@
 import asyncio
 import functools
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.reducer import Datum, Message, Metadata, ReduceAsyncServer, Reducer
 
@@ -9,7 +9,7 @@ class ReduceCounter(Reducer):
     def __init__(self, initial: int = 0) -> None:
         self.initial = initial
 
-    async def handler(self, keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> list[Message]:
+    async def handler(self, keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> list[Message]:
         counter = self.initial
         async for _ in datums:
             counter += 1

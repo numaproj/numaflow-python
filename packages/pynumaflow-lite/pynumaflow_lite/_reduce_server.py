@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from collections.abc import AsyncIterable, Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import TypeAlias
 
 from ._async_server import _AsyncServer
@@ -12,7 +12,7 @@ Datum: TypeAlias = _reducer.Datum
 Message: TypeAlias = _reducer.Message
 Metadata: TypeAlias = _reducer.Metadata
 
-ReduceHandler: TypeAlias = Callable[[list[str], AsyncIterable[Datum], Metadata], Awaitable[list[Message]]]
+ReduceHandler: TypeAlias = Callable[[list[str], AsyncIterator[Datum], Metadata], Awaitable[list[Message]]]
 
 
 class ReduceAsyncServer(_AsyncServer):

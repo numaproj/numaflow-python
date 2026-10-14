@@ -192,14 +192,6 @@ pub struct PyAsyncDatumStream {
 
 #[pymethods]
 impl PyAsyncDatumStream {
-    #[new]
-    fn new() -> Self {
-        let (_tx, rx) = mpsc::channel::<Datum>(1);
-        Self {
-            inner: crate::pyiterables::AsyncChannelStream::new(rx),
-        }
-    }
-
     fn __aiter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
         slf
     }
@@ -237,8 +229,9 @@ async fn reduce_client(sock_file: String) -> PyResult<ReduceClient<tonic::transp
 }
 
 // Poll the IsReady probe until it succeeds. There is no deadline: Python sets
-// one with asyncio.timeout(), and cancellation drops this future.
-async fn wait_for_ready(sock_file: String) {
+// one with asyncio.timeout(), and cancellation drops this future. reducestream
+// uses the same reduce proto, so it uses this function too.
+pub(crate) async fn wait_for_ready(sock_file: String) {
     loop {
         if let Ok(mut client) = reduce_client(sock_file.clone()).await
             && let Ok(response) = client.is_ready(()).await

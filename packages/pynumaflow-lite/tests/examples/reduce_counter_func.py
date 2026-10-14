@@ -1,10 +1,10 @@
 import asyncio
-from collections.abc import AsyncIterable
+from collections.abc import AsyncIterator
 
 from pynumaflow_lite.reducer import Datum, Message, Metadata, ReduceAsyncServer
 
 
-async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Metadata) -> list[Message]:
+async def reduce_handler(keys: list[str], datums: AsyncIterator[Datum], md: Metadata) -> list[Message]:
     interval_window = md.interval_window
     counter = 0
     async for _ in datums:

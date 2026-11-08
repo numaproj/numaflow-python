@@ -85,7 +85,8 @@ Default executor pool would work just as well in the use case.
 ```python
 if __name__ == "__main__":
     ...
-    threadPool = ExecutorPool(exec_type=e_type, max_workers=max_workers)
+    exec_pool = ExecutorPool(exec_type=e_type, max_workers=mx_workers)
+    grpc_server = ReduceAsyncServer(ReduceHandler, init_args=(exec_pool,))
     ...
 ```
 

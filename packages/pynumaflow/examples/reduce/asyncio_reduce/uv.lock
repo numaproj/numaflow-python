@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13"
 
 [[package]]
@@ -98,6 +98,23 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/61/62/06741b579156360248d1ec624842ad0edf697050bbaf7c3e46394e106ad1/aiosignal-1.4.0.tar.gz", hash = "sha256:f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7", size = 25007, upload-time = "2025-07-03T22:54:43.528Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/fb/76/641ae371508676492379f16e2fa48f4e2c11741bd63c48be4b12a6b09cba/aiosignal-1.4.0-py3-none-any.whl", hash = "sha256:053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e", size = 7490, upload-time = "2025-07-03T22:54:42.156Z" },
+]
+
+[[package]]
+name = "asyncio-reduce"
+version = "0.2.4"
+source = { editable = "." }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "pynumaflow" },
+    { name = "requests" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "aiohttp", specifier = ">=3.8.4" },
+    { name = "pynumaflow", directory = "../../../" },
+    { name = "requests", specifier = ">=2.32.0" },
 ]
 
 [[package]]
@@ -711,7 +728,7 @@ wheels = [
 
 [[package]]
 name = "pynumaflow"
-version = "0.12.1"
+version = "0.14.0"
 source = { directory = "../../../" }
 dependencies = [
     { name = "aiorun" },
@@ -738,16 +755,16 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "black", specifier = ">=23.1" },
+    { name = "black", specifier = ">=26.10.1" },
     { name = "grpc-stubs", specifier = ">=1.53.0.6" },
     { name = "grpcio-testing", specifier = ">=1.48.1" },
-    { name = "mypy", specifier = ">=1.18.2" },
-    { name = "pre-commit", specifier = ">=3.3.1" },
-    { name = "pytest", specifier = ">=7.2.1" },
-    { name = "pytest-cov", specifier = ">=3.0" },
-    { name = "ruff", specifier = ">=0.0.264" },
-    { name = "types-protobuf", specifier = ">=6.32.1.20250918" },
-    { name = "types-psutil", specifier = ">=7.0.0.20251001" },
+    { name = "mypy", specifier = ">=2.4.0" },
+    { name = "pre-commit", specifier = ">=4.6.2" },
+    { name = "pytest", specifier = ">=9.1.1" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "ruff", specifier = ">=0.17.0" },
+    { name = "types-protobuf", specifier = ">=6.32.1.20260221,<7" },
+    { name = "types-psutil", specifier = ">=7.2.2.20260906" },
 ]
 docs = [
     { name = "mike", specifier = ">=2.1" },
@@ -755,23 +772,6 @@ docs = [
     { name = "mkdocs-exclude", specifier = ">=1.0" },
     { name = "mkdocs-material", extras = ["imaging"], specifier = ">=9.5" },
     { name = "mkdocstrings", extras = ["python"], specifier = ">=0.27" },
-]
-
-[[package]]
-name = "reduce-counter"
-version = "0.2.4"
-source = { editable = "." }
-dependencies = [
-    { name = "aiohttp" },
-    { name = "aiorun" },
-    { name = "pynumaflow" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = ">=3.8.4" },
-    { name = "aiorun", specifier = ">=2025.1.1" },
-    { name = "pynumaflow", directory = "../../../" },
 ]
 
 [[package]]

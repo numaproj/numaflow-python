@@ -33,6 +33,6 @@ COPY --from=builder $EXAMPLE_PATH/ $EXAMPLE_PATH/
 # is not present (by design, to keep the image small), so uv run fails.
 # Instead, we activate the pre-built .venv via PATH and run python directly.
 ENV PATH="$EXAMPLE_PATH/.venv/bin:$PATH"
-CMD ["python", "example.py"]
+CMD ["python", "async_exec.py"]
 
 EXPOSE 5000

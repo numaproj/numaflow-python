@@ -1,5 +1,4 @@
 import aiohttp
-import aiorun
 import asyncio
 import json
 import time
@@ -11,7 +10,7 @@ from pynumaflow.reducer import (
     Message,
     Datum,
     Metadata,
-    AsyncReducer,
+    ReduceAsyncServer,
 )
 
 _LOGGER = setup_logging(__name__)
@@ -47,5 +46,5 @@ async def reduce_handler(keys: list[str], datums: AsyncIterable[Datum], md: Meta
 
 
 if __name__ == "__main__":
-    grpc_server = AsyncReducer(handler=reduce_handler)
-    aiorun.run(grpc_server.start())
+    grpc_server = ReduceAsyncServer(reduce_handler)
+    grpc_server.start()

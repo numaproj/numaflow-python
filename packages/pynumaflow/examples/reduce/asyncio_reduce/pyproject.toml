@@ -1,12 +1,12 @@
 [project]
-name = "reduce-counter"
+name = "asyncio-reduce"
 version = "0.2.4"
 description = ""
 requires-python = ">=3.13"
 dependencies = [
     "pynumaflow",
-    "aiorun>=2025.1.1",
     "aiohttp>=3.8.4",
+    "requests>=2.32.0",
 ]
 
 [tool.uv.sources]

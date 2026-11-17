@@ -1528,7 +1528,7 @@ requires-dist = [
     { name = "grpcio", specifier = ">=1.48.1" },
     { name = "grpcio-status", specifier = ">=1.48.1" },
     { name = "grpcio-tools", specifier = ">=1.48.1" },
-    { name = "protobuf", specifier = ">=6.31.1,<7.0" },
+    { name = "protobuf", specifier = ">=6.31.1,<8.0" },
     { name = "psutil", specifier = ">=6.0.0" },
     { name = "uvloop", specifier = ">=0.21.0" },
 ]

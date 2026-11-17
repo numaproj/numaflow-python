@@ -1,6 +1,7 @@
 TAG ?= stable
 PUSH ?= false
-IMAGE_REGISTRY = "quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}"
+IMAGE_REGISTRY = quay.io/numaio/numaflow-python/asyncio-reduce:${TAG}
+DOCKER_FILE_PATH = examples/reduce/asyncio_reduce/Dockerfile
 
 .PHONY: update
 update:
@@ -8,9 +9,14 @@ update:
 
 .PHONY: image-push
 image-push: update
-	docker buildx build -t ${IMAGE_REGISTRY} --platform linux/amd64,linux/arm64 . --push
+	cd ../../../ && docker buildx build \
+	-f ${DOCKER_FILE_PATH} \
+	-t ${IMAGE_REGISTRY} \
+	--platform linux/amd64,linux/arm64 . --push
 
 .PHONY: image
 image: update
-	docker build -t ${IMAGE_REGISTRY} .
+	cd ../../../ && docker build \
+	-f ${DOCKER_FILE_PATH} \
+	-t ${IMAGE_REGISTRY} .
 	@if [ "$(PUSH)" = "true" ]; then docker push ${IMAGE_REGISTRY}; fi

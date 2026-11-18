@@ -1,5 +1,36 @@
 # Changelog
 
+## v0.15.0 (2026-11-18)
+
+ * [1f585fb](https://github.com/numaproj/numaflow-python/commit/1f585fb1d45e9a95d50bf502c6b4749b8dce522f) fix(examples): build asyncio_reduce image from the pynumaflow root (#392)
+ * [58cb476](https://github.com/numaproj/numaflow-python/commit/58cb4764b6fbeba87417cc134b42836d4e108fd5) fix: update asyncio_reduce example to the current reducer API
+ * [245b105](https://github.com/numaproj/numaflow-python/commit/245b1059d47c9cd5be99130c5a67e22c5ba3da83) pynumaflow-lite: Pythonic APIs for Reducer and ReduceStreamer (#389)
+ * [acbb681](https://github.com/numaproj/numaflow-python/commit/acbb68135076f9122182a0ba3717da7b4d07ad3f) chore(pynumaflow): drop Python 3.10 and add Python 3.15 support (#388)
+ * [fb9c066](https://github.com/numaproj/numaflow-python/commit/fb9c066acf645c280e411e73da4d4187da8ee991) pynumaflow-lite: Drop Python 3.10 and add Python 3.15 to the supported versions. (#387)
+ * [295aaaf](https://github.com/numaproj/numaflow-python/commit/295aaaf51b923dc368d0883d16bed3bdbd6418b0) pynumaflow-lite: Pythonic APIs for Sourcetransformer (#386)
+ * [2d585e6](https://github.com/numaproj/numaflow-python/commit/2d585e62584ac36f0e573f94d5b27cad662ffe69) pynumaflow-lite: Use exception group to report all errors in Sinker (#384)
+ * [20b7f71](https://github.com/numaproj/numaflow-python/commit/20b7f7195444b6c60016b16ca0519a3e638b2f88) pynumaflow-lite: Pythonic APIs for mapstreamer (#383)
+ * [3403754](https://github.com/numaproj/numaflow-python/commit/34037547e4bf351245c40a91747a6669d90c4f3a) refactor(pynumaflow-lite): Pythonic APIs for BatchMapper (#382)
+ * [5e64760](https://github.com/numaproj/numaflow-python/commit/5e6476085d8fb5e8b689dccca21c51d38713b9fc) feat: allow creating drop message for accumulator (#358)
+ * [5fd1823](https://github.com/numaproj/numaflow-python/commit/5fd182367ebde6b25600cacc92050722690acced) feat(pynumaflow-lite): nack option for source/trf/map/sink (#377)
+ * [b4231f3](https://github.com/numaproj/numaflow-python/commit/b4231f3f79707eae683ab1799ca52eacead9422a) feat(example): concurrent processing using BatchMapper with BatchMapAsyncServer (#372)
+ * [dc5092d](https://github.com/numaproj/numaflow-python/commit/dc5092d342a7840d527ced2cf7d085cc16dbec83) pynumaflow-lite: Make mapper APIs more Pythonic. (#374)
+ * [82cd56f](https://github.com/numaproj/numaflow-python/commit/82cd56f7b153b458eda4314c90ea56063bc972ed) chore(revert): Pythonic APIs for unary/batchmap/mapstream (#373)
+ * [0bccb8d](https://github.com/numaproj/numaflow-python/commit/0bccb8dabe94c06305e204ab4ea62888d43b5720) chore(pynumaflow-lite): Pythonic APIs for unary/batchmap/mapstream (#368)
+ * [1079b70](https://github.com/numaproj/numaflow-python/commit/1079b70f3b73575ce9729b2a03957a824ae68cbc) feat: introduce API to fail a message in udf/transformer (#370)
+ * [e96694e](https://github.com/numaproj/numaflow-python/commit/e96694e1f1d2ecc0cc3a171ea60ee7d28937ac9b) feat: end to end wiring for per message nack (#365)
+ * [86c27d4](https://github.com/numaproj/numaflow-python/commit/86c27d4914fbe52d4ae01e60c311b8113f06bca2) pynumaflow-lite: Upgrade dependencies, setup CI (#362)
+
+### Contributors
+
+ * Abdullah Yildirim
+ * Aditya Soni
+ * Atishay Kasliwal
+ * Isaiah Harville
+ * Sreekanth
+ * Vaibhav Kant Tiwari
+ * Vigith Maurice
+
 ## v0.14.0 (2026-07-04)
 
  * [030ded1](https://github.com/numaproj/numaflow-python/commit/030ded11faf86b8226a7ae5526567edf4c103a00) fix: use the closed window in the eof response (#360)

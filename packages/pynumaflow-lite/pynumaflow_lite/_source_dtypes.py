@@ -1,126 +1,68 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import AsyncIterator
 
-from pynumaflow_lite.sourcer import (
-    AckRequest,
-    Message,
-    NackRequest,
-    PartitionsResponse,
-    PendingResponse,
-    ReadRequest,
-)
+from pynumaflow_lite.sourcer import Message, NackOffset, Offset, ReadRequest
 
 
 class Sourcer(metaclass=ABCMeta):
     """
     Provides an interface to write a User Defined Source.
 
-    A Sourcer must implement the following handlers:
-    - read_handler: Read messages from the source
-    - ack_handler: Acknowledge processed messages
-    - pending_handler: Return the number of pending messages
-    - partitions_handler: Return the partitions this source handles
-
-    Optionally, you can implement:
-    - nack_handler: Negatively acknowledge messages (default: no-op)
+    Subclasses must implement `read`, `ack`, `nack`, and `pending`. The
+    partition methods have defaults.
     """
 
-    def __call__(self, *args, **kwargs):
+    @abstractmethod
+    async def read(self, request: ReadRequest) -> AsyncIterator[Message]:
         """
-        This allows to execute the handler function directly if
-        class instance is sent as a callable.
+        Yield at most `request.num_records` messages, and return within
+        `request.timeout`.
+
+        Example:
+            async def read(self, request: ReadRequest) -> AsyncIterator[Message]:
+                for _ in range(request.num_records):
+                    offset = Offset(str(self.next_id).encode())
+                    self.next_id += 1
+                    yield Message(b"payload", offset, datetime.now(UTC))
         """
-        return self.read_handler(*args, **kwargs)
+        raise NotImplementedError
+        yield  # makes this an async generator, so overrides that yield type-check
 
     @abstractmethod
-    async def read_handler(self, request: ReadRequest) -> AsyncIterator[Message]:
+    async def ack(self, offsets: list[Offset]) -> None:
         """
-        Read messages from the source.
-
-        Args:
-            request: ReadRequest containing num_records and timeout
-
-        Yields:
-            Message: Messages to be sent to the next vertex
-
-        Example:
-            async def read_handler(self, request: ReadRequest) -> AsyncIterator[Message]:
-                for i in range(request.num_records):
-                    yield Message(
-                        payload=f"message-{i}".encode(),
-                        offset=Offset(str(i).encode(), partition_id=0),
-                        event_time=datetime.now(),
-                        keys=["key1"],
-                        headers={"x-txn-id": str(uuid.uuid4())}
-                    )
+        Acknowledge that the messages with these offsets have been processed.
         """
-        pass
 
     @abstractmethod
-    async def ack_handler(self, request: AckRequest) -> None:
+    async def nack(self, offsets: list[NackOffset]) -> None:
         """
-        Acknowledge that messages have been processed.
+        Negatively acknowledge messages, so that they are read again.
 
-        Args:
-            request: AckRequest containing the list of offsets to acknowledge
-
-        Example:
-            async def ack_handler(self, request: AckRequest) -> None:
-                for offset in request.offsets:
-                    # Remove from pending set, mark as processed, etc.
-                    self.pending_offsets.remove(offset.offset)
+        Each entry pairs an offset with the nack options for it.
         """
-        pass
 
     @abstractmethod
-    async def pending_handler(self) -> PendingResponse:
+    async def pending(self) -> int | None:
         """
-        Return the number of pending messages yet to be processed.
-
-        Returns:
-            PendingResponse: Response containing the count of pending messages.
-                            Return count=-1 if the source doesn't support detecting backlog.
-
-        Example:
-            async def pending_handler(self) -> PendingResponse:
-                return PendingResponse(count=len(self.pending_offsets))
+        Return the number of messages that are yet to be read, or None if the
+        source cannot tell.
         """
-        pass
 
-    @abstractmethod
-    async def partitions_handler(self) -> PartitionsResponse:
+    async def active_partitions(self) -> list[int] | None:
         """
-        Return the partitions associated with this source.
+        Return the partitions that this source currently reads from. The platform
+        publishes watermarks to these partitions.
 
-        This is used by the platform to determine the partitions to which
-        the watermark should be published. If your source doesn't have the
-        concept of partitions, return the replica ID.
-
-        Returns:
-            PartitionsResponse: Response containing the list of partition IDs
-
-        Example:
-            async def partitions_handler(self) -> PartitionsResponse:
-                return PartitionsResponse(partitions=[self.partition_id])
+        The default, None, makes the platform use the replica index as the only
+        partition.
         """
-        pass
+        return None
 
-    async def nack_handler(self, request: NackRequest) -> None:
+    async def total_partitions(self) -> int | None:
         """
-        Negatively acknowledge messages (optional).
-
-        This is called when messages could not be processed and should be
-        retried or handled differently. Default implementation is a no-op.
-
-        Args:
-            request: NackRequest containing the list of nack offsets, each
-                pairing an offset with its optional nack options.
-
-        Example:
-            async def nack_handler(self, request: NackRequest) -> None:
-                for nack_offset in request.nack_offsets:
-                    # Add back to pending, mark for retry, etc.
-                    self.nacked_offsets.add(nack_offset.offset.offset)
-                    _ = nack_offset.nack_options
+        Return the total number of partitions of the source, across all
+        replicas, or None if the source cannot tell. The platform uses it to
+        know when every partition has reported a watermark.
         """
-        _ = request
+        return None

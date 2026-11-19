@@ -1,198 +1,235 @@
-use numaflow::shared::ServerExtras;
+use std::sync::{Arc, Mutex};
 
+use numaflow::shared::ServerExtras;
+use numaflow::source;
+use pyo3::call::PyCallArgs;
+use pyo3::exceptions::{PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use std::sync::Arc;
+use tokio::sync::Notify;
 use tokio::sync::mpsc::Sender;
+use tokio_stream::StreamExt;
+
+use crate::pyiterables::PyAsyncIterStream;
+use crate::pyrs::{combine_errors, format_error};
+use crate::source::{Message, NackOffset, PyOffset, ReadRequest};
 
 pub(crate) struct PySourceRunner {
     pub(crate) event_loop: Arc<Py<PyAny>>,
-    pub(crate) py_handler: Arc<Py<PyAny>>,
+    pub(crate) sourcer: Arc<Py<PyAny>>,
+    pub(crate) errors: Arc<Mutex<Vec<PyErr>>>,
+    /// Notified when a handler fails, so that start() shuts the server down.
+    pub(crate) failed: Arc<Notify>,
+}
+
+fn type_name(obj: &Bound<'_, PyAny>) -> String {
+    obj.get_type()
+        .name()
+        .map(|name| name.to_string_lossy().into_owned())
+        .unwrap_or_else(|_| "<unknown>".to_string())
+}
+
+impl PySourceRunner {
+    fn fail(&self, error: PyErr) -> ! {
+        // numaflow can call the handlers concurrently, so keep every error.
+        // start() raises them together, which lets Python format every traceback
+        // instead of Rust printing them by hand.
+        let message = Python::attach(|py| format_error(py, &error));
+        self.errors.lock().unwrap().push(error);
+
+        // numaflow shuts the server down after a panic in read or ack, but not
+        // after one in nack, pending, or active_partitions. Ask for the shutdown here so
+        // that every handler failure stops the server in the same way.
+        self.failed.notify_one();
+
+        // The panic makes the client get a gRPC error. Returning a value instead
+        // would look like a valid answer from the handler.
+        panic!("{message}");
+    }
+
+    /// Call `sourcer.<method>(*args)`, await the coroutine, and return its result.
+    async fn call<A>(&self, method: &str, args: A) -> Py<PyAny>
+    where
+        A: for<'py> PyCallArgs<'py> + Send,
+    {
+        let fut = match Python::attach(|py| -> PyResult<_> {
+            let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
+            let coro = self.sourcer.bind(py).call_method1(method, args)?;
+            let is_awaitable: bool = py
+                .import("inspect")?
+                .call_method1("isawaitable", (&coro,))?
+                .extract()?;
+            let not_async = || {
+                PyErr::new::<PyTypeError, _>(format!(
+                    "source {method} must be an async function (coroutine)"
+                ))
+            };
+            if !is_awaitable {
+                return Err(not_async());
+            }
+            pyo3_async_runtimes::into_future_with_locals(&locals, coro).map_err(|_| not_async())
+        }) {
+            Ok(fut) => fut,
+            Err(error) => self.fail(error),
+        };
+
+        match fut.await {
+            Ok(result) => result,
+            Err(error) => self.fail(error),
+        }
+    }
+
+    /// Like `call`, then convert the result to `T`, or fail with a TypeError that
+    /// names `expected`.
+    async fn call_and_extract<T, A>(&self, method: &str, args: A, expected: &str) -> T
+    where
+        T: for<'a, 'py> FromPyObject<'a, 'py>,
+        A: for<'py> PyCallArgs<'py> + Send,
+    {
+        let result = self.call(method, args).await;
+        match Python::attach(|py| {
+            let result = result.bind(py);
+            result.extract::<T>().map_err(|_| {
+                PyErr::new::<PyTypeError, _>(format!(
+                    "source {method} must return {expected}, got {}",
+                    type_name(result)
+                ))
+            })
+        }) {
+            Ok(value) => value,
+            Err(error) => self.fail(error),
+        }
+    }
 }
 
 #[tonic::async_trait]
-impl numaflow::source::Sourcer for PySourceRunner {
-    /// Reads the messages from the source and sends them to the transmitter.
-    async fn read(
-        &self,
-        request: numaflow::source::SourceReadRequest,
-        transmitter: Sender<numaflow::source::Message>,
-    ) {
-        // Convert the Rust request to Python ReadRequest
-        let read_request: crate::source::ReadRequest = request.into();
+impl source::Sourcer for PySourceRunner {
+    async fn read(&self, request: source::SourceReadRequest, transmitter: Sender<source::Message>) {
+        let request: ReadRequest = request.into();
 
-        // Call the Python read_handler which returns an AsyncIterator[Message]
-        let py_async_iter = Python::attach(|py| {
-            let py_handler = self.py_handler.clone();
+        // sourcer.read(request) -> AsyncIterator[Message]
+        let agen = match Python::attach(|py| self.sourcer.call_method1(py, "read", (request,))) {
+            Ok(agen) => agen,
+            Err(error) => self.fail(error),
+        };
 
-            // Call read_handler(request) -> AsyncIterator[Message]
-            py_handler
-                .call_method1(py, "read_handler", (read_request,))
-                .expect("failed to call read_handler")
-        });
-
-        // Create a stream from the Python AsyncIterator
-        let mut stream = crate::pyiterables::PyAsyncIterStream::<crate::source::Message>::new(
-            py_async_iter,
-            self.event_loop.clone(),
-        )
-        .expect("failed to create stream from Python AsyncIterator");
-
-        // Stream messages from Python to the transmitter
-        use tokio_stream::StreamExt;
-        while let Some(result) = stream.next().await {
-            match result {
-                Ok(py_message) => {
-                    let rust_message: numaflow::source::Message = py_message.into();
-                    if transmitter.send(rust_message).await.is_err() {
-                        // Receiver dropped, stop reading
-                        break;
-                    }
+        // Items stay as Py<PyAny> so that a wrong item type gives a clear error below.
+        let agen_ref = Python::attach(|py| agen.clone_ref(py));
+        let mut stream =
+            match PyAsyncIterStream::<Py<PyAny>>::new(agen_ref, self.event_loop.clone()) {
+                Ok(stream) => stream,
+                Err(_) => {
+                    // A coroutine (async def without yield) must be closed, or Python
+                    // warns that it was never awaited.
+                    Python::attach(|py| {
+                        let _ = agen.call_method0(py, "close");
+                    });
+                    self.fail(PyErr::new::<PyTypeError, _>(
+                        "source read must be an async generator (yield Message)",
+                    ))
                 }
-                Err(e) => {
-                    eprintln!("Error reading from Python source: {:?}", e);
-                    break;
-                }
+            };
+
+        while let Some(item) = stream.next().await {
+            let obj = match item {
+                Ok(obj) => obj,
+                Err(error) => self.fail(error),
+            };
+
+            let message: Message = match Python::attach(|py| {
+                let obj = obj.bind(py);
+                obj.extract().map_err(|_| {
+                    PyErr::new::<PyTypeError, _>(format!(
+                        "source read must yield Message, got {}",
+                        type_name(obj)
+                    ))
+                })
+            }) {
+                Ok(message) => message,
+                Err(error) => self.fail(error),
+            };
+
+            // The receiver is gone, so the client does not want more messages.
+            if transmitter.send(message.into()).await.is_err() {
+                break;
             }
         }
     }
 
-    /// Acknowledges the message that has been processed by the user-defined source.
-    async fn ack(&self, offsets: Vec<numaflow::source::Offset>) {
-        // Convert Rust offsets to Python Offset objects
-        let py_offsets: Vec<crate::source::PyOffset> =
-            offsets.into_iter().map(|o| o.into()).collect();
-
-        // Create AckRequest
-        let ack_request = crate::source::AckRequest::new(py_offsets);
-
-        // Call the Python ack_handler
-        let fut = Python::attach(|py| {
-            let py_handler = self.py_handler.clone();
-            let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
-
-            let coro = py_handler
-                .call_method1(py, "ack_handler", (ack_request,))
-                .expect("failed to call ack_handler")
-                .into_bound(py);
-
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro)
-                .expect("failed to convert ack_handler to future")
-        });
-
-        // Await the Python coroutine
-        let _ = fut.await;
+    async fn ack(&self, offsets: Vec<source::Offset>) {
+        let offsets: Vec<PyOffset> = offsets.into_iter().map(Into::into).collect();
+        self.call("ack", (offsets,)).await;
     }
 
-    /// Negatively acknowledges the message that has been processed by the user-defined source.
-    async fn nack(&self, offsets: Vec<numaflow::source::NackOffset>) {
-        // Convert Rust nack offsets to Python NackOffset objects
-        let py_nack_offsets: Vec<crate::source::NackOffset> =
-            offsets.into_iter().map(|o| o.into()).collect();
-
-        // Create NackRequest
-        let nack_request = crate::source::NackRequest::new(py_nack_offsets);
-
-        // Call the Python nack_handler
-        let fut = Python::attach(|py| {
-            let py_handler = self.py_handler.clone();
-            let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
-
-            let coro = py_handler
-                .call_method1(py, "nack_handler", (nack_request,))
-                .expect("failed to call nack_handler")
-                .into_bound(py);
-
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro)
-                .expect("failed to convert nack_handler to future")
-        });
-
-        // Await the Python coroutine
-        let _ = fut.await;
+    async fn nack(&self, offsets: Vec<source::NackOffset>) {
+        let offsets: Vec<NackOffset> = offsets.into_iter().map(Into::into).collect();
+        self.call("nack", (offsets,)).await;
     }
 
-    /// Returns the number of messages that are yet to be processed by the user-defined source.
-    /// The None value can be returned if source doesn't support detecting the backlog.
     async fn pending(&self) -> Option<usize> {
-        // Call the Python pending_handler
-        let fut = Python::attach(|py| {
-            let py_handler = self.py_handler.clone();
-            let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
-
-            let coro = py_handler
-                .call_method0(py, "pending_handler")
-                .expect("failed to call pending_handler")
-                .into_bound(py);
-
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro)
-                .expect("failed to convert pending_handler to future")
-        });
-
-        // Await the Python coroutine and extract the result
-        let result = fut.await.expect("pending_handler failed");
-
-        let pending_response = Python::attach(|py| {
-            result
-                .extract::<crate::source::PendingResponse>(py)
-                .expect("failed to extract PendingResponse")
-        });
-
-        // Convert count to Option<usize>
-        // -1 means the source doesn't support detecting backlog
-        if pending_response.count < 0 {
-            None
-        } else {
-            Some(pending_response.count as usize)
+        match self
+            .call_and_extract::<Option<i64>, _>("pending", (), "int or None")
+            .await
+        {
+            None => None,
+            Some(count) => match usize::try_from(count) {
+                Ok(count) => Some(count),
+                Err(_) => self.fail(PyErr::new::<PyValueError, _>(format!(
+                    "source pending must not be negative, got {count}; return None when the count is unknown"
+                ))),
+            },
         }
     }
 
-    /// Returns the partitions associated with the source. This will be used by the platform to determine
-    /// the partitions to which the watermark should be published. Some sources might not have the concept of partitions.
-    /// Kafka is an example of source where a reader can read from multiple partitions.
-    /// If None is returned, Numaflow replica-id will be returned as the partition.
-    async fn partitions(&self) -> Option<Vec<i32>> {
-        // Call the Python partitions_handler
-        let fut = Python::attach(|py| {
-            let py_handler = self.py_handler.clone();
-            let locals = pyo3_async_runtimes::TaskLocals::new(self.event_loop.bind(py).clone());
+    async fn active_partitions(&self) -> Option<Vec<i32>> {
+        self.call_and_extract("active_partitions", (), "list[int] or None")
+            .await
+    }
 
-            let coro = py_handler
-                .call_method0(py, "partitions_handler")
-                .expect("failed to call partitions_handler")
-                .into_bound(py);
-
-            pyo3_async_runtimes::into_future_with_locals(&locals, coro)
-                .expect("failed to convert partitions_handler to future")
-        });
-
-        // Await the Python coroutine and extract the result
-        let result = fut.await.expect("partitions_handler failed");
-
-        let partitions_response = Python::attach(|py| {
-            result
-                .extract::<crate::source::PartitionsResponse>(py)
-                .expect("failed to extract PartitionsResponse")
-        });
-
-        Some(partitions_response.partitions)
+    async fn total_partitions(&self) -> Option<i32> {
+        self.call_and_extract("total_partitions", (), "int or None")
+            .await
     }
 }
 
 /// Start the source server by spinning up a dedicated Python asyncio loop and wiring shutdown.
 pub(super) async fn start(
-    py_handler: Py<PyAny>,
+    sourcer: Py<PyAny>,
     sock_file: String,
     info_file: String,
     shutdown_rx: tokio::sync::oneshot::Receiver<()>,
 ) -> Result<(), pyo3::PyErr> {
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let py_asyncio_loop_handle = tokio::task::spawn_blocking(move || crate::pyrs::run_asyncio(tx));
+    let py_asyncio_loop_handle = tokio::task::spawn_blocking({
+        println!(
+            "Starting Source UDF. socket={}, server_info={}",
+            sock_file, info_file
+        );
+        move || crate::pyrs::run_asyncio(tx)
+    });
     let event_loop = rx.await.unwrap();
 
-    let (sig_handle, combined_rx) = crate::pyrs::setup_sig_handler(shutdown_rx);
+    let errors = Arc::new(Mutex::new(Vec::new()));
+    let failed = Arc::new(Notify::new());
+
+    // Shutdown has two sources: stop() from Python through shutdown_rx, and a
+    // handler failure through `failed`.
+    let (server_shutdown_tx, server_shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+    let shutdown_watcher = tokio::spawn({
+        let failed = Arc::clone(&failed);
+        async move {
+            tokio::select! {
+                _ = shutdown_rx => {},
+                _ = failed.notified() => {},
+            }
+            let _ = server_shutdown_tx.send(());
+        }
+    });
 
     let py_source_runner = PySourceRunner {
-        py_handler: Arc::new(py_handler),
+        sourcer: Arc::new(sourcer),
         event_loop: event_loop.clone(),
+        errors: Arc::clone(&errors),
+        failed,
     };
 
     let server = numaflow::source::Server::new(py_source_runner)
@@ -200,9 +237,11 @@ pub(super) async fn start(
         .with_server_info_file(info_file);
 
     let result = server
-        .start_with_shutdown(combined_rx)
+        .start_with_shutdown(server_shutdown_rx)
         .await
         .map_err(|e| pyo3::PyErr::new::<pyo3::exceptions::PyException, _>(e.to_string()));
+
+    shutdown_watcher.abort();
 
     // Ensure the event loop is stopped even if shutdown came from elsewhere.
     Python::attach(|py| {
@@ -216,10 +255,9 @@ pub(super) async fn start(
     // Wait for the blocking asyncio thread to finish.
     let _ = py_asyncio_loop_handle.await;
 
-    // if not finished, abort it
-    if !sig_handle.is_finished() {
-        println!("Aborting signal handler");
-        sig_handle.abort();
+    let errors = std::mem::take(&mut *errors.lock().unwrap());
+    if !errors.is_empty() {
+        return Err(Python::attach(|py| combine_errors(py, errors)));
     }
 
     result

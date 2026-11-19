@@ -1,115 +1,78 @@
 import asyncio
 import logging
-import signal
+from collections import deque
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
-from pynumaflow_lite import sourcer
-from pynumaflow_lite._source_dtypes import Sourcer
+from pynumaflow_lite.sourcer import Message, NackOffset, Offset, ReadRequest, SourceAsyncServer, Sourcer
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
-_LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class SimpleSource(Sourcer):
     """
-    Simple source that generates messages with incrementing numbers.
-    This is a class-based user-defined source implementation.
+    A source that generates messages with incrementing numbers.
+
+    It keeps the offsets that are read but not acked yet. A nacked offset is
+    read again before any new message.
     """
 
-    def __init__(self):
-        self.counter = 0
-        self.partition_idx = 0
+    def __init__(self, partition_id: int = 0) -> None:
+        self.partition_id = partition_id
+        self.next_id = 0
+        self.unacked: set[Offset] = set()
+        self.redeliver: deque[Offset] = deque()
 
-    async def read_handler(self, datum: sourcer.ReadRequest) -> AsyncIterator[sourcer.Message]:
-        """
-        The simple source generates messages with incrementing numbers.
-        """
-        _LOGGER.info(f"Read request: num_records={datum.num_records}, timeout_ms={datum.timeout_ms}")
+    def _next_offset(self) -> Offset:
+        if self.redeliver:
+            return self.redeliver.popleft()
+        offset = Offset(str(self.next_id).encode(), self.partition_id)
+        self.next_id += 1
+        return offset
 
-        # Generate the requested number of messages
-        for _ in range(datum.num_records):
-            # Create message payload
-            payload = f"message-{self.counter}".encode()
-
-            # Create offset
-            offset = sourcer.Offset(
-                offset=str(self.counter).encode("utf-8"),
-                partition_id=self.partition_idx,
-            )
-
-            # Create message
-            message = sourcer.Message(
-                payload=payload,
-                offset=offset,
-                event_time=datetime.now(UTC),
+    async def read(self, request: ReadRequest) -> AsyncIterator[Message]:
+        logger.info("Read request: %r", request)
+        for _ in range(request.num_records):
+            offset = self._next_offset()
+            self.unacked.add(offset)
+            yield Message(
+                f"message-{offset.value.decode()}".encode(),
+                offset,
+                datetime.now(UTC),
                 keys=["key1"],
                 headers={"source": "simple"},
+                user_metadata={
+                    "source_info": {
+                        "source_name": b"simple_source",
+                        "message_id": offset.value,
+                        "partition": str(offset.partition_id).encode(),
+                    }
+                },
             )
 
-            _LOGGER.info(f"Generated message: {self.counter}")
-            self.counter += 1
+    async def ack(self, offsets: list[Offset]) -> None:
+        logger.info("Acknowledging %d offsets", len(offsets))
+        self.unacked.difference_update(offsets)
 
-            yield message
+    async def nack(self, offsets: list[NackOffset]) -> None:
+        logger.info("Negatively acknowledging %d offsets", len(offsets))
+        for nack_offset in offsets:
+            logger.warning("Nacked %r", nack_offset)
+            self.unacked.discard(nack_offset.offset)
+            self.redeliver.append(nack_offset.offset)
 
-            # Small delay to simulate real source
-            await asyncio.sleep(0.1)
+    async def pending(self) -> int | None:
+        # Only the nacked messages wait to be read: new messages are made on demand.
+        return len(self.redeliver)
 
-    async def ack_handler(self, request: sourcer.AckRequest) -> None:
-        """
-        The simple source acknowledges the offsets.
-        """
-        _LOGGER.info(f"Acknowledging {len(request.offsets)} offsets")
-        for offset in request.offsets:
-            _LOGGER.debug(f"Acked offset: {offset.offset.decode('utf-8')}, partition: {offset.partition_id}")
-
-    async def nack_handler(self, request: sourcer.NackRequest) -> None:
-        """
-        The simple source negatively acknowledges the offsets.
-        """
-        _LOGGER.info(f"Negatively acknowledging {len(request.nack_offsets)} offsets")
-        for nack_offset in request.nack_offsets:
-            offset = nack_offset.offset
-            _LOGGER.warning(
-                f"Nacked offset: {offset.offset.decode('utf-8')}, "
-                f"partition: {offset.partition_id}, options: {nack_offset.nack_options}"
-            )
-
-    async def pending_handler(self) -> sourcer.PendingResponse:
-        """
-        The simple source always returns zero to indicate there is no pending record.
-        """
-        return sourcer.PendingResponse(count=0)
-
-    async def partitions_handler(self) -> sourcer.PartitionsResponse:
-        """
-        The simple source always returns default partitions.
-        """
-        return sourcer.PartitionsResponse(partitions=[self.partition_idx])
+    async def active_partitions(self) -> list[int] | None:
+        return [self.partition_id]
 
 
-async def start():
-    server = sourcer.SourceAsyncServer()
-
-    # Create an instance of the source handler
-    handler = SimpleSource()
-
-    # Register loop-level signal handlers to request graceful shutdown
-    loop = asyncio.get_running_loop()
-    try:
-        loop.add_signal_handler(signal.SIGINT, lambda: server.stop())
-        loop.add_signal_handler(signal.SIGTERM, lambda: server.stop())
-    except (NotImplementedError, RuntimeError):
-        pass
-
-    try:
-        await server.start(handler)
-        print("Shutting down gracefully...")
-    except asyncio.CancelledError:
-        server.stop()
-        return
+async def main() -> None:
+    await SourceAsyncServer(SimpleSource()).serve()
 
 
 if __name__ == "__main__":
-    asyncio.run(start())
+    asyncio.run(main())

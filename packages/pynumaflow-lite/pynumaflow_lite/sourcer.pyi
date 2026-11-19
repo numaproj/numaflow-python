@@ -1,102 +1,9 @@
 import datetime as _dt
 from collections.abc import Awaitable
+from types import TracebackType
+from typing import Self
 
-# Re-export the Python ABC for user convenience and typing
 from ._source_dtypes import Sourcer as Sourcer
-
-class UserMetadata:
-    """User-defined metadata groups per message (read-write for source)."""
-
-    def __init__(self) -> None: ...
-    def groups(self) -> list[str]:
-        """Returns the groups of the user metadata."""
-        ...
-
-    def keys(self, group: str) -> list[str]:
-        """Returns the keys of the user metadata for the given group."""
-        ...
-
-    def value(self, group: str, key: str) -> bytes:
-        """Returns the value of the user metadata for the given group and key."""
-        ...
-
-    def create_group(self, group: str) -> None:
-        """Creates a new group in the user metadata."""
-        ...
-
-    def add_kv(self, group: str, key: str, value: bytes) -> None:
-        """Adds a key-value pair to the user metadata."""
-        ...
-
-    def remove_key(self, group: str, key: str) -> None:
-        """Removes a key from a group in the user metadata."""
-        ...
-
-    def remove_group(self, group: str) -> None:
-        """Removes a group from the user metadata."""
-        ...
-
-    def __repr__(self) -> str: ...
-
-class Message:
-    """A message to be sent from the source."""
-
-    payload: bytes
-    offset: Offset
-    event_time: _dt.datetime
-    keys: list[str]
-    headers: dict[str, str]
-    user_metadata: UserMetadata | None
-
-    def __init__(
-        self,
-        payload: bytes,
-        offset: Offset,
-        event_time: _dt.datetime,
-        keys: list[str] | None = ...,
-        headers: dict[str, str] | None = ...,
-        user_metadata: UserMetadata | None = ...,
-    ) -> None: ...
-    def __repr__(self) -> str: ...
-    def __str__(self) -> str: ...
-
-class Offset:
-    """The offset of a message."""
-
-    offset: bytes
-    partition_id: int
-
-    def __init__(
-        self,
-        offset: bytes,
-        partition_id: int = ...,
-    ) -> None: ...
-    def __repr__(self) -> str: ...
-    def __str__(self) -> str: ...
-
-class ReadRequest:
-    """A request to read messages from the source."""
-
-    num_records: int
-    timeout_ms: int
-
-    def __init__(
-        self,
-        num_records: int,
-        timeout_ms: int = ...,
-    ) -> None: ...
-    def __repr__(self) -> str: ...
-
-class AckRequest:
-    """A request to acknowledge messages."""
-
-    offsets: list[Offset]
-
-    def __init__(
-        self,
-        offsets: list[Offset],
-    ) -> None: ...
-    def __repr__(self) -> str: ...
 
 class NackOptions:
     """Per-message redelivery options for a nack."""
@@ -114,75 +21,106 @@ class NackOptions:
         nack_map: dict[str, str] | None = ...,
     ) -> None: ...
     def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+
+class Offset:
+    """The offset of a message. Offsets are immutable and hashable."""
+
+    @property
+    def value(self) -> bytes: ...
+    @property
+    def partition_id(self) -> int: ...
+    def __init__(self, value: bytes, partition_id: int = ...) -> None: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
+
+class Message:
+    """A message read from the source."""
+
+    @property
+    def value(self) -> bytes: ...
+    @property
+    def offset(self) -> Offset: ...
+    @property
+    def event_time(self) -> _dt.datetime: ...
+    @property
+    def keys(self) -> list[str]: ...
+    @property
+    def headers(self) -> dict[str, str]: ...
+    @property
+    def user_metadata(self) -> dict[str, dict[str, bytes]]: ...
+    def __init__(
+        self,
+        value: bytes,
+        offset: Offset,
+        event_time: _dt.datetime,
+        keys: list[str] | None = ...,
+        headers: dict[str, str] | None = ...,
+        user_metadata: dict[str, dict[str, bytes]] | None = ...,
+    ) -> None: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
+
+class ReadRequest:
+    """A request to read messages from the source."""
+
+    @property
+    def num_records(self) -> int: ...
+    @property
+    def timeout(self) -> _dt.timedelta: ...
+    def __init__(self, num_records: int, timeout: _dt.timedelta = ...) -> None: ...
+    def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
 
 class NackOffset:
-    """An offset to negatively acknowledge, paired with its optional nack options."""
+    """An offset to negatively acknowledge, with the nack options for it."""
 
-    offset: Offset
-    nack_options: NackOptions | None
-
-    def __init__(
-        self,
-        offset: Offset,
-        nack_options: NackOptions | None = ...,
-    ) -> None: ...
+    @property
+    def offset(self) -> Offset: ...
+    @property
+    def nack_options(self) -> NackOptions | None: ...
+    def __init__(self, offset: Offset, nack_options: NackOptions | None = ...) -> None: ...
     def __repr__(self) -> str: ...
+    def __eq__(self, other: object) -> bool: ...
 
-class NackRequest:
-    """A request to negatively acknowledge messages."""
-
-    nack_offsets: list[NackOffset]
-
-    def __init__(
-        self,
-        nack_offsets: list[NackOffset],
-    ) -> None: ...
-    def __repr__(self) -> str: ...
-
-class PendingResponse:
-    """Response for pending messages count."""
-
-    count: int
-
-    def __init__(
-        self,
-        count: int = ...,
-    ) -> None: ...
-    def __repr__(self) -> str: ...
-
-class PartitionsResponse:
-    """Response for partitions."""
-
-    partitions: list[int]
-
-    def __init__(
-        self,
-        partitions: list[int],
-    ) -> None: ...
-    def __repr__(self) -> str: ...
-
-class SourceAsyncServer:
-    """Async Source Server that can be started from Python code."""
-
+class _SourceAsyncServer:
     def __init__(
         self,
         sock_file: str | None = ...,
-        info_file: str | None = ...,
+        server_info_file: str | None = ...,
     ) -> None: ...
-    def start(self, py_func: Sourcer) -> Awaitable[None]: ...
+    def start(self, sourcer: Sourcer) -> Awaitable[None]: ...
+    def wait_ready(self) -> Awaitable[None]: ...
     def stop(self) -> None: ...
 
+class SourceAsyncServer:
+    def __init__(
+        self,
+        handler: Sourcer,
+        *,
+        sock_file: str | None = ...,
+        server_info_file: str | None = ...,
+        install_signal_handlers: bool = ...,
+    ) -> None: ...
+    async def serve(self) -> None: ...
+    def stop(self) -> None: ...
+    async def wait_ready(self) -> None: ...
+    async def wait_for_termination(self) -> None: ...
+    async def __aenter__(self) -> Self: ...
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None: ...
+
 __all__ = [
-    "AckRequest",
     "Message",
     "NackOffset",
     "NackOptions",
-    "NackRequest",
     "Offset",
-    "PartitionsResponse",
-    "PendingResponse",
     "ReadRequest",
     "SourceAsyncServer",
     "Sourcer",
-    "UserMetadata",
 ]

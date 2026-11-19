@@ -22,7 +22,7 @@ class Accumulator(metaclass=ABCMeta):
         """
         Accumulate can read unordered from the input stream and emit the ordered data to the output stream.
         Once the watermark (WM) of the output stream progresses, the data in WAL until that WM will be garbage collected.
-        NOTE: A message can be silently dropped if need be, and it will be cleared from the WAL when the WM progresses.
+        NOTE: To drop a datum, yield `Message.message_to_drop(datum)` so the WM can progress.
 
         Args:
             datums: An async iterator of Datum objects

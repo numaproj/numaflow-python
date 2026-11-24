@@ -1,8 +1,16 @@
 import pytest
 
-from pynumaflow.mapstreamer import Messages, Message, DROP, NackOptions
+from pynumaflow.mapstreamer import (
+    Messages,
+    Message,
+    Datum,
+    DROP,
+    NackOptions,
+    UserMetadata,
+    SystemMetadata,
+)
 from pynumaflow._constants import FAIL, NACK
-from tests.testing_utils import mock_message
+from tests.testing_utils import mock_message, mock_event_time, mock_watermark
 
 
 def test_message_to_nack():
@@ -24,6 +32,47 @@ def test_message_to_nack_default_opts():
 def test_message_default_nack_options():
     msg = Message(mock_message())
     assert msg.nack_options is None
+
+
+def test_message_default_user_metadata():
+    msg = Message(mock_message())
+    assert msg.user_metadata == UserMetadata()
+    assert len(msg.user_metadata) == 0
+
+
+def test_message_user_metadata():
+    user_metadata = UserMetadata()
+    user_metadata.add_key("group", "key", b"value")
+    msg = Message(mock_message(), user_metadata=user_metadata)
+    assert msg.user_metadata.value("group", "key") == b"value"
+    assert msg.user_metadata._to_proto().user_metadata["group"].key_value == {"key": b"value"}
+
+
+def test_datum_default_metadata():
+    d = Datum(
+        keys=["test"],
+        value=mock_message(),
+        event_time=mock_event_time(),
+        watermark=mock_watermark(),
+    )
+    assert d.user_metadata == UserMetadata()
+    assert d.system_metadata == SystemMetadata()
+
+
+def test_datum_metadata():
+    user_metadata = UserMetadata({"app": {"k": b"v"}})
+    system_metadata = SystemMetadata({"tracing": {"traceparent": b"00-trace-span-01"}})
+    d = Datum(
+        keys=["test"],
+        value=mock_message(),
+        event_time=mock_event_time(),
+        watermark=mock_watermark(),
+        user_metadata=user_metadata,
+        system_metadata=system_metadata,
+    )
+    assert d.user_metadata.value("app", "k") == b"v"
+    assert d.system_metadata.groups() == ["tracing"]
+    assert d.system_metadata.value("tracing", "traceparent") == b"00-trace-span-01"
 
 
 def test_message_to_fail():

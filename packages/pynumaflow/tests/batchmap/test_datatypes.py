@@ -5,6 +5,7 @@ from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from pynumaflow.batchmapper._dtypes import (
     Datum,
 )
+from pynumaflow.batchmapper import UserMetadata, SystemMetadata
 from tests.testing_utils import (
     mock_message,
     mock_event_time,
@@ -108,3 +109,32 @@ def test_datum_id():
     )
     assert TEST_ID == d.id
     assert {} == d.headers
+
+
+def test_datum_default_metadata():
+    d = Datum(
+        keys=TEST_KEYS,
+        value=mock_message(),
+        event_time=mock_event_time(),
+        watermark=mock_watermark(),
+        id=TEST_ID,
+    )
+    assert d.user_metadata == UserMetadata()
+    assert d.system_metadata == SystemMetadata()
+
+
+def test_datum_metadata():
+    user_metadata = UserMetadata({"app": {"k": b"v"}})
+    system_metadata = SystemMetadata({"tracing": {"traceparent": b"00-trace-span-01"}})
+    d = Datum(
+        keys=TEST_KEYS,
+        value=mock_message(),
+        event_time=mock_event_time(),
+        watermark=mock_watermark(),
+        id=TEST_ID,
+        user_metadata=user_metadata,
+        system_metadata=system_metadata,
+    )
+    assert d.user_metadata.value("app", "k") == b"v"
+    assert d.system_metadata.groups() == ["tracing"]
+    assert d.system_metadata.value("tracing", "traceparent") == b"00-trace-span-01"

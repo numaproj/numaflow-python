@@ -1,6 +1,13 @@
 import pytest
 
-from pynumaflow.batchmapper import Message, DROP, BatchResponse, BatchResponses, NackOptions
+from pynumaflow.batchmapper import (
+    Message,
+    DROP,
+    BatchResponse,
+    BatchResponses,
+    NackOptions,
+    UserMetadata,
+)
 from pynumaflow._constants import FAIL, NACK
 from tests.batchmap.test_datatypes import TEST_ID
 from tests.testing_utils import mock_message
@@ -30,6 +37,20 @@ def test_message_to_nack_default_opts():
 def test_message_default_nack_options():
     msg = Message(mock_message())
     assert msg.nack_options is None
+
+
+def test_message_default_user_metadata():
+    msg = Message(mock_message())
+    assert msg.user_metadata == UserMetadata()
+    assert len(msg.user_metadata) == 0
+
+
+def test_message_user_metadata():
+    user_metadata = UserMetadata()
+    user_metadata.add_key("group", "key", b"value")
+    msg = Message(mock_message(), user_metadata=user_metadata)
+    assert msg.user_metadata.value("group", "key") == b"value"
+    assert msg.user_metadata._to_proto().user_metadata["group"].key_value == {"key": b"value"}
 
 
 def test_message_to_fail():

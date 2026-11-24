@@ -10,6 +10,7 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow.shared.server import update_context_err
 from pynumaflow.types import NumaflowServicerContext
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow._nack import _nack_options_to_proto
 
 
@@ -84,6 +85,7 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
                                     keys=msg.keys,
                                     value=msg.value,
                                     tags=msg.tags,
+                                    metadata=msg.user_metadata._to_proto(),
                                     nack_options=_nack_options_to_proto(msg.nack_options),
                                 )
                             )
@@ -96,6 +98,9 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
                     continue
 
                 # if we have a valid message, we will add it to the request queue for processing.
+                user_metadata, system_metadata = _user_and_system_metadata_from_proto(
+                    d.request.metadata
+                )
                 datum = Datum(
                     keys=list(d.request.keys),
                     value=d.request.value,
@@ -103,6 +108,8 @@ class AsyncBatchMapServicer(map_pb2_grpc.MapServicer):
                     watermark=d.request.watermark.ToDatetime(),
                     headers=dict(d.request.headers),
                     id=d.id,
+                    user_metadata=user_metadata,
+                    system_metadata=system_metadata,
                 )
                 await req_queue.put(datum)
 

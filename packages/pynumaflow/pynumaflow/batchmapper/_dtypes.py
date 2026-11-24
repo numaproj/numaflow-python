@@ -7,6 +7,7 @@ from collections.abc import AsyncIterable, Callable
 
 from pynumaflow._constants import DROP, FAIL, NACK
 from pynumaflow._nack import NackOptions
+from pynumaflow._metadata import UserMetadata, SystemMetadata
 from pynumaflow._validate import _validate_message_fields
 
 M = TypeVar("M", bound="Message")
@@ -23,14 +24,22 @@ class Message:
         value: data in bytes
         keys: list of keys for vertex (optional)
         tags: list of tags for conditional forwarding (optional)
+        user_metadata: metadata for the message (optional)
     """
 
     _value: bytes
     _keys: list[str]
     _tags: list[str]
+    _user_metadata: UserMetadata
     _nack_options: NackOptions | None
 
-    def __init__(self, value: bytes, keys: list[str] | None = None, tags: list[str] | None = None):
+    def __init__(
+        self,
+        value: bytes,
+        keys: list[str] | None = None,
+        tags: list[str] | None = None,
+        user_metadata: UserMetadata | None = None,
+    ):
         """
         Creates a Message object to send value to a vertex.
         """
@@ -38,6 +47,7 @@ class Message:
         self._keys = keys or []
         self._tags = tags or []
         self._value = value or b""
+        self._user_metadata = user_metadata or UserMetadata()
         self._nack_options = None
 
     # returns the Message Object which will be dropped
@@ -71,6 +81,10 @@ class Message:
     def tags(self) -> list[str]:
         return self._tags
 
+    @property
+    def user_metadata(self) -> UserMetadata:
+        return self._user_metadata
+
 
 @dataclass(init=False, slots=True)
 class Datum:
@@ -84,6 +98,8 @@ class Datum:
         watermark: the watermark of the event.
         headers: the headers of the event.
         id: the unique ID for this request
+        user_metadata: the user metadata of the event.
+        system_metadata: the system metadata of the event.
     """
 
     _keys: list[str]
@@ -92,6 +108,8 @@ class Datum:
     _watermark: datetime
     _headers: dict[str, str]
     _id: str
+    _user_metadata: UserMetadata
+    _system_metadata: SystemMetadata
 
     def __init__(
         self,
@@ -101,6 +119,8 @@ class Datum:
         event_time: datetime,
         watermark: datetime,
         headers: dict[str, str] | None = None,
+        user_metadata: UserMetadata | None = None,
+        system_metadata: SystemMetadata | None = None,
     ):
         self._id = id
         self._keys = keys or list()
@@ -112,6 +132,8 @@ class Datum:
             raise TypeError(f"Wrong data type: {type(watermark)} for Datum.watermark")
         self._watermark = watermark
         self._headers = headers or {}
+        self._user_metadata = user_metadata or UserMetadata()
+        self._system_metadata = system_metadata or SystemMetadata()
 
     @property
     def keys(self) -> list[str]:
@@ -142,6 +164,16 @@ class Datum:
     def id(self) -> str:
         """Returns the id of the event."""
         return self._id
+
+    @property
+    def user_metadata(self) -> UserMetadata:
+        """Returns the user metadata of the event."""
+        return self._user_metadata
+
+    @property
+    def system_metadata(self) -> SystemMetadata:
+        """Returns the system metadata of the event."""
+        return self._system_metadata
 
 
 @dataclass

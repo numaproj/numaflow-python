@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 
@@ -35,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut client = MapClient::new(channel);
 
-    // Build one request with comma-separated payload
+    // Build one request with comma-separated payload, with user and system metadata
     let request = proto::map::MapRequest {
         request: Some(proto::map::map_request::Request {
             keys: vec!["k".into()],
@@ -43,7 +44,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             watermark: Some(prost_types::Timestamp::default()),
             event_time: Some(prost_types::Timestamp::default()),
             headers: Default::default(),
-            metadata: None,
+            metadata: Some(proto::metadata::Metadata {
+                previous_vertex: "in".to_string(),
+                sys_metadata: HashMap::from([(
+                    "sys_group".to_string(),
+                    kv_group(&[("sys_key", b"sys_value")]),
+                )]),
+                user_metadata: HashMap::from([(
+                    "user_group".to_string(),
+                    kv_group(&[("user_key", b"user_value")]),
+                )]),
+            }),
         }),
         id: "".to_string(),
         handshake: None,
@@ -68,24 +79,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tx_ref = tx;
     tx_ref.send(request).await.unwrap();
 
-    // Expect three MapResponse messages, each carrying one result value
-    let mut got: Vec<Vec<u8>> = Vec::new();
+    // Expect three MapResponse messages, each carrying one result
+    let mut got: Vec<proto::map::map_response::Result> = Vec::new();
     while got.len() < 3 {
         let maybe = response_stream.message().await.unwrap();
         assert!(maybe.is_some());
         let resp = maybe.unwrap();
         // Each MapResponse carries results; we take the first
-        if let Some(first) = resp.results.first() {
-            got.push(first.value.clone());
+        if let Some(first) = resp.results.into_iter().next() {
+            got.push(first);
         }
     }
 
-    assert_eq!(got[0], b"a".to_vec());
-    assert_eq!(got[1], b"b".to_vec());
-    assert_eq!(got[2], b"c".to_vec());
+    assert_eq!(got[0].value, b"a".to_vec());
+    assert_eq!(got[1].value, b"b".to_vec());
+    assert_eq!(got[2].value, b"c".to_vec());
+
+    for result in &got {
+        let metadata = result.metadata.as_ref().expect("metadata is set");
+        // Verify the handler received the incoming user metadata in Datum.user_metadata
+        assert_eq!(
+            metadata.user_metadata["user_group"].key_value["user_key"],
+            b"user_value".to_vec()
+        );
+        // Verify the handler received the incoming system metadata in Datum.system_metadata
+        assert_eq!(
+            metadata.user_metadata["system_echo"].key_value["sys_group.sys_key"],
+            b"sys_value".to_vec()
+        );
+        // System metadata is never sent back by the UDF
+        assert!(metadata.sys_metadata.is_empty());
+    }
 
     // Close request stream
     drop(tx_ref);
 
     Ok(())
+}
+
+fn kv_group(pairs: &[(&str, &[u8])]) -> proto::metadata::KeyValueGroup {
+    proto::metadata::KeyValueGroup {
+        key_value: pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_vec()))
+            .collect(),
+    }
 }

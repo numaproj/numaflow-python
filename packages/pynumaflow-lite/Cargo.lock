@@ -530,7 +530,7 @@ dependencies = [
 [[package]]
 name = "numaflow"
 version = "0.6.0"
-source = "git+https://github.com/numaproj/numaflow-rs.git?rev=c36edc2ccdeb1d1baa0b970c7ae0c88db62f0ccf#c36edc2ccdeb1d1baa0b970c7ae0c88db62f0ccf"
+source = "git+https://github.com/numaproj/numaflow-rs.git?rev=da49c1554767ed034a63b65d0c9e8aad25e78b9c#da49c1554767ed034a63b65d0c9e8aad25e78b9c"
 dependencies = [
  "chrono",
  "hyper-util",

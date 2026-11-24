@@ -53,7 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert!(handshake_response.handshake.is_some());
 
     // Build three requests with IDs
-    let mk_req = |id: &str, keys: Vec<&str>, value: &str| -> proto::map::MapRequest {
+    let mk_req = |id: &str,
+                  keys: Vec<&str>,
+                  value: &str,
+                  metadata: Option<proto::metadata::Metadata>|
+     -> proto::map::MapRequest {
         proto::map::MapRequest {
             request: Some(proto::map::map_request::Request {
                 keys: keys.into_iter().map(|s| s.to_string()).collect(),
@@ -61,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 watermark: Some(prost_types::Timestamp::default()),
                 event_time: Some(prost_types::Timestamp::default()),
                 headers: HashMap::new(),
-                metadata: None,
+                metadata,
             }),
             id: id.to_string(),
             handshake: None,
@@ -69,9 +73,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let req1 = mk_req("id-1", vec!["k1"], "hello-1");
-    let req2 = mk_req("id-2", vec!["k2"], "hello-2");
-    let req3 = mk_req("id-3", vec!["k3"], "hello-3");
+    // Request 1 carries user and system metadata; the others carry none
+    let req1 = mk_req(
+        "id-1",
+        vec!["k1"],
+        "hello-1",
+        Some(proto::metadata::Metadata {
+            previous_vertex: "in".to_string(),
+            sys_metadata: HashMap::from([(
+                "sys_group".to_string(),
+                kv_group(&[("sys_key", b"sys_value")]),
+            )]),
+            user_metadata: HashMap::from([(
+                "user_group".to_string(),
+                kv_group(&[("user_key", b"user_value")]),
+            )]),
+        }),
+    );
+    let req2 = mk_req("id-2", vec!["k2"], "hello-2", None);
+    let req3 = mk_req("id-3", vec!["k3"], "hello-3", None);
 
     // Sender must live long enough; keep a clone for clarity
     let tx_ref = tx;
@@ -92,35 +112,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Collect exactly 3 responses, one per id
     use std::collections::BTreeMap;
-    let mut got: BTreeMap<String, Vec<u8>> = BTreeMap::new();
+    let mut got: BTreeMap<String, proto::map::map_response::Result> = BTreeMap::new();
 
     while got.len() < 3 {
         let maybe = resp.message().await.unwrap();
         assert!(maybe.is_some());
         let r = maybe.unwrap();
         // MapResponse is expected to include an id and results list.
-        // We'll take the first result's value.
-        let value = r
-            .results
-            .first()
-            .map(|res| res.value.clone())
-            .unwrap_or_default();
-        let id = r.id.clone();
-        got.insert(id, value);
+        // We'll take the first result.
+        let result = r.results.into_iter().next().expect("result is set");
+        got.insert(r.id, result);
     }
 
+    assert_eq!(got["id-1"].value, "hello-1".as_bytes());
+    assert_eq!(got["id-2"].value, "hello-2".as_bytes());
+    assert_eq!(got["id-3"].value, "hello-3".as_bytes());
+
+    let metadata = got["id-1"].metadata.as_ref().expect("metadata is set");
+    // Verify the handler received the incoming user metadata in Datum.user_metadata
     assert_eq!(
-        got.get("id-1").map(|v| v.as_slice()),
-        Some("hello-1".as_bytes())
+        metadata.user_metadata["user_group"].key_value["user_key"],
+        b"user_value".to_vec()
     );
+    // Verify the handler received the incoming system metadata in Datum.system_metadata
     assert_eq!(
-        got.get("id-2").map(|v| v.as_slice()),
-        Some("hello-2".as_bytes())
+        metadata.user_metadata["system_echo"].key_value["sys_group.sys_key"],
+        b"sys_value".to_vec()
     );
-    assert_eq!(
-        got.get("id-3").map(|v| v.as_slice()),
-        Some("hello-3".as_bytes())
+    // System metadata is never sent back by the UDF
+    assert!(metadata.sys_metadata.is_empty());
+
+    // No metadata was sent, so the handler forwards no user groups and echoes no system metadata
+    let user_metadata = &got["id-2"]
+        .metadata
+        .as_ref()
+        .expect("metadata is set")
+        .user_metadata;
+    assert!(!user_metadata.contains_key("user_group"));
+    assert!(
+        user_metadata
+            .get("system_echo")
+            .is_none_or(|g| g.key_value.is_empty())
     );
 
     Ok(())
+}
+
+fn kv_group(pairs: &[(&str, &[u8])]) -> proto::metadata::KeyValueGroup {
+    proto::metadata::KeyValueGroup {
+        key_value: pairs
+            .iter()
+            .map(|(k, v)| (k.to_string(), v.to_vec()))
+            .collect(),
+    }
 }

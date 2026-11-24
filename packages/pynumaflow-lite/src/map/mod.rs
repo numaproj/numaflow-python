@@ -21,7 +21,7 @@ use std::sync::Mutex;
 use crate::nack::NackOptions;
 use crate::pyrs::{bytes_literal, py_repr};
 
-fn system_metadata_to_hash_map(
+pub(crate) fn system_metadata_to_hash_map(
     value: map::SystemMetadata,
 ) -> HashMap<String, HashMap<String, Vec<u8>>> {
     let mut data = HashMap::new();
@@ -35,7 +35,7 @@ fn system_metadata_to_hash_map(
     data
 }
 
-fn user_metadata_to_hash_map(
+pub(crate) fn user_metadata_to_hash_map(
     value: map::UserMetadata,
 ) -> HashMap<String, HashMap<String, Vec<u8>>> {
     let mut data = HashMap::new();
@@ -47,6 +47,18 @@ fn user_metadata_to_hash_map(
         data.insert(group, kv);
     }
     data
+}
+
+pub(crate) fn hash_map_to_user_metadata(
+    value: HashMap<String, HashMap<String, Vec<u8>>>,
+) -> map::UserMetadata {
+    let mut umd = map::UserMetadata::new();
+    for (group, kv) in value {
+        for (key, val) in kv {
+            umd.add_kv(group.clone(), key, val);
+        }
+    }
+    umd
 }
 
 /// A message to be sent to the next vertex.
@@ -152,15 +164,7 @@ impl From<Message> for map::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
-            user_metadata: value.user_metadata.map(|m| {
-                let mut umd = map::UserMetadata::new();
-                for (group, kv) in m {
-                    for (key, val) in kv {
-                        umd.add_kv(group.clone(), key, val);
-                    }
-                }
-                umd
-            }),
+            user_metadata: value.user_metadata.map(hash_map_to_user_metadata),
             nack_options: value.nack_options.map(Into::into),
         }
     }

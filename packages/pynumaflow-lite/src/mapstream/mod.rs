@@ -7,7 +7,10 @@ use pyo3::prelude::*;
 
 pub mod server;
 
-use crate::map::wait_for_ready;
+use crate::map::{
+    hash_map_to_user_metadata, system_metadata_to_hash_map, user_metadata_to_hash_map,
+    wait_for_ready,
+};
 use crate::nack::NackOptions;
 use crate::pyrs::{bytes_literal, py_repr};
 
@@ -31,6 +34,12 @@ pub struct Datum {
     /// Headers associated with the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
+    /// User metadata for the message.
+    #[pyo3(get)]
+    pub user_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
+    /// System metadata for the message.
+    #[pyo3(get)]
+    pub system_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
 }
 
 #[pymethods]
@@ -43,6 +52,8 @@ impl Datum {
         event_time: "datetime.datetime | None"=None,
         watermark: "datetime.datetime | None"=None,
         headers: "dict[str, str] | None"=None,
+        user_metadata: "dict[str, dict[str, bytes]] | None"=None,
+        system_metadata: "dict[str, dict[str, bytes]] | None"=None,
     ) -> "Datum")]
     fn new(
         keys: Option<Vec<String>>,
@@ -50,6 +61,8 @@ impl Datum {
         event_time: Option<DateTime<Utc>>,
         watermark: Option<DateTime<Utc>>,
         headers: Option<HashMap<String, String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+        system_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
             keys: keys.unwrap_or_default(),
@@ -57,22 +70,26 @@ impl Datum {
             watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
             event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
             headers: headers.unwrap_or_default(),
+            user_metadata: user_metadata.unwrap_or_default(),
+            system_metadata: system_metadata.unwrap_or_default(),
         }
     }
 
-    fn __repr__(&self) -> String {
-        format!(
-            "Datum(keys={:?}, value={}, watermark={}, event_time={}, headers={:?})",
-            self.keys,
+    fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
+        Ok(format!(
+            "Datum(keys={}, value={}, watermark={}, event_time={}, headers={}, user_metadata={}, system_metadata={})",
+            py_repr(py, &self.keys)?,
             bytes_literal(&self.value),
             self.watermark,
             self.event_time,
-            self.headers,
-        )
+            py_repr(py, &self.headers)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, &self.system_metadata)?,
+        ))
     }
 
-    fn __str__(&self) -> String {
-        self.__repr__()
+    fn __str__(&self, py: Python<'_>) -> PyResult<String> {
+        self.__repr__(py)
     }
 }
 
@@ -84,6 +101,8 @@ impl From<numaflow::mapstream::MapStreamRequest> for Datum {
             watermark: value.watermark,
             event_time: value.eventtime,
             headers: value.headers,
+            user_metadata: user_metadata_to_hash_map(value.user_metadata),
+            system_metadata: system_metadata_to_hash_map(value.system_metadata),
         }
     }
 }
@@ -98,6 +117,9 @@ pub struct Message {
     pub value: Vec<u8>,
     /// Tags are used for conditional forwarding.
     pub tags: Option<Vec<String>>,
+    /// User metadata for the message.
+    #[pyo3(get)]
+    pub user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     /// Options sent back to the source when nacking the message.
     #[pyo3(get)]
     pub nack_options: Option<NackOptions>,
@@ -105,14 +127,20 @@ pub struct Message {
 
 #[pymethods]
 impl Message {
-    /// Create a new Message with the given value, keys, and tags.
+    /// Create a new Message with the given value. Keys, tags, and user_metadata are optional.
     #[new]
-    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None) -> "Message")]
-    fn new(value: Vec<u8>, keys: Option<Vec<String>>, tags: Option<Vec<String>>) -> Self {
+    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "dict[str, dict[str, bytes]] | None"=None) -> "Message")]
+    fn new(
+        value: Vec<u8>,
+        keys: Option<Vec<String>>,
+        tags: Option<Vec<String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+    ) -> Self {
         Self {
             keys,
             value,
             tags,
+            user_metadata,
             nack_options: None,
         }
     }
@@ -125,6 +153,7 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
+            user_metadata: None,
             nack_options: None,
         }
     }
@@ -137,6 +166,7 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::NACK.to_string()]),
+            user_metadata: None,
             nack_options,
         }
     }
@@ -149,16 +179,18 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::FAIL.to_string()]),
+            user_metadata: None,
             nack_options: None,
         }
     }
 
     fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         Ok(format!(
-            "Message(value={}, keys={}, tags={}, nack_options={})",
+            "Message(value={}, keys={}, tags={}, user_metadata={}, nack_options={})",
             bytes_literal(&self.value),
             py_repr(py, &self.keys)?,
             py_repr(py, &self.tags)?,
+            py_repr(py, &self.user_metadata)?,
             py_repr(py, self.nack_options.clone())?,
         ))
     }
@@ -174,6 +206,7 @@ impl From<Message> for mapstream::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
+            user_metadata: value.user_metadata.map(hash_map_to_user_metadata),
             nack_options: value.nack_options.map(Into::into),
         }
     }

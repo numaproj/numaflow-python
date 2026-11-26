@@ -7,6 +7,7 @@ from pynumaflow.shared.asynciter import NonBlockingIterator
 from pynumaflow._constants import _LOGGER, STREAM_EOF, ERR_UDF_EXCEPTION_STRING
 from pynumaflow.mapstreamer import Datum
 from pynumaflow.mapstreamer._dtypes import MapStreamCallable, MapStreamError
+from pynumaflow._metadata import _user_and_system_metadata_from_proto
 from pynumaflow._nack import _nack_options_to_proto
 from pynumaflow.proto.mapper import map_pb2_grpc, map_pb2
 from pynumaflow.shared.server import update_context_err
@@ -126,12 +127,17 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
         pushes each result onto the global queue, followed by an EOT for this id.
         """
         try:
+            user_metadata, system_metadata = _user_and_system_metadata_from_proto(
+                req.request.metadata
+            )
             datum = Datum(
                 keys=list(req.request.keys),
                 value=req.request.value,
                 event_time=req.request.event_time.ToDatetime(),
                 watermark=req.request.watermark.ToDatetime(),
                 headers=dict(req.request.headers),
+                user_metadata=user_metadata,
+                system_metadata=system_metadata,
             )
 
             # Stream results from the user handler as they are produced.
@@ -163,6 +169,7 @@ class AsyncMapStreamServicer(map_pb2_grpc.MapServicer):
                     keys=msg.keys,
                     value=msg.value,
                     tags=msg.tags,
+                    metadata=msg.user_metadata._to_proto(),
                     nack_options=_nack_options_to_proto(msg.nack_options),
                 )
                 await result_queue.put(map_pb2.MapResponse(results=[res], id=req.id))

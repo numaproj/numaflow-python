@@ -13,6 +13,9 @@ use tokio::sync::mpsc;
 use pyo3::prelude::*;
 use std::sync::Mutex;
 
+use crate::map::{
+    hash_map_to_user_metadata, system_metadata_to_hash_map, user_metadata_to_hash_map,
+};
 use crate::nack::NackOptions;
 use crate::pyrs::{bytes_literal, py_repr};
 
@@ -30,6 +33,9 @@ pub struct Message {
     /// Tags are used for conditional forwarding.
     #[pyo3(get)]
     pub tags: Option<Vec<String>>,
+    /// User metadata for the message.
+    #[pyo3(get)]
+    pub user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     /// Options sent back to the source when nacking the message.
     #[pyo3(get)]
     pub nack_options: Option<NackOptions>,
@@ -37,15 +43,21 @@ pub struct Message {
 
 #[pymethods]
 impl Message {
-    /// Create a new [Message] with the given value. The keys and tags are optional.
+    /// Create a new [Message] with the given value. Keys, tags, and user_metadata are optional.
     #[new]
-    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None) -> "Message"
+    #[pyo3(signature = (value: "bytes", keys: "list[str] | None"=None, tags: "list[str] | None"=None, user_metadata: "dict[str, dict[str, bytes]] | None"=None) -> "Message"
     )]
-    fn new(value: Vec<u8>, keys: Option<Vec<String>>, tags: Option<Vec<String>>) -> Self {
+    fn new(
+        value: Vec<u8>,
+        keys: Option<Vec<String>>,
+        tags: Option<Vec<String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+    ) -> Self {
         Self {
             keys,
             value,
             tags,
+            user_metadata,
             nack_options: None,
         }
     }
@@ -58,6 +70,7 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::DROP.to_string()]),
+            user_metadata: None,
             nack_options: None,
         }
     }
@@ -70,6 +83,7 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::NACK.to_string()]),
+            user_metadata: None,
             nack_options,
         }
     }
@@ -82,16 +96,18 @@ impl Message {
             keys: None,
             value: vec![],
             tags: Some(vec![numaflow::shared::FAIL.to_string()]),
+            user_metadata: None,
             nack_options: None,
         }
     }
 
     fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         Ok(format!(
-            "Message(value={}, keys={}, tags={}, nack_options={})",
+            "Message(value={}, keys={}, tags={}, user_metadata={}, nack_options={})",
             bytes_literal(&self.value),
             py_repr(py, &self.keys)?,
             py_repr(py, &self.tags)?,
+            py_repr(py, &self.user_metadata)?,
             py_repr(py, self.nack_options.clone())?,
         ))
     }
@@ -103,6 +119,7 @@ impl From<Message> for batchmap::Message {
             keys: value.keys,
             value: value.value,
             tags: value.tags,
+            user_metadata: value.user_metadata.map(hash_map_to_user_metadata),
             nack_options: value.nack_options.map(Into::into),
         }
     }
@@ -129,6 +146,12 @@ pub struct Datum {
     /// Headers for the message.
     #[pyo3(get)]
     pub headers: HashMap<String, String>,
+    /// User metadata for the message.
+    #[pyo3(get)]
+    pub user_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
+    /// System metadata for the message.
+    #[pyo3(get)]
+    pub system_metadata: HashMap<String, HashMap<String, Vec<u8>>>,
 }
 
 #[pymethods]
@@ -142,7 +165,10 @@ impl Datum {
         event_time: "datetime.datetime | None"=None,
         watermark: "datetime.datetime | None"=None,
         headers: "dict[str, str] | None"=None,
+        user_metadata: "dict[str, dict[str, bytes]] | None"=None,
+        system_metadata: "dict[str, dict[str, bytes]] | None"=None,
     ) -> "Datum")]
+    #[allow(clippy::too_many_arguments)]
     fn new(
         id: String,
         keys: Option<Vec<String>>,
@@ -150,6 +176,8 @@ impl Datum {
         event_time: Option<DateTime<Utc>>,
         watermark: Option<DateTime<Utc>>,
         headers: Option<HashMap<String, String>>,
+        user_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
+        system_metadata: Option<HashMap<String, HashMap<String, Vec<u8>>>>,
     ) -> Self {
         Self {
             id,
@@ -158,18 +186,22 @@ impl Datum {
             watermark: watermark.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
             event_time: event_time.unwrap_or(DateTime::<Utc>::UNIX_EPOCH),
             headers: headers.unwrap_or_default(),
+            user_metadata: user_metadata.unwrap_or_default(),
+            system_metadata: system_metadata.unwrap_or_default(),
         }
     }
 
     fn __repr__(&self, py: Python<'_>) -> PyResult<String> {
         Ok(format!(
-            "Datum(id={}, keys={}, value={}, watermark={}, event_time={}, headers={})",
+            "Datum(id={}, keys={}, value={}, watermark={}, event_time={}, headers={}, user_metadata={}, system_metadata={})",
             py_repr(py, &self.id)?,
             py_repr(py, &self.keys)?,
             bytes_literal(&self.value),
             self.watermark,
             self.event_time,
             py_repr(py, &self.headers)?,
+            py_repr(py, &self.user_metadata)?,
+            py_repr(py, &self.system_metadata)?,
         ))
     }
 
@@ -180,14 +212,16 @@ impl Datum {
 
 impl From<batchmap::Datum> for Datum {
     fn from(value: batchmap::Datum) -> Self {
-        Datum::new(
-            value.id,
-            Some(value.keys),
-            Some(value.value),
-            Some(value.watermark),
-            Some(value.event_time),
-            Some(value.headers),
-        )
+        Self {
+            id: value.id,
+            keys: value.keys,
+            value: value.value,
+            watermark: value.watermark,
+            event_time: value.event_time,
+            headers: value.headers,
+            user_metadata: user_metadata_to_hash_map(value.user_metadata),
+            system_metadata: system_metadata_to_hash_map(value.system_metadata),
+        }
     }
 }
 
@@ -338,4 +372,43 @@ pub(crate) fn populate_py_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<PyAsyncDatumStream>()?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use chrono::{DateTime, Utc};
+    use numaflow::batchmap;
+
+    use super::Datum;
+
+    #[test]
+    fn datum_from_batchmap_datum_keeps_times_and_metadata() {
+        let event_time = DateTime::<Utc>::from_timestamp(1_000, 0).unwrap();
+        let watermark = DateTime::<Utc>::from_timestamp(2_000, 0).unwrap();
+        let mut user_metadata = batchmap::UserMetadata::new();
+        user_metadata.add_kv(
+            "user_group".to_string(),
+            "user_key".to_string(),
+            b"user_value".to_vec(),
+        );
+
+        let datum: Datum = batchmap::Datum {
+            keys: vec!["k".to_string()],
+            value: b"v".to_vec(),
+            watermark,
+            event_time,
+            id: "id-1".to_string(),
+            headers: HashMap::new(),
+            user_metadata,
+            system_metadata: batchmap::SystemMetadata::new(),
+        }
+        .into();
+
+        assert_eq!(datum.event_time, event_time);
+        assert_eq!(datum.watermark, watermark);
+        assert_eq!(datum.user_metadata["user_group"]["user_key"], b"user_value");
+        assert!(datum.system_metadata.is_empty());
+    }
 }

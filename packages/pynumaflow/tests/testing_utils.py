@@ -3,6 +3,7 @@ from datetime import datetime, UTC
 
 from pynumaflow import setup_logging
 from pynumaflow.info.types import EOF
+from pynumaflow.proto.common import metadata_pb2
 from google.protobuf import timestamp_pb2 as _timestamp_pb2
 
 _LOGGER = setup_logging(__name__)
@@ -39,6 +40,18 @@ def mock_watermark():
 def mock_headers():
     headers = {"key1": "value1", "key2": "value2"}
     return headers
+
+
+def mock_request_metadata() -> metadata_pb2.Metadata:
+    return metadata_pb2.Metadata(
+        previous_vertex="test-source",
+        sys_metadata={
+            "numaflow_version_info": metadata_pb2.KeyValueGroup(key_value={"version": b"1.0.0"}),
+        },
+        user_metadata={
+            "custom_info": metadata_pb2.KeyValueGroup(key_value={"version": b"1.0.0"}),
+        },
+    )
 
 
 def mock_interval_window_start():

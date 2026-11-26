@@ -14,7 +14,7 @@ from pynumaflow.mapstreamer import (
 )
 from pynumaflow._constants import NACK
 from pynumaflow.proto.mapper import map_pb2_grpc
-from tests.mapstream.utils import request_generator
+from tests.mapstream.utils import request_generator, metadata_request_generator
 from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 
 import pytest
@@ -28,6 +28,7 @@ raise_error_from_map = False
 
 SOCK_PATH = "unix:///tmp/async_map_stream.sock"
 NACK_SOCK_PATH = "unix:///tmp/async_map_stream_nack.sock"
+METADATA_SOCK_PATH = "unix:///tmp/async_map_stream_metadata.sock"
 
 NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
 
@@ -168,6 +169,75 @@ def test_map_stream_nack(async_nack_map_stream_server):
 
     # 2 requests x 3 nack messages each
     assert result_count == 6
+
+
+async def async_metadata_map_stream_handler(
+    keys: list[str], datum: Datum
+) -> AsyncIterable[Message]:
+    """
+    Echoes the user metadata, and copies the system metadata version into a
+    "system_info" user group so the test can see what the handler received.
+    """
+    user_metadata = datum.user_metadata
+    version = datum.system_metadata.value("numaflow_version_info", "version")
+    if version is not None:
+        user_metadata.add_key("system_info", "version", version)
+    for i in range(2):
+        yield Message(datum.value, keys=keys, user_metadata=user_metadata)
+
+
+async def _start_metadata_server(udfs):
+    server = grpc.aio.server()
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
+    server.add_insecure_port(METADATA_SOCK_PATH)
+    logging.info("Starting metadata server on %s", METADATA_SOCK_PATH)
+    await server.start()
+    return server, METADATA_SOCK_PATH
+
+
+@pytest.fixture(scope="module")
+def async_metadata_map_stream_server():
+    loop = create_async_loop()
+    server_obj = MapStreamAsyncServer(map_stream_instance=async_metadata_map_stream_handler)
+    udfs = server_obj.servicer
+    server = start_async_server(loop, _start_metadata_server(udfs))
+    yield loop
+    teardown_async_server(loop, server)
+
+
+def test_map_stream_metadata(async_metadata_map_stream_server):
+    with grpc.insecure_channel(METADATA_SOCK_PATH) as channel:
+        stub = map_pb2_grpc.MapStub(channel)
+        generator_response = stub.MapFn(request_iterator=metadata_request_generator())
+
+        handshake = next(generator_response)
+        assert handshake.handshake.sot
+
+        results = {}
+        eot_count = 0
+        for msg in generator_response:
+            if msg.status.eot:
+                eot_count += 1
+                continue
+            results.setdefault(msg.id, []).extend(msg.results)
+
+    assert eot_count == 2
+
+    assert len(results["with-metadata"]) == 2
+    for result in results["with-metadata"]:
+        assert result.value == b"with-metadata"
+        assert {g: dict(kv.key_value) for g, kv in result.metadata.user_metadata.items()} == {
+            "custom_info": {"version": b"1.0.0"},
+            "system_info": {"version": b"1.0.0"},
+        }
+        # System metadata will be empty for user responses
+        assert result.metadata.sys_metadata == {}
+
+    assert len(results["no-metadata"]) == 2
+    for result in results["no-metadata"]:
+        assert result.value == b"no-metadata"
+        assert result.metadata.user_metadata == {}
+        assert result.metadata.sys_metadata == {}
 
 
 def test_is_ready(async_map_stream_server):

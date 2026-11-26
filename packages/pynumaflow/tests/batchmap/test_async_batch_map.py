@@ -17,7 +17,7 @@ from pynumaflow.batchmapper import (
 )
 from pynumaflow._constants import NACK
 from pynumaflow.proto.mapper import map_pb2_grpc
-from tests.batchmap.utils import request_generator
+from tests.batchmap.utils import request_generator, metadata_request_generator
 from tests.conftest import create_async_loop, start_async_server, teardown_async_server
 
 pytestmark = pytest.mark.integration
@@ -26,6 +26,7 @@ LOGGER = setup_logging(__name__)
 
 listen_addr = "unix:///tmp/batch_map.sock"
 nack_listen_addr = "unix:///tmp/batch_map_nack.sock"
+metadata_listen_addr = "unix:///tmp/batch_map_metadata.sock"
 
 NACK_TEST_OPTIONS = NackOptions(delay=1000, max_deliveries=3, reason="retry")
 
@@ -187,6 +188,72 @@ def test_batch_map_nack(async_nack_batch_map_server) -> None:
         assert result.nack_options.max_deliveries == NACK_TEST_OPTIONS.max_deliveries
         assert result.nack_options.reason == NACK_TEST_OPTIONS.reason
     assert data_resp[-1].status.eot is True
+
+
+async def metadata_handler(datums: AsyncIterable[Datum]) -> BatchResponses:
+    """
+    Echoes the user metadata, and copies the system metadata version into a
+    "system_info" user group so the test can see what the handler received.
+    """
+    batch_responses = BatchResponses()
+    async for datum in datums:
+        user_metadata = datum.user_metadata
+        version = datum.system_metadata.value("numaflow_version_info", "version")
+        if version is not None:
+            user_metadata.add_key("system_info", "version", version)
+        batch_response = BatchResponse.from_id(datum.id)
+        batch_response.append(Message(datum.value, user_metadata=user_metadata))
+        batch_responses.append(batch_response)
+    return batch_responses
+
+
+async def start_metadata_server(udfs):
+    server = grpc.aio.server()
+    map_pb2_grpc.add_MapServicer_to_server(udfs, server)
+    server.add_insecure_port(metadata_listen_addr)
+    logging.info("Starting metadata server on %s", metadata_listen_addr)
+    await server.start()
+    return server, metadata_listen_addr
+
+
+@pytest.fixture(scope="module")
+def async_metadata_batch_map_server():
+    loop = create_async_loop()
+    udfs = BatchMapAsyncServer(metadata_handler).servicer
+    server = start_async_server(loop, start_metadata_server(udfs))
+    yield loop
+    teardown_async_server(loop, server)
+
+
+def test_batch_map_metadata(async_metadata_batch_map_server) -> None:
+    with grpc.insecure_channel(metadata_listen_addr) as channel:
+        stub = map_pb2_grpc.MapStub(channel)
+        generator_response = stub.MapFn(request_iterator=metadata_request_generator())
+
+        handshake = next(generator_response)
+        assert handshake.handshake.sot
+
+        data_resp = [r for r in generator_response]
+
+    # 2 data responses + 1 EOT response
+    assert len(data_resp) == 3
+    assert data_resp[-1].status.eot is True
+
+    results = {resp.id: resp.results[0] for resp in data_resp[:-1]}
+
+    with_metadata = results["with-metadata"]
+    assert with_metadata.value == b"with-metadata"
+    assert {g: dict(kv.key_value) for g, kv in with_metadata.metadata.user_metadata.items()} == {
+        "custom_info": {"version": b"1.0.0"},
+        "system_info": {"version": b"1.0.0"},
+    }
+    # System metadata will be empty for user responses
+    assert with_metadata.metadata.sys_metadata == {}
+
+    no_metadata = results["no-metadata"]
+    assert no_metadata.value == b"no-metadata"
+    assert no_metadata.metadata.user_metadata == {}
+    assert no_metadata.metadata.sys_metadata == {}
 
 
 def test_is_ready(async_batch_map_server) -> None:

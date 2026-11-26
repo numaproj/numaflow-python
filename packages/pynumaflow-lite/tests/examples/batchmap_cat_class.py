@@ -11,7 +11,16 @@ class SimpleBatchCat(BatchMapper):
             if d.value == b"bad world":
                 responses.append(BatchResponse(d.id, Message.to_drop()))
             else:
-                responses.append(BatchResponse(d.id, Message(d.value, d.keys)))
+                # Forward the incoming user metadata and echo the system metadata
+                user_metadata = {
+                    **d.user_metadata,
+                    "system_echo": {
+                        f"{group}.{key}": value
+                        for group, key_values in d.system_metadata.items()
+                        for key, value in key_values.items()
+                    },
+                }
+                responses.append(BatchResponse(d.id, Message(d.value, d.keys, user_metadata=user_metadata)))
         return responses
 
 

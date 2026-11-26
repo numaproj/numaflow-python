@@ -26,6 +26,7 @@ class Message:
     keys: list[str] | None
     value: bytes
     tags: list[str] | None
+    user_metadata: dict[str, dict[str, bytes]] | None
     nack_options: NackOptions | None
 
     def __init__(
@@ -33,6 +34,7 @@ class Message:
         value: bytes,
         keys: list[str] | None = ...,
         tags: list[str] | None = ...,
+        user_metadata: dict[str, dict[str, bytes]] | None = ...,
     ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
@@ -49,6 +51,8 @@ class Datum:
     watermark: _dt.datetime
     event_time: _dt.datetime
     headers: dict[str, str]
+    user_metadata: dict[str, dict[str, bytes]]
+    system_metadata: dict[str, dict[str, bytes]]
 
     def __init__(
         self,
@@ -58,6 +62,8 @@ class Datum:
         event_time: _dt.datetime | None = ...,
         watermark: _dt.datetime | None = ...,
         headers: dict[str, str] | None = ...,
+        user_metadata: dict[str, dict[str, bytes]] | None = ...,
+        system_metadata: dict[str, dict[str, bytes]] | None = ...,
     ) -> None: ...
     def __repr__(self) -> str: ...
     def __str__(self) -> str: ...
